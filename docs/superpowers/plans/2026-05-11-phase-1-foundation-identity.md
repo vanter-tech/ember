@@ -112,7 +112,7 @@ Expected: all 3 services show `running`.
 
 ```bash
 git add docker-compose.yml
-git commit -m "EMB-5: add docker-compose with postgres, mongodb, minio"
+git commit -m "[EMB-X]: add docker-compose with postgres, mongodb, minio"
 ```
 
 ---
@@ -174,7 +174,7 @@ Expected: BUILD SUCCESS with no errors.
 
 ```bash
 git add backend/pom.xml
-git commit -m "EMB-5: add security, jwt, postgresql, validation dependencies"
+git commit -m "[EMB-X]: add security, jwt, postgresql, validation dependencies"
 ```
 
 ---
@@ -255,7 +255,7 @@ git add backend/src/main/java/com/vanter/ember/catalog/
 git add backend/src/main/java/com/vanter/ember/session/
 git add backend/src/main/java/com/vanter/ember/billing/
 git add backend/src/main/java/com/vanter/ember/kitchen/
-git commit -m "EMB-5: configure application properties and scaffold module packages"
+git commit -m "[EMB-X]: configure application properties and scaffold module packages"
 ```
 
 ---
@@ -408,7 +408,7 @@ Expected: BUILD SUCCESS.
 
 ```bash
 git add backend/src/main/java/com/vanter/ember/identity/
-git commit -m "EMB-5: add User entity, Role enum, and auth DTOs"
+git commit -m "[EMB-X]: add User entity, Role enum, and auth DTOs"
 ```
 
 ---
@@ -447,7 +447,7 @@ Expected: BUILD SUCCESS.
 
 ```bash
 git add backend/src/main/java/com/vanter/ember/identity/repository/
-git commit -m "EMB-5: add UserRepository with findByEmail and existsByEmail"
+git commit -m "[EMB-X]: add UserRepository with findByEmail and existsByEmail"
 ```
 
 ---
@@ -600,7 +600,7 @@ Expected: Tests run: 5, Failures: 0, Errors: 0.
 ```bash
 git add backend/src/main/java/com/vanter/ember/identity/service/JwtService.java
 git add backend/src/test/java/com/vanter/ember/identity/service/JwtServiceTest.java
-git commit -m "EMB-5: add JwtService with TDD (generate, extract, validate)"
+git commit -m "[EMB-X]: add JwtService with TDD (generate, extract, validate)"
 ```
 
 ---
@@ -752,7 +752,7 @@ Expected: BUILD SUCCESS.
 ```bash
 git add backend/src/main/java/com/vanter/ember/identity/service/EmberUserDetailsService.java
 git add backend/src/main/java/com/vanter/ember/config/SecurityConfig.java
-git commit -m "EMB-5: add UserDetailsService and JWT security filter chain"
+git commit -m "[EMB-X]: add UserDetailsService and JWT security filter chain"
 ```
 
 ---
@@ -982,7 +982,7 @@ Expected: Tests run: 5, Failures: 0, Errors: 0.
 ```bash
 git add backend/src/main/java/com/vanter/ember/identity/service/AuthService.java
 git add backend/src/test/java/com/vanter/ember/identity/service/AuthServiceTest.java
-git commit -m "EMB-5: add AuthService with register and login logic (TDD)"
+git commit -m "[EMB-X]: add AuthService with register and login logic (TDD)"
 ```
 
 ---
@@ -1219,7 +1219,7 @@ Expected: All tests pass (JwtServiceTest + AuthServiceTest + AuthControllerTest)
 git add backend/src/main/java/com/vanter/ember/identity/controller/
 git add backend/src/main/java/com/vanter/ember/config/GlobalExceptionHandler.java
 git add backend/src/test/java/com/vanter/ember/identity/controller/
-git commit -m "EMB-5: add AuthController and GlobalExceptionHandler (TDD)"
+git commit -m "[EMB-X]: add AuthController and GlobalExceptionHandler (TDD)"
 ```
 
 ---
@@ -1289,7 +1289,7 @@ Expected: `409` (or use Postman/Insomnia if jq is not available — send the sam
 
 ```bash
 git add -A
-git commit -m "EMB-5: identity module complete — register, login, JWT auth working"
+git commit -m "[EMB-X]: identity module complete — register, login, JWT auth working"
 ```
 
 ---
