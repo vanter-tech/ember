@@ -2,7 +2,6 @@ package com.vanter.ember.identity.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vanter.ember.config.SecurityConfig;
-import com.vanter.ember.identity.model.Role;
 import com.vanter.ember.identity.model.dto.AuthResponse;
 import com.vanter.ember.identity.model.dto.LoginRequest;
 import com.vanter.ember.identity.model.dto.RegisterRequest;
@@ -41,7 +40,6 @@ class AuthControllerTest {
         req.setName("Ana");
         req.setEmail("ana@test.com");
         req.setPassword("secret");
-        req.setRole(Role.CUSTOMER);
 
         when(authService.register(any())).thenReturn(
                 AuthResponse.builder().token("jwt-token").userId("u-1").name("Ana").role("CUSTOMER").build()
@@ -62,7 +60,6 @@ class AuthControllerTest {
         req.setName("Ana");
         req.setEmail("ana@test.com");
         req.setPassword("secret");
-        req.setRole(Role.CUSTOMER);
 
         when(authService.register(any()))
                 .thenThrow(new IllegalArgumentException("Email already in use"));

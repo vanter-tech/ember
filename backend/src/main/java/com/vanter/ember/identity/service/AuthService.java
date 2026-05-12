@@ -1,5 +1,6 @@
 package com.vanter.ember.identity.service;
 
+import com.vanter.ember.identity.model.Role;
 import com.vanter.ember.identity.model.User;
 import com.vanter.ember.identity.model.dto.AuthResponse;
 import com.vanter.ember.identity.model.dto.LoginRequest;
@@ -29,7 +30,7 @@ public class AuthService {
                 .name(request.getName())
                 .email(request.getEmail())
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
-                .role(request.getRole())
+                .role(Role.CUSTOMER)
                 .build();
 
         userRepository.save(user);

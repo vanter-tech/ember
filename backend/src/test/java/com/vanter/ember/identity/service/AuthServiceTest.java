@@ -38,7 +38,6 @@ class AuthServiceTest {
         req.setName("Ana");
         req.setEmail("ana@test.com");
         req.setPassword("secret");
-        req.setRole(Role.CUSTOMER);
 
         when(userRepository.existsByEmail("ana@test.com")).thenReturn(false);
         when(passwordEncoder.encode("secret")).thenReturn("hashed");
