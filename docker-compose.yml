@@ -22,9 +22,10 @@ services:
       - mongo_data:/data/db
 
   minio:
-    image: minio/minio
+    image: minio/minio:RELEASE.2025-04-22T22-12-26Z
     command: server /data --console-address ":9001"
     environment:
+      # MinIO requires min 8-char credentials; 'ember' is too short
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadmin
     ports:
