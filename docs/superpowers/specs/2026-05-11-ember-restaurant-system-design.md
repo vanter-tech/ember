@@ -287,8 +287,9 @@ En desarrollo local, Kafka puede desactivarse — los eventos corren como Spring
 ## 11. Autenticación y Seguridad
 
 - JWT firmado con clave secreta (HS256 en monolito, RS256 al migrar a microservicios)
-- El API Gateway (Nginx o Spring Cloud Gateway) valida JWT antes de rutear
-- Roles verificados a nivel de endpoint con Spring Security
+- **Monolito:** Spring Security valida JWT en cada request directamente en la app
+- **Al migrar:** se agrega API Gateway (Spring Cloud Gateway o Nginx) que centraliza la validación
+- Roles verificados a nivel de endpoint con anotaciones `@PreAuthorize` de Spring Security
 - QR de sesión: JWT de vida corta (ej. 15 minutos) firmado con sessionId + maxParticipants
 
 ---
