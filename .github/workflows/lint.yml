@@ -1,0 +1,41 @@
+name: Monorepo Linting CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  lint-backend:
+    name: Lint Java Backend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configurar Java 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+      - name: Ejecutar Checkstyle
+        run: mvn checkstyle:check -f ./backend/pom.xml
+
+  lint-frontend:
+    name: Lint React Frontend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./frontend
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: ./frontend/package-lock.json
+      - name: Instalar dependencias
+        run: npm ci
+      - name: Ejecutar ESLint
+        run: npm run lint
