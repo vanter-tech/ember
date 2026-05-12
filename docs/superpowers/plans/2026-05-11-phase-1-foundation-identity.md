@@ -1278,12 +1278,12 @@ Expected: Same shape as register response with a valid JWT.
 - [ ] **Step 5: Verify duplicate email returns 409**
 
 ```bash
-curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:8080/api/auth/register \
+curl -s -X POST http://localhost:8080/api/auth/register \
   -H "Content-Type: application/json" \
-  -d '{"name":"Ana","email":"ana@test.com","password":"secret123","role":"CUSTOMER"}'
+  -d "{\"name\":\"Ana\",\"email\":\"ana@test.com\",\"password\":\"secret123\",\"role\":\"CUSTOMER\"}" | jq .status
 ```
 
-Expected: `409`
+Expected: `409` (or use Postman/Insomnia if jq is not available — send the same body and verify the HTTP status code in the response panel)
 
 - [ ] **Step 6: Final commit**
 
