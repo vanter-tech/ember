@@ -8,6 +8,7 @@ import com.vanter.ember.billing.repository.BillRepository;
 import com.vanter.ember.billing.repository.BillSplitRepository;
 import com.vanter.ember.session.model.OrderItem;
 import com.vanter.ember.session.model.OrderItemStatus;
+import com.vanter.ember.session.model.Participant;
 import com.vanter.ember.session.model.Session;
 import com.vanter.ember.session.service.SessionService;
 import org.junit.jupiter.api.Test;
@@ -215,6 +216,100 @@ class BillingServiceTest {
         when(billRepository.findById(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> billingService.splitByConsumption(99L))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    // --- splitEqually tests ---
+
+    private Session sessionWithThreeParticipants() {
+        return Session.builder()
+                .id("sess-1").tableId(1L)
+                .participants(new ArrayList<>(List.of(
+                        Participant.builder().userId("u-1").name("Alice").build(),
+                        Participant.builder().userId("u-2").name("Bob").build(),
+                        Participant.builder().userId("u-3").name("Carol").build()
+                )))
+                .items(new ArrayList<>()).build();
+    }
+
+    private Bill billWithTotal(String total) {
+        return Bill.builder()
+                .id(1L).sessionId("sess-1")
+                .total(new BigDecimal(total))
+                .splitMethod(SplitMethod.EQUAL_PARTS).status(BillStatus.OPEN)
+                .createdAt(LocalDateTime.now()).build();
+    }
+
+    @Test
+    void splitEqually_createsSplitForEachParticipant() {
+        when(billRepository.findById(1L)).thenReturn(Optional.of(billWithTotal("30.00")));
+        when(sessionService.findById("sess-1")).thenReturn(sessionWithThreeParticipants());
+        when(billSplitRepository.saveAll(anyList())).thenAnswer(inv -> inv.getArgument(0));
+
+        List<BillSplit> splits = billingService.splitEqually(1L, 3);
+
+        assertThat(splits).hasSize(3);
+    }
+
+    @Test
+    void splitEqually_dividesTotalEvenlyWhenDivisible() {
+        when(billRepository.findById(1L)).thenReturn(Optional.of(billWithTotal("30.00")));
+        when(sessionService.findById("sess-1")).thenReturn(sessionWithThreeParticipants());
+        when(billSplitRepository.saveAll(anyList())).thenAnswer(inv -> inv.getArgument(0));
+
+        List<BillSplit> splits = billingService.splitEqually(1L, 3);
+
+        assertThat(splits).allMatch(s -> s.getAmount().compareTo(new BigDecimal("10.00")) == 0);
+    }
+
+    @Test
+    void splitEqually_lastParticipantAbsorbsRemainderCents() {
+        when(billRepository.findById(1L)).thenReturn(Optional.of(billWithTotal("10.00")));
+        when(sessionService.findById("sess-1")).thenReturn(sessionWithThreeParticipants());
+        when(billSplitRepository.saveAll(anyList())).thenAnswer(inv -> inv.getArgument(0));
+
+        List<BillSplit> splits = billingService.splitEqually(1L, 3);
+
+        BigDecimal share = new BigDecimal("3.33");
+        BigDecimal lastShare = new BigDecimal("3.34");
+        long regularCount = splits.stream()
+                .filter(s -> s.getAmount().compareTo(share) == 0).count();
+        long lastCount = splits.stream()
+                .filter(s -> s.getAmount().compareTo(lastShare) == 0).count();
+        assertThat(regularCount).isEqualTo(2);
+        assertThat(lastCount).isEqualTo(1);
+    }
+
+    @Test
+    void splitEqually_totalOfAllSplitsEqualsOriginalTotal() {
+        when(billRepository.findById(1L)).thenReturn(Optional.of(billWithTotal("10.00")));
+        when(sessionService.findById("sess-1")).thenReturn(sessionWithThreeParticipants());
+        when(billSplitRepository.saveAll(anyList())).thenAnswer(inv -> inv.getArgument(0));
+
+        List<BillSplit> splits = billingService.splitEqually(1L, 3);
+
+        BigDecimal sumOfSplits = splits.stream()
+                .map(BillSplit::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        assertThat(sumOfSplits).isEqualByComparingTo("10.00");
+    }
+
+    @Test
+    void splitEqually_splitsAreNotPaidByDefault() {
+        when(billRepository.findById(1L)).thenReturn(Optional.of(billWithTotal("30.00")));
+        when(sessionService.findById("sess-1")).thenReturn(sessionWithThreeParticipants());
+        when(billSplitRepository.saveAll(anyList())).thenAnswer(inv -> inv.getArgument(0));
+
+        List<BillSplit> splits = billingService.splitEqually(1L, 3);
+
+        assertThat(splits).allMatch(s -> !s.isPaid());
+    }
+
+    @Test
+    void splitEqually_throwsWhenBillNotFound() {
+        when(billRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> billingService.splitEqually(99L, 3))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 }

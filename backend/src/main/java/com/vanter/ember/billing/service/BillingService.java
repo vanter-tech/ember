@@ -11,7 +11,9 @@ import com.vanter.ember.session.model.OrderItem;
 import com.vanter.ember.session.model.OrderItemStatus;
 import com.vanter.ember.session.service.SessionService;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -73,6 +75,35 @@ public class BillingService {
                         .paid(false)
                         .build())
                 .toList();
+
+        return billSplitRepository.saveAll(splits);
+    }
+
+    public List<BillSplit> splitEqually(Long billId, int participantCount) {
+        Bill bill = billRepository.findById(billId)
+                .orElseThrow(() -> new ResourceNotFoundException("Bill not found: " + billId));
+
+        List<String> names = sessionService.findById(bill.getSessionId())
+                .getParticipants().stream()
+                .map(p -> p.getName())
+                .limit(participantCount)
+                .collect(Collectors.toList());
+
+        BigDecimal share = bill.getTotal()
+                .divide(BigDecimal.valueOf(participantCount), 2, RoundingMode.FLOOR);
+
+        List<BillSplit> splits = new ArrayList<>();
+        for (int i = 0; i < names.size(); i++) {
+            BigDecimal amount = (i == names.size() - 1)
+                    ? bill.getTotal().subtract(share.multiply(BigDecimal.valueOf(names.size() - 1)))
+                    : share;
+            splits.add(BillSplit.builder()
+                    .bill(bill)
+                    .participantName(names.get(i))
+                    .amount(amount)
+                    .paid(false)
+                    .build());
+        }
 
         return billSplitRepository.saveAll(splits);
     }
