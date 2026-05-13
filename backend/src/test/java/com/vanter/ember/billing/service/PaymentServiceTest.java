@@ -159,6 +159,20 @@ class PaymentServiceTest {
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
+    @Test
+    void registerPhysicalPayment_throwsWhenAmountDoesNotMatchSplit() {
+        Bill bill = sampleBill();
+        BillSplit split = unpaidSplit(bill, "Alice", "12.50");
+        when(billRepository.findById(1L)).thenReturn(Optional.of(bill));
+        when(billSplitRepository.findByBillIdAndParticipantName(1L, "Alice"))
+                .thenReturn(Optional.of(split));
+
+        assertThatThrownBy(() ->
+                paymentService.registerPhysicalPayment(1L, "Alice", new BigDecimal("0.01")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("amount");
+    }
+
     // --- initiateDigitalPayment tests ---
 
     @Test
@@ -209,6 +223,20 @@ class PaymentServiceTest {
         assertThatThrownBy(() ->
                 paymentService.initiateDigitalPayment(1L, "Alice", new BigDecimal("12.50")))
                 .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void initiateDigitalPayment_throwsWhenAmountDoesNotMatchSplit() {
+        Bill bill = sampleBill();
+        BillSplit split = unpaidSplit(bill, "Alice", "12.50");
+        when(billRepository.findById(1L)).thenReturn(Optional.of(bill));
+        when(billSplitRepository.findByBillIdAndParticipantName(1L, "Alice"))
+                .thenReturn(Optional.of(split));
+
+        assertThatThrownBy(() ->
+                paymentService.initiateDigitalPayment(1L, "Alice", new BigDecimal("5.00")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("amount");
     }
 
     // --- confirmDigitalPayment tests ---
