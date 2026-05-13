@@ -40,6 +40,11 @@ public class SessionController {
                 request.tableId(), authentication.getName(), request.maxParticipants());
     }
 
+    @GetMapping("/{id}")
+    public Session getSession(@PathVariable String id) {
+        return sessionService.findById(id);
+    }
+
     @GetMapping("/{id}/qr")
     public Map<String, String> getQrToken(@PathVariable String id) {
         Session session = sessionService.findById(id);

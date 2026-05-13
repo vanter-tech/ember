@@ -182,6 +182,26 @@ class SessionControllerTest {
                 .andExpect(status().isForbidden());
     }
 
+    // --- GET /api/sessions/{id} ---
+
+    @Test
+    @WithMockUser(username = "customer@test.com", roles = "CUSTOMER")
+    void getSession_returnsFullSession() throws Exception {
+        Session session = sampleSession();
+        when(sessionService.findById("sess-1")).thenReturn(session);
+
+        mockMvc.perform(get("/api/sessions/sess-1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value("sess-1"))
+                .andExpect(jsonPath("$.status").value("OPEN"));
+    }
+
+    @Test
+    void getSession_unauthenticatedReturns403() throws Exception {
+        mockMvc.perform(get("/api/sessions/sess-1"))
+                .andExpect(status().isForbidden());
+    }
+
     // --- POST /api/sessions/{id}/items ---
 
     @Test
