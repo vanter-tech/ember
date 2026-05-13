@@ -17,6 +17,15 @@ spring:
     mongodb:
       uri: mongodb://ember:ember@localhost:27017/ember?authSource=admin
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+
 jwt:
   secret: ember-secret-key-must-be-at-least-32-characters-long-for-hs256
   expiration-ms: 86400000
