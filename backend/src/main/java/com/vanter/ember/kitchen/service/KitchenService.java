@@ -1,6 +1,7 @@
 package com.vanter.ember.kitchen.service;
 
 import com.vanter.ember.config.ResourceNotFoundException;
+import com.vanter.ember.kitchen.event.KitchenItemUpdated;
 import com.vanter.ember.kitchen.model.KitchenItem;
 import com.vanter.ember.kitchen.model.KitchenOrder;
 import com.vanter.ember.kitchen.repository.KitchenOrderRepository;
@@ -9,6 +10,7 @@ import com.vanter.ember.session.model.OrderItemStatus;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
@@ -17,6 +19,7 @@ import org.springframework.stereotype.Service;
 public class KitchenService {
 
     private final KitchenOrderRepository kitchenOrderRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     @EventListener
     public void handleOrderItemAdded(OrderItemAdded event) {
@@ -54,7 +57,9 @@ public class KitchenService {
 
         item.setStatus(newStatus);
         item.setUpdatedAt(LocalDateTime.now());
-        return kitchenOrderRepository.save(order);
+        KitchenOrder saved = kitchenOrderRepository.save(order);
+        eventPublisher.publishEvent(new KitchenItemUpdated(saved.getSessionId(), itemId, newStatus));
+        return saved;
     }
 
     private boolean isValidTransition(OrderItemStatus current, OrderItemStatus next) {

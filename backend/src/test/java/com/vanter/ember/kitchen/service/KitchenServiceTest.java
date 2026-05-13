@@ -1,11 +1,13 @@
 package com.vanter.ember.kitchen.service;
 
 import com.vanter.ember.config.ResourceNotFoundException;
+import com.vanter.ember.kitchen.event.KitchenItemUpdated;
 import com.vanter.ember.kitchen.model.KitchenItem;
 import com.vanter.ember.kitchen.model.KitchenOrder;
 import com.vanter.ember.kitchen.repository.KitchenOrderRepository;
 import com.vanter.ember.session.event.OrderItemAdded;
 import com.vanter.ember.session.model.OrderItemStatus;
+import org.springframework.context.ApplicationEventPublisher;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -29,6 +31,7 @@ import static org.mockito.Mockito.when;
 class KitchenServiceTest {
 
     @Mock KitchenOrderRepository kitchenOrderRepository;
+    @Mock ApplicationEventPublisher eventPublisher;
     @InjectMocks KitchenService kitchenService;
 
     private OrderItemAdded sampleEvent() {
@@ -135,5 +138,19 @@ class KitchenServiceTest {
 
         assertThatThrownBy(() -> kitchenService.updateItemStatus("ko-999", "order-item-1", OrderItemStatus.PREPARING))
                 .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void updateItemStatus_publishesKitchenItemUpdatedEvent() {
+        when(kitchenOrderRepository.findById("ko-1")).thenReturn(Optional.of(orderWithItem(OrderItemStatus.PENDING)));
+        when(kitchenOrderRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        kitchenService.updateItemStatus("ko-1", "order-item-1", OrderItemStatus.PREPARING);
+
+        ArgumentCaptor<KitchenItemUpdated> captor = ArgumentCaptor.forClass(KitchenItemUpdated.class);
+        verify(eventPublisher).publishEvent(captor.capture());
+        assertThat(captor.getValue().sessionId()).isEqualTo("sess-1");
+        assertThat(captor.getValue().itemId()).isEqualTo("order-item-1");
+        assertThat(captor.getValue().newStatus()).isEqualTo(OrderItemStatus.PREPARING);
     }
 }
