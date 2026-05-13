@@ -105,6 +105,22 @@ class SessionControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = "CUSTOMER")
+    void getQr_forbiddenForCustomer() throws Exception {
+        mockMvc.perform(get("/api/sessions/sess-1/qr"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(username = "other-waiter@test.com", roles = "WAITER")
+    void getQr_forbiddenForWaiterWhoDoesNotOwnSession() throws Exception {
+        when(sessionService.findById("sess-1")).thenReturn(sampleSession());
+
+        mockMvc.perform(get("/api/sessions/sess-1/qr"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     void getQr_unauthenticatedReturns401() throws Exception {
         mockMvc.perform(get("/api/sessions/sess-1/qr"))
                 .andExpect(status().isUnauthorized());
@@ -186,14 +202,35 @@ class SessionControllerTest {
 
     @Test
     @WithMockUser(username = "customer@test.com", roles = "CUSTOMER")
-    void getSession_returnsFullSession() throws Exception {
+    void getSession_returnsFullSessionForParticipant() throws Exception {
         Session session = sampleSession();
+        session.getParticipants().add(
+                Participant.builder().userId("customer@test.com").name("Alice").build());
         when(sessionService.findById("sess-1")).thenReturn(session);
 
         mockMvc.perform(get("/api/sessions/sess-1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value("sess-1"))
                 .andExpect(jsonPath("$.status").value("OPEN"));
+    }
+
+    @Test
+    @WithMockUser(username = "waiter@test.com", roles = "WAITER")
+    void getSession_returnsFullSessionForAssignedWaiter() throws Exception {
+        when(sessionService.findById("sess-1")).thenReturn(sampleSession());
+
+        mockMvc.perform(get("/api/sessions/sess-1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value("sess-1"));
+    }
+
+    @Test
+    @WithMockUser(username = "outsider@test.com", roles = "CUSTOMER")
+    void getSession_forbiddenForCustomerNotInSession() throws Exception {
+        when(sessionService.findById("sess-1")).thenReturn(sampleSession());
+
+        mockMvc.perform(get("/api/sessions/sess-1"))
+                .andExpect(status().isForbidden());
     }
 
     @Test

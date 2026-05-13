@@ -13,6 +13,7 @@ import jakarta.validation.Valid;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -46,14 +47,28 @@ public class SessionController {
 
     @Operation(summary = "Get session by ID")
     @GetMapping("/{id}")
-    public Session getSession(@PathVariable String id) {
-        return sessionService.findById(id);
+    public Session getSession(@PathVariable String id, Authentication authentication) {
+        Session session = sessionService.findById(id);
+        boolean isCustomer = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_CUSTOMER"));
+        if (isCustomer) {
+            boolean isParticipant = session.getParticipants().stream()
+                    .anyMatch(p -> p.getUserId().equals(authentication.getName()));
+            if (!isParticipant) {
+                throw new AccessDeniedException("Not authorized to view this session");
+            }
+        }
+        return session;
     }
 
     @Operation(summary = "Generate QR token for a session (WAITER)")
     @GetMapping("/{id}/qr")
-    public Map<String, String> getQrToken(@PathVariable String id) {
+    @PreAuthorize("hasRole('WAITER')")
+    public Map<String, String> getQrToken(@PathVariable String id, Authentication authentication) {
         Session session = sessionService.findById(id);
+        if (!session.getWaiterId().equals(authentication.getName())) {
+            throw new AccessDeniedException("Only the assigned waiter can generate QR codes");
+        }
         String token = qrTokenService.generateQrToken(session.getId(), session.getMaxParticipants());
         return Map.of("qrToken", token);
     }
