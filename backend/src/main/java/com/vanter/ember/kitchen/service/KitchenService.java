@@ -9,6 +9,7 @@ import com.vanter.ember.session.event.OrderItemAdded;
 import com.vanter.ember.session.model.OrderItemStatus;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
@@ -20,6 +21,15 @@ public class KitchenService {
 
     private final KitchenOrderRepository kitchenOrderRepository;
     private final ApplicationEventPublisher eventPublisher;
+
+    public List<KitchenOrder> findAll() {
+        return kitchenOrderRepository.findAll();
+    }
+
+    public KitchenOrder findBySessionId(String sessionId) {
+        return kitchenOrderRepository.findBySessionId(sessionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Kitchen order not found for session: " + sessionId));
+    }
 
     @EventListener
     public void handleOrderItemAdded(OrderItemAdded event) {
