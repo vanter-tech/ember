@@ -172,6 +172,13 @@ public class SessionService {
                 event.newStatus()));
     }
 
+    public void closeSession(String sessionId) {
+        Session session = sessionRepository.findById(sessionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Session not found: " + sessionId));
+        session.setStatus(SessionStatus.CLOSED);
+        sessionRepository.save(session);
+    }
+
     public Session removeItem(String sessionId, String orderItemId, String requesterId) {
         Session session = findById(sessionId);
 

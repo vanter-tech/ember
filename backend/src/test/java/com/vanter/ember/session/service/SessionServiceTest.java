@@ -474,4 +474,30 @@ class SessionServiceTest {
         assertThat(event.participantName()).isEqualTo("Alice");
         assertThat(event.newStatus()).isEqualTo(OrderItemStatus.PREPARING);
     }
+
+    // --- closeSession tests ---
+
+    @Test
+    void closeSession_setsStatusToClosed() {
+        Session session = Session.builder()
+                .id("sess-1").tableId(1L).waiterId("waiter@test.com")
+                .status(SessionStatus.OPEN).maxParticipants(4)
+                .createdAt(LocalDateTime.now()).build();
+        when(sessionRepository.findById("sess-1")).thenReturn(Optional.of(session));
+        when(sessionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        sessionService.closeSession("sess-1");
+
+        ArgumentCaptor<Session> captor = ArgumentCaptor.forClass(Session.class);
+        verify(sessionRepository).save(captor.capture());
+        assertThat(captor.getValue().getStatus()).isEqualTo(SessionStatus.CLOSED);
+    }
+
+    @Test
+    void closeSession_throwsWhenSessionNotFound() {
+        when(sessionRepository.findById("sess-999")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> sessionService.closeSession("sess-999"))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
 }
