@@ -1,6 +1,7 @@
 package com.vanter.ember.session.model;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -15,5 +16,8 @@ public class OrderItem {
     private Long itemId;
     private String name;
     private BigDecimal price;
+    private String participantId;
     private String participantName;
+    private OrderItemStatus status;
+    private LocalDateTime addedAt;
 }
