@@ -33,7 +33,7 @@ class PaymentRepositoryTest {
     void save_persistsPayment() {
         Bill bill = savedBill();
         Payment payment = Payment.builder()
-                .bill(bill).amount(new BigDecimal("25.00"))
+                .bill(bill).participantName("Alice").amount(new BigDecimal("25.00"))
                 .method(PaymentMethod.DIGITAL).gatewayRef("gw-ref-001")
                 .status(PaymentStatus.PENDING).createdAt(LocalDateTime.now()).build();
 
@@ -41,6 +41,7 @@ class PaymentRepositoryTest {
 
         assertThat(saved.getId()).isNotNull();
         assertThat(saved.getBill().getId()).isEqualTo(bill.getId());
+        assertThat(saved.getParticipantName()).isEqualTo("Alice");
         assertThat(saved.getAmount()).isEqualByComparingTo("25.00");
         assertThat(saved.getMethod()).isEqualTo(PaymentMethod.DIGITAL);
         assertThat(saved.getGatewayRef()).isEqualTo("gw-ref-001");
@@ -51,11 +52,13 @@ class PaymentRepositoryTest {
     void findByBillId_returnsAllPaymentsForBill() {
         Bill bill = savedBill();
         paymentRepository.save(Payment.builder()
-                .bill(bill).amount(new BigDecimal("25.00")).method(PaymentMethod.DIGITAL)
-                .status(PaymentStatus.PENDING).createdAt(LocalDateTime.now()).build());
+                .bill(bill).participantName("Alice").amount(new BigDecimal("25.00"))
+                .method(PaymentMethod.DIGITAL).status(PaymentStatus.PENDING)
+                .createdAt(LocalDateTime.now()).build());
         paymentRepository.save(Payment.builder()
-                .bill(bill).amount(new BigDecimal("15.00")).method(PaymentMethod.PHYSICAL)
-                .status(PaymentStatus.CONFIRMED).createdAt(LocalDateTime.now()).build());
+                .bill(bill).participantName("Bob").amount(new BigDecimal("15.00"))
+                .method(PaymentMethod.PHYSICAL).status(PaymentStatus.CONFIRMED)
+                .createdAt(LocalDateTime.now()).build());
 
         List<Payment> payments = paymentRepository.findByBillId(bill.getId());
 
@@ -66,11 +69,13 @@ class PaymentRepositoryTest {
     void findByStatus_returnsPendingPayments() {
         Bill bill = savedBill();
         paymentRepository.save(Payment.builder()
-                .bill(bill).amount(new BigDecimal("25.00")).method(PaymentMethod.DIGITAL)
-                .status(PaymentStatus.PENDING).createdAt(LocalDateTime.now()).build());
+                .bill(bill).participantName("Alice").amount(new BigDecimal("25.00"))
+                .method(PaymentMethod.DIGITAL).status(PaymentStatus.PENDING)
+                .createdAt(LocalDateTime.now()).build());
         paymentRepository.save(Payment.builder()
-                .bill(bill).amount(new BigDecimal("15.00")).method(PaymentMethod.PHYSICAL)
-                .status(PaymentStatus.CONFIRMED).createdAt(LocalDateTime.now()).build());
+                .bill(bill).participantName("Bob").amount(new BigDecimal("15.00"))
+                .method(PaymentMethod.PHYSICAL).status(PaymentStatus.CONFIRMED)
+                .createdAt(LocalDateTime.now()).build());
 
         List<Payment> pending = paymentRepository.findByStatus(PaymentStatus.PENDING);
 

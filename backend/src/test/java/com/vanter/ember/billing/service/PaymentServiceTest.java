@@ -158,4 +158,131 @@ class PaymentServiceTest {
                 paymentService.registerPhysicalPayment(1L, "Unknown", new BigDecimal("12.50")))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
+
+    // --- initiateDigitalPayment tests ---
+
+    @Test
+    void initiateDigitalPayment_createsPendingDigitalPayment() {
+        Bill bill = sampleBill();
+        when(billRepository.findById(1L)).thenReturn(Optional.of(bill));
+        when(billSplitRepository.findByBillIdAndParticipantName(1L, "Alice"))
+                .thenReturn(Optional.of(unpaidSplit(bill, "Alice", "12.50")));
+        when(paymentRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        Payment payment = paymentService.initiateDigitalPayment(1L, "Alice", new BigDecimal("12.50"));
+
+        assertThat(payment.getMethod()).isEqualTo(PaymentMethod.DIGITAL);
+        assertThat(payment.getStatus()).isEqualTo(PaymentStatus.PENDING);
+        assertThat(payment.getAmount()).isEqualByComparingTo("12.50");
+        assertThat(payment.getParticipantName()).isEqualTo("Alice");
+        assertThat(payment.getBill().getId()).isEqualTo(1L);
+    }
+
+    @Test
+    void initiateDigitalPayment_setsNonNullGatewayRef() {
+        Bill bill = sampleBill();
+        when(billRepository.findById(1L)).thenReturn(Optional.of(bill));
+        when(billSplitRepository.findByBillIdAndParticipantName(1L, "Alice"))
+                .thenReturn(Optional.of(unpaidSplit(bill, "Alice", "12.50")));
+        when(paymentRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        Payment payment = paymentService.initiateDigitalPayment(1L, "Alice", new BigDecimal("12.50"));
+
+        assertThat(payment.getGatewayRef()).isNotBlank();
+    }
+
+    @Test
+    void initiateDigitalPayment_throwsWhenBillNotFound() {
+        when(billRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() ->
+                paymentService.initiateDigitalPayment(99L, "Alice", new BigDecimal("12.50")))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void initiateDigitalPayment_throwsWhenSplitNotFound() {
+        when(billRepository.findById(1L)).thenReturn(Optional.of(sampleBill()));
+        when(billSplitRepository.findByBillIdAndParticipantName(1L, "Alice"))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() ->
+                paymentService.initiateDigitalPayment(1L, "Alice", new BigDecimal("12.50")))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    // --- confirmDigitalPayment tests ---
+
+    private Payment pendingDigitalPayment(Bill bill, String participant) {
+        return Payment.builder()
+                .id(20L).bill(bill).participantName(participant)
+                .amount(new BigDecimal("12.50")).method(PaymentMethod.DIGITAL)
+                .status(PaymentStatus.PENDING).gatewayRef("STUB-abc123")
+                .createdAt(LocalDateTime.now()).build();
+    }
+
+    @Test
+    void confirmDigitalPayment_setsStatusToConfirmed() {
+        Bill bill = sampleBill();
+        Payment payment = pendingDigitalPayment(bill, "Alice");
+        when(paymentRepository.findById(20L)).thenReturn(Optional.of(payment));
+        when(billSplitRepository.findByBillIdAndParticipantName(1L, "Alice"))
+                .thenReturn(Optional.of(unpaidSplit(bill, "Alice", "12.50")));
+        when(billSplitRepository.findByBillId(1L))
+                .thenReturn(List.of(unpaidSplit(bill, "Bob", "10.00")));
+        when(paymentRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        Payment confirmed = paymentService.confirmDigitalPayment(20L);
+
+        assertThat(confirmed.getStatus()).isEqualTo(PaymentStatus.CONFIRMED);
+    }
+
+    @Test
+    void confirmDigitalPayment_marksSplitAsPaid() {
+        Bill bill = sampleBill();
+        Payment payment = pendingDigitalPayment(bill, "Alice");
+        BillSplit split = unpaidSplit(bill, "Alice", "12.50");
+        when(paymentRepository.findById(20L)).thenReturn(Optional.of(payment));
+        when(billSplitRepository.findByBillIdAndParticipantName(1L, "Alice"))
+                .thenReturn(Optional.of(split));
+        when(billSplitRepository.findByBillId(1L))
+                .thenReturn(List.of(unpaidSplit(bill, "Bob", "10.00")));
+        when(paymentRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        paymentService.confirmDigitalPayment(20L);
+
+        ArgumentCaptor<BillSplit> captor = ArgumentCaptor.forClass(BillSplit.class);
+        verify(billSplitRepository).save(captor.capture());
+        assertThat(captor.getValue().isPaid()).isTrue();
+    }
+
+    @Test
+    void confirmDigitalPayment_publishesPaymentCompletedWhenAllSplitsPaid() {
+        Bill bill = sampleBill();
+        Payment payment = pendingDigitalPayment(bill, "Alice");
+        BillSplit aliceSplit = unpaidSplit(bill, "Alice", "12.50");
+        BillSplit bobPaid = BillSplit.builder().id(11L).bill(bill)
+                .participantName("Bob").amount(new BigDecimal("10.00")).paid(true).build();
+        when(paymentRepository.findById(20L)).thenReturn(Optional.of(payment));
+        when(billSplitRepository.findByBillIdAndParticipantName(1L, "Alice"))
+                .thenReturn(Optional.of(aliceSplit));
+        when(billSplitRepository.findByBillId(1L)).thenReturn(List.of(aliceSplit, bobPaid));
+        when(paymentRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(sessionService.findById("sess-1")).thenReturn(sampleSession());
+
+        paymentService.confirmDigitalPayment(20L);
+
+        ArgumentCaptor<PaymentCompleted> captor = ArgumentCaptor.forClass(PaymentCompleted.class);
+        verify(eventPublisher).publishEvent(captor.capture());
+        assertThat(captor.getValue().billId()).isEqualTo(1L);
+        assertThat(captor.getValue().sessionId()).isEqualTo("sess-1");
+    }
+
+    @Test
+    void confirmDigitalPayment_throwsWhenPaymentNotFound() {
+        when(paymentRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> paymentService.confirmDigitalPayment(99L))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
 }

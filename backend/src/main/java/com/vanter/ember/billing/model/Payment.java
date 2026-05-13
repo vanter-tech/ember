@@ -40,6 +40,9 @@ public class Payment {
     @Column(nullable = false)
     private PaymentMethod method;
 
+    @Column(nullable = false)
+    private String participantName;
+
     private String gatewayRef;
 
     @Enumerated(EnumType.STRING)

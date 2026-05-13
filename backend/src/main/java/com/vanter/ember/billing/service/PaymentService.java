@@ -14,6 +14,7 @@ import com.vanter.ember.session.service.SessionService;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -41,6 +42,7 @@ public class PaymentService {
 
         Payment payment = paymentRepository.save(Payment.builder()
                 .bill(bill)
+                .participantName(participantName)
                 .amount(amount)
                 .method(PaymentMethod.PHYSICAL)
                 .status(PaymentStatus.CONFIRMED)
@@ -55,5 +57,51 @@ public class PaymentService {
         }
 
         return payment;
+    }
+
+    public Payment initiateDigitalPayment(Long billId, String participantName, BigDecimal amount) {
+        Bill bill = billRepository.findById(billId)
+                .orElseThrow(() -> new ResourceNotFoundException("Bill not found: " + billId));
+
+        billSplitRepository.findByBillIdAndParticipantName(billId, participantName)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Split not found for participant: " + participantName));
+
+        return paymentRepository.save(Payment.builder()
+                .bill(bill)
+                .participantName(participantName)
+                .amount(amount)
+                .method(PaymentMethod.DIGITAL)
+                .status(PaymentStatus.PENDING)
+                .gatewayRef("STUB-" + UUID.randomUUID())
+                .createdAt(LocalDateTime.now())
+                .build());
+    }
+
+    public Payment confirmDigitalPayment(Long paymentId) {
+        Payment payment = paymentRepository.findById(paymentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Payment not found: " + paymentId));
+
+        BillSplit split = billSplitRepository
+                .findByBillIdAndParticipantName(payment.getBill().getId(), payment.getParticipantName())
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Split not found for participant: " + payment.getParticipantName()));
+
+        split.setPaid(true);
+        billSplitRepository.save(split);
+
+        payment.setStatus(PaymentStatus.CONFIRMED);
+        Payment saved = paymentRepository.save(payment);
+
+        List<BillSplit> allSplits = billSplitRepository.findByBillId(payment.getBill().getId());
+        boolean allPaid = allSplits.stream().allMatch(BillSplit::isPaid);
+        if (allPaid) {
+            Long tableId = sessionService.findById(payment.getBill().getSessionId()).getTableId();
+            eventPublisher.publishEvent(
+                    new PaymentCompleted(payment.getBill().getSessionId(), tableId,
+                            payment.getBill().getId()));
+        }
+
+        return saved;
     }
 }
