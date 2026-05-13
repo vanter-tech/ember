@@ -1,0 +1,66 @@
+package com.vanter.ember.config;
+
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+@SpringBootTest
+@AutoConfigureMockMvc
+class SecurityAuditTest {
+
+    @Autowired MockMvc mockMvc;
+
+    @ParameterizedTest
+    @CsvSource({
+        "GET,  /api/catalog/categories",
+        "GET,  /api/catalog/categories/1",
+        "POST, /api/catalog/categories",
+        "PUT,  /api/catalog/categories/1",
+        "DELETE, /api/catalog/categories/1",
+        "GET,  /api/catalog/items",
+        "GET,  /api/catalog/items/1",
+        "POST, /api/catalog/items",
+        "DELETE, /api/catalog/items/1",
+        "GET,  /api/catalog/tables",
+        "GET,  /api/catalog/tables/1",
+        "POST, /api/catalog/tables",
+        "PUT,  /api/catalog/tables/1",
+        "DELETE, /api/catalog/tables/1",
+        "POST, /api/sessions",
+        "GET,  /api/sessions/sess-1",
+        "GET,  /api/sessions/sess-1/qr",
+        "POST, /api/sessions/sess-1/join",
+        "POST, /api/sessions/sess-1/items",
+        "DELETE, /api/sessions/sess-1/items/item-1",
+        "GET,  /api/kitchen/orders",
+        "GET,  /api/kitchen/display",
+        "POST, /api/billing/sessions/sess-1/bill",
+        "POST, /api/billing/bills/1/split",
+        "POST, /api/billing/payments/physical",
+        "POST, /api/billing/payments/digital",
+        "POST, /api/billing/payments/1/confirm"
+    })
+    void unauthenticated_returns401(String method, String path) throws Exception {
+        var request = switch (method.trim()) {
+            case "GET" -> get(path.trim());
+            case "POST" -> post(path.trim()).contentType(MediaType.APPLICATION_JSON).content("{}");
+            case "PUT" -> org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                    .put(path.trim()).contentType(MediaType.APPLICATION_JSON).content("{}");
+            case "PATCH" -> patch(path.trim()).contentType(MediaType.APPLICATION_JSON).content("{}");
+            case "DELETE" -> delete(path.trim());
+            default -> throw new IllegalArgumentException("Unknown method: " + method);
+        };
+
+        mockMvc.perform(request).andExpect(status().isUnauthorized());
+    }
+}

@@ -84,11 +84,11 @@ class SessionControllerTest {
     }
 
     @Test
-    void createSession_unauthenticatedReturns403() throws Exception {
+    void createSession_unauthenticatedReturns401() throws Exception {
         mockMvc.perform(post("/api/sessions")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new CreateSessionRequest(1L, 4))))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     // --- GET /api/sessions/{id}/qr ---
@@ -105,9 +105,9 @@ class SessionControllerTest {
     }
 
     @Test
-    void getQr_unauthenticatedReturns403() throws Exception {
+    void getQr_unauthenticatedReturns401() throws Exception {
         mockMvc.perform(get("/api/sessions/sess-1/qr"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     // --- POST /api/sessions/{id}/join ---
@@ -141,11 +141,11 @@ class SessionControllerTest {
     }
 
     @Test
-    void joinSession_unauthenticatedReturns403() throws Exception {
+    void joinSession_unauthenticatedReturns401() throws Exception {
         mockMvc.perform(post("/api/sessions/sess-1/join")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new JoinSessionRequest("qr-token", "Alice"))))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     // --- PATCH /api/sessions/{id}/capacity ---
@@ -175,11 +175,11 @@ class SessionControllerTest {
     }
 
     @Test
-    void expandCapacity_unauthenticatedReturns403() throws Exception {
+    void expandCapacity_unauthenticatedReturns401() throws Exception {
         mockMvc.perform(patch("/api/sessions/sess-1/capacity")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new ExpandCapacityRequest(2))))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     // --- GET /api/sessions/{id} ---
@@ -197,9 +197,9 @@ class SessionControllerTest {
     }
 
     @Test
-    void getSession_unauthenticatedReturns403() throws Exception {
+    void getSession_unauthenticatedReturns401() throws Exception {
         mockMvc.perform(get("/api/sessions/sess-1"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     // --- POST /api/sessions/{id}/items ---
@@ -227,11 +227,11 @@ class SessionControllerTest {
     }
 
     @Test
-    void addItem_unauthenticatedReturns403() throws Exception {
+    void addItem_unauthenticatedReturns401() throws Exception {
         mockMvc.perform(post("/api/sessions/sess-1/items")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new AddItemRequest(10L))))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     // --- DELETE /api/sessions/{id}/items/{itemId} ---
@@ -259,8 +259,8 @@ class SessionControllerTest {
     }
 
     @Test
-    void removeItem_unauthenticatedReturns403() throws Exception {
+    void removeItem_unauthenticatedReturns401() throws Exception {
         mockMvc.perform(delete("/api/sessions/sess-1/items/order-item-1"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 }
