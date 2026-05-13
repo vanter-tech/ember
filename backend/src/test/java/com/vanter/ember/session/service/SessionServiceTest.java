@@ -8,6 +8,7 @@ import com.vanter.ember.catalog.service.RestaurantTableService;
 import com.vanter.ember.config.ResourceNotFoundException;
 import com.vanter.ember.kitchen.event.KitchenItemUpdated;
 import com.vanter.ember.session.event.ItemAdded;
+import com.vanter.ember.session.event.ItemStatusUpdated;
 import com.vanter.ember.session.event.OrderItemAdded;
 import com.vanter.ember.session.event.ParticipantJoined;
 import com.vanter.ember.session.event.SessionOpened;
@@ -452,5 +453,25 @@ class SessionServiceTest {
         assertThatThrownBy(() -> sessionService.handleKitchenItemUpdated(
                 new KitchenItemUpdated("sess-1", "nonexistent-id", OrderItemStatus.PREPARING)))
                 .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void handleKitchenItemUpdated_publishesItemStatusUpdatedEvent() {
+        Session session = openSessionWithItem(OrderItemStatus.PENDING, "user-1");
+        when(sessionRepository.findById("sess-1")).thenReturn(Optional.of(session));
+        when(sessionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        sessionService.handleKitchenItemUpdated(
+                new KitchenItemUpdated("sess-1", "order-item-1", OrderItemStatus.PREPARING));
+
+        ArgumentCaptor<Object> captor = ArgumentCaptor.forClass(Object.class);
+        verify(eventPublisher).publishEvent(captor.capture());
+        assertThat(captor.getValue()).isInstanceOf(ItemStatusUpdated.class);
+        ItemStatusUpdated event = (ItemStatusUpdated) captor.getValue();
+        assertThat(event.sessionId()).isEqualTo("sess-1");
+        assertThat(event.itemId()).isEqualTo("order-item-1");
+        assertThat(event.itemName()).isEqualTo("Tacos");
+        assertThat(event.participantName()).isEqualTo("Alice");
+        assertThat(event.newStatus()).isEqualTo(OrderItemStatus.PREPARING);
     }
 }

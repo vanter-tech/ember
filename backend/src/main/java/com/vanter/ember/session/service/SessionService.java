@@ -7,6 +7,7 @@ import com.vanter.ember.catalog.service.RestaurantTableService;
 import com.vanter.ember.config.ResourceNotFoundException;
 import com.vanter.ember.kitchen.event.KitchenItemUpdated;
 import com.vanter.ember.session.event.ItemAdded;
+import com.vanter.ember.session.event.ItemStatusUpdated;
 import com.vanter.ember.session.event.OrderItemAdded;
 import com.vanter.ember.session.event.ParticipantJoined;
 import com.vanter.ember.session.event.SessionOpened;
@@ -163,6 +164,12 @@ public class SessionService {
 
         item.setStatus(event.newStatus());
         sessionRepository.save(session);
+        eventPublisher.publishEvent(new ItemStatusUpdated(
+                event.sessionId(),
+                item.getId(),
+                item.getName(),
+                item.getParticipantName(),
+                event.newStatus()));
     }
 
     public Session removeItem(String sessionId, String orderItemId, String requesterId) {
