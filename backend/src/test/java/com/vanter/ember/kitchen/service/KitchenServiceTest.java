@@ -1,6 +1,7 @@
 package com.vanter.ember.kitchen.service;
 
 import com.vanter.ember.config.ResourceNotFoundException;
+import com.vanter.ember.kitchen.dto.KitchenDisplayEntry;
 import com.vanter.ember.kitchen.event.KitchenItemUpdated;
 import com.vanter.ember.kitchen.model.KitchenItem;
 import com.vanter.ember.kitchen.model.KitchenOrder;
@@ -152,5 +153,65 @@ class KitchenServiceTest {
         assertThat(captor.getValue().sessionId()).isEqualTo("sess-1");
         assertThat(captor.getValue().itemId()).isEqualTo("order-item-1");
         assertThat(captor.getValue().newStatus()).isEqualTo(OrderItemStatus.PREPARING);
+    }
+
+    // --- findDisplay tests ---
+
+    @Test
+    void findDisplay_groupsOrdersByTableNumber() {
+        LocalDateTime now = LocalDateTime.now();
+        KitchenOrder orderTable1 = KitchenOrder.builder()
+                .id("ko-2").sessionId("sess-2").tableNumber(1)
+                .createdAt(now.minusMinutes(10)).items(new ArrayList<>()).build();
+        KitchenOrder orderTable3a = KitchenOrder.builder()
+                .id("ko-1").sessionId("sess-1").tableNumber(3)
+                .createdAt(now.minusMinutes(5)).items(new ArrayList<>()).build();
+        KitchenOrder orderTable3b = KitchenOrder.builder()
+                .id("ko-3").sessionId("sess-3").tableNumber(3)
+                .createdAt(now.minusMinutes(2)).items(new ArrayList<>()).build();
+        when(kitchenOrderRepository.findAll()).thenReturn(List.of(orderTable3a, orderTable1, orderTable3b));
+
+        List<KitchenDisplayEntry> display = kitchenService.findDisplay();
+
+        assertThat(display).hasSize(2);
+        assertThat(display.get(0).tableNumber()).isEqualTo(1);
+        assertThat(display.get(0).orders()).hasSize(1);
+        assertThat(display.get(1).tableNumber()).isEqualTo(3);
+        assertThat(display.get(1).orders()).hasSize(2);
+    }
+
+    @Test
+    void findDisplay_sortsOrdersWithinGroupByCreatedAtAscending() {
+        LocalDateTime now = LocalDateTime.now();
+        KitchenOrder older = KitchenOrder.builder()
+                .id("ko-1").sessionId("sess-1").tableNumber(3)
+                .createdAt(now.minusMinutes(5)).items(new ArrayList<>()).build();
+        KitchenOrder newer = KitchenOrder.builder()
+                .id("ko-3").sessionId("sess-3").tableNumber(3)
+                .createdAt(now.minusMinutes(2)).items(new ArrayList<>()).build();
+        when(kitchenOrderRepository.findAll()).thenReturn(List.of(newer, older));
+
+        List<KitchenDisplayEntry> display = kitchenService.findDisplay();
+
+        List<KitchenOrder> orders = display.get(0).orders();
+        assertThat(orders.get(0).getId()).isEqualTo("ko-1");
+        assertThat(orders.get(1).getId()).isEqualTo("ko-3");
+    }
+
+    @Test
+    void findDisplay_sortsGroupsByTableNumberAscending() {
+        LocalDateTime now = LocalDateTime.now();
+        KitchenOrder table5 = KitchenOrder.builder()
+                .id("ko-5").sessionId("sess-5").tableNumber(5)
+                .createdAt(now).items(new ArrayList<>()).build();
+        KitchenOrder table2 = KitchenOrder.builder()
+                .id("ko-2").sessionId("sess-2").tableNumber(2)
+                .createdAt(now).items(new ArrayList<>()).build();
+        when(kitchenOrderRepository.findAll()).thenReturn(List.of(table5, table2));
+
+        List<KitchenDisplayEntry> display = kitchenService.findDisplay();
+
+        assertThat(display.get(0).tableNumber()).isEqualTo(2);
+        assertThat(display.get(1).tableNumber()).isEqualTo(5);
     }
 }

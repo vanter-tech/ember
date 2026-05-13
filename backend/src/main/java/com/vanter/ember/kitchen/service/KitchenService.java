@@ -1,6 +1,7 @@
 package com.vanter.ember.kitchen.service;
 
 import com.vanter.ember.config.ResourceNotFoundException;
+import com.vanter.ember.kitchen.dto.KitchenDisplayEntry;
 import com.vanter.ember.kitchen.event.KitchenItemUpdated;
 import com.vanter.ember.kitchen.model.KitchenItem;
 import com.vanter.ember.kitchen.model.KitchenOrder;
@@ -9,7 +10,9 @@ import com.vanter.ember.session.event.OrderItemAdded;
 import com.vanter.ember.session.model.OrderItemStatus;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
@@ -26,6 +29,20 @@ public class KitchenService {
         return kitchenOrderRepository.findAll();
     }
 
+    public List<KitchenDisplayEntry> findDisplay() {
+        return kitchenOrderRepository.findAll().stream()
+                .collect(Collectors.groupingBy(KitchenOrder::getTableNumber))
+                .entrySet().stream()
+                .sorted(Comparator.comparingInt(java.util.Map.Entry::getKey))
+                .map(e -> new KitchenDisplayEntry(
+                        e.getKey(),
+                        e.getValue().stream()
+                                .sorted(Comparator.comparing(KitchenOrder::getCreatedAt,
+                                        Comparator.nullsLast(Comparator.naturalOrder())))
+                                .toList()))
+                .toList();
+    }
+
     public KitchenOrder findBySessionId(String sessionId) {
         return kitchenOrderRepository.findBySessionId(sessionId)
                 .orElseThrow(() -> new ResourceNotFoundException("Kitchen order not found for session: " + sessionId));
@@ -37,6 +54,7 @@ public class KitchenService {
                 .orElseGet(() -> KitchenOrder.builder()
                         .sessionId(event.sessionId())
                         .tableNumber(event.tableNumber())
+                        .createdAt(LocalDateTime.now())
                         .items(new ArrayList<>())
                         .build());
 

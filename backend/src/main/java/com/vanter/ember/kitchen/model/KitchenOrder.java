@@ -1,5 +1,6 @@
 package com.vanter.ember.kitchen.model;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.AllArgsConstructor;
@@ -21,6 +22,7 @@ public class KitchenOrder {
 
     private String sessionId;
     private int tableNumber;
+    private LocalDateTime createdAt;
 
     @Builder.Default
     private List<KitchenItem> items = new ArrayList<>();

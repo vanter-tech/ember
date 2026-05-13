@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vanter.ember.config.CorsConfig;
 import com.vanter.ember.config.SecurityConfig;
 import com.vanter.ember.identity.service.JwtService;
+import com.vanter.ember.kitchen.dto.KitchenDisplayEntry;
 import com.vanter.ember.kitchen.dto.UpdateItemStatusRequest;
 import com.vanter.ember.kitchen.model.KitchenItem;
 import com.vanter.ember.kitchen.model.KitchenOrder;
@@ -145,6 +146,44 @@ class KitchenControllerTest {
         mockMvc.perform(patch("/api/kitchen/orders/ko-1/items/order-item-1/status")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new UpdateItemStatusRequest(OrderItemStatus.PREPARING))))
+                .andExpect(status().isForbidden());
+    }
+
+    // --- GET /api/kitchen/display ---
+
+    @Test
+    @WithMockUser(roles = "KITCHEN")
+    void getDisplay_returnsGroupedOrdersForKitchen() throws Exception {
+        KitchenDisplayEntry entry = new KitchenDisplayEntry(5, List.of(sampleOrder()));
+        when(kitchenService.findDisplay()).thenReturn(List.of(entry));
+
+        mockMvc.perform(get("/api/kitchen/display"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].tableNumber").value(5))
+                .andExpect(jsonPath("$[0].orders[0].id").value("ko-1"));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void getDisplay_returnsGroupedOrdersForAdmin() throws Exception {
+        KitchenDisplayEntry entry = new KitchenDisplayEntry(5, List.of(sampleOrder()));
+        when(kitchenService.findDisplay()).thenReturn(List.of(entry));
+
+        mockMvc.perform(get("/api/kitchen/display"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].tableNumber").value(5));
+    }
+
+    @Test
+    @WithMockUser(roles = "WAITER")
+    void getDisplay_forbiddenForWaiter() throws Exception {
+        mockMvc.perform(get("/api/kitchen/display"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void getDisplay_unauthenticatedReturns403() throws Exception {
+        mockMvc.perform(get("/api/kitchen/display"))
                 .andExpect(status().isForbidden());
     }
 }

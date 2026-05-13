@@ -1,5 +1,6 @@
 package com.vanter.ember.kitchen.controller;
 
+import com.vanter.ember.kitchen.dto.KitchenDisplayEntry;
 import com.vanter.ember.kitchen.dto.UpdateItemStatusRequest;
 import com.vanter.ember.kitchen.model.KitchenOrder;
 import com.vanter.ember.kitchen.service.KitchenService;
@@ -15,25 +16,31 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/kitchen/orders")
+@RequestMapping("/api/kitchen")
 @RequiredArgsConstructor
 public class KitchenController {
 
     private final KitchenService kitchenService;
 
-    @GetMapping
+    @GetMapping("/orders")
     @PreAuthorize("hasAnyRole('KITCHEN', 'ADMIN')")
     public List<KitchenOrder> getAllOrders() {
         return kitchenService.findAll();
     }
 
-    @GetMapping("/{sessionId}")
+    @GetMapping("/display")
+    @PreAuthorize("hasAnyRole('KITCHEN', 'ADMIN')")
+    public List<KitchenDisplayEntry> getDisplay() {
+        return kitchenService.findDisplay();
+    }
+
+    @GetMapping("/orders/{sessionId}")
     @PreAuthorize("hasAnyRole('KITCHEN', 'ADMIN')")
     public KitchenOrder getOrderBySessionId(@PathVariable String sessionId) {
         return kitchenService.findBySessionId(sessionId);
     }
 
-    @PatchMapping("/{orderId}/items/{itemId}/status")
+    @PatchMapping("/orders/{orderId}/items/{itemId}/status")
     @PreAuthorize("hasRole('KITCHEN')")
     public KitchenOrder updateItemStatus(@PathVariable String orderId,
                                          @PathVariable String itemId,
