@@ -1,9 +1,11 @@
 package com.vanter.ember.billing.service;
 
 import com.vanter.ember.billing.model.Bill;
+import com.vanter.ember.billing.model.BillSplit;
 import com.vanter.ember.billing.model.BillStatus;
 import com.vanter.ember.billing.model.SplitMethod;
 import com.vanter.ember.billing.repository.BillRepository;
+import com.vanter.ember.billing.repository.BillSplitRepository;
 import com.vanter.ember.session.model.OrderItem;
 import com.vanter.ember.session.model.OrderItemStatus;
 import com.vanter.ember.session.model.Session;
@@ -15,7 +17,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.vanter.ember.config.ResourceNotFoundException;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -23,6 +27,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -30,6 +35,7 @@ import static org.mockito.Mockito.when;
 class BillingServiceTest {
 
     @Mock BillRepository billRepository;
+    @Mock BillSplitRepository billSplitRepository;
     @Mock SessionService sessionService;
     @InjectMocks BillingService billingService;
 
@@ -133,5 +139,82 @@ class BillingServiceTest {
         assertThat(saved.getSplitMethod()).isEqualTo(SplitMethod.EQUAL_PARTS);
         assertThat(saved.getTotal()).isEqualByComparingTo("22.50");
         assertThat(saved.getCreatedAt()).isNotNull();
+    }
+
+    // --- splitByConsumption tests ---
+
+    private Bill savedBill() {
+        return Bill.builder()
+                .id(1L).sessionId("sess-1").total(new BigDecimal("22.50"))
+                .splitMethod(SplitMethod.BY_CONSUMPTION).status(BillStatus.OPEN)
+                .createdAt(LocalDateTime.now()).build();
+    }
+
+    @Test
+    void splitByConsumption_createsOneSplitPerParticipant() {
+        when(billRepository.findById(1L)).thenReturn(Optional.of(savedBill()));
+        when(sessionService.findById("sess-1")).thenReturn(sessionWithMixedItems());
+        when(billSplitRepository.saveAll(anyList())).thenAnswer(inv -> inv.getArgument(0));
+
+        List<BillSplit> splits = billingService.splitByConsumption(1L);
+
+        assertThat(splits).hasSize(2);
+    }
+
+    @Test
+    void splitByConsumption_calculatesCorrectAmountPerParticipant() {
+        when(billRepository.findById(1L)).thenReturn(Optional.of(savedBill()));
+        when(sessionService.findById("sess-1")).thenReturn(sessionWithMixedItems());
+        when(billSplitRepository.saveAll(anyList())).thenAnswer(inv -> inv.getArgument(0));
+
+        List<BillSplit> splits = billingService.splitByConsumption(1L);
+
+        BillSplit alice = splits.stream()
+                .filter(s -> "Alice".equals(s.getParticipantName())).findFirst().orElseThrow();
+        BillSplit bob = splits.stream()
+                .filter(s -> "Bob".equals(s.getParticipantName())).findFirst().orElseThrow();
+        assertThat(alice.getAmount()).isEqualByComparingTo("12.50");
+        assertThat(bob.getAmount()).isEqualByComparingTo("10.00");
+    }
+
+    @Test
+    void splitByConsumption_splitsAreLinkedToBill() {
+        when(billRepository.findById(1L)).thenReturn(Optional.of(savedBill()));
+        when(sessionService.findById("sess-1")).thenReturn(sessionWithMixedItems());
+        when(billSplitRepository.saveAll(anyList())).thenAnswer(inv -> inv.getArgument(0));
+
+        List<BillSplit> splits = billingService.splitByConsumption(1L);
+
+        assertThat(splits).allMatch(s -> s.getBill().getId().equals(1L));
+    }
+
+    @Test
+    void splitByConsumption_splitsAreNotPaidByDefault() {
+        when(billRepository.findById(1L)).thenReturn(Optional.of(savedBill()));
+        when(sessionService.findById("sess-1")).thenReturn(sessionWithMixedItems());
+        when(billSplitRepository.saveAll(anyList())).thenAnswer(inv -> inv.getArgument(0));
+
+        List<BillSplit> splits = billingService.splitByConsumption(1L);
+
+        assertThat(splits).allMatch(s -> !s.isPaid());
+    }
+
+    @Test
+    void splitByConsumption_persistsSplitsViaRepository() {
+        when(billRepository.findById(1L)).thenReturn(Optional.of(savedBill()));
+        when(sessionService.findById("sess-1")).thenReturn(sessionWithMixedItems());
+        when(billSplitRepository.saveAll(anyList())).thenAnswer(inv -> inv.getArgument(0));
+
+        billingService.splitByConsumption(1L);
+
+        verify(billSplitRepository).saveAll(anyList());
+    }
+
+    @Test
+    void splitByConsumption_throwsWhenBillNotFound() {
+        when(billRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> billingService.splitByConsumption(99L))
+                .isInstanceOf(ResourceNotFoundException.class);
     }
 }
