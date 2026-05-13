@@ -33,18 +33,18 @@ public class BillingController {
     private final BillingService billingService;
     private final PaymentService paymentService;
 
-    @Operation(summary = "Calculate bill for a session (WAITER/CUSTOMER)")
+    @Operation(summary = "Calculate bill for a session (WAITER)")
     @PostMapping("/sessions/{sessionId}/bill")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasAnyRole('WAITER','CUSTOMER')")
+    @PreAuthorize("hasRole('WAITER')")
     public Bill calculateBill(@PathVariable String sessionId,
                               @Valid @RequestBody CalculateBillRequest request) {
         return billingService.calculateBill(sessionId, request.splitMethod());
     }
 
-    @Operation(summary = "Split a bill (WAITER/CUSTOMER)")
+    @Operation(summary = "Split a bill (WAITER)")
     @PostMapping("/bills/{id}/split")
-    @PreAuthorize("hasAnyRole('WAITER','CUSTOMER')")
+    @PreAuthorize("hasRole('WAITER')")
     public List<BillSplit> splitBill(@PathVariable Long id,
                                      @Valid @RequestBody SplitBillRequest request) {
         if (request.splitMethod() == SplitMethod.BY_CONSUMPTION) {
