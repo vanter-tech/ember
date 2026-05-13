@@ -1,11 +1,15 @@
 package com.vanter.ember.session.service;
 
+import com.vanter.ember.catalog.model.MenuItem;
 import com.vanter.ember.catalog.model.TableStatus;
+import com.vanter.ember.catalog.service.MenuItemService;
 import com.vanter.ember.catalog.service.RestaurantTableService;
 import com.vanter.ember.config.ResourceNotFoundException;
 import com.vanter.ember.session.event.ParticipantJoined;
 import com.vanter.ember.session.event.SessionOpened;
 import com.vanter.ember.session.exception.TooManyParticipantsException;
+import com.vanter.ember.session.model.OrderItem;
+import com.vanter.ember.session.model.OrderItemStatus;
 import com.vanter.ember.session.model.Participant;
 import com.vanter.ember.session.model.Session;
 import com.vanter.ember.session.model.SessionStatus;
@@ -21,6 +25,7 @@ public class SessionService {
 
     private final SessionRepository sessionRepository;
     private final RestaurantTableService tableService;
+    private final MenuItemService menuItemService;
     private final ApplicationEventPublisher eventPublisher;
     private final QrTokenService qrTokenService;
 
@@ -85,6 +90,37 @@ public class SessionService {
         }
 
         session.setMaxParticipants(session.getMaxParticipants() + additional);
+        return sessionRepository.save(session);
+    }
+
+    public Session addItem(String sessionId, String participantId, Long menuItemId) {
+        Session session = findById(sessionId);
+
+        if (session.getStatus() == SessionStatus.CLOSED) {
+            throw new IllegalStateException("Cannot add items to a closed session");
+        }
+
+        Participant participant = session.getParticipants().stream()
+                .filter(p -> p.getUserId().equals(participantId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException(
+                        participantId + " is not a participant of session " + sessionId));
+
+        MenuItem menuItem = menuItemService.findById(menuItemId);
+        if (!menuItem.isAvailable()) {
+            throw new IllegalStateException("Menu item " + menuItemId + " is not available");
+        }
+
+        session.getItems().add(OrderItem.builder()
+                .itemId(menuItem.getId())
+                .name(menuItem.getName())
+                .price(menuItem.getPrice())
+                .participantId(participantId)
+                .participantName(participant.getName())
+                .status(OrderItemStatus.PENDING)
+                .addedAt(LocalDateTime.now())
+                .build());
+
         return sessionRepository.save(session);
     }
 }

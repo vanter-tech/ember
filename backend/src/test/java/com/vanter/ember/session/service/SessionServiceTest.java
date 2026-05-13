@@ -1,11 +1,16 @@
 package com.vanter.ember.session.service;
 
+import com.vanter.ember.catalog.model.MenuItem;
 import com.vanter.ember.catalog.model.RestaurantTable;
 import com.vanter.ember.catalog.model.TableStatus;
+import com.vanter.ember.catalog.service.MenuItemService;
 import com.vanter.ember.catalog.service.RestaurantTableService;
+import com.vanter.ember.config.ResourceNotFoundException;
 import com.vanter.ember.session.event.ParticipantJoined;
 import com.vanter.ember.session.event.SessionOpened;
 import com.vanter.ember.session.exception.TooManyParticipantsException;
+import com.vanter.ember.session.model.OrderItem;
+import com.vanter.ember.session.model.OrderItemStatus;
 import com.vanter.ember.session.model.Participant;
 import com.vanter.ember.session.model.Session;
 import com.vanter.ember.session.model.SessionStatus;
@@ -35,6 +40,7 @@ class SessionServiceTest {
 
     @Mock SessionRepository sessionRepository;
     @Mock RestaurantTableService tableService;
+    @Mock MenuItemService menuItemService;
     @Mock ApplicationEventPublisher eventPublisher;
     @Mock QrTokenService qrTokenService;
     @InjectMocks SessionService sessionService;
@@ -203,5 +209,89 @@ class SessionServiceTest {
         assertThatThrownBy(() -> sessionService.expandCapacity("sess-1", "other@test.com", 2))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("authorized");
+    }
+
+    // --- addItem tests ---
+
+    private MenuItem availableMenuItem() {
+        return MenuItem.builder()
+                .id(10L).name("Tacos").price(new java.math.BigDecimal("12.50"))
+                .available(true).build();
+    }
+
+    private Session openSessionWithParticipant(String participantId) {
+        return Session.builder()
+                .id("sess-1").tableId(1L).waiterId("waiter@test.com")
+                .status(SessionStatus.OPEN).maxParticipants(4)
+                .participants(new ArrayList<>(List.of(
+                        Participant.builder().userId(participantId).name("Alice").build())))
+                .items(new ArrayList<>())
+                .createdAt(LocalDateTime.now())
+                .build();
+    }
+
+    @Test
+    void addItem_addsOrderItemWithPendingStatus() {
+        Session session = openSessionWithParticipant("user-1");
+        when(sessionRepository.findById("sess-1")).thenReturn(Optional.of(session));
+        when(menuItemService.findById(10L)).thenReturn(availableMenuItem());
+        when(sessionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        Session result = sessionService.addItem("sess-1", "user-1", 10L);
+
+        assertThat(result.getItems()).hasSize(1);
+        OrderItem item = result.getItems().get(0);
+        assertThat(item.getItemId()).isEqualTo(10L);
+        assertThat(item.getName()).isEqualTo("Tacos");
+        assertThat(item.getPrice()).isEqualByComparingTo("12.50");
+        assertThat(item.getParticipantId()).isEqualTo("user-1");
+        assertThat(item.getParticipantName()).isEqualTo("Alice");
+        assertThat(item.getStatus()).isEqualTo(OrderItemStatus.PENDING);
+        assertThat(item.getAddedAt()).isNotNull();
+    }
+
+    @Test
+    void addItem_throwsWhenParticipantNotInSession() {
+        Session session = openSessionWithParticipant("user-1");
+        when(sessionRepository.findById("sess-1")).thenReturn(Optional.of(session));
+
+        assertThatThrownBy(() -> sessionService.addItem("sess-1", "user-99", 10L))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("not a participant");
+    }
+
+    @Test
+    void addItem_throwsWhenSessionClosed() {
+        Session session = openSessionWithParticipant("user-1");
+        session.setStatus(SessionStatus.CLOSED);
+        when(sessionRepository.findById("sess-1")).thenReturn(Optional.of(session));
+
+        assertThatThrownBy(() -> sessionService.addItem("sess-1", "user-1", 10L))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("closed");
+    }
+
+    @Test
+    void addItem_throwsWhenMenuItemNotAvailable() {
+        Session session = openSessionWithParticipant("user-1");
+        MenuItem unavailable = availableMenuItem();
+        unavailable.setAvailable(false);
+        when(sessionRepository.findById("sess-1")).thenReturn(Optional.of(session));
+        when(menuItemService.findById(10L)).thenReturn(unavailable);
+
+        assertThatThrownBy(() -> sessionService.addItem("sess-1", "user-1", 10L))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("not available");
+    }
+
+    @Test
+    void addItem_throwsWhenMenuItemNotFound() {
+        Session session = openSessionWithParticipant("user-1");
+        when(sessionRepository.findById("sess-1")).thenReturn(Optional.of(session));
+        when(menuItemService.findById(99L))
+                .thenThrow(new ResourceNotFoundException("Menu item not found: 99"));
+
+        assertThatThrownBy(() -> sessionService.addItem("sess-1", "user-1", 99L))
+                .isInstanceOf(ResourceNotFoundException.class);
     }
 }
