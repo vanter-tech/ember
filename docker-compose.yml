@@ -51,6 +51,35 @@ services:
       timeout: 5s
       retries: 5
 
+  app:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/ember
+      SPRING_DATASOURCE_USERNAME: ember
+      SPRING_DATASOURCE_PASSWORD: ember
+      SPRING_DATA_MONGODB_URI: mongodb://ember:ember@mongodb:27017/ember?authSource=admin
+      MINIO_URL: http://minio:9000
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+      SPRING_PROFILES_ACTIVE: prod
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
 volumes:
   postgres_data:
   mongo_data:
