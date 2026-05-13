@@ -52,12 +52,12 @@ class SessionServiceTest {
             return s;
         });
 
-        Session result = sessionService.createSession(1L, 10L, 4);
+        Session result = sessionService.createSession(1L, "waiter@test.com", 4);
 
         assertThat(result.getId()).isEqualTo("sess-1");
         assertThat(result.getStatus()).isEqualTo(SessionStatus.OPEN);
         assertThat(result.getTableId()).isEqualTo(1L);
-        assertThat(result.getWaiterId()).isEqualTo(10L);
+        assertThat(result.getWaiterId()).isEqualTo("waiter@test.com");
         assertThat(result.getMaxParticipants()).isEqualTo(4);
     }
 
@@ -66,7 +66,7 @@ class SessionServiceTest {
         when(tableService.findById(1L)).thenReturn(availableTable());
         when(sessionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        Session result = sessionService.createSession(1L, 10L, 4);
+        Session result = sessionService.createSession(1L, "waiter@test.com", 4);
 
         assertThat(result.getCreatedAt()).isNotNull();
     }
@@ -80,7 +80,7 @@ class SessionServiceTest {
             return s;
         });
 
-        sessionService.createSession(1L, 10L, 4);
+        sessionService.createSession(1L, "waiter@test.com", 4);
 
         ArgumentCaptor<SessionOpened> captor = ArgumentCaptor.forClass(SessionOpened.class);
         verify(eventPublisher).publishEvent(captor.capture());
@@ -95,7 +95,7 @@ class SessionServiceTest {
                 .id(1L).number(5).capacity(4).status(TableStatus.OCCUPIED).build();
         when(tableService.findById(1L)).thenReturn(occupied);
 
-        assertThatThrownBy(() -> sessionService.createSession(1L, 10L, 4))
+        assertThatThrownBy(() -> sessionService.createSession(1L, "waiter@test.com", 4))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("occupied");
     }
@@ -104,7 +104,7 @@ class SessionServiceTest {
 
     private Session openSessionWithCapacity(int maxParticipants, List<Participant> participants) {
         return Session.builder()
-                .id("sess-1").tableId(1L).waiterId(10L)
+                .id("sess-1").tableId(1L).waiterId("waiter@test.com")
                 .status(SessionStatus.OPEN)
                 .maxParticipants(maxParticipants)
                 .participants(new ArrayList<>(participants))
@@ -172,7 +172,7 @@ class SessionServiceTest {
         when(sessionRepository.findById("sess-1")).thenReturn(Optional.of(session));
         when(sessionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        Session result = sessionService.expandCapacity("sess-1", 10L, 2);
+        Session result = sessionService.expandCapacity("sess-1", "waiter@test.com", 2);
 
         assertThat(result.getMaxParticipants()).isEqualTo(6);
     }
@@ -182,7 +182,7 @@ class SessionServiceTest {
         Session session = openSessionWithCapacity(4, List.of());
         when(sessionRepository.findById("sess-1")).thenReturn(Optional.of(session));
 
-        assertThatThrownBy(() -> sessionService.expandCapacity("sess-1", 99L, 2))
+        assertThatThrownBy(() -> sessionService.expandCapacity("sess-1", "other@test.com", 2))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("authorized");
     }

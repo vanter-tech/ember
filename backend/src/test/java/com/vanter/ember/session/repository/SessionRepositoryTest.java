@@ -26,7 +26,7 @@ class SessionRepositoryTest {
     @Test
     void save_persistsSession() {
         Session session = Session.builder()
-                .tableId(1L).waiterId(10L)
+                .tableId(1L).waiterId("waiter@test.com")
                 .status(SessionStatus.OPEN)
                 .maxParticipants(4)
                 .createdAt(LocalDateTime.now())
@@ -40,13 +40,13 @@ class SessionRepositoryTest {
 
     @Test
     void findByTableIdAndStatus_returnsMatchingSessions() {
-        sessionRepository.save(Session.builder().tableId(1L).waiterId(10L)
+        sessionRepository.save(Session.builder().tableId(1L).waiterId("waiter@test.com")
                 .status(SessionStatus.OPEN).maxParticipants(4)
                 .createdAt(LocalDateTime.now()).build());
-        sessionRepository.save(Session.builder().tableId(1L).waiterId(10L)
+        sessionRepository.save(Session.builder().tableId(1L).waiterId("waiter@test.com")
                 .status(SessionStatus.CLOSED).maxParticipants(4)
                 .createdAt(LocalDateTime.now()).build());
-        sessionRepository.save(Session.builder().tableId(2L).waiterId(10L)
+        sessionRepository.save(Session.builder().tableId(2L).waiterId("waiter@test.com")
                 .status(SessionStatus.OPEN).maxParticipants(4)
                 .createdAt(LocalDateTime.now()).build());
 
@@ -62,11 +62,11 @@ class SessionRepositoryTest {
         Participant alice = Participant.builder().userId("user-1").name("Alice").build();
         Participant bob = Participant.builder().userId("user-2").name("Bob").build();
 
-        sessionRepository.save(Session.builder().tableId(1L).waiterId(10L)
+        sessionRepository.save(Session.builder().tableId(1L).waiterId("waiter@test.com")
                 .status(SessionStatus.OPEN).maxParticipants(4)
                 .participants(List.of(alice))
                 .createdAt(LocalDateTime.now()).build());
-        sessionRepository.save(Session.builder().tableId(2L).waiterId(10L)
+        sessionRepository.save(Session.builder().tableId(2L).waiterId("waiter@test.com")
                 .status(SessionStatus.OPEN).maxParticipants(4)
                 .participants(List.of(bob))
                 .createdAt(LocalDateTime.now()).build());

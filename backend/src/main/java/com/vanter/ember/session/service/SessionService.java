@@ -23,7 +23,12 @@ public class SessionService {
     private final ApplicationEventPublisher eventPublisher;
     private final QrTokenService qrTokenService;
 
-    public Session createSession(Long tableId, Long waiterId, int maxParticipants) {
+    public Session findById(String sessionId) {
+        return sessionRepository.findById(sessionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Session not found: " + sessionId));
+    }
+
+    public Session createSession(Long tableId, String waiterId, int maxParticipants) {
         var table = tableService.findById(tableId);
         if (table.getStatus() == TableStatus.OCCUPIED) {
             throw new IllegalStateException(
@@ -67,11 +72,11 @@ public class SessionService {
         return sessionRepository.save(session);
     }
 
-    public Session expandCapacity(String sessionId, Long requestingWaiterId, int additional) {
+    public Session expandCapacity(String sessionId, String requestingWaiter, int additional) {
         Session session = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new ResourceNotFoundException("Session not found: " + sessionId));
 
-        if (!session.getWaiterId().equals(requestingWaiterId)) {
+        if (!session.getWaiterId().equals(requestingWaiter)) {
             throw new IllegalStateException(
                     "Only the assigned waiter is authorized to expand capacity");
         }

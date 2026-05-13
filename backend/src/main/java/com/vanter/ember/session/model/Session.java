@@ -21,7 +21,7 @@ public class Session {
     private String id;
 
     private Long tableId;
-    private Long waiterId;
+    private String waiterId;
 
     private SessionStatus status;
 
