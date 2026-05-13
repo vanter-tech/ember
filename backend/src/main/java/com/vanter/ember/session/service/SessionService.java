@@ -66,4 +66,17 @@ public class SessionService {
         session.getParticipants().add(Participant.builder().userId(userId).name(userName).build());
         return sessionRepository.save(session);
     }
+
+    public Session expandCapacity(String sessionId, Long requestingWaiterId, int additional) {
+        Session session = sessionRepository.findById(sessionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Session not found: " + sessionId));
+
+        if (!session.getWaiterId().equals(requestingWaiterId)) {
+            throw new IllegalStateException(
+                    "Only the assigned waiter is authorized to expand capacity");
+        }
+
+        session.setMaxParticipants(session.getMaxParticipants() + additional);
+        return sessionRepository.save(session);
+    }
 }

@@ -163,4 +163,27 @@ class SessionServiceTest {
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("already");
     }
+
+    // --- expandCapacity tests ---
+
+    @Test
+    void expandCapacity_increasesByGivenAmount() {
+        Session session = openSessionWithCapacity(4, List.of());
+        when(sessionRepository.findById("sess-1")).thenReturn(Optional.of(session));
+        when(sessionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        Session result = sessionService.expandCapacity("sess-1", 10L, 2);
+
+        assertThat(result.getMaxParticipants()).isEqualTo(6);
+    }
+
+    @Test
+    void expandCapacity_throwsWhenNotAssignedWaiter() {
+        Session session = openSessionWithCapacity(4, List.of());
+        when(sessionRepository.findById("sess-1")).thenReturn(Optional.of(session));
+
+        assertThatThrownBy(() -> sessionService.expandCapacity("sess-1", 99L, 2))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("authorized");
+    }
 }
