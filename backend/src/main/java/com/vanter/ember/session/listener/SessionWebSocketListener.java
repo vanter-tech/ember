@@ -1,5 +1,6 @@
 package com.vanter.ember.session.listener;
 
+import com.vanter.ember.session.event.ItemAdded;
 import com.vanter.ember.session.event.ParticipantJoined;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.event.EventListener;
@@ -15,5 +16,10 @@ public class SessionWebSocketListener {
     @EventListener
     public void onParticipantJoined(ParticipantJoined event) {
         messagingTemplate.convertAndSend("/topic/sessions/" + event.sessionId(), event);
+    }
+
+    @EventListener
+    public void onItemAdded(ItemAdded event) {
+        messagingTemplate.convertAndSend("/topic/session/" + event.sessionId(), event);
     }
 }

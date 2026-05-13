@@ -5,6 +5,7 @@ import com.vanter.ember.catalog.model.TableStatus;
 import com.vanter.ember.catalog.service.MenuItemService;
 import com.vanter.ember.catalog.service.RestaurantTableService;
 import com.vanter.ember.config.ResourceNotFoundException;
+import com.vanter.ember.session.event.ItemAdded;
 import com.vanter.ember.session.event.ParticipantJoined;
 import com.vanter.ember.session.event.SessionOpened;
 import com.vanter.ember.session.exception.TooManyParticipantsException;
@@ -111,7 +112,7 @@ public class SessionService {
             throw new IllegalStateException("Menu item " + menuItemId + " is not available");
         }
 
-        session.getItems().add(OrderItem.builder()
+        OrderItem newItem = OrderItem.builder()
                 .itemId(menuItem.getId())
                 .name(menuItem.getName())
                 .price(menuItem.getPrice())
@@ -119,8 +120,18 @@ public class SessionService {
                 .participantName(participant.getName())
                 .status(OrderItemStatus.PENDING)
                 .addedAt(LocalDateTime.now())
-                .build());
+                .build();
+        session.getItems().add(newItem);
 
-        return sessionRepository.save(session);
+        Session saved = sessionRepository.save(session);
+        eventPublisher.publishEvent(new ItemAdded(
+                saved.getId(),
+                newItem.getName(),
+                newItem.getPrice(),
+                newItem.getParticipantName(),
+                newItem.getStatus(),
+                saved.getItems()));
+
+        return saved;
     }
 }

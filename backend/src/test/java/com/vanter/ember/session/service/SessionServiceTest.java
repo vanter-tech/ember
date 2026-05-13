@@ -6,6 +6,7 @@ import com.vanter.ember.catalog.model.TableStatus;
 import com.vanter.ember.catalog.service.MenuItemService;
 import com.vanter.ember.catalog.service.RestaurantTableService;
 import com.vanter.ember.config.ResourceNotFoundException;
+import com.vanter.ember.session.event.ItemAdded;
 import com.vanter.ember.session.event.ParticipantJoined;
 import com.vanter.ember.session.event.SessionOpened;
 import com.vanter.ember.session.exception.TooManyParticipantsException;
@@ -282,6 +283,26 @@ class SessionServiceTest {
         assertThatThrownBy(() -> sessionService.addItem("sess-1", "user-1", 10L))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("not available");
+    }
+
+    @Test
+    void addItem_publishesItemAddedEvent() {
+        Session session = openSessionWithParticipant("user-1");
+        when(sessionRepository.findById("sess-1")).thenReturn(Optional.of(session));
+        when(menuItemService.findById(10L)).thenReturn(availableMenuItem());
+        when(sessionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        sessionService.addItem("sess-1", "user-1", 10L);
+
+        ArgumentCaptor<Object> captor = ArgumentCaptor.forClass(Object.class);
+        verify(eventPublisher).publishEvent(captor.capture());
+        assertThat(captor.getValue()).isInstanceOf(ItemAdded.class);
+        ItemAdded event = (ItemAdded) captor.getValue();
+        assertThat(event.sessionId()).isEqualTo("sess-1");
+        assertThat(event.itemName()).isEqualTo("Tacos");
+        assertThat(event.participantName()).isEqualTo("Alice");
+        assertThat(event.status()).isEqualTo(OrderItemStatus.PENDING);
+        assertThat(event.sessionItems()).hasSize(1);
     }
 
     @Test
