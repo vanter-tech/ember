@@ -48,7 +48,7 @@ class PaymentRepositoryTest {
     }
 
     @Test
-    void findByBill_returnsAllPaymentsForBill() {
+    void findByBillId_returnsAllPaymentsForBill() {
         Bill bill = savedBill();
         paymentRepository.save(Payment.builder()
                 .bill(bill).amount(new BigDecimal("25.00")).method(PaymentMethod.DIGITAL)
@@ -57,7 +57,7 @@ class PaymentRepositoryTest {
                 .bill(bill).amount(new BigDecimal("15.00")).method(PaymentMethod.PHYSICAL)
                 .status(PaymentStatus.CONFIRMED).createdAt(LocalDateTime.now()).build());
 
-        List<Payment> payments = paymentRepository.findByBill(bill);
+        List<Payment> payments = paymentRepository.findByBillId(bill.getId());
 
         assertThat(payments).hasSize(2);
     }

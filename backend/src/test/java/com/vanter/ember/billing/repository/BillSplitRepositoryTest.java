@@ -45,25 +45,25 @@ class BillSplitRepositoryTest {
     }
 
     @Test
-    void findByBill_returnsAllSplitsForBill() {
+    void findByBillId_returnsAllSplitsForBill() {
         Bill bill = savedBill();
         billSplitRepository.save(BillSplit.builder()
                 .bill(bill).participantName("Alice").amount(new BigDecimal("25.00")).paid(false).build());
         billSplitRepository.save(BillSplit.builder()
                 .bill(bill).participantName("Bob").amount(new BigDecimal("15.00")).paid(false).build());
 
-        List<BillSplit> splits = billSplitRepository.findByBill(bill);
+        List<BillSplit> splits = billSplitRepository.findByBillId(bill.getId());
 
         assertThat(splits).hasSize(2);
     }
 
     @Test
-    void findByBillAndParticipantName_returnsSplit() {
+    void findByBillIdAndParticipantName_returnsSplit() {
         Bill bill = savedBill();
         billSplitRepository.save(BillSplit.builder()
                 .bill(bill).participantName("Alice").amount(new BigDecimal("25.00")).paid(false).build());
 
-        Optional<BillSplit> found = billSplitRepository.findByBillAndParticipantName(bill, "Alice");
+        Optional<BillSplit> found = billSplitRepository.findByBillIdAndParticipantName(bill.getId(), "Alice");
 
         assertThat(found).isPresent();
         assertThat(found.get().getParticipantName()).isEqualTo("Alice");
