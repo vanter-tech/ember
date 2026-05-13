@@ -56,4 +56,9 @@ public class RestaurantTableService {
         table.setStatus(TableStatus.AVAILABLE);
         return tableRepository.save(table);
     }
+
+    public void delete(Long id) {
+        findById(id);
+        tableRepository.deleteById(id);
+    }
 }
