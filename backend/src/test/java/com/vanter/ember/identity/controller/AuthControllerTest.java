@@ -1,6 +1,7 @@
 package com.vanter.ember.identity.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.vanter.ember.config.CorsConfig;
 import com.vanter.ember.config.SecurityConfig;
 import com.vanter.ember.identity.model.dto.AuthResponse;
 import com.vanter.ember.identity.model.dto.LoginRequest;
@@ -19,12 +20,14 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(AuthController.class)
-@Import(SecurityConfig.class)
+@Import({SecurityConfig.class, CorsConfig.class})
 class AuthControllerTest {
 
     @Autowired MockMvc mockMvc;
@@ -98,6 +101,16 @@ class AuthControllerTest {
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.token").value("jwt-token"));
+    }
+
+    @Test
+    void corsPreflightIsAllowedForAllowedOrigin() throws Exception {
+        mockMvc.perform(options("/api/auth/register")
+                        .header("Origin", "http://localhost:5173")
+                        .header("Access-Control-Request-Method", "POST")
+                        .header("Access-Control-Request-Headers", "Content-Type"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:5173"));
     }
 
     @Test
