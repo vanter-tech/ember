@@ -81,6 +81,13 @@ class KitchenControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = "CUSTOMER")
+    void getAllOrders_forbiddenForCustomer() throws Exception {
+        mockMvc.perform(get("/api/kitchen/orders"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     void getAllOrders_unauthenticatedReturns403() throws Exception {
         mockMvc.perform(get("/api/kitchen/orders"))
                 .andExpect(status().isForbidden());
@@ -102,6 +109,13 @@ class KitchenControllerTest {
     @Test
     @WithMockUser(roles = "CUSTOMER")
     void getOrderBySessionId_forbiddenForCustomer() throws Exception {
+        mockMvc.perform(get("/api/kitchen/orders/sess-1"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "WAITER")
+    void getOrderBySessionId_forbiddenForWaiter() throws Exception {
         mockMvc.perform(get("/api/kitchen/orders/sess-1"))
                 .andExpect(status().isForbidden());
     }
@@ -135,6 +149,15 @@ class KitchenControllerTest {
     @Test
     @WithMockUser(roles = "WAITER")
     void updateItemStatus_forbiddenForWaiter() throws Exception {
+        mockMvc.perform(patch("/api/kitchen/orders/ko-1/items/order-item-1/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new UpdateItemStatusRequest(OrderItemStatus.PREPARING))))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "CUSTOMER")
+    void updateItemStatus_forbiddenForCustomer() throws Exception {
         mockMvc.perform(patch("/api/kitchen/orders/ko-1/items/order-item-1/status")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new UpdateItemStatusRequest(OrderItemStatus.PREPARING))))
@@ -177,6 +200,13 @@ class KitchenControllerTest {
     @Test
     @WithMockUser(roles = "WAITER")
     void getDisplay_forbiddenForWaiter() throws Exception {
+        mockMvc.perform(get("/api/kitchen/display"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "CUSTOMER")
+    void getDisplay_forbiddenForCustomer() throws Exception {
         mockMvc.perform(get("/api/kitchen/display"))
                 .andExpect(status().isForbidden());
     }
