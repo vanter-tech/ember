@@ -4,9 +4,12 @@ import com.vanter.ember.catalog.model.RestaurantTable;
 import com.vanter.ember.catalog.model.TableStatus;
 import com.vanter.ember.catalog.service.RestaurantTableService;
 import com.vanter.ember.session.event.SessionOpened;
+import com.vanter.ember.session.exception.TooManyParticipantsException;
+import com.vanter.ember.session.model.Participant;
 import com.vanter.ember.session.model.Session;
 import com.vanter.ember.session.model.SessionStatus;
 import com.vanter.ember.session.repository.SessionRepository;
+import io.jsonwebtoken.ExpiredJwtException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -14,6 +17,11 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -27,6 +35,7 @@ class SessionServiceTest {
     @Mock SessionRepository sessionRepository;
     @Mock RestaurantTableService tableService;
     @Mock ApplicationEventPublisher eventPublisher;
+    @Mock QrTokenService qrTokenService;
     @InjectMocks SessionService sessionService;
 
     private RestaurantTable availableTable() {
@@ -89,5 +98,69 @@ class SessionServiceTest {
         assertThatThrownBy(() -> sessionService.createSession(1L, 10L, 4))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("occupied");
+    }
+
+    // --- join tests ---
+
+    private Session openSessionWithCapacity(int maxParticipants, List<Participant> participants) {
+        return Session.builder()
+                .id("sess-1").tableId(1L).waiterId(10L)
+                .status(SessionStatus.OPEN)
+                .maxParticipants(maxParticipants)
+                .participants(new ArrayList<>(participants))
+                .createdAt(LocalDateTime.now())
+                .build();
+    }
+
+    @Test
+    void join_addsParticipantWhenTokenValidAndCapacityAvailable() {
+        when(qrTokenService.validateQrToken("qr-token")).thenReturn("sess-1");
+        when(qrTokenService.extractMaxParticipants("qr-token")).thenReturn(4);
+        when(sessionRepository.findById("sess-1"))
+                .thenReturn(Optional.of(openSessionWithCapacity(4, List.of())));
+        when(sessionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        Session result = sessionService.joinSession("qr-token", "user-1", "Alice");
+
+        assertThat(result.getParticipants()).hasSize(1);
+        assertThat(result.getParticipants().get(0).getUserId()).isEqualTo("user-1");
+        assertThat(result.getParticipants().get(0).getName()).isEqualTo("Alice");
+    }
+
+    @Test
+    void join_throwsTooManyParticipantsWhenFull() {
+        List<Participant> full = List.of(
+                Participant.builder().userId("u1").name("A").build(),
+                Participant.builder().userId("u2").name("B").build());
+        when(qrTokenService.validateQrToken("qr-token")).thenReturn("sess-1");
+        when(qrTokenService.extractMaxParticipants("qr-token")).thenReturn(2);
+        when(sessionRepository.findById("sess-1"))
+                .thenReturn(Optional.of(openSessionWithCapacity(2, full)));
+
+        assertThatThrownBy(() -> sessionService.joinSession("qr-token", "u3", "C"))
+                .isInstanceOf(TooManyParticipantsException.class);
+    }
+
+    @Test
+    void join_throwsWhenTokenExpired() {
+        when(qrTokenService.validateQrToken("expired-token"))
+                .thenThrow(ExpiredJwtException.class);
+
+        assertThatThrownBy(() -> sessionService.joinSession("expired-token", "u1", "Alice"))
+                .isInstanceOf(ExpiredJwtException.class);
+    }
+
+    @Test
+    void join_throwsOnDuplicateUserId() {
+        List<Participant> existing = List.of(
+                Participant.builder().userId("user-1").name("Alice").build());
+        when(qrTokenService.validateQrToken("qr-token")).thenReturn("sess-1");
+        when(qrTokenService.extractMaxParticipants("qr-token")).thenReturn(4);
+        when(sessionRepository.findById("sess-1"))
+                .thenReturn(Optional.of(openSessionWithCapacity(4, existing)));
+
+        assertThatThrownBy(() -> sessionService.joinSession("qr-token", "user-1", "Alice"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("already");
     }
 }
