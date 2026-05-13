@@ -10,6 +10,7 @@ import com.vanter.ember.session.model.OrderItem;
 import com.vanter.ember.session.model.OrderItemStatus;
 import com.vanter.ember.session.model.Participant;
 import com.vanter.ember.session.model.Session;
+import com.vanter.ember.session.model.SessionStatus;
 import com.vanter.ember.session.service.SessionService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -42,7 +43,7 @@ class BillingServiceTest {
 
     private Session sessionWithMixedItems() {
         return Session.builder()
-                .id("sess-1").tableId(1L)
+                .id("sess-1").tableId(1L).status(SessionStatus.OPEN)
                 .items(new ArrayList<>(List.of(
                         OrderItem.builder().id("i-1").name("Tacos")
                                 .price(new BigDecimal("12.50")).participantName("Alice")
@@ -69,7 +70,7 @@ class BillingServiceTest {
 
     @Test
     void calculateBill_excludesPendingAndPreparingItems() {
-        Session session = Session.builder().id("sess-1").tableId(1L)
+        Session session = Session.builder().id("sess-1").tableId(1L).status(SessionStatus.OPEN)
                 .items(new ArrayList<>(List.of(
                         OrderItem.builder().id("i-1").price(new BigDecimal("20.00"))
                                 .status(OrderItemStatus.DELIVERED).build(),
@@ -89,7 +90,7 @@ class BillingServiceTest {
 
     @Test
     void calculateBill_throwsWhenSessionHasNoBillableItems() {
-        Session session = Session.builder().id("sess-1").tableId(1L)
+        Session session = Session.builder().id("sess-1").tableId(1L).status(SessionStatus.OPEN)
                 .items(new ArrayList<>(List.of(
                         OrderItem.builder().id("i-1").price(new BigDecimal("8.00"))
                                 .status(OrderItemStatus.PENDING).build()
@@ -103,8 +104,20 @@ class BillingServiceTest {
     }
 
     @Test
+    void calculateBill_throwsWhenSessionNotOpen() {
+        Session closed = Session.builder().id("sess-1").tableId(1L).status(SessionStatus.CLOSED)
+                .items(new ArrayList<>()).build();
+        when(sessionService.findById("sess-1")).thenReturn(closed);
+        when(billRepository.findBySessionId("sess-1")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> billingService.calculateBill("sess-1", SplitMethod.BY_CONSUMPTION))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("not open");
+    }
+
+    @Test
     void calculateBill_throwsWhenEmptyItemsList() {
-        Session session = Session.builder().id("sess-1").tableId(1L)
+        Session session = Session.builder().id("sess-1").tableId(1L).status(SessionStatus.OPEN)
                 .items(new ArrayList<>()).build();
         when(sessionService.findById("sess-1")).thenReturn(session);
         when(billRepository.findBySessionId("sess-1")).thenReturn(Optional.empty());

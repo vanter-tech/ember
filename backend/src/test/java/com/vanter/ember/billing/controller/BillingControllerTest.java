@@ -92,15 +92,12 @@ class BillingControllerTest {
 
     @Test
     @WithMockUser(roles = "CUSTOMER")
-    void calculateBill_returnsCreatedForCustomer() throws Exception {
-        when(billingService.calculateBill(eq("sess-1"), any(SplitMethod.class)))
-                .thenReturn(sampleBill());
-
+    void calculateBill_forbiddenForCustomer() throws Exception {
         CalculateBillRequest req = new CalculateBillRequest(SplitMethod.BY_CONSUMPTION);
         mockMvc.perform(post("/api/billing/sessions/sess-1/bill")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
-                .andExpect(status().isCreated());
+                .andExpect(status().isForbidden());
     }
 
     @Test
@@ -132,15 +129,12 @@ class BillingControllerTest {
 
     @Test
     @WithMockUser(roles = "CUSTOMER")
-    void splitBill_returnsListForCustomer() throws Exception {
-        Bill bill = sampleBill();
-        when(billingService.splitByConsumption(1L)).thenReturn(List.of(sampleSplit(bill)));
-
+    void splitBill_forbiddenForCustomer() throws Exception {
         SplitBillRequest req = new SplitBillRequest(SplitMethod.BY_CONSUMPTION, null);
         mockMvc.perform(post("/api/billing/bills/1/split")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
-                .andExpect(status().isOk());
+                .andExpect(status().isForbidden());
     }
 
     @Test

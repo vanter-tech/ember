@@ -4,6 +4,7 @@ import com.vanter.ember.identity.service.JwtService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
+import org.springframework.messaging.MessageDeliveryException;
 import org.springframework.messaging.simp.stomp.StompCommand;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.messaging.support.ChannelInterceptor;
@@ -31,12 +32,12 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
 
         String authHeader = accessor.getFirstNativeHeader("Authorization");
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            return message;
+            throw new MessageDeliveryException(message, "Missing Authorization header");
         }
 
         String token = authHeader.substring(7);
         if (!jwtService.isTokenValid(token)) {
-            return message;
+            throw new MessageDeliveryException(message, "Invalid or expired token");
         }
 
         String email = jwtService.extractSubject(token);

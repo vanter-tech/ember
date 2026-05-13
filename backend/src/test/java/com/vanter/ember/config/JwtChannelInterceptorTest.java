@@ -19,7 +19,10 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 
 import java.util.List;
 
+import org.springframework.messaging.MessageDeliveryException;
+
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -66,22 +69,18 @@ class JwtChannelInterceptorTest {
     }
 
     @Test
-    void connect_withNoAuthHeader_passesThrough() {
-        Message<?> result = interceptor.preSend(connectMessage(null), channel);
-
-        assertThat(result).isNotNull();
+    void connect_withNoAuthHeader_throwsMessageDeliveryException() {
+        assertThatThrownBy(() -> interceptor.preSend(connectMessage(null), channel))
+                .isInstanceOf(MessageDeliveryException.class);
         verify(jwtService, never()).isTokenValid(org.mockito.ArgumentMatchers.any());
     }
 
     @Test
-    void connect_withInvalidJwt_passesThrough() {
+    void connect_withInvalidJwt_throwsMessageDeliveryException() {
         when(jwtService.isTokenValid("bad-token")).thenReturn(false);
 
-        Message<?> result = interceptor.preSend(connectMessage("Bearer bad-token"), channel);
-
-        assertThat(result).isNotNull();
-        StompHeaderAccessor resultAccessor = StompHeaderAccessor.wrap(result);
-        assertThat(resultAccessor.getUser()).isNull();
+        assertThatThrownBy(() -> interceptor.preSend(connectMessage("Bearer bad-token"), channel))
+                .isInstanceOf(MessageDeliveryException.class);
     }
 
     @Test

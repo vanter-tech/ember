@@ -37,6 +37,11 @@ public class PaymentService {
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Split not found for participant: " + participantName));
 
+        if (amount.compareTo(split.getAmount()) != 0) {
+            throw new IllegalArgumentException(
+                    "Payment amount " + amount + " does not match split amount " + split.getAmount());
+        }
+
         split.setPaid(true);
         billSplitRepository.save(split);
 
@@ -63,9 +68,14 @@ public class PaymentService {
         Bill bill = billRepository.findById(billId)
                 .orElseThrow(() -> new ResourceNotFoundException("Bill not found: " + billId));
 
-        billSplitRepository.findByBillIdAndParticipantName(billId, participantName)
+        BillSplit split = billSplitRepository.findByBillIdAndParticipantName(billId, participantName)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Split not found for participant: " + participantName));
+
+        if (amount.compareTo(split.getAmount()) != 0) {
+            throw new IllegalArgumentException(
+                    "Payment amount " + amount + " does not match split amount " + split.getAmount());
+        }
 
         return paymentRepository.save(Payment.builder()
                 .bill(bill)

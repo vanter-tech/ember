@@ -21,6 +21,9 @@ public class QrTokenService {
     }
 
     public String validateQrToken(String token) {
+        if (!jwtService.isTokenValid(token)) {
+            throw new IllegalArgumentException("Invalid or expired QR token");
+        }
         return jwtService.extractSubject(token);
     }
 

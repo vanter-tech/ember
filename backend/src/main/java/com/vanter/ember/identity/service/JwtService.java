@@ -21,6 +21,10 @@ public class JwtService {
     public JwtService(
             @Value("${jwt.secret}") String secret,
             @Value("${jwt.expiration-ms}") long expirationMs) {
+        if (secret.length() < 32) {
+            throw new IllegalArgumentException(
+                    "jwt.secret must be at least 32 characters long for HS256");
+        }
         this.signingKey = Keys.hmacShaKeyFor(secret.getBytes());
         this.expirationMs = expirationMs;
     }

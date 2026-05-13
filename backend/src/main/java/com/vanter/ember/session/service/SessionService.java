@@ -99,11 +99,18 @@ public class SessionService {
         return sessionRepository.save(session);
     }
 
+    private static final int SESSION_TIMEOUT_HOURS = 8;
+
     public Session addItem(String sessionId, String participantId, Long menuItemId) {
         Session session = findById(sessionId);
 
         if (session.getStatus() == SessionStatus.CLOSED) {
             throw new IllegalStateException("Cannot add items to a closed session");
+        }
+
+        if (session.getCreatedAt() != null &&
+                session.getCreatedAt().isBefore(LocalDateTime.now().minusHours(SESSION_TIMEOUT_HOURS))) {
+            throw new IllegalStateException("Session " + sessionId + " has expired");
         }
 
         Participant participant = session.getParticipants().stream()
