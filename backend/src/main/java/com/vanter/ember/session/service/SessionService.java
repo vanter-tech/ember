@@ -16,6 +16,7 @@ import com.vanter.ember.session.model.Session;
 import com.vanter.ember.session.model.SessionStatus;
 import com.vanter.ember.session.repository.SessionRepository;
 import java.time.LocalDateTime;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -113,6 +114,7 @@ public class SessionService {
         }
 
         OrderItem newItem = OrderItem.builder()
+                .id(UUID.randomUUID().toString())
                 .itemId(menuItem.getId())
                 .name(menuItem.getName())
                 .price(menuItem.getPrice())
@@ -133,5 +135,29 @@ public class SessionService {
                 saved.getItems()));
 
         return saved;
+    }
+
+    public Session removeItem(String sessionId, String orderItemId, String requesterId) {
+        Session session = findById(sessionId);
+
+        OrderItem item = session.getItems().stream()
+                .filter(i -> orderItemId.equals(i.getId()))
+                .findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException("Item not found: " + orderItemId));
+
+        if (item.getStatus() == OrderItemStatus.PREPARING) {
+            throw new IllegalStateException(
+                    "Cannot remove item '" + item.getName() + "' as it is already being prepared");
+        }
+
+        boolean isWaiter = session.getWaiterId().equals(requesterId);
+        boolean isOwner = item.getParticipantId().equals(requesterId);
+        if (!isWaiter && !isOwner) {
+            throw new IllegalStateException(
+                    "Only the item's owner or the session waiter can remove it");
+        }
+
+        session.getItems().remove(item);
+        return sessionRepository.save(session);
     }
 }

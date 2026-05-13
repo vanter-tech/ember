@@ -315,4 +315,75 @@ class SessionServiceTest {
         assertThatThrownBy(() -> sessionService.addItem("sess-1", "user-1", 99L))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
+
+    // --- removeItem tests ---
+
+    private Session openSessionWithItem(OrderItemStatus status, String participantId) {
+        OrderItem item = OrderItem.builder()
+                .id("order-item-1")
+                .itemId(10L).name("Tacos").price(new java.math.BigDecimal("12.50"))
+                .participantId(participantId).participantName("Alice")
+                .status(status).addedAt(LocalDateTime.now())
+                .build();
+        return Session.builder()
+                .id("sess-1").tableId(1L).waiterId("waiter@test.com")
+                .status(SessionStatus.OPEN).maxParticipants(4)
+                .participants(new ArrayList<>(List.of(
+                        Participant.builder().userId(participantId).name("Alice").build())))
+                .items(new ArrayList<>(List.of(item)))
+                .createdAt(LocalDateTime.now())
+                .build();
+    }
+
+    @Test
+    void removeItem_removesItemWhenParticipantOwnsPendingItem() {
+        Session session = openSessionWithItem(OrderItemStatus.PENDING, "user-1");
+        when(sessionRepository.findById("sess-1")).thenReturn(Optional.of(session));
+        when(sessionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        Session result = sessionService.removeItem("sess-1", "order-item-1", "user-1");
+
+        assertThat(result.getItems()).isEmpty();
+    }
+
+    @Test
+    void removeItem_removesItemWhenWaiterRequests() {
+        Session session = openSessionWithItem(OrderItemStatus.PENDING, "user-1");
+        when(sessionRepository.findById("sess-1")).thenReturn(Optional.of(session));
+        when(sessionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        Session result = sessionService.removeItem("sess-1", "order-item-1", "waiter@test.com");
+
+        assertThat(result.getItems()).isEmpty();
+    }
+
+    @Test
+    void removeItem_throwsWhenItemIsPreparing() {
+        Session session = openSessionWithItem(OrderItemStatus.PREPARING, "user-1");
+        when(sessionRepository.findById("sess-1")).thenReturn(Optional.of(session));
+
+        assertThatThrownBy(() -> sessionService.removeItem("sess-1", "order-item-1", "user-1"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("being prepared");
+    }
+
+    @Test
+    void removeItem_throwsWhenParticipantRemovesOthersItem() {
+        Session session = openSessionWithItem(OrderItemStatus.PENDING, "user-1");
+        session.getParticipants().add(Participant.builder().userId("user-2").name("Bob").build());
+        when(sessionRepository.findById("sess-1")).thenReturn(Optional.of(session));
+
+        assertThatThrownBy(() -> sessionService.removeItem("sess-1", "order-item-1", "user-2"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("owner");
+    }
+
+    @Test
+    void removeItem_throwsWhenItemNotFound() {
+        Session session = openSessionWithItem(OrderItemStatus.PENDING, "user-1");
+        when(sessionRepository.findById("sess-1")).thenReturn(Optional.of(session));
+
+        assertThatThrownBy(() -> sessionService.removeItem("sess-1", "nonexistent-id", "user-1"))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
 }
