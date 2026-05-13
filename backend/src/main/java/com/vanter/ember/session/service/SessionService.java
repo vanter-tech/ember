@@ -3,6 +3,7 @@ package com.vanter.ember.session.service;
 import com.vanter.ember.catalog.model.TableStatus;
 import com.vanter.ember.catalog.service.RestaurantTableService;
 import com.vanter.ember.config.ResourceNotFoundException;
+import com.vanter.ember.session.event.ParticipantJoined;
 import com.vanter.ember.session.event.SessionOpened;
 import com.vanter.ember.session.exception.TooManyParticipantsException;
 import com.vanter.ember.session.model.Participant;
@@ -69,7 +70,9 @@ public class SessionService {
         }
 
         session.getParticipants().add(Participant.builder().userId(userId).name(userName).build());
-        return sessionRepository.save(session);
+        Session saved = sessionRepository.save(session);
+        eventPublisher.publishEvent(new ParticipantJoined(saved.getId(), userId, userName));
+        return saved;
     }
 
     public Session expandCapacity(String sessionId, String requestingWaiter, int additional) {

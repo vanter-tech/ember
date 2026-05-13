@@ -3,6 +3,7 @@ package com.vanter.ember.session.service;
 import com.vanter.ember.catalog.model.RestaurantTable;
 import com.vanter.ember.catalog.model.TableStatus;
 import com.vanter.ember.catalog.service.RestaurantTableService;
+import com.vanter.ember.session.event.ParticipantJoined;
 import com.vanter.ember.session.event.SessionOpened;
 import com.vanter.ember.session.exception.TooManyParticipantsException;
 import com.vanter.ember.session.model.Participant;
@@ -162,6 +163,23 @@ class SessionServiceTest {
         assertThatThrownBy(() -> sessionService.joinSession("qr-token", "user-1", "Alice"))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("already");
+    }
+
+    @Test
+    void join_publishesParticipantJoinedEvent() {
+        when(qrTokenService.validateQrToken("qr-token")).thenReturn("sess-1");
+        when(qrTokenService.extractMaxParticipants("qr-token")).thenReturn(4);
+        when(sessionRepository.findById("sess-1"))
+                .thenReturn(Optional.of(openSessionWithCapacity(4, List.of())));
+        when(sessionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        sessionService.joinSession("qr-token", "user-1", "Alice");
+
+        ArgumentCaptor<ParticipantJoined> captor = ArgumentCaptor.forClass(ParticipantJoined.class);
+        verify(eventPublisher).publishEvent(captor.capture());
+        assertThat(captor.getValue().sessionId()).isEqualTo("sess-1");
+        assertThat(captor.getValue().userId()).isEqualTo("user-1");
+        assertThat(captor.getValue().userName()).isEqualTo("Alice");
     }
 
     // --- expandCapacity tests ---
