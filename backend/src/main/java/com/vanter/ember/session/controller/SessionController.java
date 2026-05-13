@@ -1,5 +1,6 @@
 package com.vanter.ember.session.controller;
 
+import com.vanter.ember.session.dto.AddItemRequest;
 import com.vanter.ember.session.dto.CreateSessionRequest;
 import com.vanter.ember.session.dto.ExpandCapacityRequest;
 import com.vanter.ember.session.dto.JoinSessionRequest;
@@ -12,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -58,5 +60,21 @@ public class SessionController {
                                   @Valid @RequestBody ExpandCapacityRequest request,
                                   Authentication authentication) {
         return sessionService.expandCapacity(id, authentication.getName(), request.additional());
+    }
+
+    @PostMapping("/{id}/items")
+    @PreAuthorize("hasRole('CUSTOMER')")
+    public Session addItem(@PathVariable String id,
+                           @Valid @RequestBody AddItemRequest request,
+                           Authentication authentication) {
+        return sessionService.addItem(id, authentication.getName(), request.menuItemId());
+    }
+
+    @DeleteMapping("/{id}/items/{itemId}")
+    @PreAuthorize("hasAnyRole('CUSTOMER', 'WAITER')")
+    public Session removeItem(@PathVariable String id,
+                              @PathVariable String itemId,
+                              Authentication authentication) {
+        return sessionService.removeItem(id, itemId, authentication.getName());
     }
 }
