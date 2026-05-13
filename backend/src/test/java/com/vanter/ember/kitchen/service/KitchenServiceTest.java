@@ -1,5 +1,6 @@
 package com.vanter.ember.kitchen.service;
 
+import com.vanter.ember.config.ResourceNotFoundException;
 import com.vanter.ember.kitchen.model.KitchenItem;
 import com.vanter.ember.kitchen.model.KitchenOrder;
 import com.vanter.ember.kitchen.repository.KitchenOrderRepository;
@@ -13,10 +14,13 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -84,5 +88,52 @@ class KitchenServiceTest {
         verify(kitchenOrderRepository).save(captor.capture());
         assertThat(captor.getValue().getTableNumber()).isEqualTo(12);
         assertThat(captor.getValue().getItems().get(0).getParticipantName()).isEqualTo("Bob");
+    }
+
+    // --- updateItemStatus tests ---
+
+    private KitchenOrder orderWithItem(OrderItemStatus status) {
+        KitchenItem item = KitchenItem.builder()
+                .itemId("order-item-1").name("Tacos").participantName("Alice")
+                .status(status).updatedAt(LocalDateTime.now()).build();
+        return KitchenOrder.builder()
+                .id("ko-1").sessionId("sess-1").tableNumber(5)
+                .items(new ArrayList<>(List.of(item))).build();
+    }
+
+    @Test
+    void updateItemStatus_persistsNewStatusAndUpdatedAt() {
+        when(kitchenOrderRepository.findById("ko-1")).thenReturn(Optional.of(orderWithItem(OrderItemStatus.PENDING)));
+        when(kitchenOrderRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        KitchenOrder result = kitchenService.updateItemStatus("ko-1", "order-item-1", OrderItemStatus.PREPARING);
+
+        assertThat(result.getItems().get(0).getStatus()).isEqualTo(OrderItemStatus.PREPARING);
+        assertThat(result.getItems().get(0).getUpdatedAt()).isNotNull();
+    }
+
+    @Test
+    void updateItemStatus_throwsOnInvalidTransition() {
+        when(kitchenOrderRepository.findById("ko-1")).thenReturn(Optional.of(orderWithItem(OrderItemStatus.DELIVERED)));
+
+        assertThatThrownBy(() -> kitchenService.updateItemStatus("ko-1", "order-item-1", OrderItemStatus.PENDING))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Invalid status transition");
+    }
+
+    @Test
+    void updateItemStatus_throwsWhenItemNotFound() {
+        when(kitchenOrderRepository.findById("ko-1")).thenReturn(Optional.of(orderWithItem(OrderItemStatus.PENDING)));
+
+        assertThatThrownBy(() -> kitchenService.updateItemStatus("ko-1", "nonexistent-item", OrderItemStatus.PREPARING))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void updateItemStatus_throwsWhenOrderNotFound() {
+        when(kitchenOrderRepository.findById("ko-999")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> kitchenService.updateItemStatus("ko-999", "order-item-1", OrderItemStatus.PREPARING))
+                .isInstanceOf(ResourceNotFoundException.class);
     }
 }
