@@ -3,6 +3,8 @@ package com.vanter.ember.catalog.controller;
 import com.vanter.ember.catalog.model.MenuItem;
 import com.vanter.ember.catalog.model.dto.MenuItemRequest;
 import com.vanter.ember.catalog.service.MenuItemService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +23,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+@Tag(name = "Menu Items", description = "Menu item management")
 @RestController
 @RequestMapping("/api/catalog/items")
 @RequiredArgsConstructor
@@ -28,16 +31,19 @@ public class MenuItemController {
 
     private final MenuItemService menuItemService;
 
+    @Operation(summary = "List all menu items")
     @GetMapping
     public List<MenuItem> getAll() {
         return menuItemService.findAll();
     }
 
+    @Operation(summary = "Get menu item by ID")
     @GetMapping("/{id}")
     public MenuItem getById(@PathVariable Long id) {
         return menuItemService.findById(id);
     }
 
+    @Operation(summary = "Create a menu item (ADMIN)")
     @PostMapping(consumes = "multipart/form-data")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('ADMIN')")
@@ -47,6 +53,7 @@ public class MenuItemController {
         return menuItemService.create(menuItemRequest, image);
     }
 
+    @Operation(summary = "Update a menu item (ADMIN)")
     @PutMapping(value = "/{id}", consumes = "multipart/form-data")
     @PreAuthorize("hasRole('ADMIN')")
     public MenuItem update(
@@ -56,12 +63,14 @@ public class MenuItemController {
         return menuItemService.update(id, menuItemRequest, image);
     }
 
+    @Operation(summary = "Toggle availability (ADMIN)")
     @PatchMapping("/{id}/availability")
     @PreAuthorize("hasRole('ADMIN')")
     public MenuItem toggleAvailability(@PathVariable Long id) {
         return menuItemService.toggleAvailability(id);
     }
 
+    @Operation(summary = "Delete a menu item (ADMIN)")
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasRole('ADMIN')")

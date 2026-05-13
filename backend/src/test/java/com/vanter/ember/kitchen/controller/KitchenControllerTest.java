@@ -88,9 +88,9 @@ class KitchenControllerTest {
     }
 
     @Test
-    void getAllOrders_unauthenticatedReturns403() throws Exception {
+    void getAllOrders_unauthenticatedReturns401() throws Exception {
         mockMvc.perform(get("/api/kitchen/orders"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     // --- GET /api/kitchen/orders/{sessionId} ---
@@ -165,11 +165,11 @@ class KitchenControllerTest {
     }
 
     @Test
-    void updateItemStatus_unauthenticatedReturns403() throws Exception {
+    void updateItemStatus_unauthenticatedReturns401() throws Exception {
         mockMvc.perform(patch("/api/kitchen/orders/ko-1/items/order-item-1/status")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new UpdateItemStatusRequest(OrderItemStatus.PREPARING))))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     // --- GET /api/kitchen/display ---
@@ -212,8 +212,8 @@ class KitchenControllerTest {
     }
 
     @Test
-    void getDisplay_unauthenticatedReturns403() throws Exception {
+    void getDisplay_unauthenticatedReturns401() throws Exception {
         mockMvc.perform(get("/api/kitchen/display"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 }

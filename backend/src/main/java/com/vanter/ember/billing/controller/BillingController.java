@@ -10,6 +10,8 @@ import com.vanter.ember.billing.model.Payment;
 import com.vanter.ember.billing.model.SplitMethod;
 import com.vanter.ember.billing.service.BillingService;
 import com.vanter.ember.billing.service.PaymentService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +24,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+@Tag(name = "Billing", description = "Bill calculation and payment processing")
 @RestController
 @RequestMapping("/api/billing")
 @RequiredArgsConstructor
@@ -30,6 +33,7 @@ public class BillingController {
     private final BillingService billingService;
     private final PaymentService paymentService;
 
+    @Operation(summary = "Calculate bill for a session (WAITER/CUSTOMER)")
     @PostMapping("/sessions/{sessionId}/bill")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasAnyRole('WAITER','CUSTOMER')")
@@ -38,6 +42,7 @@ public class BillingController {
         return billingService.calculateBill(sessionId, request.splitMethod());
     }
 
+    @Operation(summary = "Split a bill (WAITER/CUSTOMER)")
     @PostMapping("/bills/{id}/split")
     @PreAuthorize("hasAnyRole('WAITER','CUSTOMER')")
     public List<BillSplit> splitBill(@PathVariable Long id,
@@ -48,6 +53,7 @@ public class BillingController {
         return billingService.splitEqually(id, request.participantCount());
     }
 
+    @Operation(summary = "Register physical payment (WAITER)")
     @PostMapping("/payments/physical")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('WAITER')")
@@ -56,6 +62,7 @@ public class BillingController {
                 request.billId(), request.participantName(), request.amount());
     }
 
+    @Operation(summary = "Initiate digital payment (WAITER/CUSTOMER)")
     @PostMapping("/payments/digital")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasAnyRole('WAITER','CUSTOMER')")
@@ -64,6 +71,7 @@ public class BillingController {
                 request.billId(), request.participantName(), request.amount());
     }
 
+    @Operation(summary = "Confirm digital payment (WAITER)")
     @PostMapping("/payments/{id}/confirm")
     @PreAuthorize("hasRole('WAITER')")
     public Payment confirmDigitalPayment(@PathVariable Long id) {

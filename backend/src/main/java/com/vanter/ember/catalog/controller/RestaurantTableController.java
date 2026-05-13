@@ -4,6 +4,8 @@ import com.vanter.ember.catalog.model.RestaurantTable;
 import com.vanter.ember.catalog.model.TableStatus;
 import com.vanter.ember.catalog.model.dto.RestaurantTableRequest;
 import com.vanter.ember.catalog.service.RestaurantTableService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +23,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+@Tag(name = "Tables", description = "Restaurant table management")
 @RestController
 @RequestMapping("/api/catalog/tables")
 @RequiredArgsConstructor
@@ -28,16 +31,19 @@ public class RestaurantTableController {
 
     private final RestaurantTableService tableService;
 
+    @Operation(summary = "List all tables")
     @GetMapping
     public List<RestaurantTable> getAll() {
         return tableService.findAll();
     }
 
+    @Operation(summary = "Get table by ID")
     @GetMapping("/{id}")
     public RestaurantTable getById(@PathVariable Long id) {
         return tableService.findById(id);
     }
 
+    @Operation(summary = "Create a table (ADMIN)")
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('ADMIN')")
@@ -45,6 +51,7 @@ public class RestaurantTableController {
         return tableService.create(request);
     }
 
+    @Operation(summary = "Update table capacity (ADMIN)")
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public RestaurantTable update(@PathVariable Long id,
@@ -52,6 +59,7 @@ public class RestaurantTableController {
         return tableService.updateCapacity(id, request.getCapacity());
     }
 
+    @Operation(summary = "Update table status (WAITER/ADMIN)")
     @PatchMapping("/{id}/status")
     @PreAuthorize("hasRole('WAITER') or hasRole('ADMIN')")
     public RestaurantTable updateStatus(@PathVariable Long id,
@@ -62,6 +70,7 @@ public class RestaurantTableController {
         return tableService.setAvailable(id);
     }
 
+    @Operation(summary = "Delete a table (ADMIN)")
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasRole('ADMIN')")

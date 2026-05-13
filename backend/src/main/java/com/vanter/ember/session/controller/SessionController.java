@@ -7,6 +7,8 @@ import com.vanter.ember.session.dto.JoinSessionRequest;
 import com.vanter.ember.session.model.Session;
 import com.vanter.ember.session.service.QrTokenService;
 import com.vanter.ember.session.service.SessionService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +25,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+@Tag(name = "Sessions", description = "Dining session lifecycle")
 @RestController
 @RequestMapping("/api/sessions")
 @RequiredArgsConstructor
@@ -31,6 +34,7 @@ public class SessionController {
     private final SessionService sessionService;
     private final QrTokenService qrTokenService;
 
+    @Operation(summary = "Create a session (WAITER)")
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('WAITER')")
@@ -40,11 +44,13 @@ public class SessionController {
                 request.tableId(), authentication.getName(), request.maxParticipants());
     }
 
+    @Operation(summary = "Get session by ID")
     @GetMapping("/{id}")
     public Session getSession(@PathVariable String id) {
         return sessionService.findById(id);
     }
 
+    @Operation(summary = "Generate QR token for a session (WAITER)")
     @GetMapping("/{id}/qr")
     public Map<String, String> getQrToken(@PathVariable String id) {
         Session session = sessionService.findById(id);
@@ -52,6 +58,7 @@ public class SessionController {
         return Map.of("qrToken", token);
     }
 
+    @Operation(summary = "Join a session via QR token (CUSTOMER)")
     @PostMapping("/{id}/join")
     public Session joinSession(@PathVariable String id,
                                @Valid @RequestBody JoinSessionRequest request,
@@ -59,6 +66,7 @@ public class SessionController {
         return sessionService.joinSession(request.qrToken(), authentication.getName(), request.userName());
     }
 
+    @Operation(summary = "Expand session capacity (WAITER)")
     @PatchMapping("/{id}/capacity")
     @PreAuthorize("hasRole('WAITER')")
     public Session expandCapacity(@PathVariable String id,
@@ -67,6 +75,7 @@ public class SessionController {
         return sessionService.expandCapacity(id, authentication.getName(), request.additional());
     }
 
+    @Operation(summary = "Add item to session (CUSTOMER)")
     @PostMapping("/{id}/items")
     @PreAuthorize("hasRole('CUSTOMER')")
     public Session addItem(@PathVariable String id,
@@ -75,6 +84,7 @@ public class SessionController {
         return sessionService.addItem(id, authentication.getName(), request.menuItemId());
     }
 
+    @Operation(summary = "Remove item from session (CUSTOMER/WAITER)")
     @DeleteMapping("/{id}/items/{itemId}")
     @PreAuthorize("hasAnyRole('CUSTOMER', 'WAITER')")
     public Session removeItem(@PathVariable String id,
