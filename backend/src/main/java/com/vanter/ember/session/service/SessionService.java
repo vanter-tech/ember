@@ -6,6 +6,7 @@ import com.vanter.ember.catalog.service.MenuItemService;
 import com.vanter.ember.catalog.service.RestaurantTableService;
 import com.vanter.ember.config.ResourceNotFoundException;
 import com.vanter.ember.session.event.ItemAdded;
+import com.vanter.ember.session.event.OrderItemAdded;
 import com.vanter.ember.session.event.ParticipantJoined;
 import com.vanter.ember.session.event.SessionOpened;
 import com.vanter.ember.session.exception.TooManyParticipantsException;
@@ -126,6 +127,8 @@ public class SessionService {
         session.getItems().add(newItem);
 
         Session saved = sessionRepository.save(session);
+        int tableNumber = tableService.findById(saved.getTableId()).getNumber();
+
         eventPublisher.publishEvent(new ItemAdded(
                 saved.getId(),
                 newItem.getName(),
@@ -133,6 +136,14 @@ public class SessionService {
                 newItem.getParticipantName(),
                 newItem.getStatus(),
                 saved.getItems()));
+
+        eventPublisher.publishEvent(new OrderItemAdded(
+                saved.getId(),
+                tableNumber,
+                newItem.getItemId(),
+                newItem.getName(),
+                newItem.getPrice(),
+                newItem.getParticipantName()));
 
         return saved;
     }

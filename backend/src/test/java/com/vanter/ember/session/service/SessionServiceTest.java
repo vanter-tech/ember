@@ -7,6 +7,7 @@ import com.vanter.ember.catalog.service.MenuItemService;
 import com.vanter.ember.catalog.service.RestaurantTableService;
 import com.vanter.ember.config.ResourceNotFoundException;
 import com.vanter.ember.session.event.ItemAdded;
+import com.vanter.ember.session.event.OrderItemAdded;
 import com.vanter.ember.session.event.ParticipantJoined;
 import com.vanter.ember.session.event.SessionOpened;
 import com.vanter.ember.session.exception.TooManyParticipantsException;
@@ -33,6 +34,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -236,6 +238,7 @@ class SessionServiceTest {
         Session session = openSessionWithParticipant("user-1");
         when(sessionRepository.findById("sess-1")).thenReturn(Optional.of(session));
         when(menuItemService.findById(10L)).thenReturn(availableMenuItem());
+        when(tableService.findById(1L)).thenReturn(availableTable());
         when(sessionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         Session result = sessionService.addItem("sess-1", "user-1", 10L);
@@ -290,14 +293,17 @@ class SessionServiceTest {
         Session session = openSessionWithParticipant("user-1");
         when(sessionRepository.findById("sess-1")).thenReturn(Optional.of(session));
         when(menuItemService.findById(10L)).thenReturn(availableMenuItem());
+        when(tableService.findById(1L)).thenReturn(availableTable());
         when(sessionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         sessionService.addItem("sess-1", "user-1", 10L);
 
         ArgumentCaptor<Object> captor = ArgumentCaptor.forClass(Object.class);
-        verify(eventPublisher).publishEvent(captor.capture());
-        assertThat(captor.getValue()).isInstanceOf(ItemAdded.class);
-        ItemAdded event = (ItemAdded) captor.getValue();
+        verify(eventPublisher, times(2)).publishEvent(captor.capture());
+        ItemAdded event = captor.getAllValues().stream()
+                .filter(e -> e instanceof ItemAdded)
+                .map(e -> (ItemAdded) e)
+                .findFirst().orElseThrow();
         assertThat(event.sessionId()).isEqualTo("sess-1");
         assertThat(event.itemName()).isEqualTo("Tacos");
         assertThat(event.participantName()).isEqualTo("Alice");
@@ -314,6 +320,30 @@ class SessionServiceTest {
 
         assertThatThrownBy(() -> sessionService.addItem("sess-1", "user-1", 99L))
                 .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void addItem_publishesOrderItemAddedEventToKitchen() {
+        Session session = openSessionWithParticipant("user-1");
+        when(sessionRepository.findById("sess-1")).thenReturn(Optional.of(session));
+        when(menuItemService.findById(10L)).thenReturn(availableMenuItem());
+        when(tableService.findById(1L)).thenReturn(availableTable());
+        when(sessionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        sessionService.addItem("sess-1", "user-1", 10L);
+
+        ArgumentCaptor<Object> captor = ArgumentCaptor.forClass(Object.class);
+        verify(eventPublisher, times(2)).publishEvent(captor.capture());
+        OrderItemAdded event = captor.getAllValues().stream()
+                .filter(e -> e instanceof OrderItemAdded)
+                .map(e -> (OrderItemAdded) e)
+                .findFirst().orElseThrow();
+        assertThat(event.sessionId()).isEqualTo("sess-1");
+        assertThat(event.tableNumber()).isEqualTo(5);
+        assertThat(event.itemId()).isEqualTo(10L);
+        assertThat(event.itemName()).isEqualTo("Tacos");
+        assertThat(event.price()).isEqualByComparingTo("12.50");
+        assertThat(event.participantName()).isEqualTo("Alice");
     }
 
     // --- removeItem tests ---
