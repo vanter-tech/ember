@@ -5,6 +5,7 @@ import com.vanter.ember.catalog.model.TableStatus;
 import com.vanter.ember.catalog.service.MenuItemService;
 import com.vanter.ember.catalog.service.RestaurantTableService;
 import com.vanter.ember.config.ResourceNotFoundException;
+import com.vanter.ember.kitchen.event.KitchenItemUpdated;
 import com.vanter.ember.session.event.ItemAdded;
 import com.vanter.ember.session.event.OrderItemAdded;
 import com.vanter.ember.session.event.ParticipantJoined;
@@ -19,6 +20,7 @@ import com.vanter.ember.session.repository.SessionRepository;
 import java.time.LocalDateTime;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.event.EventListener;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
@@ -139,6 +141,7 @@ public class SessionService {
 
         eventPublisher.publishEvent(new OrderItemAdded(
                 saved.getId(),
+                newItem.getId(),
                 tableNumber,
                 newItem.getItemId(),
                 newItem.getName(),
@@ -146,6 +149,20 @@ public class SessionService {
                 newItem.getParticipantName()));
 
         return saved;
+    }
+
+    @EventListener
+    public void handleKitchenItemUpdated(KitchenItemUpdated event) {
+        Session session = findById(event.sessionId());
+
+        OrderItem item = session.getItems().stream()
+                .filter(i -> event.itemId().equals(i.getId()))
+                .findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Item not found: " + event.itemId()));
+
+        item.setStatus(event.newStatus());
+        sessionRepository.save(session);
     }
 
     public Session removeItem(String sessionId, String orderItemId, String requesterId) {

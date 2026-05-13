@@ -6,6 +6,7 @@ import com.vanter.ember.catalog.model.TableStatus;
 import com.vanter.ember.catalog.service.MenuItemService;
 import com.vanter.ember.catalog.service.RestaurantTableService;
 import com.vanter.ember.config.ResourceNotFoundException;
+import com.vanter.ember.kitchen.event.KitchenItemUpdated;
 import com.vanter.ember.session.event.ItemAdded;
 import com.vanter.ember.session.event.OrderItemAdded;
 import com.vanter.ember.session.event.ParticipantJoined;
@@ -339,6 +340,7 @@ class SessionServiceTest {
                 .map(e -> (OrderItemAdded) e)
                 .findFirst().orElseThrow();
         assertThat(event.sessionId()).isEqualTo("sess-1");
+        assertThat(event.orderItemId()).isNotNull();
         assertThat(event.tableNumber()).isEqualTo(5);
         assertThat(event.itemId()).isEqualTo(10L);
         assertThat(event.itemName()).isEqualTo("Tacos");
@@ -414,6 +416,41 @@ class SessionServiceTest {
         when(sessionRepository.findById("sess-1")).thenReturn(Optional.of(session));
 
         assertThatThrownBy(() -> sessionService.removeItem("sess-1", "nonexistent-id", "user-1"))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    // --- handleKitchenItemUpdated tests ---
+
+    @Test
+    void handleKitchenItemUpdated_updatesOrderItemStatus() {
+        Session session = openSessionWithItem(OrderItemStatus.PENDING, "user-1");
+        when(sessionRepository.findById("sess-1")).thenReturn(Optional.of(session));
+        when(sessionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        sessionService.handleKitchenItemUpdated(
+                new KitchenItemUpdated("sess-1", "order-item-1", OrderItemStatus.PREPARING));
+
+        ArgumentCaptor<Session> captor = ArgumentCaptor.forClass(Session.class);
+        verify(sessionRepository).save(captor.capture());
+        assertThat(captor.getValue().getItems().get(0).getStatus()).isEqualTo(OrderItemStatus.PREPARING);
+    }
+
+    @Test
+    void handleKitchenItemUpdated_throwsWhenSessionNotFound() {
+        when(sessionRepository.findById("sess-999")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> sessionService.handleKitchenItemUpdated(
+                new KitchenItemUpdated("sess-999", "order-item-1", OrderItemStatus.PREPARING)))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void handleKitchenItemUpdated_throwsWhenItemNotFound() {
+        Session session = openSessionWithItem(OrderItemStatus.PENDING, "user-1");
+        when(sessionRepository.findById("sess-1")).thenReturn(Optional.of(session));
+
+        assertThatThrownBy(() -> sessionService.handleKitchenItemUpdated(
+                new KitchenItemUpdated("sess-1", "nonexistent-id", OrderItemStatus.PREPARING)))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 }
