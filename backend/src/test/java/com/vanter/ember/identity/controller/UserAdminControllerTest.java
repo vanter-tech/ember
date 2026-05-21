@@ -37,7 +37,20 @@ class UserAdminControllerTest {
 
     private User waiterUser() {
         return User.builder()
-                .id("u-1").name("John").email("john@test.com").role(Role.WAITER).build();
+                .id("u-1").name("John").email("john@test.com").role(Role.WAITER)
+                .passwordHash("$2a$10$hashedpassword").build();
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void updateRole_responseDoesNotExposePasswordHash() throws Exception {
+        when(userAdminService.updateRole(eq("u-1"), any())).thenReturn(waiterUser());
+
+        mockMvc.perform(patch("/api/admin/users/u-1/role")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new UpdateUserRoleRequest(Role.WAITER))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.passwordHash").doesNotExist());
     }
 
     @Test
