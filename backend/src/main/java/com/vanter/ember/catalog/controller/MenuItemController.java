@@ -25,7 +25,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 @Tag(name = "Menu Items", description = "Menu item management")
 @RestController
-@RequestMapping("/api/catalog/items")
+@RequestMapping("/catalog/items")
 @RequiredArgsConstructor
 public class MenuItemController {
 

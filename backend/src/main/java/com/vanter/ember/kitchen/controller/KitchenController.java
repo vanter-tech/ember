@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @Tag(name = "Kitchen", description = "Kitchen order management")
 @RestController
-@RequestMapping("/api/kitchen")
+@RequestMapping("/kitchen")
 @RequiredArgsConstructor
 public class KitchenController {
 

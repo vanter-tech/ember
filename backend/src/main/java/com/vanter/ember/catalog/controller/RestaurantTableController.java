@@ -25,7 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @Tag(name = "Tables", description = "Restaurant table management")
 @RestController
-@RequestMapping("/api/catalog/tables")
+@RequestMapping("/catalog/tables")
 @RequiredArgsConstructor
 public class RestaurantTableController {
 
