@@ -1,43 +1,31 @@
-import { create } from 'zustand'
+import {create} from 'zustand'
 import { persist } from 'zustand/middleware'
 import type {LoginResponse} from '@/lib/api'
 
-interface AuthState {
-  token: string | null
-  userId: string | null
-  name: string | null
-  role: string | null
-
-  setAuth: (authData: LoginResponse) => void
+interface AuthState extends LoginResponse {
+  setAuth: (data: LoginResponse) => void
   logout: () => void
 }
 
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
-      token: null,
-      userId: null,
-      name: null,
-      role: null,
+      token: undefined,
+      userId: undefined,
+      name: undefined,
+      role: undefined,
 
-      setAuth: (authData) =>
-        set(() => ({
-          token: authData.token ,
-          userId: authData.userId ,
-          name: authData.name,
-          role: authData.role,
-        })),
+      setAuth: (data) => set(data),
 
       logout: () =>
-        set(() => ({
-          token: null,
-          userId: null,
-          name: null,
-          role: null,
-        })),
+        set({
+          token: undefined,
+          userId: undefined,
+          name: undefined,
+          role: undefined,
+        }),
     }),
     {
-      name: 'ember-auth-storage',
+      name: 'ember-auth-storage'
     }
-  )
-)
+  ))
