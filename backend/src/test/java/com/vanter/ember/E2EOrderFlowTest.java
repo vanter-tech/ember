@@ -111,7 +111,7 @@ class E2EOrderFlowTest {
         LoginRequest req = new LoginRequest();
         req.setEmail(email);
         req.setPassword(password);
-        MvcResult result = mockMvc.perform(post("/api/auth/login")
+        MvcResult result = mockMvc.perform(post("/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isOk())
@@ -128,7 +128,7 @@ class E2EOrderFlowTest {
     void fullFlow_registerOrderAndPay_closesSessionAndReleasesTable() throws Exception {
 
         // 1 — Waiter creates session
-        MvcResult sessionResult = mockMvc.perform(post("/api/sessions")
+        MvcResult sessionResult = mockMvc.perform(post("/sessions")
                         .header("Authorization", bearer(waiterToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new CreateSessionRequest(tableId, 4))))
@@ -138,7 +138,7 @@ class E2EOrderFlowTest {
                 sessionResult.getResponse().getContentAsString()).get("id").asText();
 
         // 2 — Waiter gets QR token
-        MvcResult qrResult = mockMvc.perform(get("/api/sessions/" + sessionId + "/qr")
+        MvcResult qrResult = mockMvc.perform(get("/sessions/" + sessionId + "/qr")
                         .header("Authorization", bearer(waiterToken)))
                 .andExpect(status().isOk())
                 .andReturn();
@@ -146,7 +146,7 @@ class E2EOrderFlowTest {
                 qrResult.getResponse().getContentAsString()).get("qrToken").asText();
 
         // 3 — Customer joins session
-        mockMvc.perform(post("/api/sessions/" + sessionId + "/join")
+        mockMvc.perform(post("/sessions/" + sessionId + "/join")
                         .header("Authorization", bearer(customerToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
@@ -154,7 +154,7 @@ class E2EOrderFlowTest {
                 .andExpect(status().isOk());
 
         // 4 — Customer adds an item
-        MvcResult addItemResult = mockMvc.perform(post("/api/sessions/" + sessionId + "/items")
+        MvcResult addItemResult = mockMvc.perform(post("/sessions/" + sessionId + "/items")
                         .header("Authorization", bearer(customerToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new AddItemRequest(menuItemId))))
@@ -168,19 +168,19 @@ class E2EOrderFlowTest {
         KitchenOrder kitchenOrder = kitchenOrderRepository.findBySessionId(sessionId).orElseThrow();
         String kitchenOrderId = kitchenOrder.getId();
 
-        mockMvc.perform(patch("/api/kitchen/orders/" + kitchenOrderId + "/items/" + orderItemId + "/status")
+        mockMvc.perform(patch("/kitchen/orders/" + kitchenOrderId + "/items/" + orderItemId + "/status")
                         .header("Authorization", bearer(kitchenToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"status\":\"PREPARING\"}"))
                 .andExpect(status().isOk());
 
-        mockMvc.perform(patch("/api/kitchen/orders/" + kitchenOrderId + "/items/" + orderItemId + "/status")
+        mockMvc.perform(patch("/kitchen/orders/" + kitchenOrderId + "/items/" + orderItemId + "/status")
                         .header("Authorization", bearer(kitchenToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"status\":\"READY\"}"))
                 .andExpect(status().isOk());
 
-        mockMvc.perform(patch("/api/kitchen/orders/" + kitchenOrderId + "/items/" + orderItemId + "/status")
+        mockMvc.perform(patch("/kitchen/orders/" + kitchenOrderId + "/items/" + orderItemId + "/status")
                         .header("Authorization", bearer(kitchenToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"status\":\"DELIVERED\"}"))

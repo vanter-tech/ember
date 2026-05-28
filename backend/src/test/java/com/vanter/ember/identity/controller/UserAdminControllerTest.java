@@ -46,7 +46,7 @@ class UserAdminControllerTest {
     void updateRole_responseDoesNotExposePasswordHash() throws Exception {
         when(userAdminService.updateRole(eq("u-1"), any())).thenReturn(waiterUser());
 
-        mockMvc.perform(patch("/api/admin/users/u-1/role")
+        mockMvc.perform(patch("/admin/users/u-1/role")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new UpdateUserRoleRequest(Role.WAITER))))
                 .andExpect(status().isOk())
@@ -58,7 +58,7 @@ class UserAdminControllerTest {
     void updateRole_adminCanAssignWaiterRole() throws Exception {
         when(userAdminService.updateRole(eq("u-1"), any())).thenReturn(waiterUser());
 
-        mockMvc.perform(patch("/api/admin/users/u-1/role")
+        mockMvc.perform(patch("/admin/users/u-1/role")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new UpdateUserRoleRequest(Role.WAITER))))
                 .andExpect(status().isOk())
@@ -69,7 +69,7 @@ class UserAdminControllerTest {
     @Test
     @WithMockUser(roles = "WAITER")
     void updateRole_forbiddenForWaiter() throws Exception {
-        mockMvc.perform(patch("/api/admin/users/u-1/role")
+        mockMvc.perform(patch("/admin/users/u-1/role")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new UpdateUserRoleRequest(Role.WAITER))))
                 .andExpect(status().isForbidden());
@@ -78,7 +78,7 @@ class UserAdminControllerTest {
     @Test
     @WithMockUser(roles = "CUSTOMER")
     void updateRole_forbiddenForCustomer() throws Exception {
-        mockMvc.perform(patch("/api/admin/users/u-1/role")
+        mockMvc.perform(patch("/admin/users/u-1/role")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new UpdateUserRoleRequest(Role.WAITER))))
                 .andExpect(status().isForbidden());
@@ -86,7 +86,7 @@ class UserAdminControllerTest {
 
     @Test
     void updateRole_unauthenticatedReturns401() throws Exception {
-        mockMvc.perform(patch("/api/admin/users/u-1/role")
+        mockMvc.perform(patch("/admin/users/u-1/role")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new UpdateUserRoleRequest(Role.WAITER))))
                 .andExpect(status().isUnauthorized());
@@ -95,7 +95,7 @@ class UserAdminControllerTest {
     @Test
     @WithMockUser(roles = "ADMIN")
     void updateRole_returns400ForNullRole() throws Exception {
-        mockMvc.perform(patch("/api/admin/users/u-1/role")
+        mockMvc.perform(patch("/admin/users/u-1/role")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"role\": null}"))
                 .andExpect(status().isBadRequest());

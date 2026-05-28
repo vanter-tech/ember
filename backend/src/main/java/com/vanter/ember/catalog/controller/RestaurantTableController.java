@@ -1,8 +1,8 @@
 package com.vanter.ember.catalog.controller;
 
-import com.vanter.ember.catalog.model.RestaurantTable;
 import com.vanter.ember.catalog.model.TableStatus;
 import com.vanter.ember.catalog.model.dto.RestaurantTableRequest;
+import com.vanter.ember.catalog.model.dto.RestaurantTableResponse;
 import com.vanter.ember.catalog.service.RestaurantTableService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -33,13 +33,13 @@ public class RestaurantTableController {
 
     @Operation(summary = "List all tables")
     @GetMapping
-    public List<RestaurantTable> getAll() {
+    public List<RestaurantTableResponse> getAll() {
         return tableService.findAll();
     }
 
     @Operation(summary = "Get table by ID")
     @GetMapping("/{id}")
-    public RestaurantTable getById(@PathVariable Long id) {
+    public RestaurantTableResponse getById(@PathVariable Long id) {
         return tableService.findById(id);
     }
 
@@ -47,14 +47,14 @@ public class RestaurantTableController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('ADMIN')")
-    public RestaurantTable create(@Valid @RequestBody RestaurantTableRequest request) {
+    public RestaurantTableResponse create(@Valid @RequestBody RestaurantTableRequest request) {
         return tableService.create(request);
     }
 
     @Operation(summary = "Update table capacity (ADMIN)")
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public RestaurantTable update(@PathVariable Long id,
+    public RestaurantTableResponse update(@PathVariable Long id,
             @Valid @RequestBody RestaurantTableRequest request) {
         return tableService.updateCapacity(id, request.getCapacity());
     }
@@ -62,7 +62,7 @@ public class RestaurantTableController {
     @Operation(summary = "Update table status (WAITER/ADMIN)")
     @PatchMapping("/{id}/status")
     @PreAuthorize("hasRole('WAITER') or hasRole('ADMIN')")
-    public RestaurantTable updateStatus(@PathVariable Long id,
+    public RestaurantTableResponse updateStatus(@PathVariable Long id,
             @RequestParam TableStatus status) {
         if (status == TableStatus.OCCUPIED) {
             return tableService.setOccupied(id);

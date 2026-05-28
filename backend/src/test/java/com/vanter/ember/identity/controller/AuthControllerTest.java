@@ -48,7 +48,7 @@ class AuthControllerTest {
                 AuthResponse.builder().token("jwt-token").userId("u-1").name("Ana").role("CUSTOMER").build()
         );
 
-        mockMvc.perform(post("/api/auth/register")
+        mockMvc.perform(post("/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isOk())
@@ -67,7 +67,7 @@ class AuthControllerTest {
         when(authService.register(any()))
                 .thenThrow(new IllegalArgumentException("Email already in use"));
 
-        mockMvc.perform(post("/api/auth/register")
+        mockMvc.perform(post("/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isConflict());
@@ -80,7 +80,7 @@ class AuthControllerTest {
         req.setEmail("not-an-email");
         req.setPassword("x");
 
-        mockMvc.perform(post("/api/auth/register")
+        mockMvc.perform(post("/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isBadRequest());
@@ -96,7 +96,7 @@ class AuthControllerTest {
                 AuthResponse.builder().token("jwt-token").userId("u-1").name("Ana").role("CUSTOMER").build()
         );
 
-        mockMvc.perform(post("/api/auth/login")
+        mockMvc.perform(post("/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isOk())
@@ -105,7 +105,7 @@ class AuthControllerTest {
 
     @Test
     void corsPreflightIsAllowedForAllowedOrigin() throws Exception {
-        mockMvc.perform(options("/api/auth/register")
+        mockMvc.perform(options("/auth/register")
                         .header("Origin", "http://localhost:5173")
                         .header("Access-Control-Request-Method", "POST")
                         .header("Access-Control-Request-Headers", "Content-Type"))
@@ -122,7 +122,7 @@ class AuthControllerTest {
         when(authService.login(any()))
                 .thenThrow(new BadCredentialsException("Invalid credentials"));
 
-        mockMvc.perform(post("/api/auth/login")
+        mockMvc.perform(post("/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isUnauthorized());

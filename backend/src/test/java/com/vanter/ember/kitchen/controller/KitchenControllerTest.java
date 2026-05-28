@@ -49,14 +49,14 @@ class KitchenControllerTest {
                 .items(new ArrayList<>(List.of(item))).build();
     }
 
-    // --- GET /api/kitchen/orders ---
+    // --- GET /kitchen/orders ---
 
     @Test
     @WithMockUser(roles = "KITCHEN")
     void getAllOrders_returnsListForKitchen() throws Exception {
         when(kitchenService.findAll()).thenReturn(List.of(sampleOrder()));
 
-        mockMvc.perform(get("/api/kitchen/orders"))
+        mockMvc.perform(get("/kitchen/orders"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value("ko-1"))
                 .andExpect(jsonPath("$[0].sessionId").value("sess-1"))
@@ -68,7 +68,7 @@ class KitchenControllerTest {
     void getAllOrders_returnsListForAdmin() throws Exception {
         when(kitchenService.findAll()).thenReturn(List.of(sampleOrder()));
 
-        mockMvc.perform(get("/api/kitchen/orders"))
+        mockMvc.perform(get("/kitchen/orders"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value("ko-1"));
     }
@@ -76,31 +76,31 @@ class KitchenControllerTest {
     @Test
     @WithMockUser(roles = "WAITER")
     void getAllOrders_forbiddenForWaiter() throws Exception {
-        mockMvc.perform(get("/api/kitchen/orders"))
+        mockMvc.perform(get("/kitchen/orders"))
                 .andExpect(status().isForbidden());
     }
 
     @Test
     @WithMockUser(roles = "CUSTOMER")
     void getAllOrders_forbiddenForCustomer() throws Exception {
-        mockMvc.perform(get("/api/kitchen/orders"))
+        mockMvc.perform(get("/kitchen/orders"))
                 .andExpect(status().isForbidden());
     }
 
     @Test
     void getAllOrders_unauthenticatedReturns401() throws Exception {
-        mockMvc.perform(get("/api/kitchen/orders"))
+        mockMvc.perform(get("/kitchen/orders"))
                 .andExpect(status().isUnauthorized());
     }
 
-    // --- GET /api/kitchen/orders/{sessionId} ---
+    // --- GET /kitchen/orders/{sessionId} ---
 
     @Test
     @WithMockUser(roles = "KITCHEN")
     void getOrderBySessionId_returnsOrderForKitchen() throws Exception {
         when(kitchenService.findBySessionId("sess-1")).thenReturn(sampleOrder());
 
-        mockMvc.perform(get("/api/kitchen/orders/sess-1"))
+        mockMvc.perform(get("/kitchen/orders/sess-1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value("ko-1"))
                 .andExpect(jsonPath("$.sessionId").value("sess-1"));
@@ -109,18 +109,18 @@ class KitchenControllerTest {
     @Test
     @WithMockUser(roles = "CUSTOMER")
     void getOrderBySessionId_forbiddenForCustomer() throws Exception {
-        mockMvc.perform(get("/api/kitchen/orders/sess-1"))
+        mockMvc.perform(get("/kitchen/orders/sess-1"))
                 .andExpect(status().isForbidden());
     }
 
     @Test
     @WithMockUser(roles = "WAITER")
     void getOrderBySessionId_forbiddenForWaiter() throws Exception {
-        mockMvc.perform(get("/api/kitchen/orders/sess-1"))
+        mockMvc.perform(get("/kitchen/orders/sess-1"))
                 .andExpect(status().isForbidden());
     }
 
-    // --- PATCH /api/kitchen/orders/{orderId}/items/{itemId}/status ---
+    // --- PATCH /kitchen/orders/{orderId}/items/{itemId}/status ---
 
     @Test
     @WithMockUser(roles = "KITCHEN")
@@ -130,7 +130,7 @@ class KitchenControllerTest {
         when(kitchenService.updateItemStatus("ko-1", "order-item-1", OrderItemStatus.PREPARING))
                 .thenReturn(updated);
 
-        mockMvc.perform(patch("/api/kitchen/orders/ko-1/items/order-item-1/status")
+        mockMvc.perform(patch("/kitchen/orders/ko-1/items/order-item-1/status")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new UpdateItemStatusRequest(OrderItemStatus.PREPARING))))
                 .andExpect(status().isOk())
@@ -140,7 +140,7 @@ class KitchenControllerTest {
     @Test
     @WithMockUser(roles = "ADMIN")
     void updateItemStatus_forbiddenForAdmin() throws Exception {
-        mockMvc.perform(patch("/api/kitchen/orders/ko-1/items/order-item-1/status")
+        mockMvc.perform(patch("/kitchen/orders/ko-1/items/order-item-1/status")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new UpdateItemStatusRequest(OrderItemStatus.PREPARING))))
                 .andExpect(status().isForbidden());
@@ -149,7 +149,7 @@ class KitchenControllerTest {
     @Test
     @WithMockUser(roles = "WAITER")
     void updateItemStatus_forbiddenForWaiter() throws Exception {
-        mockMvc.perform(patch("/api/kitchen/orders/ko-1/items/order-item-1/status")
+        mockMvc.perform(patch("/kitchen/orders/ko-1/items/order-item-1/status")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new UpdateItemStatusRequest(OrderItemStatus.PREPARING))))
                 .andExpect(status().isForbidden());
@@ -158,7 +158,7 @@ class KitchenControllerTest {
     @Test
     @WithMockUser(roles = "CUSTOMER")
     void updateItemStatus_forbiddenForCustomer() throws Exception {
-        mockMvc.perform(patch("/api/kitchen/orders/ko-1/items/order-item-1/status")
+        mockMvc.perform(patch("/kitchen/orders/ko-1/items/order-item-1/status")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new UpdateItemStatusRequest(OrderItemStatus.PREPARING))))
                 .andExpect(status().isForbidden());
@@ -166,13 +166,13 @@ class KitchenControllerTest {
 
     @Test
     void updateItemStatus_unauthenticatedReturns401() throws Exception {
-        mockMvc.perform(patch("/api/kitchen/orders/ko-1/items/order-item-1/status")
+        mockMvc.perform(patch("/kitchen/orders/ko-1/items/order-item-1/status")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new UpdateItemStatusRequest(OrderItemStatus.PREPARING))))
                 .andExpect(status().isUnauthorized());
     }
 
-    // --- GET /api/kitchen/display ---
+    // --- GET /kitchen/display ---
 
     @Test
     @WithMockUser(roles = "KITCHEN")
@@ -180,7 +180,7 @@ class KitchenControllerTest {
         KitchenDisplayEntry entry = new KitchenDisplayEntry(5, List.of(sampleOrder()));
         when(kitchenService.findDisplay()).thenReturn(List.of(entry));
 
-        mockMvc.perform(get("/api/kitchen/display"))
+        mockMvc.perform(get("/kitchen/display"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].tableNumber").value(5))
                 .andExpect(jsonPath("$[0].orders[0].id").value("ko-1"));
@@ -192,7 +192,7 @@ class KitchenControllerTest {
         KitchenDisplayEntry entry = new KitchenDisplayEntry(5, List.of(sampleOrder()));
         when(kitchenService.findDisplay()).thenReturn(List.of(entry));
 
-        mockMvc.perform(get("/api/kitchen/display"))
+        mockMvc.perform(get("/kitchen/display"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].tableNumber").value(5));
     }
@@ -200,20 +200,20 @@ class KitchenControllerTest {
     @Test
     @WithMockUser(roles = "WAITER")
     void getDisplay_forbiddenForWaiter() throws Exception {
-        mockMvc.perform(get("/api/kitchen/display"))
+        mockMvc.perform(get("/kitchen/display"))
                 .andExpect(status().isForbidden());
     }
 
     @Test
     @WithMockUser(roles = "CUSTOMER")
     void getDisplay_forbiddenForCustomer() throws Exception {
-        mockMvc.perform(get("/api/kitchen/display"))
+        mockMvc.perform(get("/kitchen/display"))
                 .andExpect(status().isForbidden());
     }
 
     @Test
     void getDisplay_unauthenticatedReturns401() throws Exception {
-        mockMvc.perform(get("/api/kitchen/display"))
+        mockMvc.perform(get("/kitchen/display"))
                 .andExpect(status().isUnauthorized());
     }
 }

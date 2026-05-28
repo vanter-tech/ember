@@ -1,7 +1,7 @@
 package com.vanter.ember.catalog.controller;
 
-import com.vanter.ember.catalog.model.Category;
 import com.vanter.ember.catalog.model.dto.CategoryRequest;
+import com.vanter.ember.catalog.model.dto.CategoryResponse;
 import com.vanter.ember.catalog.service.CategoryService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -30,20 +30,20 @@ public class CategoryController {
 
     @Operation(summary = "List all categories")
     @GetMapping
-    public ResponseEntity<List<Category>> getAll() {
+    public ResponseEntity<List<CategoryResponse>> getAll() {
         return ResponseEntity.ok(categoryService.findAll());
     }
 
     @Operation(summary = "Get category by ID")
     @GetMapping("/{id}")
-    public ResponseEntity<Category> getById(@PathVariable Long id) {
+    public ResponseEntity<CategoryResponse> getById(@PathVariable Long id) {
         return ResponseEntity.ok(categoryService.findById(id));
     }
 
     @Operation(summary = "Create a category (ADMIN)")
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Category> create(@Valid @RequestBody CategoryRequest request) {
+    public ResponseEntity<CategoryResponse> create(@Valid @RequestBody CategoryRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(categoryService.create(request.getName()));
     }
@@ -51,7 +51,7 @@ public class CategoryController {
     @Operation(summary = "Update a category (ADMIN)")
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Category> update(
+    public ResponseEntity<CategoryResponse> update(
             @PathVariable Long id, @Valid @RequestBody CategoryRequest request) {
         return ResponseEntity.ok(categoryService.update(id, request.getName()));
     }

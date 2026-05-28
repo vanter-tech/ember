@@ -1,7 +1,7 @@
 package com.vanter.ember.catalog.controller;
 
-import com.vanter.ember.catalog.model.MenuItem;
 import com.vanter.ember.catalog.model.dto.MenuItemRequest;
+import com.vanter.ember.catalog.model.dto.MenuItemResponse;
 import com.vanter.ember.catalog.service.MenuItemService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -33,13 +33,13 @@ public class MenuItemController {
 
     @Operation(summary = "List all menu items")
     @GetMapping
-    public List<MenuItem> getAll() {
+    public List<MenuItemResponse> getAll() {
         return menuItemService.findAll();
     }
 
     @Operation(summary = "Get menu item by ID")
     @GetMapping("/{id}")
-    public MenuItem getById(@PathVariable Long id) {
+    public MenuItemResponse getById(@PathVariable Long id) {
         return menuItemService.findById(id);
     }
 
@@ -47,7 +47,7 @@ public class MenuItemController {
     @PostMapping(consumes = "multipart/form-data")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('ADMIN')")
-    public MenuItem create(
+    public MenuItemResponse create(
             @Valid @ModelAttribute MenuItemRequest menuItemRequest,
             @RequestPart(required = false) MultipartFile image) {
         return menuItemService.create(menuItemRequest, image);
@@ -56,7 +56,7 @@ public class MenuItemController {
     @Operation(summary = "Update a menu item (ADMIN)")
     @PutMapping(value = "/{id}", consumes = "multipart/form-data")
     @PreAuthorize("hasRole('ADMIN')")
-    public MenuItem update(
+    public MenuItemResponse update(
             @PathVariable Long id,
             @Valid @ModelAttribute MenuItemRequest menuItemRequest,
             @RequestPart(required = false) MultipartFile image) {
@@ -66,7 +66,7 @@ public class MenuItemController {
     @Operation(summary = "Toggle availability (ADMIN)")
     @PatchMapping("/{id}/availability")
     @PreAuthorize("hasRole('ADMIN')")
-    public MenuItem toggleAvailability(@PathVariable Long id) {
+    public MenuItemResponse toggleAvailability(@PathVariable Long id) {
         return menuItemService.toggleAvailability(id);
     }
 

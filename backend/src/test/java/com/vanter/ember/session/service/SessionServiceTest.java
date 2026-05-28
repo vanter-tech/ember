@@ -1,8 +1,8 @@
 package com.vanter.ember.session.service;
 
-import com.vanter.ember.catalog.model.MenuItem;
-import com.vanter.ember.catalog.model.RestaurantTable;
 import com.vanter.ember.catalog.model.TableStatus;
+import com.vanter.ember.catalog.model.dto.MenuItemResponse;
+import com.vanter.ember.catalog.model.dto.RestaurantTableResponse;
 import com.vanter.ember.catalog.service.MenuItemService;
 import com.vanter.ember.catalog.service.RestaurantTableService;
 import com.vanter.ember.config.ResourceNotFoundException;
@@ -50,8 +50,8 @@ class SessionServiceTest {
     @Mock QrTokenService qrTokenService;
     @InjectMocks SessionService sessionService;
 
-    private RestaurantTable availableTable() {
-        return RestaurantTable.builder()
+    private RestaurantTableResponse availableTable() {
+        return RestaurantTableResponse.builder()
                 .id(1L).number(5).capacity(4).status(TableStatus.AVAILABLE).build();
     }
 
@@ -103,7 +103,7 @@ class SessionServiceTest {
 
     @Test
     void createSession_throwsWhenTableOccupied() {
-        RestaurantTable occupied = RestaurantTable.builder()
+        RestaurantTableResponse occupied = RestaurantTableResponse.builder()
                 .id(1L).number(5).capacity(4).status(TableStatus.OCCUPIED).build();
         when(tableService.findById(1L)).thenReturn(occupied);
 
@@ -218,8 +218,8 @@ class SessionServiceTest {
 
     // --- addItem tests ---
 
-    private MenuItem availableMenuItem() {
-        return MenuItem.builder()
+    private MenuItemResponse availableMenuItem() {
+        return MenuItemResponse.builder()
                 .id(10L).name("Tacos").price(new java.math.BigDecimal("12.50"))
                 .available(true).build();
     }
@@ -280,7 +280,7 @@ class SessionServiceTest {
     @Test
     void addItem_throwsWhenMenuItemNotAvailable() {
         Session session = openSessionWithParticipant("user-1");
-        MenuItem unavailable = availableMenuItem();
+        MenuItemResponse unavailable = availableMenuItem();
         unavailable.setAvailable(false);
         when(sessionRepository.findById("sess-1")).thenReturn(Optional.of(session));
         when(menuItemService.findById(10L)).thenReturn(unavailable);

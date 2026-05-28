@@ -1,9 +1,9 @@
 package com.vanter.ember.catalog.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.vanter.ember.catalog.model.RestaurantTable;
 import com.vanter.ember.catalog.model.TableStatus;
 import com.vanter.ember.catalog.model.dto.RestaurantTableRequest;
+import com.vanter.ember.catalog.model.dto.RestaurantTableResponse;
 import com.vanter.ember.catalog.service.RestaurantTableService;
 import com.vanter.ember.config.CorsConfig;
 import com.vanter.ember.config.ResourceNotFoundException;
@@ -44,8 +44,8 @@ class RestaurantTableControllerTest {
     @MockBean JwtService jwtService;
     @MockBean UserDetailsService userDetailsService;
 
-    private RestaurantTable table1() {
-        return RestaurantTable.builder()
+    private RestaurantTableResponse table1() {
+        return RestaurantTableResponse.builder()
                 .id(1L).number(1).capacity(4).status(TableStatus.AVAILABLE).build();
     }
 
@@ -61,7 +61,7 @@ class RestaurantTableControllerTest {
     void getAll_returns200WithList() throws Exception {
         when(tableService.findAll()).thenReturn(List.of(table1()));
 
-        mockMvc.perform(get("/api/catalog/tables"))
+        mockMvc.perform(get("/catalog/tables"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].number").value(1));
     }
@@ -71,7 +71,7 @@ class RestaurantTableControllerTest {
     void getById_returns200() throws Exception {
         when(tableService.findById(1L)).thenReturn(table1());
 
-        mockMvc.perform(get("/api/catalog/tables/1"))
+        mockMvc.perform(get("/catalog/tables/1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.capacity").value(4));
     }
@@ -82,7 +82,7 @@ class RestaurantTableControllerTest {
         when(tableService.findById(99L))
                 .thenThrow(new ResourceNotFoundException("Table not found: 99"));
 
-        mockMvc.perform(get("/api/catalog/tables/99"))
+        mockMvc.perform(get("/catalog/tables/99"))
                 .andExpect(status().isNotFound());
     }
 
@@ -91,7 +91,7 @@ class RestaurantTableControllerTest {
     void create_returns201ForAdmin() throws Exception {
         when(tableService.create(any())).thenReturn(table1());
 
-        mockMvc.perform(post("/api/catalog/tables")
+        mockMvc.perform(post("/catalog/tables")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(tableRequest())))
                 .andExpect(status().isCreated())
@@ -101,7 +101,7 @@ class RestaurantTableControllerTest {
     @Test
     @WithMockUser(roles = "CUSTOMER")
     void create_returns403ForNonAdmin() throws Exception {
-        mockMvc.perform(post("/api/catalog/tables")
+        mockMvc.perform(post("/catalog/tables")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(tableRequest())))
                 .andExpect(status().isForbidden());
@@ -111,14 +111,14 @@ class RestaurantTableControllerTest {
     @WithMockUser(roles = "ADMIN")
     void update_returns200ForAdmin() throws Exception {
         when(tableService.updateCapacity(eq(1L), eq(6))).thenReturn(
-                RestaurantTable.builder().id(1L).number(1).capacity(6)
+                RestaurantTableResponse.builder().id(1L).number(1).capacity(6)
                         .status(TableStatus.AVAILABLE).build());
 
         RestaurantTableRequest req = new RestaurantTableRequest();
         req.setNumber(1);
         req.setCapacity(6);
 
-        mockMvc.perform(put("/api/catalog/tables/1")
+        mockMvc.perform(put("/catalog/tables/1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isOk())
@@ -128,7 +128,7 @@ class RestaurantTableControllerTest {
     @Test
     @WithMockUser(roles = "CUSTOMER")
     void update_returns403ForNonAdmin() throws Exception {
-        mockMvc.perform(put("/api/catalog/tables/1")
+        mockMvc.perform(put("/catalog/tables/1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(tableRequest())))
                 .andExpect(status().isForbidden());
@@ -137,11 +137,11 @@ class RestaurantTableControllerTest {
     @Test
     @WithMockUser(roles = "WAITER")
     void patchStatus_setOccupied_returns200ForWaiter() throws Exception {
-        RestaurantTable occupied = RestaurantTable.builder()
+        RestaurantTableResponse occupied = RestaurantTableResponse.builder()
                 .id(1L).number(1).capacity(4).status(TableStatus.OCCUPIED).build();
         when(tableService.setOccupied(1L)).thenReturn(occupied);
 
-        mockMvc.perform(patch("/api/catalog/tables/1/status")
+        mockMvc.perform(patch("/catalog/tables/1/status")
                         .param("status", "OCCUPIED"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("OCCUPIED"));
@@ -152,7 +152,7 @@ class RestaurantTableControllerTest {
     void patchStatus_setAvailable_returns200ForWaiter() throws Exception {
         when(tableService.setAvailable(1L)).thenReturn(table1());
 
-        mockMvc.perform(patch("/api/catalog/tables/1/status")
+        mockMvc.perform(patch("/catalog/tables/1/status")
                         .param("status", "AVAILABLE"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("AVAILABLE"));
@@ -161,7 +161,7 @@ class RestaurantTableControllerTest {
     @Test
     @WithMockUser(roles = "CUSTOMER")
     void patchStatus_returns403ForCustomer() throws Exception {
-        mockMvc.perform(patch("/api/catalog/tables/1/status")
+        mockMvc.perform(patch("/catalog/tables/1/status")
                         .param("status", "OCCUPIED"))
                 .andExpect(status().isForbidden());
     }
@@ -169,14 +169,14 @@ class RestaurantTableControllerTest {
     @Test
     @WithMockUser(roles = "ADMIN")
     void delete_returns204ForAdmin() throws Exception {
-        mockMvc.perform(delete("/api/catalog/tables/1"))
+        mockMvc.perform(delete("/catalog/tables/1"))
                 .andExpect(status().isNoContent());
     }
 
     @Test
     @WithMockUser(roles = "CUSTOMER")
     void delete_returns403ForNonAdmin() throws Exception {
-        mockMvc.perform(delete("/api/catalog/tables/1"))
+        mockMvc.perform(delete("/catalog/tables/1"))
                 .andExpect(status().isForbidden());
     }
 
@@ -186,7 +186,7 @@ class RestaurantTableControllerTest {
         when(tableService.setOccupied(1L))
                 .thenThrow(new IllegalStateException("Table 1 is already occupied"));
 
-        mockMvc.perform(patch("/api/catalog/tables/1/status")
+        mockMvc.perform(patch("/catalog/tables/1/status")
                         .param("status", "OCCUPIED"))
                 .andExpect(status().isConflict());
     }

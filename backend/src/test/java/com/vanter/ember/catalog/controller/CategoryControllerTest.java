@@ -1,8 +1,8 @@
 package com.vanter.ember.catalog.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.vanter.ember.catalog.model.Category;
 import com.vanter.ember.catalog.model.dto.CategoryRequest;
+import com.vanter.ember.catalog.model.dto.CategoryResponse;
 import com.vanter.ember.catalog.service.CategoryService;
 import com.vanter.ember.config.CorsConfig;
 import com.vanter.ember.config.ResourceNotFoundException;
@@ -46,9 +46,9 @@ class CategoryControllerTest {
     @WithMockUser
     void getAll_returns200WithList() throws Exception {
         when(categoryService.findAll()).thenReturn(
-                List.of(Category.builder().id(1L).name("Burgers").build()));
+                List.of(CategoryResponse.builder().id(1L).name("Burgers").build()));
 
-        mockMvc.perform(get("/api/catalog/categories"))
+        mockMvc.perform(get("/catalog/categories"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].name").value("Burgers"));
     }
@@ -57,12 +57,12 @@ class CategoryControllerTest {
     @WithMockUser(roles = "ADMIN")
     void create_returns201ForAdmin() throws Exception {
         when(categoryService.create("Burgers")).thenReturn(
-                Category.builder().id(1L).name("Burgers").build());
+                CategoryResponse.builder().id(1L).name("Burgers").build());
 
         CategoryRequest req = new CategoryRequest();
         req.setName("Burgers");
 
-        mockMvc.perform(post("/api/catalog/categories")
+        mockMvc.perform(post("/catalog/categories")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isCreated())
@@ -75,7 +75,7 @@ class CategoryControllerTest {
         CategoryRequest req = new CategoryRequest();
         req.setName("Burgers");
 
-        mockMvc.perform(post("/api/catalog/categories")
+        mockMvc.perform(post("/catalog/categories")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isForbidden());
@@ -85,12 +85,12 @@ class CategoryControllerTest {
     @WithMockUser(roles = "ADMIN")
     void update_returns200ForAdmin() throws Exception {
         when(categoryService.update(eq(1L), any())).thenReturn(
-                Category.builder().id(1L).name("Sandwiches").build());
+                CategoryResponse.builder().id(1L).name("Sandwiches").build());
 
         CategoryRequest req = new CategoryRequest();
         req.setName("Sandwiches");
 
-        mockMvc.perform(put("/api/catalog/categories/1")
+        mockMvc.perform(put("/catalog/categories/1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isOk())
@@ -103,7 +103,7 @@ class CategoryControllerTest {
         CategoryRequest req = new CategoryRequest();
         req.setName("Sandwiches");
 
-        mockMvc.perform(put("/api/catalog/categories/1")
+        mockMvc.perform(put("/catalog/categories/1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isForbidden());
@@ -112,14 +112,14 @@ class CategoryControllerTest {
     @Test
     @WithMockUser(roles = "ADMIN")
     void delete_returns204ForAdmin() throws Exception {
-        mockMvc.perform(delete("/api/catalog/categories/1"))
+        mockMvc.perform(delete("/catalog/categories/1"))
                 .andExpect(status().isNoContent());
     }
 
     @Test
     @WithMockUser(roles = "CUSTOMER")
     void delete_returns403ForNonAdmin() throws Exception {
-        mockMvc.perform(delete("/api/catalog/categories/1"))
+        mockMvc.perform(delete("/catalog/categories/1"))
                 .andExpect(status().isForbidden());
     }
 
@@ -129,7 +129,7 @@ class CategoryControllerTest {
         CategoryRequest req = new CategoryRequest();
         req.setName("");
 
-        mockMvc.perform(post("/api/catalog/categories")
+        mockMvc.perform(post("/catalog/categories")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isBadRequest());
@@ -141,7 +141,7 @@ class CategoryControllerTest {
         when(categoryService.findById(99L))
                 .thenThrow(new ResourceNotFoundException("Category not found: 99"));
 
-        mockMvc.perform(get("/api/catalog/categories/99"))
+        mockMvc.perform(get("/catalog/categories/99"))
                 .andExpect(status().isNotFound());
     }
 
@@ -151,7 +151,7 @@ class CategoryControllerTest {
         doThrow(new ResourceNotFoundException("Category not found: 99"))
                 .when(categoryService).delete(99L);
 
-        mockMvc.perform(delete("/api/catalog/categories/99"))
+        mockMvc.perform(delete("/catalog/categories/99"))
                 .andExpect(status().isNotFound());
     }
 }
