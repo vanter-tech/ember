@@ -187,7 +187,7 @@ class E2EOrderFlowTest {
                 .andExpect(status().isOk());
 
         // 6 — Waiter calculates bill
-        MvcResult billResult = mockMvc.perform(post("/api/billing/sessions/" + sessionId + "/bill")
+        MvcResult billResult = mockMvc.perform(post("/billing/sessions/" + sessionId + "/bill")
                         .header("Authorization", bearer(waiterToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
@@ -202,7 +202,7 @@ class E2EOrderFlowTest {
                 .get("total").decimalValue()).isEqualByComparingTo("12.00");
 
         // 7 — Waiter splits by consumption
-        mockMvc.perform(post("/api/billing/bills/" + billId + "/split")
+        mockMvc.perform(post("/billing/bills/" + billId + "/split")
                         .header("Authorization", bearer(waiterToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
@@ -212,7 +212,7 @@ class E2EOrderFlowTest {
         // 8 — Waiter registers Alice's physical payment
         PhysicalPaymentRequest payReq = new PhysicalPaymentRequest(
                 billId, "Alice", new BigDecimal("12.00"));
-        mockMvc.perform(post("/api/billing/payments/physical")
+        mockMvc.perform(post("/billing/payments/physical")
                         .header("Authorization", bearer(waiterToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(payReq)))

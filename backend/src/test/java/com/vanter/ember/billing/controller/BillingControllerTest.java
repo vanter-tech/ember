@@ -72,7 +72,7 @@ class BillingControllerTest {
                 .status(PaymentStatus.CONFIRMED).createdAt(LocalDateTime.now()).build();
     }
 
-    // --- POST /api/billing/sessions/{sessionId}/bill ---
+    // --- POST /billing/sessions/{sessionId}/bill ---
 
     @Test
     @WithMockUser(roles = "WAITER")
@@ -81,7 +81,7 @@ class BillingControllerTest {
                 .thenReturn(sampleBill());
 
         CalculateBillRequest req = new CalculateBillRequest(SplitMethod.BY_CONSUMPTION);
-        mockMvc.perform(post("/api/billing/sessions/sess-1/bill")
+        mockMvc.perform(post("/billing/sessions/sess-1/bill")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isCreated())
@@ -94,7 +94,7 @@ class BillingControllerTest {
     @WithMockUser(roles = "CUSTOMER")
     void calculateBill_forbiddenForCustomer() throws Exception {
         CalculateBillRequest req = new CalculateBillRequest(SplitMethod.BY_CONSUMPTION);
-        mockMvc.perform(post("/api/billing/sessions/sess-1/bill")
+        mockMvc.perform(post("/billing/sessions/sess-1/bill")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isForbidden());
@@ -104,13 +104,13 @@ class BillingControllerTest {
     @WithMockUser(roles = "KITCHEN")
     void calculateBill_forbiddenForKitchen() throws Exception {
         CalculateBillRequest req = new CalculateBillRequest(SplitMethod.BY_CONSUMPTION);
-        mockMvc.perform(post("/api/billing/sessions/sess-1/bill")
+        mockMvc.perform(post("/billing/sessions/sess-1/bill")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isForbidden());
     }
 
-    // --- POST /api/billing/bills/{id}/split ---
+    // --- POST /billing/bills/{id}/split ---
 
     @Test
     @WithMockUser(roles = "WAITER")
@@ -119,7 +119,7 @@ class BillingControllerTest {
         when(billingService.splitByConsumption(1L)).thenReturn(List.of(sampleSplit(bill)));
 
         SplitBillRequest req = new SplitBillRequest(SplitMethod.BY_CONSUMPTION, null);
-        mockMvc.perform(post("/api/billing/bills/1/split")
+        mockMvc.perform(post("/billing/bills/1/split")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isOk())
@@ -131,7 +131,7 @@ class BillingControllerTest {
     @WithMockUser(roles = "CUSTOMER")
     void splitBill_forbiddenForCustomer() throws Exception {
         SplitBillRequest req = new SplitBillRequest(SplitMethod.BY_CONSUMPTION, null);
-        mockMvc.perform(post("/api/billing/bills/1/split")
+        mockMvc.perform(post("/billing/bills/1/split")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isForbidden());
@@ -144,7 +144,7 @@ class BillingControllerTest {
         when(billingService.splitEqually(1L, 2)).thenReturn(List.of(sampleSplit(bill)));
 
         SplitBillRequest req = new SplitBillRequest(SplitMethod.EQUAL_PARTS, 2);
-        mockMvc.perform(post("/api/billing/bills/1/split")
+        mockMvc.perform(post("/billing/bills/1/split")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isOk());
@@ -154,13 +154,13 @@ class BillingControllerTest {
     @WithMockUser(roles = "KITCHEN")
     void splitBill_forbiddenForKitchen() throws Exception {
         SplitBillRequest req = new SplitBillRequest(SplitMethod.BY_CONSUMPTION, null);
-        mockMvc.perform(post("/api/billing/bills/1/split")
+        mockMvc.perform(post("/billing/bills/1/split")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isForbidden());
     }
 
-    // --- POST /api/billing/payments/physical ---
+    // --- POST /billing/payments/physical ---
 
     @Test
     @WithMockUser(roles = "WAITER")
@@ -170,7 +170,7 @@ class BillingControllerTest {
                 .thenReturn(samplePayment(bill));
 
         PhysicalPaymentRequest req = new PhysicalPaymentRequest(1L, "Alice", new BigDecimal("25.00"));
-        mockMvc.perform(post("/api/billing/payments/physical")
+        mockMvc.perform(post("/billing/payments/physical")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isCreated())
@@ -182,13 +182,13 @@ class BillingControllerTest {
     @WithMockUser(roles = "CUSTOMER")
     void registerPhysicalPayment_forbiddenForCustomer() throws Exception {
         PhysicalPaymentRequest req = new PhysicalPaymentRequest(1L, "Alice", new BigDecimal("25.00"));
-        mockMvc.perform(post("/api/billing/payments/physical")
+        mockMvc.perform(post("/billing/payments/physical")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isForbidden());
     }
 
-    // --- POST /api/billing/payments/digital ---
+    // --- POST /billing/payments/digital ---
 
     @Test
     @WithMockUser(roles = "CUSTOMER")
@@ -203,7 +203,7 @@ class BillingControllerTest {
                 .thenReturn(pending);
 
         DigitalPaymentRequest req = new DigitalPaymentRequest(1L, "Alice", new BigDecimal("25.00"));
-        mockMvc.perform(post("/api/billing/payments/digital")
+        mockMvc.perform(post("/billing/payments/digital")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isCreated())
@@ -225,7 +225,7 @@ class BillingControllerTest {
                 .thenReturn(pending);
 
         DigitalPaymentRequest req = new DigitalPaymentRequest(1L, "Alice", new BigDecimal("25.00"));
-        mockMvc.perform(post("/api/billing/payments/digital")
+        mockMvc.perform(post("/billing/payments/digital")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isCreated());
@@ -235,13 +235,13 @@ class BillingControllerTest {
     @WithMockUser(roles = "KITCHEN")
     void initiateDigitalPayment_forbiddenForKitchen() throws Exception {
         DigitalPaymentRequest req = new DigitalPaymentRequest(1L, "Alice", new BigDecimal("25.00"));
-        mockMvc.perform(post("/api/billing/payments/digital")
+        mockMvc.perform(post("/billing/payments/digital")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isForbidden());
     }
 
-    // --- POST /api/billing/payments/{id}/confirm ---
+    // --- POST /billing/payments/{id}/confirm ---
 
     @Test
     @WithMockUser(roles = "WAITER")
@@ -254,7 +254,7 @@ class BillingControllerTest {
                 .createdAt(LocalDateTime.now()).build();
         when(paymentService.confirmDigitalPayment(20L)).thenReturn(confirmed);
 
-        mockMvc.perform(post("/api/billing/payments/20/confirm"))
+        mockMvc.perform(post("/billing/payments/20/confirm"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("CONFIRMED"));
     }
@@ -262,7 +262,7 @@ class BillingControllerTest {
     @Test
     @WithMockUser(roles = "CUSTOMER")
     void confirmDigitalPayment_forbiddenForCustomer() throws Exception {
-        mockMvc.perform(post("/api/billing/payments/20/confirm"))
+        mockMvc.perform(post("/billing/payments/20/confirm"))
                 .andExpect(status().isForbidden());
     }
 }
