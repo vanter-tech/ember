@@ -2,6 +2,9 @@ import {BrowserRouter, Routes, Route, Navigate} from 'react-router-dom'
 import { useAuthStore } from './store/authStore'
 import {ProtectedRoute} from './components/ProtectedRoute'
 import {NotFound} from './components/NotFound'
+import { Login } from './components/Login'
+import { Register } from './components/Register'
+import {Toaster} from 'react-hot-toast'
 
 const RoleRedirect = () => {
   const { role } = useAuthStore()
@@ -18,10 +21,12 @@ const RoleRedirect = () => {
 export default function App() {
   return (
     <BrowserRouter>
+      <Toaster />
       <Routes>
 
         <Route path="/" element={<RoleRedirect />} />
-        <Route path="/login" element = {<div className="p-10 text-2xl">Pantalla de Login (En construcción)</div>} />
+        <Route path="/login" element = {<Login />} />
+        <Route path="/register" element = {<Register />} />
         
         <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
           <Route path="/admin/*" element={<div className="p-10 text-2xl">Panel de Administración</div>} />
