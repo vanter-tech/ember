@@ -2,6 +2,7 @@ package com.vanter.ember.session.service;
 
 import com.vanter.ember.catalog.model.MenuItem;
 import com.vanter.ember.catalog.model.TableStatus;
+import com.vanter.ember.catalog.model.dto.MenuItemResponse;
 import com.vanter.ember.catalog.service.MenuItemService;
 import com.vanter.ember.catalog.service.RestaurantTableService;
 import com.vanter.ember.config.ResourceNotFoundException;
@@ -119,7 +120,7 @@ public class SessionService {
                 .orElseThrow(() -> new IllegalStateException(
                         participantId + " is not a participant of session " + sessionId));
 
-        MenuItem menuItem = menuItemService.findById(menuItemId);
+        MenuItemResponse menuItem = menuItemService.findById(menuItemId);
         if (!menuItem.isAvailable()) {
             throw new IllegalStateException("Menu item " + menuItemId + " is not available");
         }

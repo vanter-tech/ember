@@ -1,6 +1,7 @@
 package com.vanter.ember.catalog.service;
 
 import com.vanter.ember.catalog.model.Category;
+import com.vanter.ember.catalog.model.dto.CategoryResponse;
 import com.vanter.ember.catalog.repository.CategoryRepository;
 import com.vanter.ember.config.ResourceNotFoundException;
 import org.junit.jupiter.api.Test;
@@ -30,7 +31,7 @@ class CategoryServiceTest {
         when(categoryRepository.save(any())).thenReturn(
                 Category.builder().id(1L).name("Burgers").build());
 
-        Category result = categoryService.create("Burgers");
+        CategoryResponse result = categoryService.create("Burgers");
 
         assertThat(result.getName()).isEqualTo("Burgers");
         verify(categoryRepository).save(any(Category.class));
@@ -51,7 +52,7 @@ class CategoryServiceTest {
                 List.of(Category.builder().id(1L).name("Burgers").build(),
                         Category.builder().id(2L).name("Drinks").build()));
 
-        List<Category> result = categoryService.findAll();
+        List<CategoryResponse> result = categoryService.findAll();
 
         assertThat(result).hasSize(2);
     }
@@ -61,7 +62,7 @@ class CategoryServiceTest {
         when(categoryRepository.findById(1L)).thenReturn(
                 Optional.of(Category.builder().id(1L).name("Burgers").build()));
 
-        Category result = categoryService.findById(1L);
+        CategoryResponse result = categoryService.findById(1L);
 
         assertThat(result.getName()).isEqualTo("Burgers");
     }
@@ -82,7 +83,7 @@ class CategoryServiceTest {
         when(categoryRepository.existsByName("Sandwiches")).thenReturn(false);
         when(categoryRepository.save(any())).thenAnswer(i -> i.getArgument(0));
 
-        Category result = categoryService.update(1L, "Sandwiches");
+        CategoryResponse result = categoryService.update(1L, "Sandwiches");
 
         assertThat(result.getName()).isEqualTo("Sandwiches");
     }

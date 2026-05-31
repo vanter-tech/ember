@@ -28,7 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @Tag(name = "Sessions", description = "Dining session lifecycle")
 @RestController
-@RequestMapping("/api/sessions")
+@RequestMapping("/sessions")
 @RequiredArgsConstructor
 public class SessionController {
 

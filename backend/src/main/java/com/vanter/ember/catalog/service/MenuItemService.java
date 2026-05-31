@@ -2,6 +2,7 @@ package com.vanter.ember.catalog.service;
 
 import com.vanter.ember.catalog.model.MenuItem;
 import com.vanter.ember.catalog.model.dto.MenuItemRequest;
+import com.vanter.ember.catalog.model.dto.MenuItemResponse;
 import com.vanter.ember.catalog.repository.CategoryRepository;
 import com.vanter.ember.catalog.repository.MenuItemRepository;
 import com.vanter.ember.config.MinioProperties;
@@ -20,7 +21,7 @@ public class MenuItemService {
     private final ImageUploadService imageUploadService;
     private final MinioProperties minioProperties;
 
-    public MenuItem create(MenuItemRequest request, MultipartFile image) {
+    public MenuItemResponse create(MenuItemRequest request, MultipartFile image) {
         var category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Category not found: " + request.getCategoryId()));
@@ -37,20 +38,21 @@ public class MenuItemService {
             item.setImageUrl(imageUploadService.uploadImage(image, minioProperties.getBucket()));
         }
 
-        return menuItemRepository.save(item);
+        return MenuItemResponse.from(menuItemRepository.save(item));
     }
 
-    public List<MenuItem> findAll() {
-        return menuItemRepository.findAll();
+    public List<MenuItemResponse> findAll() {
+        return menuItemRepository.findAll().stream()
+                .map(MenuItemResponse::from)
+                .toList();
     }
 
-    public MenuItem findById(Long id) {
-        return menuItemRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Menu item not found: " + id));
+    public MenuItemResponse findById(Long id) {
+        return MenuItemResponse.from(findEntityById(id));
     }
 
-    public MenuItem update(Long id, MenuItemRequest request, MultipartFile image) {
-        var item = findById(id);
+    public MenuItemResponse update(Long id, MenuItemRequest request, MultipartFile image) {
+        var item = findEntityById(id);
         var category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Category not found: " + request.getCategoryId()));
@@ -67,20 +69,25 @@ public class MenuItemService {
             item.setImageUrl(imageUploadService.uploadImage(image, minioProperties.getBucket()));
         }
 
-        return menuItemRepository.save(item);
+        return MenuItemResponse.from(menuItemRepository.save(item));
     }
 
-    public MenuItem toggleAvailability(Long id) {
-        var item = findById(id);
+    public MenuItemResponse toggleAvailability(Long id) {
+        var item = findEntityById(id);
         item.setAvailable(!item.isAvailable());
-        return menuItemRepository.save(item);
+        return MenuItemResponse.from(menuItemRepository.save(item));
     }
 
     public void delete(Long id) {
-        var item = findById(id);
+        var item = findEntityById(id);
         if (item.getImageUrl() != null) {
             imageUploadService.deleteImage(item.getImageUrl());
         }
         menuItemRepository.deleteById(id);
+    }
+
+    private MenuItem findEntityById(Long id) {
+        return menuItemRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Menu item not found: " + id));
     }
 }

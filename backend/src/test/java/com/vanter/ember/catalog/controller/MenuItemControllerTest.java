@@ -1,8 +1,8 @@
 package com.vanter.ember.catalog.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.vanter.ember.catalog.model.Category;
-import com.vanter.ember.catalog.model.MenuItem;
+import com.vanter.ember.catalog.model.dto.CategoryResponse;
+import com.vanter.ember.catalog.model.dto.MenuItemResponse;
 import com.vanter.ember.catalog.service.MenuItemService;
 import com.vanter.ember.config.CorsConfig;
 import com.vanter.ember.config.ResourceNotFoundException;
@@ -45,11 +45,11 @@ class MenuItemControllerTest {
     @MockBean JwtService jwtService;
     @MockBean UserDetailsService userDetailsService;
 
-    private MenuItem burger() {
-        return MenuItem.builder()
+    private MenuItemResponse burger() {
+        return MenuItemResponse.builder()
                 .id(1L).name("Classic Burger").description("Beef patty")
                 .price(new BigDecimal("9.99"))
-                .category(Category.builder().id(1L).name("Burgers").build())
+                .category(CategoryResponse.builder().id(1L).name("Burgers").build())
                 .available(true).build();
     }
 
@@ -58,7 +58,7 @@ class MenuItemControllerTest {
     void getAll_returns200WithList() throws Exception {
         when(menuItemService.findAll()).thenReturn(List.of(burger()));
 
-        mockMvc.perform(get("/api/catalog/items"))
+        mockMvc.perform(get("/catalog/items"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].name").value("Classic Burger"));
     }
@@ -68,7 +68,7 @@ class MenuItemControllerTest {
     void getById_returns200() throws Exception {
         when(menuItemService.findById(1L)).thenReturn(burger());
 
-        mockMvc.perform(get("/api/catalog/items/1"))
+        mockMvc.perform(get("/catalog/items/1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("Classic Burger"));
     }
@@ -79,7 +79,7 @@ class MenuItemControllerTest {
         when(menuItemService.findById(99L))
                 .thenThrow(new ResourceNotFoundException("Menu item not found: 99"));
 
-        mockMvc.perform(get("/api/catalog/items/99"))
+        mockMvc.perform(get("/catalog/items/99"))
                 .andExpect(status().isNotFound());
     }
 
@@ -88,7 +88,7 @@ class MenuItemControllerTest {
     void create_returns201ForAdminWithoutImage() throws Exception {
         when(menuItemService.create(any(), isNull())).thenReturn(burger());
 
-        mockMvc.perform(multipart("/api/catalog/items")
+        mockMvc.perform(multipart("/catalog/items")
                         .param("name", "Classic Burger")
                         .param("description", "Beef patty")
                         .param("price", "9.99")
@@ -100,9 +100,9 @@ class MenuItemControllerTest {
     @Test
     @WithMockUser(roles = "ADMIN")
     void create_returns201WithImage() throws Exception {
-        MenuItem item = MenuItem.builder().id(1L).name("Burger")
+        MenuItemResponse item = MenuItemResponse.builder().id(1L).name("Burger")
                 .price(new BigDecimal("9.99"))
-                .category(Category.builder().id(1L).name("Burgers").build())
+                .category(CategoryResponse.builder().id(1L).name("Burgers").build())
                 .available(true)
                 .imageUrl("http://localhost:9000/ember-media/uuid.jpg").build();
         when(menuItemService.create(any(), any())).thenReturn(item);
@@ -110,7 +110,7 @@ class MenuItemControllerTest {
         MockMultipartFile image = new MockMultipartFile(
                 "image", "photo.jpg", MediaType.IMAGE_JPEG_VALUE, new byte[100]);
 
-        mockMvc.perform(multipart("/api/catalog/items")
+        mockMvc.perform(multipart("/catalog/items")
                         .file(image)
                         .param("name", "Burger")
                         .param("price", "9.99")
@@ -122,7 +122,7 @@ class MenuItemControllerTest {
     @Test
     @WithMockUser(roles = "CUSTOMER")
     void create_returns403ForNonAdmin() throws Exception {
-        mockMvc.perform(multipart("/api/catalog/items")
+        mockMvc.perform(multipart("/catalog/items")
                         .param("name", "Burger")
                         .param("price", "9.99")
                         .param("categoryId", "1"))
@@ -134,7 +134,7 @@ class MenuItemControllerTest {
     void update_returns200ForAdmin() throws Exception {
         when(menuItemService.update(eq(1L), any(), isNull())).thenReturn(burger());
 
-        mockMvc.perform(multipart("/api/catalog/items/1")
+        mockMvc.perform(multipart("/catalog/items/1")
                         .with(req -> { req.setMethod("PUT"); return req; })
                         .param("name", "Classic Burger")
                         .param("price", "9.99")
@@ -146,7 +146,7 @@ class MenuItemControllerTest {
     @Test
     @WithMockUser(roles = "CUSTOMER")
     void update_returns403ForNonAdmin() throws Exception {
-        mockMvc.perform(multipart("/api/catalog/items/1")
+        mockMvc.perform(multipart("/catalog/items/1")
                         .with(req -> { req.setMethod("PUT"); return req; })
                         .param("name", "Burger")
                         .param("price", "9.99")
@@ -157,11 +157,11 @@ class MenuItemControllerTest {
     @Test
     @WithMockUser(roles = "ADMIN")
     void toggleAvailability_returns200ForAdmin() throws Exception {
-        MenuItem toggled = burger();
+        MenuItemResponse toggled = burger();
         toggled.setAvailable(false);
         when(menuItemService.toggleAvailability(1L)).thenReturn(toggled);
 
-        mockMvc.perform(patch("/api/catalog/items/1/availability"))
+        mockMvc.perform(patch("/catalog/items/1/availability"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.available").value(false));
     }
@@ -169,21 +169,21 @@ class MenuItemControllerTest {
     @Test
     @WithMockUser(roles = "CUSTOMER")
     void toggleAvailability_returns403ForNonAdmin() throws Exception {
-        mockMvc.perform(patch("/api/catalog/items/1/availability"))
+        mockMvc.perform(patch("/catalog/items/1/availability"))
                 .andExpect(status().isForbidden());
     }
 
     @Test
     @WithMockUser(roles = "ADMIN")
     void delete_returns204ForAdmin() throws Exception {
-        mockMvc.perform(delete("/api/catalog/items/1"))
+        mockMvc.perform(delete("/catalog/items/1"))
                 .andExpect(status().isNoContent());
     }
 
     @Test
     @WithMockUser(roles = "CUSTOMER")
     void delete_returns403ForNonAdmin() throws Exception {
-        mockMvc.perform(delete("/api/catalog/items/1"))
+        mockMvc.perform(delete("/catalog/items/1"))
                 .andExpect(status().isForbidden());
     }
 
@@ -193,7 +193,7 @@ class MenuItemControllerTest {
         doThrow(new ResourceNotFoundException("Menu item not found: 99"))
                 .when(menuItemService).delete(99L);
 
-        mockMvc.perform(delete("/api/catalog/items/99"))
+        mockMvc.perform(delete("/catalog/items/99"))
                 .andExpect(status().isNotFound());
     }
 }

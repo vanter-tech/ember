@@ -38,3 +38,7 @@ minio:
   access-key: minioadmin
   secret-key: minioadmin
   bucket: ember-media
+
+server:
+  servlet:
+    context-path: /api/v1

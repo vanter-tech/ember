@@ -68,6 +68,19 @@ services:
       timeout: 5s
       retries: 5
 
+
+  frontend:
+    build:
+      context: ./frontend
+    image: ember-frontend:latest
+    container_name: ember-frontend
+    ports:
+      - 5173:80
+    environment:
+      EMBW_API_URL: https://localhost:8080/api/v1
+    depends_on:
+      - app
+
 volumes:
   postgres_data:
   mongo_data:

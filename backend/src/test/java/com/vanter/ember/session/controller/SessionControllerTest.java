@@ -58,7 +58,7 @@ class SessionControllerTest {
                 .build();
     }
 
-    // --- POST /api/sessions ---
+    // --- POST /sessions ---
 
     @Test
     @WithMockUser(username = "waiter@test.com", roles = "WAITER")
@@ -66,7 +66,7 @@ class SessionControllerTest {
         when(sessionService.createSession(1L, "waiter@test.com", 4))
                 .thenReturn(sampleSession());
 
-        mockMvc.perform(post("/api/sessions")
+        mockMvc.perform(post("/sessions")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new CreateSessionRequest(1L, 4))))
                 .andExpect(status().isCreated())
@@ -77,7 +77,7 @@ class SessionControllerTest {
     @Test
     @WithMockUser(roles = "CUSTOMER")
     void createSession_forbiddenForCustomer() throws Exception {
-        mockMvc.perform(post("/api/sessions")
+        mockMvc.perform(post("/sessions")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new CreateSessionRequest(1L, 4))))
                 .andExpect(status().isForbidden());
@@ -85,13 +85,13 @@ class SessionControllerTest {
 
     @Test
     void createSession_unauthenticatedReturns401() throws Exception {
-        mockMvc.perform(post("/api/sessions")
+        mockMvc.perform(post("/sessions")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new CreateSessionRequest(1L, 4))))
                 .andExpect(status().isUnauthorized());
     }
 
-    // --- GET /api/sessions/{id}/qr ---
+    // --- GET /sessions/{id}/qr ---
 
     @Test
     @WithMockUser(username = "waiter@test.com", roles = "WAITER")
@@ -99,7 +99,7 @@ class SessionControllerTest {
         when(sessionService.findById("sess-1")).thenReturn(sampleSession());
         when(qrTokenService.generateQrToken("sess-1", 4)).thenReturn("qr-jwt-token");
 
-        mockMvc.perform(get("/api/sessions/sess-1/qr"))
+        mockMvc.perform(get("/sessions/sess-1/qr"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.qrToken").value("qr-jwt-token"));
     }
@@ -107,7 +107,7 @@ class SessionControllerTest {
     @Test
     @WithMockUser(roles = "CUSTOMER")
     void getQr_forbiddenForCustomer() throws Exception {
-        mockMvc.perform(get("/api/sessions/sess-1/qr"))
+        mockMvc.perform(get("/sessions/sess-1/qr"))
                 .andExpect(status().isForbidden());
     }
 
@@ -116,17 +116,17 @@ class SessionControllerTest {
     void getQr_forbiddenForWaiterWhoDoesNotOwnSession() throws Exception {
         when(sessionService.findById("sess-1")).thenReturn(sampleSession());
 
-        mockMvc.perform(get("/api/sessions/sess-1/qr"))
+        mockMvc.perform(get("/sessions/sess-1/qr"))
                 .andExpect(status().isForbidden());
     }
 
     @Test
     void getQr_unauthenticatedReturns401() throws Exception {
-        mockMvc.perform(get("/api/sessions/sess-1/qr"))
+        mockMvc.perform(get("/sessions/sess-1/qr"))
                 .andExpect(status().isUnauthorized());
     }
 
-    // --- POST /api/sessions/{id}/join ---
+    // --- POST /sessions/{id}/join ---
 
     @Test
     @WithMockUser(username = "customer@test.com", roles = "CUSTOMER")
@@ -137,7 +137,7 @@ class SessionControllerTest {
         when(sessionService.joinSession("qr-token", "customer@test.com", "Alice"))
                 .thenReturn(withParticipant);
 
-        mockMvc.perform(post("/api/sessions/sess-1/join")
+        mockMvc.perform(post("/sessions/sess-1/join")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new JoinSessionRequest("qr-token", "Alice"))))
                 .andExpect(status().isOk())
@@ -150,7 +150,7 @@ class SessionControllerTest {
         when(sessionService.joinSession(any(), any(), any()))
                 .thenThrow(new TooManyParticipantsException("full"));
 
-        mockMvc.perform(post("/api/sessions/sess-1/join")
+        mockMvc.perform(post("/sessions/sess-1/join")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new JoinSessionRequest("qr-token", "Alice"))))
                 .andExpect(status().isConflict());
@@ -158,13 +158,13 @@ class SessionControllerTest {
 
     @Test
     void joinSession_unauthenticatedReturns401() throws Exception {
-        mockMvc.perform(post("/api/sessions/sess-1/join")
+        mockMvc.perform(post("/sessions/sess-1/join")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new JoinSessionRequest("qr-token", "Alice"))))
                 .andExpect(status().isUnauthorized());
     }
 
-    // --- PATCH /api/sessions/{id}/capacity ---
+    // --- PATCH /sessions/{id}/capacity ---
 
     @Test
     @WithMockUser(username = "waiter@test.com", roles = "WAITER")
@@ -174,7 +174,7 @@ class SessionControllerTest {
         when(sessionService.expandCapacity("sess-1", "waiter@test.com", 2))
                 .thenReturn(expanded);
 
-        mockMvc.perform(patch("/api/sessions/sess-1/capacity")
+        mockMvc.perform(patch("/sessions/sess-1/capacity")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new ExpandCapacityRequest(2))))
                 .andExpect(status().isOk())
@@ -184,7 +184,7 @@ class SessionControllerTest {
     @Test
     @WithMockUser(roles = "CUSTOMER")
     void expandCapacity_forbiddenForCustomer() throws Exception {
-        mockMvc.perform(patch("/api/sessions/sess-1/capacity")
+        mockMvc.perform(patch("/sessions/sess-1/capacity")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new ExpandCapacityRequest(2))))
                 .andExpect(status().isForbidden());
@@ -192,13 +192,13 @@ class SessionControllerTest {
 
     @Test
     void expandCapacity_unauthenticatedReturns401() throws Exception {
-        mockMvc.perform(patch("/api/sessions/sess-1/capacity")
+        mockMvc.perform(patch("/sessions/sess-1/capacity")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new ExpandCapacityRequest(2))))
                 .andExpect(status().isUnauthorized());
     }
 
-    // --- GET /api/sessions/{id} ---
+    // --- GET /sessions/{id} ---
 
     @Test
     @WithMockUser(username = "customer@test.com", roles = "CUSTOMER")
@@ -208,7 +208,7 @@ class SessionControllerTest {
                 Participant.builder().userId("customer@test.com").name("Alice").build());
         when(sessionService.findById("sess-1")).thenReturn(session);
 
-        mockMvc.perform(get("/api/sessions/sess-1"))
+        mockMvc.perform(get("/sessions/sess-1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value("sess-1"))
                 .andExpect(jsonPath("$.status").value("OPEN"));
@@ -219,7 +219,7 @@ class SessionControllerTest {
     void getSession_returnsFullSessionForAssignedWaiter() throws Exception {
         when(sessionService.findById("sess-1")).thenReturn(sampleSession());
 
-        mockMvc.perform(get("/api/sessions/sess-1"))
+        mockMvc.perform(get("/sessions/sess-1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value("sess-1"));
     }
@@ -229,17 +229,17 @@ class SessionControllerTest {
     void getSession_forbiddenForCustomerNotInSession() throws Exception {
         when(sessionService.findById("sess-1")).thenReturn(sampleSession());
 
-        mockMvc.perform(get("/api/sessions/sess-1"))
+        mockMvc.perform(get("/sessions/sess-1"))
                 .andExpect(status().isForbidden());
     }
 
     @Test
     void getSession_unauthenticatedReturns401() throws Exception {
-        mockMvc.perform(get("/api/sessions/sess-1"))
+        mockMvc.perform(get("/sessions/sess-1"))
                 .andExpect(status().isUnauthorized());
     }
 
-    // --- POST /api/sessions/{id}/items ---
+    // --- POST /sessions/{id}/items ---
 
     @Test
     @WithMockUser(username = "customer@test.com", roles = "CUSTOMER")
@@ -247,7 +247,7 @@ class SessionControllerTest {
         when(sessionService.addItem("sess-1", "customer@test.com", 10L))
                 .thenReturn(sampleSession());
 
-        mockMvc.perform(post("/api/sessions/sess-1/items")
+        mockMvc.perform(post("/sessions/sess-1/items")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new AddItemRequest(10L))))
                 .andExpect(status().isOk())
@@ -257,7 +257,7 @@ class SessionControllerTest {
     @Test
     @WithMockUser(roles = "WAITER")
     void addItem_forbiddenForWaiter() throws Exception {
-        mockMvc.perform(post("/api/sessions/sess-1/items")
+        mockMvc.perform(post("/sessions/sess-1/items")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new AddItemRequest(10L))))
                 .andExpect(status().isForbidden());
@@ -265,13 +265,13 @@ class SessionControllerTest {
 
     @Test
     void addItem_unauthenticatedReturns401() throws Exception {
-        mockMvc.perform(post("/api/sessions/sess-1/items")
+        mockMvc.perform(post("/sessions/sess-1/items")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new AddItemRequest(10L))))
                 .andExpect(status().isUnauthorized());
     }
 
-    // --- DELETE /api/sessions/{id}/items/{itemId} ---
+    // --- DELETE /sessions/{id}/items/{itemId} ---
 
     @Test
     @WithMockUser(username = "customer@test.com", roles = "CUSTOMER")
@@ -279,7 +279,7 @@ class SessionControllerTest {
         when(sessionService.removeItem("sess-1", "order-item-1", "customer@test.com"))
                 .thenReturn(sampleSession());
 
-        mockMvc.perform(delete("/api/sessions/sess-1/items/order-item-1"))
+        mockMvc.perform(delete("/sessions/sess-1/items/order-item-1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value("sess-1"));
     }
@@ -290,14 +290,14 @@ class SessionControllerTest {
         when(sessionService.removeItem("sess-1", "order-item-1", "waiter@test.com"))
                 .thenReturn(sampleSession());
 
-        mockMvc.perform(delete("/api/sessions/sess-1/items/order-item-1"))
+        mockMvc.perform(delete("/sessions/sess-1/items/order-item-1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value("sess-1"));
     }
 
     @Test
     void removeItem_unauthenticatedReturns401() throws Exception {
-        mockMvc.perform(delete("/api/sessions/sess-1/items/order-item-1"))
+        mockMvc.perform(delete("/sessions/sess-1/items/order-item-1"))
                 .andExpect(status().isUnauthorized());
     }
 }

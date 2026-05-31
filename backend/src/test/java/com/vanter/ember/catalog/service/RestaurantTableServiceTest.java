@@ -3,6 +3,7 @@ package com.vanter.ember.catalog.service;
 import com.vanter.ember.catalog.model.RestaurantTable;
 import com.vanter.ember.catalog.model.TableStatus;
 import com.vanter.ember.catalog.model.dto.RestaurantTableRequest;
+import com.vanter.ember.catalog.model.dto.RestaurantTableResponse;
 import com.vanter.ember.catalog.repository.RestaurantTableRepository;
 import com.vanter.ember.config.ResourceNotFoundException;
 import org.junit.jupiter.api.Test;
@@ -46,7 +47,7 @@ class RestaurantTableServiceTest {
             return t;
         });
 
-        RestaurantTable result = tableService.create(tableRequest());
+        RestaurantTableResponse result = tableService.create(tableRequest());
 
         assertThat(result.getNumber()).isEqualTo(5);
         assertThat(result.getCapacity()).isEqualTo(4);
@@ -65,7 +66,7 @@ class RestaurantTableServiceTest {
         when(tableRepository.findByStatus(TableStatus.AVAILABLE))
                 .thenReturn(List.of(availableTable()));
 
-        List<RestaurantTable> result = tableService.findByStatus(TableStatus.AVAILABLE);
+        List<RestaurantTableResponse> result = tableService.findByStatus(TableStatus.AVAILABLE);
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getStatus()).isEqualTo(TableStatus.AVAILABLE);
@@ -91,7 +92,7 @@ class RestaurantTableServiceTest {
         when(tableRepository.findById(1L)).thenReturn(Optional.of(availableTable()));
         when(tableRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        RestaurantTable result = tableService.updateCapacity(1L, 6);
+        RestaurantTableResponse result = tableService.updateCapacity(1L, 6);
 
         assertThat(result.getCapacity()).isEqualTo(6);
         verify(tableRepository).save(any());
@@ -102,7 +103,7 @@ class RestaurantTableServiceTest {
         when(tableRepository.findById(1L)).thenReturn(Optional.of(availableTable()));
         when(tableRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        RestaurantTable result = tableService.setOccupied(1L);
+        RestaurantTableResponse result = tableService.setOccupied(1L);
 
         assertThat(result.getStatus()).isEqualTo(TableStatus.OCCUPIED);
     }
@@ -125,7 +126,7 @@ class RestaurantTableServiceTest {
         when(tableRepository.findById(1L)).thenReturn(Optional.of(occupied));
         when(tableRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        RestaurantTable result = tableService.setAvailable(1L);
+        RestaurantTableResponse result = tableService.setAvailable(1L);
 
         assertThat(result.getStatus()).isEqualTo(TableStatus.AVAILABLE);
     }

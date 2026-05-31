@@ -3,6 +3,7 @@ package com.vanter.ember.catalog.service;
 import com.vanter.ember.catalog.model.Category;
 import com.vanter.ember.catalog.model.MenuItem;
 import com.vanter.ember.catalog.model.dto.MenuItemRequest;
+import com.vanter.ember.catalog.model.dto.MenuItemResponse;
 import com.vanter.ember.catalog.repository.CategoryRepository;
 import com.vanter.ember.catalog.repository.MenuItemRepository;
 import com.vanter.ember.config.MinioProperties;
@@ -57,7 +58,7 @@ class MenuItemServiceTest {
             return item;
         });
 
-        MenuItem result = menuItemService.create(burgerRequest(), null);
+        MenuItemResponse result = menuItemService.create(burgerRequest(), null);
 
         assertThat(result.getName()).isEqualTo("Classic Burger");
         assertThat(result.getImageUrl()).isNull();
@@ -75,7 +76,7 @@ class MenuItemServiceTest {
                 .thenReturn("http://localhost:9000/ember-media/uuid.jpg");
         when(menuItemRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        MenuItem result = menuItemService.create(burgerRequest(), image);
+        MenuItemResponse result = menuItemService.create(burgerRequest(), image);
 
         assertThat(result.getImageUrl()).isEqualTo("http://localhost:9000/ember-media/uuid.jpg");
     }
@@ -120,7 +121,7 @@ class MenuItemServiceTest {
         when(categoryRepository.findById(1L)).thenReturn(Optional.of(burgersCategory()));
         when(menuItemRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        MenuItem result = menuItemService.update(1L, burgerRequest(), null);
+        MenuItemResponse result = menuItemService.update(1L, burgerRequest(), null);
 
         assertThat(result.getName()).isEqualTo("Classic Burger");
         assertThat(result.getPrice()).isEqualByComparingTo("9.99");
@@ -142,7 +143,7 @@ class MenuItemServiceTest {
                 .thenReturn("http://localhost:9000/ember-media/new.jpg");
         when(menuItemRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        MenuItem result = menuItemService.update(1L, burgerRequest(), newImage);
+        MenuItemResponse result = menuItemService.update(1L, burgerRequest(), newImage);
 
         verify(imageUploadService).deleteImage("http://localhost:9000/ember-media/old.jpg");
         assertThat(result.getImageUrl()).isEqualTo("http://localhost:9000/ember-media/new.jpg");
