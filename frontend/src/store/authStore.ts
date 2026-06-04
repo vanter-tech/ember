@@ -23,7 +23,7 @@ export const useAuthStore = create<AuthState>()(
           userId: undefined,
           name: undefined,
           role: undefined,
-        }),
+        }), 
     }),
     {
       name: 'ember-auth-storage'
