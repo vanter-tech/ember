@@ -1,6 +1,7 @@
 package com.vanter.ember.catalog.service;
 
 import com.vanter.ember.catalog.model.Category;
+import com.vanter.ember.catalog.model.dto.CategoryRequest;
 import com.vanter.ember.catalog.model.dto.CategoryResponse;
 import com.vanter.ember.catalog.repository.CategoryRepository;
 import com.vanter.ember.config.ResourceNotFoundException;
@@ -13,12 +14,22 @@ import org.springframework.stereotype.Service;
 public class CategoryService {
 
     private final CategoryRepository categoryRepository;
+    private final ImageUploadService imageUploadService;
 
-    public CategoryResponse create(String name) {
-        if (categoryRepository.existsByName(name)) {
-            throw new IllegalArgumentException("Category name already exists: " + name);
+    public CategoryResponse create(CategoryRequest request) {
+        if (categoryRepository.existsByName(request.getName())) {
+            throw new IllegalArgumentException("Category name already exists: " + request.getName());
         }
-        return CategoryResponse.from(categoryRepository.save(Category.builder().name(name).build()));
+        String imageUrl = imageUploadService.uploadImage(request.getImage(), "ember-media");
+
+        Category category = Category.builder()
+                .name((request.getName()))
+                .description(request.getDescription())
+                .imgUrl(imageUrl)
+                .build();
+
+        Category savedCategory = categoryRepository.save(category);
+        return CategoryResponse.from(savedCategory);
     }
 
     public List<CategoryResponse> findAll() {
@@ -31,17 +42,32 @@ public class CategoryService {
         return CategoryResponse.from(findEntityById(id));
     }
 
-    public CategoryResponse update(Long id, String newName) {
+    public CategoryResponse update(CategoryRequest request, Long id) {
         Category category = findEntityById(id);
-        if (!category.getName().equals(newName) && categoryRepository.existsByName(newName)) {
-            throw new IllegalArgumentException("Category name already exists: " + newName);
+        if (!category.getName().equals(request.getName()) && categoryRepository.existsByName(request.getName())) {
+            throw new IllegalArgumentException("Category name already exists: " + request.getName());
         }
-        category.setName(newName);
+        category.setName(request.getName());
+        category.setDescription(request.getDescription());
+
+        if( request.getImage() != null && !request.getImage().isEmpty() ) {
+            String UrlVieja = category.getImgUrl();
+            String NuevaUrl = imageUploadService.uploadImage(request.getImage(), "ember-media");
+            category.setImgUrl(NuevaUrl);
+            if(UrlVieja != null && !UrlVieja.isEmpty()) {
+                imageUploadService.deleteImage(UrlVieja);
+            }
+
+        }
+
         return CategoryResponse.from(categoryRepository.save(category));
     }
 
     public void delete(Long id) {
-        findEntityById(id);
+        Category response =  findEntityById(id);
+        if (response.getImgUrl() != null) {
+            imageUploadService.deleteImage(response.getImgUrl());
+        }
         categoryRepository.deleteById(id);
     }
 
