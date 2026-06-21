@@ -8,6 +8,7 @@ public class EmberApplication {
 
 	public static void main(String[] args) {
 		SpringApplication.run(EmberApplication.class, args);
+		
 	}
 
 }

@@ -9,10 +9,12 @@ import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -41,19 +43,19 @@ public class CategoryController {
     }
 
     @Operation(summary = "Create a category (ADMIN)")
-    @PostMapping
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<CategoryResponse> create(@Valid @RequestBody CategoryRequest request) {
+    public ResponseEntity<CategoryResponse> create(@Valid @ModelAttribute CategoryRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(categoryService.create(request.getName()));
+                .body(categoryService.create(request));
     }
 
     @Operation(summary = "Update a category (ADMIN)")
-    @PutMapping("/{id}")
+    @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<CategoryResponse> update(
-            @PathVariable Long id, @Valid @RequestBody CategoryRequest request) {
-        return ResponseEntity.ok(categoryService.update(id, request.getName()));
+            @PathVariable Long id, @Valid @ModelAttribute CategoryRequest request) {
+        return ResponseEntity.ok(categoryService.update(request, id));
     }
 
     @Operation(summary = "Delete a category (ADMIN)")

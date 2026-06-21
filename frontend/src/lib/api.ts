@@ -1,9 +1,13 @@
 import type {components} from '@/lib/backend-types'
 import axios from 'axios'
 import { useAuthStore } from '@/store/authStore'
+import { data } from 'react-router-dom'
+import { id } from 'zod/v4/locales'
 export type LoginRequest = components['schemas']['LoginRequest']
 export type LoginResponse = components['schemas']['AuthResponse']
 export type TableResponse = components['schemas']['RestaurantTableResponse']
+export type CategoryResponse = components['schemas']['CategoryResponse']
+export type CategoryRequest = components['schemas']['CategoryRequest']
 
 declare global {
   interface Window {
@@ -66,4 +70,33 @@ export const tableService = {
     const { data } = await api.get<TableResponse[]>('/catalog/tables')
     return data
   },
+}
+
+export const categoryService = {
+  getAll: async (): Promise<CategoryResponse[]> => {
+    const { data } = await api.get<CategoryResponse[]>('/catalog/categories')
+    return data
+  },
+  create: async ( details: FormData ): Promise<CategoryResponse> => {
+    const {data} = await api.post<CategoryRequest>('/catalog/categories', details,{
+      headers:{
+        'Content-Type': 'multipart/form-data'
+      }
+    })
+    return data
+  },
+  delete: async (id: number): Promise<void> => {
+    await api.delete<void>(`/catalog/categories/${id}`)
+  },
+  update: async(id: number, details: FormData): Promise<CategoryResponse> => {
+    const {data} = await api.put<CategoryResponse>(`/catalog/categories/${id}`, details,{
+      headers:{
+        'Content-Type': 'multipart/form-data'
+      }
+    })
+
+    return data
+  }
+  
+
 }

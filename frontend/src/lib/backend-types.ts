@@ -503,6 +503,8 @@ export interface components {
             /** Format: int64 */
             id?: number;
             name?: string;
+            description?: string;
+            imgUrl?: string;
         };
         MenuItemResponse: {
             /** Format: int64 */
@@ -516,6 +518,9 @@ export interface components {
         };
         CategoryRequest: {
             name: string;
+            description: string;
+            /** Format: binary */
+            image?: string;
         };
         CreateSessionRequest: {
             /** Format: int64 */
@@ -857,9 +862,9 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody: {
+        requestBody?: {
             content: {
-                "application/json": components["schemas"]["CategoryRequest"];
+                "multipart/form-data": components["schemas"]["CategoryRequest"];
             };
         };
         responses: {
@@ -1089,9 +1094,9 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody: {
+        requestBody?: {
             content: {
-                "application/json": components["schemas"]["CategoryRequest"];
+                "multipart/form-data": components["schemas"]["CategoryRequest"];
             };
         };
         responses: {
