@@ -1,14 +1,21 @@
-import { useLocation } from "react-router-dom";
+import { useLocation, useMatch, useParams } from "react-router-dom";
 import { useAuthStore } from '../store/authStore'
 import {Search, Plus} from 'lucide-react'
-import { useUIStore } from "@/store/uiStore";
+import { useUIStore, type ModalType } from "@/store/uiStore";
 
 export const TopNav = () => {
+
+    let actionType: ModalType | null = null;
 
     const role = useAuthStore((state) => state.role)
     const location = useLocation()
     const path = location.pathname
     const allowedWaiterPaths = [''] // Rutas por agregar ya que no tengo bien definidas las views de los meseros.
+
+    const isMenuItemRoute = useMatch('/admin/categories/:id/items')
+    const isCategoryRoute = useMatch('/admin/categories')
+
+    const isMenuItemsRouteId = isMenuItemRoute?.params.id
 
     const {openModal} = useUIStore()
 
@@ -18,9 +25,14 @@ export const TopNav = () => {
     let buttonText = "Nuevo registro"
     let searchPlaceholder = "Buscar..."
 
-    if(path.includes('/admin/categories')){
-        buttonText = "Nueva categoría"
-        searchPlaceholder = "Buscar categorías..."
+    if(isMenuItemRoute){
+        buttonText = "Nuevo platillo"
+        searchPlaceholder = "Buscar platillos..."
+        actionType = 'CREATE_ITEMS'
+    } else if(isCategoryRoute){
+        buttonText = "Nueva categoria"
+        searchPlaceholder = "Buscar categorias..."
+        actionType = 'CREATE_CATEGORY'
     } else if(path.includes('/admin/employees')){
         buttonText = "Nuevo empleado"
         searchPlaceholder = "Buscar empleados..."
@@ -61,7 +73,8 @@ export const TopNav = () => {
             bg-[#8c1717] hover:bg-[#7a1414] text-white
             px-5 py-2.5 rounded-full text-sm font-medium
             transition-colors shadows-sm cursor-pointer"
-            onClick={() => openModal('CREATE_CATEGORY')}>
+            onClick={(e) => {e.preventDefault(); e.stopPropagation(); 
+            openModal(actionType, { id: Number(isMenuItemsRouteId) });}}>
                 <Plus size={18} strokeWidth={2}/>
                 {buttonText}
             </button>

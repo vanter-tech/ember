@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 
-export type ModalType = 'CREATE_CATEGORY' | 'EDIT_CATEGORY' | 'DELETE_CATEGORY' | null;
+export type ModalType = 'CREATE_CATEGORY' | 'EDIT_CATEGORY' | 'DELETE_CATEGORY' | 
+                        'CREATE_ITEMS' | 'EDIT_ITEMS' | 'DELETE_ITEMS' | null;
+
 
 interface UIState {
   activeModal: ModalType

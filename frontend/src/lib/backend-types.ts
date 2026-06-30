@@ -137,7 +137,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List all menu items */
+        /** List all menu items by category */
         get: operations["getAll_1"];
         put?: never;
         /** Create a menu item (ADMIN) */
@@ -496,6 +496,9 @@ export interface components {
             name: string;
             description?: string;
             price: number;
+            /** Format: binary */
+            imageUrl?: string;
+            available?: boolean;
             /** Format: int64 */
             categoryId: number;
         };
@@ -505,6 +508,8 @@ export interface components {
             name?: string;
             description?: string;
             imgUrl?: string;
+            /** Format: int32 */
+            totalItems?: number;
         };
         MenuItemResponse: {
             /** Format: int64 */
@@ -1021,7 +1026,9 @@ export interface operations {
     };
     getAll_1: {
         parameters: {
-            query?: never;
+            query?: {
+                id?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;

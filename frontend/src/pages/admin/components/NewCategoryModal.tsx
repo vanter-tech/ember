@@ -1,7 +1,7 @@
-import { Button } from '../components/ui/button'
-import { Input } from './ui/input'
+import { Button } from '../../../components/ui/button'
+import { Input } from '../../../components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from './ui/textarea'
+import { Textarea } from '../../../components/ui/textarea'
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -28,7 +28,7 @@ import { categoryService } from '@/lib/api'
 
 export const NewCategoryModal = () => {
   const { activeModal, modalPayload, closeModal } = useUIStore()
-  
+
   const queryClient = useQueryClient()
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
@@ -79,7 +79,10 @@ export const NewCategoryModal = () => {
   }
 
   return (
-    <Dialog open={activeModal == 'CREATE_CATEGORY'} onOpenChange={(isOpen) => !isOpen && closeModal()}>
+    <Dialog
+      open={activeModal == 'CREATE_CATEGORY'}
+      onOpenChange={(isOpen) => !isOpen && closeModal()}
+    >
       <DialogContent className="sm:max-w-md rounded-3xl p-6">
         <DialogHeader className="mb-4">
           <DialogTitle className="text-2xl font-bold text-zinc-800">
@@ -88,86 +91,79 @@ export const NewCategoryModal = () => {
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-5'>
-
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
             <FormField
-            control={form.control}
-            name="name"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Nombre</FormLabel>
-                <FormControl>
-                  <Input
-                    placeholder='Ej. Platos Fuertes'
-                    className='rounded-xl focus-visible:ring[#8c1717]'
-                    {...field}
-                  />
-                </FormControl>
-              </FormItem>
-            )} 
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Nombre</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="Ej. Platos Fuertes"
+                      className="rounded-xl focus-visible:ring[#8c1717]"
+                      {...field}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
             />
 
             <FormField
-            control={form.control}
-            name="description"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Descripcion</FormLabel>
-                <FormControl>
-                  <Textarea
-                    placeholder='Breve description'
-                    className='resize-none h-24 rounded-xl focus-visible:ring[#8c1717]'
-                    {...field}
-                  />
-                </FormControl>
-              </FormItem>
-            )} 
+              control={form.control}
+              name="description"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Descripcion</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Breve description"
+                      className="resize-none h-24 rounded-xl focus-visible:ring[#8c1717]"
+                      {...field}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
             />
 
-
             <FormField
-            control={form.control}
-            name="image"
-            render={({ field: {value, onChange, ...fieldProps} }) => (
-              <FormItem>
-                <FormLabel>Imagen de portada</FormLabel>
-                <FormControl>
-                  <Input
-                    type = "file"
-                    accept='image/*'
-                    placeholder='Imagen de portada'
-                    className='rounded-xl file:text-[#8c1717] file:font-semibold
-                    hover:file:cursor-pointer cursor-pointer'
-                    onChange={(e) => {
-                      const file = e.target.files?.[0]
-                      if(file) onChange(file)
-                    }}
-                    {...fieldProps}
-                  />
-                </FormControl>
-              </FormItem>
-            )} 
+              control={form.control}
+              name="image"
+              render={({ field: { value, onChange, ...fieldProps } }) => (
+                <FormItem>
+                  <FormLabel>Imagen de portada</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      placeholder="Imagen de portada"
+                      className="rounded-xl file:text-[#8c1717] file:font-semibold
+                    hover:file:cursor-pointer cursor-pointer"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0]
+                        if (file) onChange(file)
+                      }}
+                      {...fieldProps}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
             />
 
             <DialogFooter>
               <Button
-              type="button"
-              variant="outline"
-              onClick={closeModal}
-              disabled={mutation.isPending}
+                type="button"
+                variant="outline"
+                onClick={closeModal}
+                disabled={mutation.isPending}
               >
                 Cancelar
               </Button>
 
-              <Button
-              type="submit"
-              disabled={mutation.isPending}
-              >
-                {mutation.isPending ? "Guardando" : "Guardar"}
+              <Button type="submit" disabled={mutation.isPending}>
+                {mutation.isPending ? 'Guardando' : 'Guardar'}
               </Button>
             </DialogFooter>
-
-
           </form>
         </Form>
       </DialogContent>

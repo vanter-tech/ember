@@ -2,13 +2,14 @@ import type {components} from '@/lib/backend-types'
 import axios from 'axios'
 import { useAuthStore } from '@/store/authStore'
 import { data } from 'react-router-dom'
-import { id } from 'zod/v4/locales'
+import { da, id } from 'zod/v4/locales'
 export type LoginRequest = components['schemas']['LoginRequest']
 export type LoginResponse = components['schemas']['AuthResponse']
 export type TableResponse = components['schemas']['RestaurantTableResponse']
 export type CategoryResponse = components['schemas']['CategoryResponse']
 export type CategoryRequest = components['schemas']['CategoryRequest']
-
+export type MenuItemResponse = components['schemas']['MenuItemResponse']
+export type MenuItemRequest = components['schemas']['MenuItemRequest']
 declare global {
   interface Window {
     ENV: {
@@ -97,6 +98,38 @@ export const categoryService = {
 
     return data
   }
-  
 
+}
+
+export const menuItemService = {
+
+  getAll: async( id: number ): Promise<MenuItemResponse[]> => {
+    const {data} = await api.get<MenuItemResponse[]>(`/catalog/items?id=${id}`)
+    return data
+  },
+  create: async(details: FormData): Promise<MenuItemResponse> => {
+    const { data } = await api.post<MenuItemRequest>('/catalog/items', details, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    })
+
+    return data
+  },
+  toggleAvailability: async(id: number): Promise<MenuItemResponse> => {
+    const { data } = await api.patch<MenuItemResponse>(`catalog/items/${id}/availability`)
+    return data
+  },
+  update: async(id: number, details: FormData): Promise<MenuItemResponse> => {
+    const { data } = await api.put<MenuItemResponse>(`/catalog/items/${id}`, details, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    })
+    return data
+  },
+  delete: async(id: number): Promise<void> => {
+    await api.delete<void>(`/catalog/items/${id}`)
+  }
+    
 }

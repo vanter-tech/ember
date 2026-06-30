@@ -7,6 +7,8 @@ import { Register } from './pages/auth/Register'
 import {Toaster} from 'react-hot-toast'
 import { AdminLayout } from './layouts/AdminLayout'
 import {Category} from './pages/admin/Category'
+import { ListMenuItem } from './pages/admin/ListMenuItem'
+
 
 const RoleRedirect = () => {
   const { role } = useAuthStore()
@@ -34,6 +36,7 @@ export default function App() {
 
           <Route path="/admin" element={ <AdminLayout /> } >
             <Route path="categories" element={<Category />} />
+            <Route path='categories/:id/items' element={<ListMenuItem />} />
           </Route>
 
         </Route>

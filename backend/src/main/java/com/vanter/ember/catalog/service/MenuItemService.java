@@ -8,7 +8,10 @@ import com.vanter.ember.catalog.repository.MenuItemRepository;
 import com.vanter.ember.config.MinioProperties;
 import com.vanter.ember.config.ResourceNotFoundException;
 import java.util.List;
+
+import io.minio.messages.Item;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -31,7 +34,7 @@ public class MenuItemService {
                 .description(request.getDescription())
                 .price(request.getPrice())
                 .category(category)
-                .available(true)
+                .available(request.isAvailable())
                 .build();
 
         if (image != null && !image.isEmpty()) {
@@ -41,17 +44,21 @@ public class MenuItemService {
         return MenuItemResponse.from(menuItemRepository.save(item));
     }
 
-    public List<MenuItemResponse> findAll() {
-        return menuItemRepository.findAll().stream()
-                .map(MenuItemResponse::from)
-                .toList();
+    public List<MenuItemResponse> findAll(Long id) {
+        List<MenuItem> Items;
+        if(id != null) {
+            Items = menuItemRepository.findByCategoryId(id);
+        }else{
+            Items = menuItemRepository.findAll();
+        }
+        return Items.stream().map(MenuItemResponse::from).toList();
     }
 
     public MenuItemResponse findById(Long id) {
         return MenuItemResponse.from(findEntityById(id));
     }
 
-    public MenuItemResponse update(Long id, MenuItemRequest request, MultipartFile image) {
+    public MenuItemResponse update(Long id, MenuItemRequest request) {
         var item = findEntityById(id);
         var category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new ResourceNotFoundException(
@@ -62,11 +69,13 @@ public class MenuItemService {
         item.setPrice(request.getPrice());
         item.setCategory(category);
 
-        if (image != null && !image.isEmpty()) {
-            if (item.getImageUrl() != null) {
-                imageUploadService.deleteImage(item.getImageUrl());
+        if (request.getImageUrl() != null && !request.getImageUrl().isEmpty()) {
+            String UrlVieja = item.getImageUrl();
+            String NuevaUrl = imageUploadService.uploadImage(request.getImageUrl(), "ember-media");
+            item.setImageUrl(NuevaUrl);
+            if (UrlVieja != null && !UrlVieja.isEmpty()) {
+                imageUploadService.deleteImage(UrlVieja);
             }
-            item.setImageUrl(imageUploadService.uploadImage(image, minioProperties.getBucket()));
         }
 
         return MenuItemResponse.from(menuItemRepository.save(item));
