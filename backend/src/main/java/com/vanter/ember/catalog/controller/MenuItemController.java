@@ -9,6 +9,7 @@ import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
@@ -31,10 +33,10 @@ public class MenuItemController {
 
     private final MenuItemService menuItemService;
 
-    @Operation(summary = "List all menu items")
+    @Operation(summary = "List all menu items by category")
     @GetMapping
-    public List<MenuItemResponse> getAll() {
-        return menuItemService.findAll();
+    public List<MenuItemResponse> getAll(@RequestParam(required = false) Long id) {
+        return menuItemService.findAll(id);
     }
 
     @Operation(summary = "Get menu item by ID")
@@ -54,13 +56,12 @@ public class MenuItemController {
     }
 
     @Operation(summary = "Update a menu item (ADMIN)")
-    @PutMapping(value = "/{id}", consumes = "multipart/form-data")
+    @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('ADMIN')")
     public MenuItemResponse update(
             @PathVariable Long id,
-            @Valid @ModelAttribute MenuItemRequest menuItemRequest,
-            @RequestPart(required = false) MultipartFile image) {
-        return menuItemService.update(id, menuItemRequest, image);
+            @Valid @ModelAttribute MenuItemRequest menuItemRequest) {
+        return menuItemService.update(id, menuItemRequest);
     }
 
     @Operation(summary = "Toggle availability (ADMIN)")

@@ -4,6 +4,7 @@ import com.vanter.ember.catalog.model.Category;
 import com.vanter.ember.catalog.model.dto.CategoryRequest;
 import com.vanter.ember.catalog.model.dto.CategoryResponse;
 import com.vanter.ember.catalog.repository.CategoryRepository;
+import com.vanter.ember.catalog.repository.MenuItemRepository;
 import com.vanter.ember.config.ResourceNotFoundException;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Service;
 public class CategoryService {
 
     private final CategoryRepository categoryRepository;
+    private final MenuItemRepository menuItemRepository;
     private final ImageUploadService imageUploadService;
 
     public CategoryResponse create(CategoryRequest request) {
@@ -34,7 +36,10 @@ public class CategoryService {
 
     public List<CategoryResponse> findAll() {
         return categoryRepository.findAll().stream()
-                .map(CategoryResponse::from)
+                .map(category -> {
+                    Integer totalItems = menuItemRepository.countByCategoryId(category.getId());
+                    return CategoryResponse.from(category, totalItems);
+                })
                 .toList();
     }
 
