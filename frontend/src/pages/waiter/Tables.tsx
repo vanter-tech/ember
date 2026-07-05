@@ -55,7 +55,7 @@ export const Tables = () => {
                 <div
                   className={`flex items-center justify-center gap-1 rounded-full h-6 w-11 ${table.isOccupied ? 'border-2 bg-[#8b0000] text-white' : 'bg-[#f3f4f6] text-black'}}`}
                 >
-                  <Users className="h-4 w-4" />4
+                  <Users className="h-4 w-4" />{table.isOccupied ? table.currentSession?.currentParticipant : '0'}
                 </div>
               </CardHeader>
               <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
