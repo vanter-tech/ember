@@ -1,8 +1,10 @@
 package com.vanter.ember.catalog.service;
 
 import com.vanter.ember.catalog.model.Category;
+import com.vanter.ember.catalog.model.dto.CategoryRequest;
 import com.vanter.ember.catalog.model.dto.CategoryResponse;
 import com.vanter.ember.catalog.repository.CategoryRepository;
+import com.vanter.ember.catalog.repository.MenuItemRepository;
 import com.vanter.ember.config.ResourceNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -16,6 +18,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -24,6 +27,8 @@ class CategoryServiceTest {
 
     @Mock CategoryRepository categoryRepository;
     @InjectMocks CategoryService categoryService;
+    @Mock private MenuItemRepository menuItemRepository;
+    @Mock private ImageUploadService imageUploadService;
 
     @Test
     void create_savesAndReturnsCategory() {
@@ -31,7 +36,12 @@ class CategoryServiceTest {
         when(categoryRepository.save(any())).thenReturn(
                 Category.builder().id(1L).name("Burgers").build());
 
-        CategoryResponse result = categoryService.create("Burgers");
+        CategoryRequest Burgers  = new CategoryRequest();
+        Burgers.setName("Burgers");
+        Burgers.setDescription("Burgerssssss");
+        when(imageUploadService.uploadImage(any(), anyString()))
+                .thenReturn("http://fake-url.com/imagen.jpg");
+        CategoryResponse result = categoryService.create(Burgers);
 
         assertThat(result.getName()).isEqualTo("Burgers");
         verify(categoryRepository).save(any(Category.class));
@@ -41,7 +51,11 @@ class CategoryServiceTest {
     void create_throwsWhenNameAlreadyExists() {
         when(categoryRepository.existsByName("Burgers")).thenReturn(true);
 
-        assertThatThrownBy(() -> categoryService.create("Burgers"))
+        CategoryRequest Burgers  = new CategoryRequest();
+        Burgers.setName("Burgers");
+        Burgers.setDescription("Burgerssssss");
+
+        assertThatThrownBy(() -> categoryService.create(Burgers))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("already exists");
     }
@@ -51,6 +65,8 @@ class CategoryServiceTest {
         when(categoryRepository.findAll()).thenReturn(
                 List.of(Category.builder().id(1L).name("Burgers").build(),
                         Category.builder().id(2L).name("Drinks").build()));
+
+        when(menuItemRepository.countByCategoryId(any())).thenReturn(5);
 
         List<CategoryResponse> result = categoryService.findAll();
 
@@ -83,7 +99,11 @@ class CategoryServiceTest {
         when(categoryRepository.existsByName("Sandwiches")).thenReturn(false);
         when(categoryRepository.save(any())).thenAnswer(i -> i.getArgument(0));
 
-        CategoryResponse result = categoryService.update(1L, "Sandwiches");
+        CategoryRequest req = new CategoryRequest();
+        req.setName("Sandwiches");
+        req.setDescription("Burgerssssssssss");
+
+        CategoryResponse result = categoryService.update(req, 1L);
 
         assertThat(result.getName()).isEqualTo("Sandwiches");
     }

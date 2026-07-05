@@ -8,6 +8,9 @@ import {Toaster} from 'react-hot-toast'
 import { AdminLayout } from './layouts/AdminLayout'
 import {Category} from './pages/admin/Category'
 import { ListMenuItem } from './pages/admin/ListMenuItem'
+import {Tables} from '@/pages/waiter/Tables'
+import { WaiterLayout } from '@/layouts/WaiterLayout'
+import { Settings } from './pages/admin/Settings'
 
 
 const RoleRedirect = () => {
@@ -17,7 +20,7 @@ const RoleRedirect = () => {
   if(role === 'ADMIN') return <Navigate to="/admin" replace />
   if(role === 'CUSTOMER') return <Navigate to="/customer" replace />
   if(role === 'WAITER') return <Navigate to="/waiter" replace />
-  if(role === 'KITCHEN  ') return <Navigate to="/kitchen" replace /> 
+  if(role === 'KITCHEN') return <Navigate to="/kitchen" replace /> 
 
   return <Navigate to="/login" replace />
 }
@@ -37,12 +40,15 @@ export default function App() {
           <Route path="/admin" element={ <AdminLayout /> } >
             <Route path="categories" element={<Category />} />
             <Route path='categories/:id/items' element={<ListMenuItem />} />
+            <Route path='settings' element={<Settings/>}/>
           </Route>
 
         </Route>
 
         <Route element={<ProtectedRoute allowedRoles={['WAITER', 'ADMIN']} />}>
-          <Route path="/waiter/*" element={<div className="p-10 text-2xl">Terminal de meseros</div>} />
+          <Route path="/waiter" element={<WaiterLayout/>}>
+            <Route path="tables" element={<Tables />}/> 
+          </Route>
         </Route>
 
         <Route element={<ProtectedRoute allowedRoles={['KITCHEN', 'ADMIN']} />}>

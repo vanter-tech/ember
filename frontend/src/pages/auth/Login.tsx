@@ -194,7 +194,7 @@ export const Login = () => {
                 {form.formState.isSubmitting ? 'Logging in...' : 'Login'}
               </Button>
 
-              <Button asChild variant="outline" className="w-full text-center">
+              <Button asChild variant="outline" className="w-full text-center mb-3">
                 <Link to="/register">Register</Link>
               </Button>
             </form>

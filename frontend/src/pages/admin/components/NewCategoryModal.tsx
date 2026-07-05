@@ -1,6 +1,5 @@
 import { Button } from '../../../components/ui/button'
 import { Input } from '../../../components/ui/input'
-import { Label } from '@/components/ui/label'
 import { Textarea } from '../../../components/ui/textarea'
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
@@ -19,20 +18,15 @@ import {
   FormField,
   FormItem,
   FormLabel,
-  FormMessage,
 } from '@/components/ui/form'
 import { useUIStore } from '@/store/uiStore'
-import React, { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { categoryService } from '@/lib/api'
 
 export const NewCategoryModal = () => {
-  const { activeModal, modalPayload, closeModal } = useUIStore()
+  const { activeModal, closeModal } = useUIStore()
 
   const queryClient = useQueryClient()
-  const [name, setName] = useState('')
-  const [description, setDescription] = useState('')
-  const [file, setFile] = useState<File | null>(null)
   type CategoryFormInputs = z.infer<typeof categoryScheme>
 
   const categoryScheme = z.object({

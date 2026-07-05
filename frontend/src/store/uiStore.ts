@@ -3,6 +3,8 @@ import { create } from 'zustand';
 export type ModalType = 'CREATE_CATEGORY' | 'EDIT_CATEGORY' | 'DELETE_CATEGORY' | 
                         'CREATE_ITEMS' | 'EDIT_ITEMS' | 'DELETE_ITEMS' | null;
 
+export type SettingsType = 'BRANDING' | 'MENU' | 'BILLING' | 'HARDWARE'|
+                            'SPACE'| null;
 
 interface UIState {
   activeModal: ModalType
@@ -29,4 +31,17 @@ export const useUIStore = create<UIState>((set) => ({
     modalPayload: null
   })
 
+}));
+
+interface SettingsState {
+  activeSettings: SettingsType
+  openSettings: (settings: SettingsType) => void
+  closeSettings: () => void
+}
+
+export const useSettingsStore = create<SettingsState>((set) => ({
+
+    activeSettings: null,
+    openSettings: (settings) => set({ activeSettings: settings }),
+    closeSettings: () => set({ activeSettings: "BRANDING" })
 }));

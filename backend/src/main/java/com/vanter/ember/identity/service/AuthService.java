@@ -44,6 +44,7 @@ public class AuthService {
                 .token(token)
                 .userId(user.getId())
                 .name(user.getName())
+                .restaurantId(user.getRestaurantId() != null ? user.getRestaurantId().getId() : null)
                 .role(user.getRole().name())
                 .build();
     }
@@ -66,6 +67,7 @@ public class AuthService {
                 .userId(user.getId())
                 .name(user.getName())
                 .role(user.getRole().name())
+                .restaurantId(user.getRestaurantId() != null ? user.getRestaurantId().getId() : null)
                 .build();
     }
 }
