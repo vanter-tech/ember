@@ -1,7 +1,8 @@
-import { useLocation, useMatch, useParams } from "react-router-dom";
+import { useLocation, useMatch} from "react-router-dom";
 import { useAuthStore } from '../store/authStore'
 import {Search, Plus} from 'lucide-react'
 import { useUIStore, type ModalType } from "@/store/uiStore";
+import { settingStore } from "@/store/settingStore";
 
 export const TopNav = () => {
 
@@ -41,6 +42,8 @@ export const TopNav = () => {
         searchPlaceholder = "Buscar mesas..."
     }
 
+    const { settings } = settingStore()
+
     return(
         <header className="w-full bg-white rounded-2xl shadows-sm border border-zinc-100 px-6
         py-3 flex items-center justify-between mb-6">
@@ -48,7 +51,7 @@ export const TopNav = () => {
             <div className= "flex items-center ">
                 <h1 className="text-3xl font-bold
                 text-[#8c1717]" tracking-tight>
-                    Ember
+                    {settings?.branding?.businessName|| "Ember"}
                 </h1>
             </div>
             <div className="flex-1 max-w-md mx-8">

@@ -94,7 +94,7 @@ class MenuItemServiceTest {
         when(menuItemRepository.findAll()).thenReturn(
                 List.of(MenuItem.builder().id(1L).name("Burger").build()));
 
-        assertThat(menuItemService.findAll()).hasSize(1);
+        assertThat(menuItemService.findAll(null)).hasSize(1);
     }
 
     @Test
@@ -121,7 +121,7 @@ class MenuItemServiceTest {
         when(categoryRepository.findById(1L)).thenReturn(Optional.of(burgersCategory()));
         when(menuItemRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        MenuItemResponse result = menuItemService.update(1L, burgerRequest(), null);
+        MenuItemResponse result = menuItemService.update(1L, burgerRequest());
 
         assertThat(result.getName()).isEqualTo("Classic Burger");
         assertThat(result.getPrice()).isEqualByComparingTo("9.99");
@@ -138,12 +138,12 @@ class MenuItemServiceTest {
 
         when(menuItemRepository.findById(1L)).thenReturn(Optional.of(existing));
         when(categoryRepository.findById(1L)).thenReturn(Optional.of(burgersCategory()));
-        when(minioProperties.getBucket()).thenReturn("ember-media");
         when(imageUploadService.uploadImage(any(), eq("ember-media")))
                 .thenReturn("http://localhost:9000/ember-media/new.jpg");
         when(menuItemRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-
-        MenuItemResponse result = menuItemService.update(1L, burgerRequest(), newImage);
+        MenuItemRequest req = burgerRequest();
+        req.setImageUrl(newImage);
+        MenuItemResponse result = menuItemService.update(1L, req);
 
         verify(imageUploadService).deleteImage("http://localhost:9000/ember-media/old.jpg");
         assertThat(result.getImageUrl()).isEqualTo("http://localhost:9000/ember-media/new.jpg");

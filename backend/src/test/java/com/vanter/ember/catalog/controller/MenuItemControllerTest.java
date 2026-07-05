@@ -11,12 +11,12 @@ import com.vanter.ember.identity.service.JwtService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
@@ -41,9 +41,9 @@ class MenuItemControllerTest {
     @Autowired MockMvc mockMvc;
     @Autowired ObjectMapper objectMapper;
 
-    @MockBean MenuItemService menuItemService;
-    @MockBean JwtService jwtService;
-    @MockBean UserDetailsService userDetailsService;
+    @MockitoBean  MenuItemService menuItemService;
+    @MockitoBean JwtService jwtService;
+    @MockitoBean UserDetailsService userDetailsService;
 
     private MenuItemResponse burger() {
         return MenuItemResponse.builder()
@@ -56,9 +56,11 @@ class MenuItemControllerTest {
     @Test
     @WithMockUser
     void getAll_returns200WithList() throws Exception {
-        when(menuItemService.findAll()).thenReturn(List.of(burger()));
+        when(menuItemService.findAll(1L)).thenReturn(List.of(burger()));
 
-        mockMvc.perform(get("/catalog/items"))
+        mockMvc.perform(get("/catalog/items")
+                        .param("id", "1")
+                )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].name").value("Classic Burger"));
     }
@@ -132,7 +134,7 @@ class MenuItemControllerTest {
     @Test
     @WithMockUser(roles = "ADMIN")
     void update_returns200ForAdmin() throws Exception {
-        when(menuItemService.update(eq(1L), any(), isNull())).thenReturn(burger());
+        when(menuItemService.update(eq(1L), any())).thenReturn(burger());
 
         mockMvc.perform(multipart("/catalog/items/1")
                         .with(req -> { req.setMethod("PUT"); return req; })

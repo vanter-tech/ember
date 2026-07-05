@@ -12,6 +12,7 @@ export const useAuthStore = create<AuthState>()(
     (set) => ({
       token: undefined,
       userId: undefined,
+      restaurantId: undefined,
       name: undefined,
       role: undefined,
 
@@ -21,6 +22,7 @@ export const useAuthStore = create<AuthState>()(
         set({
           token: undefined,
           userId: undefined,
+          restaurantId: undefined,
           name: undefined,
           role: undefined,
         }), 

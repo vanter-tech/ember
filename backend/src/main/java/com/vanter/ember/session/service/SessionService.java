@@ -1,10 +1,7 @@
 package com.vanter.ember.session.service;
 
-import com.vanter.ember.catalog.model.MenuItem;
-import com.vanter.ember.catalog.model.TableStatus;
 import com.vanter.ember.catalog.model.dto.MenuItemResponse;
 import com.vanter.ember.catalog.service.MenuItemService;
-import com.vanter.ember.catalog.service.RestaurantTableService;
 import com.vanter.ember.config.ResourceNotFoundException;
 import com.vanter.ember.kitchen.event.KitchenItemUpdated;
 import com.vanter.ember.session.event.ItemAdded;
@@ -21,6 +18,8 @@ import com.vanter.ember.session.model.SessionStatus;
 import com.vanter.ember.session.repository.SessionRepository;
 import java.time.LocalDateTime;
 import java.util.UUID;
+
+import com.vanter.ember.settings.repository.DiningTableRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.event.EventListener;
 import org.springframework.context.ApplicationEventPublisher;
@@ -31,7 +30,7 @@ import org.springframework.stereotype.Service;
 public class SessionService {
 
     private final SessionRepository sessionRepository;
-    private final RestaurantTableService tableService;
+    private final DiningTableRepository diningTableRepository;
     private final MenuItemService menuItemService;
     private final ApplicationEventPublisher eventPublisher;
     private final QrTokenService qrTokenService;
@@ -41,11 +40,15 @@ public class SessionService {
                 .orElseThrow(() -> new ResourceNotFoundException("Session not found: " + sessionId));
     }
 
-    public Session createSession(Long tableId, String waiterId, int maxParticipants) {
-        var table = tableService.findById(tableId);
-        if (table.getStatus() == TableStatus.OCCUPIED) {
+    public Session createSession(UUID tableId, String waiterId, int maxParticipants) {
+        var table = diningTableRepository.findById(tableId)
+                .orElseThrow(() -> new ResourceNotFoundException("Session not found: " + tableId));
+
+        var OpenSession = sessionRepository.findByTableIdAndStatus(tableId, SessionStatus.OPEN);
+
+        if (!OpenSession.isEmpty()) {
             throw new IllegalStateException(
-                    "Table " + table.getNumber() + " is already occupied");
+                    "Table " + table.getTableNumber() + " is already occupied");
         }
 
         Session session = sessionRepository.save(Session.builder()
@@ -57,7 +60,7 @@ public class SessionService {
                 .build());
 
         eventPublisher.publishEvent(
-                new SessionOpened(session.getId(), tableId, table.getNumber()));
+                new SessionOpened(session.getId(), tableId, table.getTableNumber()));
 
         return session;
     }
@@ -138,7 +141,9 @@ public class SessionService {
         session.getItems().add(newItem);
 
         Session saved = sessionRepository.save(session);
-        int tableNumber = tableService.findById(saved.getTableId()).getNumber();
+        int tableNumber = diningTableRepository.findById(saved.getTableId())
+                .orElseThrow(() -> new ResourceNotFoundException("Table not found"))
+                .getTableNumber();
 
         eventPublisher.publishEvent(new ItemAdded(
                 saved.getId(),

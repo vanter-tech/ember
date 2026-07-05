@@ -3,7 +3,9 @@ package com.vanter.ember.session.dto;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 
+import java.util.UUID;
+
 public record CreateSessionRequest(
-        @NotNull Long tableId,
+        @NotNull UUID tableId,
         @Min(1) int maxParticipants
 ) {}

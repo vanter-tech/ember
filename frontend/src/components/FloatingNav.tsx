@@ -32,7 +32,7 @@ export const FloatingNav = () => {
     return(
         <nav className=" fixed bottom-8 inset-x-0 mx-auto w-max bg-white dark:bg-zinc-900 shadow-2xl rounded-full
         px-4 py-2 flex items-center gap-2 border border-zinc-200 dark:border-zinc-800 z-50">
-            <Link to="/waiter" className={navItemClass('/waiter')} title="mesas">
+            <Link to="/waiter/tables" className={navItemClass('/waiter/tables')} title="mesas">
                 <LayoutDashboard strokeWidth={1.5} size={24} />
             </Link>
 

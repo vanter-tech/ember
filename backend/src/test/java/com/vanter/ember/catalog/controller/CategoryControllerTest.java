@@ -11,11 +11,11 @@ import com.vanter.ember.identity.service.JwtService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
@@ -24,10 +24,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -38,9 +35,9 @@ class CategoryControllerTest {
     @Autowired MockMvc mockMvc;
     @Autowired ObjectMapper objectMapper;
 
-    @MockBean CategoryService categoryService;
-    @MockBean JwtService jwtService;
-    @MockBean UserDetailsService userDetailsService;
+    @MockitoBean CategoryService categoryService;
+    @MockitoBean JwtService jwtService;
+    @MockitoBean UserDetailsService userDetailsService;
 
     @Test
     @WithMockUser
@@ -56,15 +53,18 @@ class CategoryControllerTest {
     @Test
     @WithMockUser(roles = "ADMIN")
     void create_returns201ForAdmin() throws Exception {
-        when(categoryService.create("Burgers")).thenReturn(
-                CategoryResponse.builder().id(1L).name("Burgers").build());
 
         CategoryRequest req = new CategoryRequest();
         req.setName("Burgers");
+        req.setDescription("Just a description template");
 
-        mockMvc.perform(post("/catalog/categories")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(req)))
+        when(categoryService.create(any(CategoryRequest.class))).thenReturn(
+                CategoryResponse.builder().id(1L).name("Burgers").build()
+        );
+
+        mockMvc.perform(multipart("/catalog/categories")
+                .param("name", "Burgers")
+                .param("description", "Just a description template"))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.name").value("Burgers"));
     }
@@ -75,24 +75,29 @@ class CategoryControllerTest {
         CategoryRequest req = new CategoryRequest();
         req.setName("Burgers");
 
-        mockMvc.perform(post("/catalog/categories")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(req)))
+        mockMvc.perform(multipart("/catalog/categories")
+                        .param("name", "Burgers")
+                .param("description", "Just a description template"))
                 .andExpect(status().isForbidden());
     }
 
     @Test
     @WithMockUser(roles = "ADMIN")
     void update_returns200ForAdmin() throws Exception {
-        when(categoryService.update(eq(1L), any())).thenReturn(
+        when(categoryService.update(any(),eq(1L) )).thenReturn(
                 CategoryResponse.builder().id(1L).name("Sandwiches").build());
 
         CategoryRequest req = new CategoryRequest();
         req.setName("Sandwiches");
 
-        mockMvc.perform(put("/catalog/categories/1")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(req)))
+        mockMvc.perform(multipart("/catalog/categories/1")
+                        .param("name", "Burgers")
+                .param("description", "Sandwiches")
+                                .with(request -> {
+                                    request.setMethod("PUT");
+                                    return request;
+                                })
+                )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("Sandwiches"));
     }
@@ -103,9 +108,14 @@ class CategoryControllerTest {
         CategoryRequest req = new CategoryRequest();
         req.setName("Sandwiches");
 
-        mockMvc.perform(put("/catalog/categories/1")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(req)))
+        mockMvc.perform(multipart("/catalog/categories/1")
+                        .param("Name", "Sandwiches")
+                        .param("description", "Any other descriptions")
+                        .with(request -> {
+                            request.setMethod("PUT");
+                            return request;
+                        })
+                )
                 .andExpect(status().isForbidden());
     }
 
@@ -129,9 +139,12 @@ class CategoryControllerTest {
         CategoryRequest req = new CategoryRequest();
         req.setName("");
 
-        mockMvc.perform(post("/catalog/categories")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(req)))
+        mockMvc.perform(multipart("/catalog/categories")
+                        .param("Name", "")
+                        .with(request -> {
+                            request.setMethod("POST");
+                            return request;
+                        }))
                 .andExpect(status().isBadRequest());
     }
 

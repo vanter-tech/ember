@@ -1,4 +1,6 @@
 package com.vanter.ember.session.event;
 
-public record SessionOpened(String sessionId, Long tableId, int tableNumber) {
+import java.util.UUID;
+
+public record SessionOpened(String sessionId, UUID tableId, int tableNumber) {
 }

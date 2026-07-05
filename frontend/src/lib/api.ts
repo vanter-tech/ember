@@ -1,15 +1,15 @@
 import type {components} from '@/lib/backend-types'
 import axios from 'axios'
 import { useAuthStore } from '@/store/authStore'
-import { data } from 'react-router-dom'
-import { da, id } from 'zod/v4/locales'
 export type LoginRequest = components['schemas']['LoginRequest']
 export type LoginResponse = components['schemas']['AuthResponse']
-export type TableResponse = components['schemas']['RestaurantTableResponse']
 export type CategoryResponse = components['schemas']['CategoryResponse']
 export type CategoryRequest = components['schemas']['CategoryRequest']
 export type MenuItemResponse = components['schemas']['MenuItemResponse']
 export type MenuItemRequest = components['schemas']['MenuItemRequest']
+export type SettingsResponse = components['schemas']['SettingsPayload']
+export type DashboardResponse = components['schemas']['TableStatusResponse']
+
 declare global {
   interface Window {
     ENV: {
@@ -64,13 +64,6 @@ export const authService = {
     const { data } = await api.post<LoginResponse>('/auth/register', details)
     return data
   }
-}
-
-export const tableService = {
-  getAll: async (): Promise<TableResponse[]> => {
-    const { data } = await api.get<TableResponse[]>('/catalog/tables')
-    return data
-  },
 }
 
 export const categoryService = {
@@ -132,4 +125,26 @@ export const menuItemService = {
     await api.delete<void>(`/catalog/items/${id}`)
   }
     
+}
+
+
+export const SettingsService = {
+  getSettings: async(): Promise<SettingsResponse> => {
+    const { data } = await api.get<SettingsResponse>('/settings')
+    return data
+  },
+  updateSettings: async(details: SettingsResponse): Promise<void> => {
+    await api.put<SettingsResponse>('/settings', details)
+  }
+}
+
+export const DashboardService = {
+  getDashboardData: async(resturantid: string): Promise<DashboardResponse[]> => {
+    const { data } = await api.get<DashboardResponse[]>('/dashboard/status',{
+      params: {
+        restaurantId: resturantid
+      }
+    })
+    return data
+  }
 }

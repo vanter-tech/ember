@@ -3,6 +3,8 @@ package com.vanter.ember.session.model;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -20,7 +22,7 @@ public class Session {
     @Id
     private String id;
 
-    private Long tableId;
+    private UUID tableId;
     private String waiterId;
 
     private SessionStatus status;

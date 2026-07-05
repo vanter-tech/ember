@@ -4,20 +4,17 @@
  */
 
 export interface paths {
-    "/catalog/tables/{id}": {
+    "/settings": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Get table by ID */
-        get: operations["getById"];
-        /** Update table capacity (ADMIN) */
-        put: operations["update"];
+        get: operations["getSettings"];
+        put: operations["updateSettings"];
         post?: never;
-        /** Delete a table (ADMIN) */
-        delete: operations["delete"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -31,12 +28,12 @@ export interface paths {
             cookie?: never;
         };
         /** Get menu item by ID */
-        get: operations["getById_1"];
+        get: operations["getById"];
         /** Update a menu item (ADMIN) */
-        put: operations["update_1"];
+        put: operations["update"];
         post?: never;
         /** Delete a menu item (ADMIN) */
-        delete: operations["delete_1"];
+        delete: operations["delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -50,12 +47,12 @@ export interface paths {
             cookie?: never;
         };
         /** Get category by ID */
-        get: operations["getById_2"];
+        get: operations["getById_1"];
         /** Update a category (ADMIN) */
-        put: operations["update_2"];
+        put: operations["update_1"];
         post?: never;
         /** Delete a category (ADMIN) */
-        delete: operations["delete_2"];
+        delete: operations["delete_1"];
         options?: never;
         head?: never;
         patch?: never;
@@ -112,24 +109,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/catalog/tables": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List all tables */
-        get: operations["getAll"];
-        put?: never;
-        /** Create a table (ADMIN) */
-        post: operations["create"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/catalog/items": {
         parameters: {
             query?: never;
@@ -138,10 +117,10 @@ export interface paths {
             cookie?: never;
         };
         /** List all menu items by category */
-        get: operations["getAll_1"];
+        get: operations["getAll"];
         put?: never;
         /** Create a menu item (ADMIN) */
-        post: operations["create_1"];
+        post: operations["create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -156,10 +135,10 @@ export interface paths {
             cookie?: never;
         };
         /** List all categories */
-        get: operations["getAll_2"];
+        get: operations["getAll_1"];
         put?: never;
         /** Create a category (ADMIN) */
-        post: operations["create_2"];
+        post: operations["create_1"];
         delete?: never;
         options?: never;
         head?: never;
@@ -319,23 +298,6 @@ export interface paths {
         patch: operations["updateItemStatus"];
         trace?: never;
     };
-    "/catalog/tables/{id}/status": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /** Update table status (WAITER/ADMIN) */
-        patch: operations["updateStatus"];
-        trace?: never;
-    };
     "/catalog/items/{id}/availability": {
         parameters: {
             query?: never;
@@ -455,6 +417,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/dashboard/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get live status of all tables */
+        get: operations["getLiveTableStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/sessions/{id}/items/{itemId}": {
         parameters: {
             query?: never;
@@ -476,21 +455,42 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        RestaurantTableRequest: {
-            /** Format: int32 */
-            number: number;
-            /** Format: int32 */
-            capacity: number;
+        BillingSettings: {
+            currencySymbol?: string;
+            /** Format: double */
+            taxRate?: number;
+            suggestedTipPercentage?: number[];
+            taxIncludeInMenuPrice?: boolean;
         };
-        RestaurantTableResponse: {
-            /** Format: int64 */
-            id?: number;
+        BrandingSettings: {
+            businessName?: string;
+            legalName?: string;
+            ruc?: string;
+            phone?: string;
+            address?: string;
+            openingTime?: string;
+            closingTime?: string;
+            wifiName?: string;
+            primaryThemeColor?: string;
+        };
+        HardwareSettings: {
+            autoPrintTickets?: boolean;
+            printCustomerReceipt?: boolean;
+        };
+        MenuSettings: {
+            showOutOfStockItems?: boolean;
+            enableItemSearch?: boolean;
+        };
+        SettingsPayload: {
+            branding?: components["schemas"]["BrandingSettings"];
+            menu?: components["schemas"]["MenuSettings"];
+            billing?: components["schemas"]["BillingSettings"];
+            hardware?: components["schemas"]["HardwareSettings"];
+            space?: components["schemas"]["SpaceSettings"];
+        };
+        SpaceSettings: {
             /** Format: int32 */
-            number?: number;
-            /** Format: int32 */
-            capacity?: number;
-            /** @enum {string} */
-            status?: "AVAILABLE" | "OCCUPIED";
+            totalTables?: number;
         };
         MenuItemRequest: {
             name: string;
@@ -528,8 +528,8 @@ export interface components {
             image?: string;
         };
         CreateSessionRequest: {
-            /** Format: int64 */
-            tableId: number;
+            /** Format: uuid */
+            tableId: string;
             /** Format: int32 */
             maxParticipants?: number;
         };
@@ -552,8 +552,8 @@ export interface components {
         };
         Session: {
             id?: string;
-            /** Format: int64 */
-            tableId?: number;
+            /** Format: uuid */
+            tableId?: string;
             waiterId?: string;
             /** @enum {string} */
             status?: "OPEN" | "BILLING" | "CLOSED";
@@ -636,6 +636,8 @@ export interface components {
         AuthResponse: {
             token?: string;
             userId?: string;
+            /** Format: uuid */
+            restaurantId?: string;
             name?: string;
             role?: string;
         };
@@ -673,8 +675,13 @@ export interface components {
             /** @enum {string} */
             role: "CUSTOMER" | "WAITER" | "KITCHEN" | "ADMIN";
         };
+        Restaurant: {
+            /** Format: uuid */
+            id?: string;
+        };
         User: {
             id?: string;
+            restaurantId?: components["schemas"]["Restaurant"];
             name?: string;
             email?: string;
             /** @enum {string} */
@@ -687,6 +694,22 @@ export interface components {
             tableNumber?: number;
             orders?: components["schemas"]["KitchenOrder"][];
         };
+        ActiveSessionSummary: {
+            sessionId?: string;
+            waiterName?: string;
+            /** Format: int32 */
+            currentParticipant?: number;
+            /** Format: date-time */
+            createdAt?: string;
+        };
+        TableStatusResponse: {
+            /** Format: uuid */
+            tableId?: string;
+            /** Format: int32 */
+            tableNumber?: number;
+            isOccupied?: boolean;
+            currentSession?: components["schemas"]["ActiveSessionSummary"];
+        };
     };
     responses: never;
     parameters: never;
@@ -696,6 +719,48 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    getSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["SettingsPayload"];
+                };
+            };
+        };
+    };
+    updateSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SettingsPayload"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     getById: {
         parameters: {
             query?: never;
@@ -713,7 +778,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["RestaurantTableResponse"];
+                    "*/*": components["schemas"]["MenuItemResponse"];
                 };
             };
         };
@@ -727,9 +792,9 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody: {
+        requestBody?: {
             content: {
-                "application/json": components["schemas"]["RestaurantTableRequest"];
+                "multipart/form-data": components["schemas"]["MenuItemRequest"];
             };
         };
         responses: {
@@ -739,7 +804,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["RestaurantTableResponse"];
+                    "*/*": components["schemas"]["MenuItemResponse"];
                 };
             };
         };
@@ -781,84 +846,12 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["MenuItemResponse"];
-                };
-            };
-        };
-    };
-    update_1: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "multipart/form-data": {
-                    menuItemRequest?: components["schemas"]["MenuItemRequest"];
-                    /** Format: binary */
-                    image?: string;
-                };
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["MenuItemResponse"];
-                };
-            };
-        };
-    };
-    delete_1: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description No Content */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    getById_2: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
                     "*/*": components["schemas"]["CategoryResponse"];
                 };
             };
         };
     };
-    update_2: {
+    update_1: {
         parameters: {
             query?: never;
             header?: never;
@@ -884,7 +877,7 @@ export interface operations {
             };
         };
     };
-    delete_2: {
+    delete_1: {
         parameters: {
             query?: never;
             header?: never;
@@ -982,50 +975,6 @@ export interface operations {
     };
     getAll: {
         parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["RestaurantTableResponse"][];
-                };
-            };
-        };
-    };
-    create: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["RestaurantTableRequest"];
-            };
-        };
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["RestaurantTableResponse"];
-                };
-            };
-        };
-    };
-    getAll_1: {
-        parameters: {
             query?: {
                 id?: number;
             };
@@ -1046,7 +995,7 @@ export interface operations {
             };
         };
     };
-    create_1: {
+    create: {
         parameters: {
             query?: never;
             header?: never;
@@ -1074,7 +1023,7 @@ export interface operations {
             };
         };
     };
-    getAll_2: {
+    getAll_1: {
         parameters: {
             query?: never;
             header?: never;
@@ -1094,7 +1043,7 @@ export interface operations {
             };
         };
     };
-    create_2: {
+    create_1: {
         parameters: {
             query?: never;
             header?: never;
@@ -1341,30 +1290,6 @@ export interface operations {
             };
         };
     };
-    updateStatus: {
-        parameters: {
-            query: {
-                status: "AVAILABLE" | "OCCUPIED";
-            };
-            header?: never;
-            path: {
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["RestaurantTableResponse"];
-                };
-            };
-        };
-    };
     toggleAvailability: {
         parameters: {
             query?: never;
@@ -1517,6 +1442,28 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["KitchenDisplayEntry"][];
+                };
+            };
+        };
+    };
+    getLiveTableStatus: {
+        parameters: {
+            query: {
+                restaurantId: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["TableStatusResponse"][];
                 };
             };
         };
