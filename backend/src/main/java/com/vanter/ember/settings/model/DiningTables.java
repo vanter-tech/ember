@@ -27,7 +27,4 @@ public class DiningTables {
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;
 
-    @Column(name = "qr_code_url")
-    private String qrCodeUrl;
-
 }

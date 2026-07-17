@@ -85,7 +85,7 @@ export const EditCategoryModal = () => {
       open={activeModal == 'EDIT_CATEGORY'}
       onOpenChange={(isOpen) => !isOpen && closeModal()}
     >
-      <DialogContent className="sm:max-w-md rounded3xl p-6">
+      <DialogContent className="sm:max-w-md rounded-3xl p-6">
         <DialogHeader className="mb-4">
           <DialogTitle className="text-2xl font-bold text-zinc-800">
             Editar categoria

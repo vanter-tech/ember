@@ -689,6 +689,35 @@ export interface components {
             /** Format: date-time */
             createdAt?: string;
         };
+        OrderItemDto: {
+            id?: string;
+            name?: string;
+            price?: number;
+            participantName?: string;
+            /** Format: date-time */
+            addedAt?: string;
+        };
+        ParticipantDto: {
+            userId?: string;
+            name?: string;
+        };
+        SessionDetailResponseDto: {
+            id?: string;
+            /** Format: uuid */
+            tableId?: string;
+            /** Format: int32 */
+            tableNumber?: number;
+            isOccupied?: boolean;
+            waiterId?: string;
+            /** @enum {string} */
+            status?: "OPEN" | "BILLING" | "CLOSED";
+            /** Format: int32 */
+            maxParticipants?: number;
+            participants?: components["schemas"]["ParticipantDto"][];
+            items?: components["schemas"]["OrderItemDto"][];
+            /** Format: date-time */
+            createdAt?: string;
+        };
         KitchenDisplayEntry: {
             /** Format: int32 */
             tableNumber?: number;
@@ -1355,7 +1384,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["Session"];
+                    "*/*": components["schemas"]["SessionDetailResponseDto"];
                 };
             };
         };
