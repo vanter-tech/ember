@@ -4,6 +4,9 @@ import com.vanter.ember.catalog.model.dto.MenuItemResponse;
 import com.vanter.ember.catalog.service.MenuItemService;
 import com.vanter.ember.config.ResourceNotFoundException;
 import com.vanter.ember.kitchen.event.KitchenItemUpdated;
+import com.vanter.ember.session.dto.OrderItemDto;
+import com.vanter.ember.session.dto.ParticipantDto;
+import com.vanter.ember.session.dto.SessionDetailResponseDto;
 import com.vanter.ember.session.event.ItemAdded;
 import com.vanter.ember.session.event.ItemStatusUpdated;
 import com.vanter.ember.session.event.OrderItemAdded;
@@ -17,6 +20,7 @@ import com.vanter.ember.session.model.Session;
 import com.vanter.ember.session.model.SessionStatus;
 import com.vanter.ember.session.repository.SessionRepository;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 import com.vanter.ember.settings.repository.DiningTableRepository;
@@ -38,6 +42,43 @@ public class SessionService {
     public Session findById(String sessionId) {
         return sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new ResourceNotFoundException("Session not found: " + sessionId));
+    }
+
+    public SessionDetailResponseDto getSessionDetails(String sessionId) {
+        var session = findById(sessionId);
+
+        var table = diningTableRepository.findById(session.getTableId()).orElseThrow(() -> new ResourceNotFoundException("Table not found: " + sessionId));
+        Integer tableNumber = table.getTableNumber();
+
+        var ParticipantList = session.getParticipants().stream().map(
+                (p -> new ParticipantDto(
+                        p.getUserId(),
+                        p.getName()
+                ))
+        ).toList();
+
+        var ItemList = session.getItems().stream().map(
+                (i -> new OrderItemDto(
+                        i.getId(),
+                        i.getName(),
+                        i.getPrice(),
+                        i.getParticipantName(),
+                        i.getAddedAt()
+                ))
+        ).toList();
+
+        return new SessionDetailResponseDto(
+                session.getId(),
+                session.getTableId(),
+                tableNumber,
+                session.getStatus() != SessionStatus.CLOSED,
+                session.getWaiterId(),
+                session.getStatus(),
+                session.getMaxParticipants(),
+                ParticipantList,
+                ItemList,
+                session.getCreatedAt()
+        );
     }
 
     public Session createSession(UUID tableId, String waiterId, int maxParticipants) {

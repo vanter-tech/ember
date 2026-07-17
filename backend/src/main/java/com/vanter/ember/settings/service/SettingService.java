@@ -68,12 +68,8 @@ public class SettingService {
                         .isActive(true)
                         .build();
 
-                newTable.setRestaurantId(restaurantId);
                 diningTableRepository.save(newTable);
 
-                String qrUrl = "http://localhost:5173/menu/" + restaurantId + "/table/" + newTable.getRestaurantId();
-                newTable.setQrCodeUrl(qrUrl);
-                diningTableRepository.save(newTable);
             }
         }else {
             int tabletoRemove = Math.abs(difference);

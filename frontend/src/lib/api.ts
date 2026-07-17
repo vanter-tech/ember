@@ -9,7 +9,8 @@ export type MenuItemResponse = components['schemas']['MenuItemResponse']
 export type MenuItemRequest = components['schemas']['MenuItemRequest']
 export type SettingsResponse = components['schemas']['SettingsPayload']
 export type DashboardResponse = components['schemas']['TableStatusResponse']
-
+export type CreateSession = components['schemas']['ActiveSessionSummary']
+export type infoSession = components['schemas']['SessionDetailResponseDto']
 declare global {
   interface Window {
     ENV: {
@@ -147,4 +148,25 @@ export const DashboardService = {
     })
     return data
   }
+}
+
+export const SessionTableService = {
+  createSession: async(tableId: string, maxParticipants: number): Promise<CreateSession> => {
+    const { data } = await api.post<CreateSession>('/sessions', {
+        tableId: tableId,
+        maxParticipants: maxParticipants
+    })
+    return data
+  },
+
+  getQrToken: async( sessionId: string): Promise<{ qrToken: string}> => {
+    const { data } = await api.get<{qrToken: string}>(`/sessions/${sessionId}/qr`)
+    return data
+  },
+
+  sessionInformation: async(sessionId: string): Promise<infoSession> => {
+    const { data } = await api.get<infoSession>(`/sessions/${sessionId}`)
+    return data
+  }
+
 }

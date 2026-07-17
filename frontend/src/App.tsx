@@ -11,6 +11,7 @@ import { ListMenuItem } from './pages/admin/ListMenuItem'
 import {Tables} from '@/pages/waiter/Tables'
 import { WaiterLayout } from '@/layouts/WaiterLayout'
 import { Settings } from './pages/admin/Settings'
+import { TableInformation } from './pages/waiter/TableInformation'
 
 
 const RoleRedirect = () => {
@@ -48,6 +49,7 @@ export default function App() {
         <Route element={<ProtectedRoute allowedRoles={['WAITER', 'ADMIN']} />}>
           <Route path="/waiter" element={<WaiterLayout/>}>
             <Route path="tables" element={<Tables />}/> 
+            <Route path='tables/:id' element={<TableInformation/>}/>
           </Route>
         </Route>
 
