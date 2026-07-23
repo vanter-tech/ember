@@ -1,5 +1,6 @@
 package com.vanter.ember.session.controller;
 
+import com.vanter.ember.identity.repository.UserRepository;
 import com.vanter.ember.session.dto.*;
 import com.vanter.ember.session.model.Session;
 import com.vanter.ember.session.service.QrTokenService;
@@ -37,10 +38,12 @@ public class SessionController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('WAITER')")
-    public Session createSession(@Valid @RequestBody CreateSessionRequest request,
+    public SessionCreatedResponse createSession(@Valid @RequestBody CreateSessionRequest request,
                                  Authentication authentication) {
-        return sessionService.createSession(
+        Session savedSession =  sessionService.createSession(
                 request.tableId(), authentication.getName(), request.maxParticipants());
+
+        return new SessionCreatedResponse(savedSession.getId(), savedSession.getJoinCode());
     }
 
     @Operation(summary = "Get session by ID")
@@ -79,6 +82,13 @@ public class SessionController {
         return sessionService.joinSession(request.qrToken(), authentication.getName(), request.userName());
     }
 
+    @Operation(summary = "Join a session via Code (CUSTOMER)")
+    @PostMapping("/join")
+    public Session joinSessionCode(@Valid @RequestBody JoinSessionCodeRequest request,
+                                   Authentication authentication) {
+        return sessionService.joinSessionCode(request.joinCode(),  authentication.getName() );
+    }
+
     @Operation(summary = "Expand session capacity (WAITER)")
     @PatchMapping("/{id}/capacity")
     @PreAuthorize("hasRole('WAITER')")
@@ -105,4 +115,12 @@ public class SessionController {
                               Authentication authentication) {
         return sessionService.removeItem(id, itemId, authentication.getName());
     }
+    @Operation(summary = "Close session with no items (WAITER)")
+    @DeleteMapping("/{sessionId}/cancel")
+    @PreAuthorize("hasRole('WAITER')")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void closeEmptySession(@PathVariable String sessionId, Authentication authentication) {
+        sessionService.closeEmptySession(sessionId);
+    }
+
 }

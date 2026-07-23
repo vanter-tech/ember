@@ -3,6 +3,7 @@ package com.vanter.ember.session.repository;
 import com.vanter.ember.session.model.Session;
 import com.vanter.ember.session.model.SessionStatus;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.data.mongodb.repository.MongoRepository;
@@ -14,4 +15,6 @@ public interface SessionRepository extends MongoRepository<Session, String> {
     List<Session> findByParticipants_UserId(String userId);
 
     List<Session> findByTableIdInAndStatus(List<UUID> tableIds, SessionStatus status);
+
+    Optional<Session> findByJoinCodeAndStatus(String joinCode, SessionStatus status);
 }

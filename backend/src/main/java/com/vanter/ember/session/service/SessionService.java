@@ -3,6 +3,7 @@ package com.vanter.ember.session.service;
 import com.vanter.ember.catalog.model.dto.MenuItemResponse;
 import com.vanter.ember.catalog.service.MenuItemService;
 import com.vanter.ember.config.ResourceNotFoundException;
+import com.vanter.ember.identity.repository.UserRepository;
 import com.vanter.ember.kitchen.event.KitchenItemUpdated;
 import com.vanter.ember.session.dto.OrderItemDto;
 import com.vanter.ember.session.dto.ParticipantDto;
@@ -19,6 +20,8 @@ import com.vanter.ember.session.model.Participant;
 import com.vanter.ember.session.model.Session;
 import com.vanter.ember.session.model.SessionStatus;
 import com.vanter.ember.session.repository.SessionRepository;
+
+import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -38,6 +41,7 @@ public class SessionService {
     private final MenuItemService menuItemService;
     private final ApplicationEventPublisher eventPublisher;
     private final QrTokenService qrTokenService;
+    private final UserRepository userRepository;
 
     public Session findById(String sessionId) {
         return sessionRepository.findById(sessionId)
@@ -98,6 +102,7 @@ public class SessionService {
                 .status(SessionStatus.OPEN)
                 .maxParticipants(maxParticipants)
                 .createdAt(LocalDateTime.now())
+                .joinCode(generateJoinCode())
                 .build());
 
         eventPublisher.publishEvent(
@@ -129,6 +134,38 @@ public class SessionService {
         Session saved = sessionRepository.save(session);
         eventPublisher.publishEvent(new ParticipantJoined(saved.getId(), userId, userName));
         return saved;
+    }
+
+    public Session joinSessionCode(String joinCode, String userId ) {
+
+        var user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + userId));
+
+        Session session = sessionRepository.findByJoinCodeAndStatus(joinCode, SessionStatus.OPEN)
+                .orElseThrow(() -> new IllegalStateException("Code not valid: " + joinCode));
+
+        boolean alreadyJoin = session.getParticipants().stream().anyMatch(p -> p.getUserId().equals(userId));
+        if (alreadyJoin) {
+            return session;
+        }
+
+        session.getParticipants().add(Participant.builder().userId(userId).name(user.getName()).build());
+        Session saved = sessionRepository.save(session);
+        eventPublisher.publishEvent(new ParticipantJoined(saved.getId(), userId, user.getName()));
+        return saved;
+    }
+
+    private String generateJoinCode(){
+        String characters = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+        StringBuilder sb = new StringBuilder();
+        SecureRandom random = new SecureRandom();
+
+        for (int i = 0; i < 5; i++) {
+            int index  = random.nextInt(characters.length());
+            sb.append(characters.charAt(index));
+        }
+
+        return sb.toString();
     }
 
     public Session expandCapacity(String sessionId, String requestingWaiter, int additional) {
@@ -231,6 +268,18 @@ public class SessionService {
                 .orElseThrow(() -> new ResourceNotFoundException("Session not found: " + sessionId));
         session.setStatus(SessionStatus.CLOSED);
         sessionRepository.save(session);
+    }
+
+    public void closeEmptySession(String sessionId){
+        Session session = sessionRepository.findById(sessionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Session not found: " + sessionId));
+
+        if(session.getItems() != null && !session.getItems().isEmpty()){
+            throw new IllegalStateException("Cannot cancel session with billable items");
+        }
+
+        this.closeSession(sessionId);
+
     }
 
     public Session removeItem(String sessionId, String orderItemId, String requesterId) {

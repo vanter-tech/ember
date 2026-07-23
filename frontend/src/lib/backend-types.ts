@@ -109,6 +109,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/sessions/join": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Join a session via Code (CUSTOMER) */
+        post: operations["joinSessionCode"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/catalog/items": {
         parameters: {
             query?: never;
@@ -434,6 +451,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/sessions/{sessionId}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Close session with no items (WAITER) */
+        delete: operations["closeEmptySession"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/sessions/{id}/items/{itemId}": {
         parameters: {
             query?: never;
@@ -533,6 +567,14 @@ export interface components {
             /** Format: int32 */
             maxParticipants?: number;
         };
+        SessionCreatedResponse: {
+            sessionId?: string;
+            joinCode?: string;
+        };
+        JoinSessionRequest: {
+            qrToken: string;
+            userName: string;
+        };
         OrderItem: {
             id?: string;
             /** Format: int64 */
@@ -561,16 +603,16 @@ export interface components {
             maxParticipants?: number;
             participants?: components["schemas"]["Participant"][];
             items?: components["schemas"]["OrderItem"][];
+            joinCode?: string;
             /** Format: date-time */
             createdAt?: string;
-        };
-        JoinSessionRequest: {
-            qrToken: string;
-            userName: string;
         };
         AddItemRequest: {
             /** Format: int64 */
             menuItemId: number;
+        };
+        JoinSessionCodeRequest: {
+            joinCode: string;
         };
         CalculateBillRequest: {
             /** @enum {string} */
@@ -945,7 +987,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["Session"];
+                    "*/*": components["schemas"]["SessionCreatedResponse"];
                 };
             };
         };
@@ -988,6 +1030,30 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["AddItemRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["Session"];
+                };
+            };
+        };
+    };
+    joinSessionCode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["JoinSessionCodeRequest"];
             };
         };
         responses: {
@@ -1494,6 +1560,26 @@ export interface operations {
                 content: {
                     "*/*": components["schemas"]["TableStatusResponse"][];
                 };
+            };
+        };
+    };
+    closeEmptySession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sessionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

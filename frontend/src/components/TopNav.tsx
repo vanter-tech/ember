@@ -7,18 +7,21 @@ import { settingStore } from "@/store/settingStore";
 export const TopNav = () => {
 
     let actionType: ModalType | null = null;
-
+    
     const role = useAuthStore((state) => state.role)
+    const { settings } = settingStore()
+    const {openModal} = useUIStore()
+
     const location = useLocation()
     const path = location.pathname
-    const allowedWaiterPaths = [''] // Rutas por agregar ya que no tengo bien definidas las views de los meseros.
+    const allowedWaiterPaths = ['/waiter/tables'] // Rutas por agregar ya que no tengo bien definidas las views de los meseros.
 
     const isMenuItemRoute = useMatch('/admin/categories/:id/items')
     const isCategoryRoute = useMatch('/admin/categories')
 
     const isMenuItemsRouteId = isMenuItemRoute?.params.id
 
-    const {openModal} = useUIStore()
+    
 
     if(!role  || role === 'CUSTOMER') return null;
     if (role === 'WAITER' && !allowedWaiterPaths.includes(path)) return null
@@ -42,7 +45,7 @@ export const TopNav = () => {
         searchPlaceholder = "Buscar mesas..."
     }
 
-    const { settings } = settingStore()
+    
 
     return(
         <header className="w-full bg-white rounded-2xl shadows-sm border border-zinc-100 px-6
