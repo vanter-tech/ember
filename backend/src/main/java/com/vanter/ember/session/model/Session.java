@@ -35,5 +35,7 @@ public class Session {
     @Builder.Default
     private List<OrderItem> items = new ArrayList<>();
 
+    private String joinCode;
+
     private LocalDateTime createdAt;
 }

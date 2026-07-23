@@ -9,8 +9,10 @@ export type MenuItemResponse = components['schemas']['MenuItemResponse']
 export type MenuItemRequest = components['schemas']['MenuItemRequest']
 export type SettingsResponse = components['schemas']['SettingsPayload']
 export type DashboardResponse = components['schemas']['TableStatusResponse']
-export type CreateSession = components['schemas']['ActiveSessionSummary']
+export type CreateSession = components['schemas']['SessionCreatedResponse']
 export type infoSession = components['schemas']['SessionDetailResponseDto']
+export type calculateBill = components['schemas']['CalculateBillRequest']
+
 declare global {
   interface Window {
     ENV: {
@@ -167,6 +169,16 @@ export const SessionTableService = {
   sessionInformation: async(sessionId: string): Promise<infoSession> => {
     const { data } = await api.get<infoSession>(`/sessions/${sessionId}`)
     return data
+  },
+
+  closeEmptySession: async(sessionId: string): Promise<void> => {
+    await api.delete<void>(`sessions/${sessionId}/cancel`)
+  },
+
+  calculateBill: async(sessionId: string, splitMethod: "BY_CONSUMPTION" | "EQUAL_PARTS"): Promise<calculateBill> => {
+    const { data } = await api.post<calculateBill>(`billing/sessions/${sessionId}/bill`,{ splitMethod })
+    return data
   }
+
 
 }

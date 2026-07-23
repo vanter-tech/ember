@@ -10,7 +10,7 @@ import {
 import { Minus, Plus } from 'lucide-react'
 import { useUIStore } from '@/store/uiStore'
 import { useState } from 'react'
-import { useMutation, useQueryClient} from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { SessionTableService } from '@/lib/api'
 import toast from 'react-hot-toast'
 import { QRCodeSVG } from 'qrcode.react'
@@ -19,6 +19,7 @@ export const ParticipantQrModal = () => {
   const { activeModal, modalPayload, closeModal } = useUIStore()
   const [participants, setParticipants] = useState(1)
   const [QrToken, setQrToken] = useState<string | null>(null)
+  const [joinCode, setJoinCode] = useState<string | null>(null)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
@@ -34,28 +35,39 @@ export const ParticipantQrModal = () => {
         maxParticipants
       )
 
-      const realId = (newSession as any).id || newSession.sessionId 
+      const realId = newSession.sessionId
 
       if (!realId) {
         throw new Error('El servidor no devolvio el ID de la session')
       }
-      return await SessionTableService.getQrToken(realId)
+      const qrData = await SessionTableService.getQrToken(realId)
+      return { qrToken: qrData.qrToken, joinCode: newSession.joinCode }
     },
     onSuccess: (data) => {
       setQrToken(data.qrToken)
+      setJoinCode(data.joinCode ?? '')
       queryClient.invalidateQueries({ queryKey: ['dashboardData'] })
       toast.success('Mesa abierta con exito')
     },
   })
 
   const clientJoinUrl = QrToken
-  ? `${window.location.origin}/menu/join?token=${QrToken}`
-  : '';
+    ? `${window.location.origin}/menu/join?token=${QrToken}`
+    : ''
+
+  const handleClose = () => {
+    setJoinCode(null)
+    setQrToken(null)
+    setParticipants(1)
+    closeModal()
+  }
 
   return (
     <Dialog
       open={activeModal == 'PARTICIPANTS_QR'}
-      onOpenChange={(isOpen) => !isOpen && closeModal()}
+      onOpenChange={(isOpen) => {
+        if (!isOpen) return handleClose()
+      }}
     >
       <DialogContent className="sm:max-w-md rounded-3xl p-6">
         <DialogHeader className="mb-2">
@@ -68,6 +80,9 @@ export const ParticipantQrModal = () => {
             </p>
           </DialogDescription>
         </DialogHeader>
+        <p className="text-zinc-500 text-sm">
+          Selecciona la cantidad de clientes para la mesa.
+        </p>
         <div className="flex justify-between items-center bg-zinc-100 rounded-4xl p-2">
           <button
             className="cursor-pointer rounded-full bg-zinc-200 p-3"
@@ -91,17 +106,31 @@ export const ParticipantQrModal = () => {
           className="border-dashed border-2 h-48 my-6 flex items-center justify-center
         roundex-2xl"
         >
-          
           {QrToken ? (
             <QRCodeSVG
-            value={clientJoinUrl}
-            size={180}
-            bgColor={"#ffffff"}
-            fgColor={"#000"}
-            level={"Q"}
+              value={clientJoinUrl}
+              size={180}
+              bgColor={'#ffffff'}
+              fgColor={'#000'}
+              level={'Q'}
             />
           ) : (
             <span className="text-zinc-400">El codigo qr aparecera aca.</span>
+          )}
+        </div>
+        <div
+          className="flex items-center justify-center
+        roundex-2xl"
+        >
+          {joinCode && (
+            <div className="flex w-full flex-col items-center bg-zinc-100 rounded-4xl p-3 gap-2">
+              <span className="text-lg font-bold">
+                Codigo para entrar a la mesa:
+              </span>
+              <span className="text-[#8c1717] text-3xl font-bold">
+                {joinCode}
+              </span>
+            </div>
           )}
         </div>
         <DialogFooter>
