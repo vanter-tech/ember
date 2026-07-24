@@ -12,6 +12,7 @@ export type DashboardResponse = components['schemas']['TableStatusResponse']
 export type CreateSession = components['schemas']['SessionCreatedResponse']
 export type infoSession = components['schemas']['SessionDetailResponseDto']
 export type calculateBill = components['schemas']['CalculateBillRequest']
+export type JoinSessionCode = components['schemas']['JoinSessionCodeRequest']
 
 declare global {
   interface Window {
@@ -177,6 +178,11 @@ export const SessionTableService = {
 
   calculateBill: async(sessionId: string, splitMethod: "BY_CONSUMPTION" | "EQUAL_PARTS"): Promise<calculateBill> => {
     const { data } = await api.post<calculateBill>(`billing/sessions/${sessionId}/bill`,{ splitMethod })
+    return data
+  },
+
+  joinSessionViaCode: async(joinCode: string ): Promise<JoinSessionCode> => {
+    const { data } = await api.post<JoinSessionCode>(`/session/join`, { joinCode })
     return data
   }
 
