@@ -14,6 +14,7 @@ import { Settings } from './pages/admin/Settings'
 import { TableInformation } from './pages/waiter/TableInformation'
 import { CustomerLayout } from './layouts/CustomerLayout'
 import { Home } from './pages/customer/Home'
+import { Menu } from './pages/customer/Menu'
 
 const RoleRedirect = () => {
   const { role } = useAuthStore()
@@ -39,6 +40,7 @@ export default function App() {
         <Route element={<ProtectedRoute allowedRoles={['CUSTOMER']} />}>
           <Route path='/customer' element={<CustomerLayout/>}>
             <Route path='home' element={<Home/>}/>
+            <Route path='menu' element={<Menu/>}/>
           </Route>
         </Route>
 

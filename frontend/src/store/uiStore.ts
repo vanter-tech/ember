@@ -2,7 +2,7 @@ import { create } from 'zustand';
 
 export type ModalType = 'CREATE_CATEGORY' | 'EDIT_CATEGORY' | 'DELETE_CATEGORY' | 
                         'CREATE_ITEMS' | 'EDIT_ITEMS' | 'DELETE_ITEMS' | 
-                         'PARTICIPANTS_QR' |null;
+                         'PARTICIPANTS_QR' | 'JOIN_TABLE' |null;
 
 export type SettingsType = 'BRANDING' | 'MENU' | 'BILLING' | 'HARDWARE'|
                             'SPACE'| null;
