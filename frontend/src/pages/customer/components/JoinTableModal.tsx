@@ -14,6 +14,7 @@ import { useMutation } from '@tanstack/react-query'
 import { SessionTableService } from '@/lib/api'
 import toast from 'react-hot-toast'
 import { useNavigate } from 'react-router-dom'
+import { isAxiosError } from 'axios'
 
 export const JoinTableModal = () => {
   const { activeModal, closeModal } = useUIStore()
@@ -27,10 +28,16 @@ export const JoinTableModal = () => {
     },
     onSuccess() {
       toast.success('Join successfully!.')
-      navigate('/menu', { replace: true })
+      navigate('/customer/menu', { replace: true })
       closeModal()
     },
     onError(error) {
+      if (isAxiosError(error)) {
+        if (error.response?.status === 404) {
+          toast.error('Code not valid, try again with another one.')
+          return
+        }
+      }
       toast.error('An ERROR has occurred')
       console.error('Error during joining a table', error)
     },

@@ -182,7 +182,7 @@ export const SessionTableService = {
   },
 
   joinSessionViaCode: async(joinCode: string ): Promise<JoinSessionCode> => {
-    const { data } = await api.post<JoinSessionCode>(`/session/join`, { joinCode })
+    const { data } = await api.post<JoinSessionCode>(`/sessions/join`, { joinCode })
     return data
   }
 
