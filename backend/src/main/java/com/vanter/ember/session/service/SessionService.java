@@ -30,7 +30,9 @@ import com.vanter.ember.settings.repository.DiningTableRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.event.EventListener;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 @RequiredArgsConstructor
@@ -138,11 +140,12 @@ public class SessionService {
 
     public Session joinSessionCode(String joinCode, String userId ) {
 
-        var user = userRepository.findById(userId)
+        var user = userRepository.findByEmail(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found: " + userId));
 
         Session session = sessionRepository.findByJoinCodeAndStatus(joinCode, SessionStatus.OPEN)
-                .orElseThrow(() -> new IllegalStateException("Code not valid: " + joinCode));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,  "Code not found" + joinCode));
+
 
         boolean alreadyJoin = session.getParticipants().stream().anyMatch(p -> p.getUserId().equals(userId));
         if (alreadyJoin) {

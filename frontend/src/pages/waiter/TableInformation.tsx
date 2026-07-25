@@ -148,8 +148,8 @@ export const TableInformation = () => {
               {sessionData?.participants &&
               sessionData.participants.length > 0 ? (
                 sessionData.participants.map((participant) => (
-                  <div key={participant.userId} className="">
-                    <div className="bg-gray-50 rounded-3xl p-3 flex items-center gap-3">
+                  <div key={participant.userId} className="mb-3 shadow-sm rounded-3xl">
+                    <div className="bg-gray-100 rounded-3xl p-3 flex items-center gap-3">
                       <div className="bg-red-100 rounded-full w-10 h-10 flex items-center justify-center">
                         <User className="text-red-700" />
                       </div>
