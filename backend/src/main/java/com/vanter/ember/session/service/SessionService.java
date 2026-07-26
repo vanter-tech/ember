@@ -147,14 +147,14 @@ public class SessionService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,  "Code not found" + joinCode));
 
 
-        boolean alreadyJoin = session.getParticipants().stream().anyMatch(p -> p.getUserId().equals(userId));
+        boolean alreadyJoin = session.getParticipants().stream().anyMatch(p -> p.getUserId().equals(user.getId()));
         if (alreadyJoin) {
             return session;
         }
 
-        session.getParticipants().add(Participant.builder().userId(userId).name(user.getName()).build());
+        session.getParticipants().add(Participant.builder().userId(user.getId()).name(user.getName()).build());
         Session saved = sessionRepository.save(session);
-        eventPublisher.publishEvent(new ParticipantJoined(saved.getId(), userId, user.getName()));
+        eventPublisher.publishEvent(new ParticipantJoined(saved.getId(), user.getId(), user.getName()));
         return saved;
     }
 
