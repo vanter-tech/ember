@@ -8,12 +8,19 @@ import {
   LogOut,
   User,
   Home,
+  Menu,
 } from 'lucide-react'
+import { useSessionStore } from '@/store/sessionStore'
+
 export const FloatingNav = () => {
   const role = useAuthStore((state) => state.role)
   const logout = useAuthStore((state) => state.logout)
   const navigate = useNavigate()
   const location = useLocation()
+  const { userId } = useAuthStore()
+  const { joinCode, participants } = useSessionStore()
+
+  const amiIn = participants?.find((data) => data.userId === userId)
 
   if (!role) return null
 
@@ -36,16 +43,15 @@ export const FloatingNav = () => {
       className=" fixed bottom-8 inset-x-0 mx-auto w-max bg-white dark:bg-zinc-900 shadow-2xl rounded-full
         px-4 py-2 flex items-center gap-2 border border-zinc-200 dark:border-zinc-800 z-50"
     >
-      {(role === "WAITER" || role === 'ADMIN')  &&
-         (
-          <Link
-            to="/waiter/tables"
-            className={navItemClass('/waiter/tables')}
-            title="mesas"
-          >
-            <LayoutDashboard strokeWidth={1.5} size={24} />
-          </Link>
-        )}
+      {(role === 'WAITER' || role === 'ADMIN') && (
+        <Link
+          to="/waiter/tables"
+          className={navItemClass('/waiter/tables')}
+          title="mesas"
+        >
+          <LayoutDashboard strokeWidth={1.5} size={24} />
+        </Link>
+      )}
 
       {role === 'ADMIN' && (
         <>
@@ -74,7 +80,18 @@ export const FloatingNav = () => {
         </>
       )}
 
-      {role === 'CUSTOMER' && (
+      {role === 'CUSTOMER' &&
+        (amiIn ? (
+          <Link
+            to="/customer/menu"
+            className={navItemClass('/customer/menu')}
+            title="Home"
+          >
+            <Menu strokeWidth={1.5} size={24} />
+          </Link>
+        ) : (
+          ''
+        ))}
         <Link
             to="/customer/home"
             className={navItemClass('/customer/home')}
@@ -82,8 +99,6 @@ export const FloatingNav = () => {
           >
             <Home strokeWidth={1.5} size={24} />
           </Link>
-      )}
-
       <div
         className="flex items-center gap-4 pl-2 border-l
             border-zinc-200 dark:border-zinc-700"

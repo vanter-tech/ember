@@ -13,6 +13,7 @@ export type CreateSession = components['schemas']['SessionCreatedResponse']
 export type infoSession = components['schemas']['SessionDetailResponseDto']
 export type calculateBill = components['schemas']['CalculateBillRequest']
 export type JoinSessionCode = components['schemas']['JoinSessionCodeRequest']
+export type sessionResponse = components['schemas']['Session']
 
 declare global {
   interface Window {
@@ -181,8 +182,8 @@ export const SessionTableService = {
     return data
   },
 
-  joinSessionViaCode: async(joinCode: string ): Promise<JoinSessionCode> => {
-    const { data } = await api.post<JoinSessionCode>(`/sessions/join`, { joinCode })
+  joinSessionViaCode: async(joinCode: string ): Promise<sessionResponse> => {
+    const { data } = await api.post<sessionResponse>(`/sessions/join`, { joinCode })
     return data
   }
 
