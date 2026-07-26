@@ -15,20 +15,23 @@ import { SessionTableService } from '@/lib/api'
 import toast from 'react-hot-toast'
 import { useNavigate } from 'react-router-dom'
 import { isAxiosError } from 'axios'
+import { useSessionStore } from '@/store/sessionStore'
 
 export const JoinTableModal = () => {
   const { activeModal, closeModal } = useUIStore()
   const [opciones, setOpciones] = useState('MENU')
   const [joinCode, setJoinCode] = useState('')
   const navigate = useNavigate()
+  const {setSession} = useSessionStore()
 
   const mutation = useMutation({
     mutationFn: async (joinCode: string) => {
       return await SessionTableService.joinSessionViaCode(joinCode)
     },
-    onSuccess() {
+    onSuccess(data) {
       toast.success('Join successfully!.')
       navigate('/customer/menu', { replace: true })
+      setSession(data)
       closeModal()
     },
     onError(error) {
