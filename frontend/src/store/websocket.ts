@@ -1,6 +1,9 @@
 import { create } from "zustand";
 import { Client } from '@stomp/stompjs'
 import SockJS from 'sockjs-client'
+import { useAuthStore } from "./authStore";
+
+
 
 interface WebSocketState {
     stompClient: Client | null,
@@ -10,13 +13,20 @@ interface WebSocketState {
 }
 
 export const useWebsocketStore = create<WebSocketState>((set, get) => ({
+    
+
     stompClient: null,
     isConnected: false,
 
     connect: () => {
+        const token = useAuthStore.getState().token;
+
         const client = new Client({
             webSocketFactory: () => {
                 return new SockJS('http://localhost:8080/api/v1/ws')
+            },
+            connectHeaders: {
+               Authorization: `Bearer ${token}`
             }
         })
 
