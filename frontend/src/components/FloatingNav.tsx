@@ -11,6 +11,8 @@ import {
   Menu,
 } from 'lucide-react'
 import { useSessionStore } from '@/store/sessionStore'
+import { useWebsocketStore } from '@/store/websocket'
+import { useEffect } from 'react'
 
 export const FloatingNav = () => {
   const role = useAuthStore((state) => state.role)
@@ -18,7 +20,8 @@ export const FloatingNav = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const { userId } = useAuthStore()
-  const { joinCode, participants } = useSessionStore()
+  const { participants, id } = useSessionStore()
+  const {connect, disconnect, stompClient, isConnected} = useWebsocketStore()
 
   const amiIn = participants?.find((data) => data.userId === userId)
 
@@ -28,6 +31,24 @@ export const FloatingNav = () => {
     logout()
     navigate('/login')
   }
+
+  useEffect(() => {
+    connect()
+
+    return () => disconnect()
+  },[])
+
+  useEffect(() => {
+    if(isConnected && id != null){
+      const suscription = stompClient?.subscribe(`/topic/session/${id}`, (msg) => {
+        console.log('Mensage recibido:', msg.body)
+      })
+
+      return () => {
+        suscription?.unsubscribe()
+      }
+    }
+  },[isConnected, id, stompClient])
 
   const isActive = (path: string) => location.pathname.includes(path)
   const navItemClass = (path: string) => `

@@ -8,11 +8,7 @@ import com.vanter.ember.kitchen.event.KitchenItemUpdated;
 import com.vanter.ember.session.dto.OrderItemDto;
 import com.vanter.ember.session.dto.ParticipantDto;
 import com.vanter.ember.session.dto.SessionDetailResponseDto;
-import com.vanter.ember.session.event.ItemAdded;
-import com.vanter.ember.session.event.ItemStatusUpdated;
-import com.vanter.ember.session.event.OrderItemAdded;
-import com.vanter.ember.session.event.ParticipantJoined;
-import com.vanter.ember.session.event.SessionOpened;
+import com.vanter.ember.session.event.*;
 import com.vanter.ember.session.exception.TooManyParticipantsException;
 import com.vanter.ember.session.model.OrderItem;
 import com.vanter.ember.session.model.OrderItemStatus;
@@ -271,6 +267,10 @@ public class SessionService {
                 .orElseThrow(() -> new ResourceNotFoundException("Session not found: " + sessionId));
         session.setStatus(SessionStatus.CLOSED);
         sessionRepository.save(session);
+
+        eventPublisher.publishEvent(new SessionClosed(
+                session.getId(), session.getTableId()
+        ));
     }
 
     public void closeEmptySession(String sessionId){
