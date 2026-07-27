@@ -17,6 +17,7 @@ import { useEffect } from 'react'
 export const FloatingNav = () => {
   const role = useAuthStore((state) => state.role)
   const logout = useAuthStore((state) => state.logout)
+  const clearSession = useSessionStore((state) => state.clearSession)
   const navigate = useNavigate()
   const location = useLocation()
   const { userId } = useAuthStore()
@@ -41,7 +42,12 @@ export const FloatingNav = () => {
   useEffect(() => {
     if(isConnected && id != null){
       const suscription = stompClient?.subscribe(`/topic/session/${id}`, (msg) => {
-        console.log('Mensage recibido:', msg.body)
+        const eventData = JSON.parse(msg.body)
+        console.log('Mensage recibido:', eventData)
+
+        clearSession()
+        navigate('/customer/home')
+
       })
 
       return () => {
