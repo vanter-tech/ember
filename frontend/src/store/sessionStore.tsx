@@ -4,7 +4,7 @@ import type { sessionResponse } from '@/lib/api'
 
 interface sessionState extends sessionResponse {
   setSession: (data: sessionResponse) => void
-  logout: () => void
+  clearSession: () => void
 }
 
 export const useSessionStore = create<sessionState>()(
@@ -19,7 +19,7 @@ export const useSessionStore = create<sessionState>()(
 
       setSession: (data) => set(data),
 
-      logout: () => {
+      clearSession: () => {
         set({
           id: undefined,
           tableId: undefined,

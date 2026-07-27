@@ -3,6 +3,7 @@ package com.vanter.ember.session.listener;
 import com.vanter.ember.session.event.ItemAdded;
 import com.vanter.ember.session.event.ItemStatusUpdated;
 import com.vanter.ember.session.event.ParticipantJoined;
+import com.vanter.ember.session.event.SessionClosed;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.event.EventListener;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -16,7 +17,7 @@ public class SessionWebSocketListener {
 
     @EventListener
     public void onParticipantJoined(ParticipantJoined event) {
-        messagingTemplate.convertAndSend("/topic/sessions/" + event.sessionId(), event);
+        messagingTemplate.convertAndSend("/topic/session/" + event.sessionId(), event);
     }
 
     @EventListener
@@ -28,4 +29,10 @@ public class SessionWebSocketListener {
     public void onItemStatusUpdated(ItemStatusUpdated event) {
         messagingTemplate.convertAndSend("/topic/session/" + event.sessionId(), event);
     }
+
+    @EventListener
+    public void onSessionCLose(SessionClosed event) {
+        messagingTemplate.convertAndSend("/topic/session/" + event.sessionId(), event);
+    }
+
 }
