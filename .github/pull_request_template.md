@@ -1,22 +1,21 @@
-## Descripción
-<!-- Describe de manera clara y concisa los cambios realizados en este PR. -->
-<!-- ¿Qué problema resuelve o qué nueva característica aporta? -->
+## Description
+<!-- Describe clearly and concisely the changes made in this PR. -->
+<!-- What problem does it solve or what new feature does it bring? -->
 
 
-## Tipo de cambio
-<!-- Marca con una 'x' las opciones que apliquen: [x] -->
-- [ ] Bugfix (corrección de errores)
-- [ ] Nueva característica (Feature)
-- [ ] Refactorización (cambio de código que no añade ni arregla nada visible)
-- [ ] Actualización de UI/estilos
-- [ ] Documentación
-
-## Evidencia / Capturas de pantalla
-<!-- Si este PR incluye cambios visuales (como tu dashboard), agrega capturas de pantalla o un GIF aquí abajo. Si es solo backend, puedes borrar esta sección. -->
+## Key changes include:
 
 
-## Checklist de Auto-revisión
-- [ ] Mi código sigue el estilo y arquitectura del proyecto.
-- [ ] He revisado mi propio código antes de subirlo.
-- [ ] No hay advertencias (warnings) nuevas en la consola del navegador.
-- [ ] Dejé comentarios en mi código, particularmente en áreas difíciles de entender.
+## Type of change
+<!-- Mark with an 'x' the options that apply: [x] -->
+- [ ] Bugfix (bug correction)
+- [ ] New feature (Feature)
+- [ ] Refactoring (code change that neither adds nor fixes anything visible)
+- [ ] UI/styles update
+- [ ] Documentation
+
+## Self-review Checklist
+- [ ] My code follows the style and architecture of the project.
+- [ ] I have reviewed my own code before uploading it.
+- [ ] There are no new warnings in the browser console.
+- [ ] I left comments in my code, particularly in hard-to-understand areas.
