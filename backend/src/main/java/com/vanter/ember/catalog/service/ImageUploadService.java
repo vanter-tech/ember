@@ -4,10 +4,15 @@ import com.vanter.ember.config.MinioProperties;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
 import io.minio.RemoveObjectArgs;
+
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.net.URI;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import net.coobird.thumbnailator.Thumbnails;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -24,27 +29,40 @@ public class ImageUploadService {
 
     public String uploadImage(MultipartFile file, String bucketName) {
         String contentType = file.getContentType();
-        if (contentType == null || !allowed_types.contains(contentType)) {
-            throw new IllegalArgumentException("Unsupported file type: " + contentType);
+        if(contentType == null || !allowed_types.contains(contentType)){
+            throw new IllegalArgumentException("Unsupported content type: " + contentType);
         }
-        if (file.getSize() > max_file_size) {
-            throw new IllegalArgumentException(
-                    "File size exceeds maximum allowed size of 5MB");
+        if(file.getSize() > max_file_size){
+            throw new IllegalArgumentException("File size exceeds maximum allowed size: of 5MB " + max_file_size);
         }
 
-        String objectName = UUID.randomUUID() + extension(file.getOriginalFilename());
         try {
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            Thumbnails.of(file.getInputStream())
+                    .size(880,800)
+                    .outputQuality(0.75)
+                    .imageType(BufferedImage.TYPE_INT_RGB)
+                    .outputFormat("jpg")
+                    .toOutputStream(outputStream);
+
+            byte[] imageBytes = outputStream.toByteArray();
+
+            String objectName = UUID.randomUUID() + ".jpg";
+
             minioClient.putObject(
                     PutObjectArgs.builder()
                             .bucket(bucketName)
                             .object(objectName)
-                            .stream(file.getInputStream(), file.getSize(), -1)
-                            .contentType(contentType)
-                            .build());
-        } catch (Exception e) {
+                            .stream(new ByteArrayInputStream(imageBytes), imageBytes.length, -1)
+                            .contentType("image/jpeg")
+                            .build()
+            );
+
+            return minioProperties.getUrl() + "/" + bucketName + "/" + objectName;
+
+        }catch (Exception e){
             throw new RuntimeException("Failed to upload image: " + e.getMessage(), e);
         }
-        return minioProperties.getUrl() + "/" + bucketName + "/" + objectName;
     }
 
     public void deleteImage(String imageUrl) {
