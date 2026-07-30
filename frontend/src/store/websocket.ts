@@ -23,7 +23,7 @@ export const useWebsocketStore = create<WebSocketState>((set, get) => ({
 
         const client = new Client({
             webSocketFactory: () => {
-                return new SockJS('http://localhost:8080/api/v1/ws')
+                return new SockJS('http://localhost:8080/v1/ws')
             },
             connectHeaders: {
                Authorization: `Bearer ${token}`

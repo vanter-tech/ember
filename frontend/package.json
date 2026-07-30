@@ -8,7 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "openapi": "openapi-typescript http://localhost:8080/api/v1/v3/api-docs -o src/lib/backend-types.ts"
+    "openapi": "openapi-typescript http://localhost:8080/v1/v3/api-docs -o src/lib/backend-types.ts"
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.2.9",
