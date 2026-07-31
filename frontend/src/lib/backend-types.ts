@@ -383,6 +383,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/menu": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getMenus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/kitchen/orders": {
         parameters: {
             query?: never;
@@ -759,6 +775,14 @@ export interface components {
             items?: components["schemas"]["OrderItemDto"][];
             /** Format: date-time */
             createdAt?: string;
+        };
+        MenuDTO: {
+            /** Format: int64 */
+            id?: number;
+            name?: string;
+            description?: string;
+            imgUrl?: string;
+            items?: components["schemas"]["MenuItemResponse"][];
         };
         KitchenDisplayEntry: {
             /** Format: int32 */
@@ -1475,6 +1499,26 @@ export interface operations {
                     "*/*": {
                         [key: string]: string;
                     };
+                };
+            };
+        };
+    };
+    getMenus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MenuDTO"][];
                 };
             };
         };

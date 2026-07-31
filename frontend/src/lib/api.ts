@@ -14,6 +14,7 @@ export type infoSession = components['schemas']['SessionDetailResponseDto']
 export type calculateBill = components['schemas']['CalculateBillRequest']
 export type JoinSessionCode = components['schemas']['JoinSessionCodeRequest']
 export type sessionResponse = components['schemas']['Session']
+export type menuResponse = components['schemas']['MenuDTO']
 
 declare global {
   interface Window {
@@ -188,4 +189,11 @@ export const SessionTableService = {
   }
 
 
+}
+
+export const menuServices = {
+  getMenu: async(): Promise<menuResponse[]> => {
+    const { data } = await api.get<menuResponse[]>('/menu')
+    return data
+  }
 }
