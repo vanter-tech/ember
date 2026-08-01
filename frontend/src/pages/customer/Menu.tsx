@@ -64,8 +64,9 @@ export const Menu = () => {
           </div>
           <div className='flex flex-row gap-3 p-2 pb-5 border-b overflow-x-auto'>
             {menuItems.map((categories) => (
-              <div className='w-auto shadow-sm p-4 rounded-3xl cursor-pointer hover:bg-[#8c1717]
-              shrink-0'>
+              <div className={`w-auto shadow-sm p-4 rounded-3xl cursor-pointer hover:bg-[#8c1717]
+              shrink-0 ${activeCategory === categories.id ? 'bg-[#8c1717] text-white' : 'bg-white text-[#8c1717]'}`}
+                onClick={() => setActiveCategory(categories.id)} key={categories.id}>
                 {categories.name}
               </div>
             ))}
