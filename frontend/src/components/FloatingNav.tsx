@@ -22,7 +22,7 @@ export const FloatingNav = () => {
   const location = useLocation()
   const { userId } = useAuthStore()
   const { participants, id } = useSessionStore()
-  const {connect, disconnect, stompClient, isConnected} = useWebsocketStore()
+  const {stompClient, isConnected} = useWebsocketStore()
 
   const amiIn = participants?.find((data) => data.userId === userId)
 
@@ -33,21 +33,18 @@ export const FloatingNav = () => {
     navigate('/login')
   }
 
-  useEffect(() => {
-    connect()
-
-    return () => disconnect()
-  },[])
 
   useEffect(() => {
-    if(isConnected && id != null){
+    if(isConnected && id != null && stompClient?.connected){
       const suscription = stompClient?.subscribe(`/topic/session/${id}`, (msg) => {
         const eventData = JSON.parse(msg.body)
         console.log('Mensage recibido:', eventData)
 
-        clearSession()
-        navigate('/customer/home')
-
+        if(eventData.status === 'CLOSED'){
+          clearSession()
+          navigate('/customer/home')
+        }
+        
       })
 
       return () => {
@@ -119,13 +116,15 @@ export const FloatingNav = () => {
         ) : (
           ''
         ))}
-        <Link
+        {role === 'CUSTOMER' &&(
+          <Link
             to="/customer/home"
             className={navItemClass('/customer/home')}
             title="Home"
           >
             <Home strokeWidth={1.5} size={24} />
           </Link>
+        )}
       <div
         className="flex items-center gap-4 pl-2 border-l
             border-zinc-200 dark:border-zinc-700"
