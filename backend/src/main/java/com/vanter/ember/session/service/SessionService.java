@@ -130,6 +130,7 @@ public class SessionService {
 
         session.getParticipants().add(Participant.builder().userId(userId).name(userName).build());
         Session saved = sessionRepository.save(session);
+
         eventPublisher.publishEvent(new ParticipantJoined(saved.getId(), userId, userName));
         return saved;
     }
@@ -269,7 +270,7 @@ public class SessionService {
         sessionRepository.save(session);
 
         eventPublisher.publishEvent(new SessionClosed(
-                session.getId(), session.getTableId()
+                session.getId(), session.getTableId(), session.getStatus()
         ));
     }
 

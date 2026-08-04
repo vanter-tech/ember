@@ -3,16 +3,27 @@ import { menuServices } from '@/lib/api'
 import { Badge } from '@/components/ui/badge'
 import toast from 'react-hot-toast'
 import { Button } from '@/components/ui/button'
-import { Card, CardDescription, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardTitle,
+  CardHeader,
+} from '@/components/ui/card'
 import { useUIStore } from '@/store/uiStore'
 import { useEffect, useState } from 'react'
-import { number } from 'zod'
 import { settingStore } from '@/store/settingStore'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Plus } from 'lucide-react'
+import { useWebsocketStore } from '@/store/websocket'
+import { useSessionStore } from '@/store/sessionStore'
+import {ParticipantsPopUp} from '@/pages/customer/components/ParticipantsPopUp'
 
 export const Menu = () => {
   const { settings } = settingStore()
   const [activeCategory, setActiveCategory] = useState<Number | undefined>()
+  const { connect, isConnected, subscribeToSession, stompClient } =
+    useWebsocketStore()
+  const sessionId = useSessionStore((state) => state.id)
   const {
     data: menuItems = [],
     isLoading,
@@ -30,6 +41,12 @@ export const Menu = () => {
     }
   }, [menuItems, activeCategory])
 
+  useEffect(() => {
+    if (sessionId && isConnected && stompClient?.connected) {
+      subscribeToSession(sessionId)
+    }
+  }, [isConnected, sessionId, connect, subscribeToSession, stompClient])
+
   if (isLoading)
     return <div className="p-6 text-zinc-500">Cargando platillos...</div>
   if (isError)
@@ -46,8 +63,7 @@ export const Menu = () => {
           </Button>
           <h1
             className="text-3xl font-bold
-                text-[#8c1717]"
-            tracking-tight
+                text-[#8c1717] tracking-tight"
           >
             Ember
           </h1>
@@ -62,15 +78,55 @@ export const Menu = () => {
             </div>
             <Badge className="p-6 text-md font-bold">Menu de almuerzo</Badge>
           </div>
-          <div className='flex flex-row gap-3 p-2 pb-5 border-b overflow-x-auto'>
+          <div className="flex flex-row gap-3 p-2 pb-5 border-b overflow-x-auto">
             {menuItems.map((categories) => (
-              <div className={`w-auto shadow-sm p-4 rounded-3xl cursor-pointer hover:bg-[#8c1717]
+              <div
+                className={`w-auto shadow-sm p-4 rounded-3xl cursor-pointer 
               shrink-0 ${activeCategory === categories.id ? 'bg-[#8c1717] text-white' : 'bg-white text-[#8c1717]'}`}
-                onClick={() => setActiveCategory(categories.id)} key={categories.id}>
+                onClick={() => setActiveCategory(categories.id)}
+                key={categories.id}
+              >
                 {categories.name}
               </div>
             ))}
           </div>
+        </div>
+        <div className="p-4 grid grid-cols-1 md:grid-cols-4 lg:grid-cols-4 gap-4">
+          {itemsCategory.map((item, index) => (
+            <Card
+              key={item.id}
+              className={`rounded-4xl shadow-sm hover:shadow-md transition-shadow relative overflow-hidden min-h-75 ${index === 0 ? 'md:col-span-2 md:row-span-2' : ''} ${index === 1 ? 'md:col-span-2 md:row-span-1' : ''} `}
+            >
+              <img
+                src={item.imageUrl}
+                alt={item.name}
+                className="absolute inset-0 w-full h-full object-cover z-0 "
+              />
+              <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/40 to-transparent z-10"></div>
+              <div className="absolute inset-0 flex justify-between items-end p-4 z-20 text-white">
+                <Badge
+                  className="absolute top-4 left-4 px-3 py-1 text-lg p-5
+                font-bold text-[#8c1717] bg-white rounded-full shadow-md"
+                >
+                  ${item.price?.toFixed(2)}
+                </Badge>
+                <CardHeader className="p-3">
+                  <CardTitle className="text-2xl font-bold">
+                    {item.name}
+                  </CardTitle>
+                  <CardDescription>{item.description}</CardDescription>
+                </CardHeader>
+                <CardContent className="flex flex-col items-end gap-2 p-0">
+                  <Button className="bg-[#8c1717] hover:bg-[#8c1717]/90 text-white p-7 rounded-full shadow-md">
+                    <Plus className="w-5 h-5" />
+                  </Button>
+                </CardContent>
+              </div>
+            </Card>
+          ))}
+        </div>
+        <div className="fixed bottom-10 left-11 z-50">
+          <ParticipantsPopUp />
         </div>
       </div>
     </>

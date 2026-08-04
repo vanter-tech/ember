@@ -5,6 +5,9 @@ import type { sessionResponse } from '@/lib/api'
 interface sessionState extends sessionResponse {
   setSession: (data: sessionResponse) => void
   clearSession: () => void
+  updateSession: (data: any) => void
+  addParticipant: (participant: any) => void
+
 }
 
 export const useSessionStore = create<sessionState>()(
@@ -18,6 +21,13 @@ export const useSessionStore = create<sessionState>()(
       participants: undefined,
 
       setSession: (data) => set(data),
+      updateSession: (data) =>({...data}),
+      addParticipant: (participant) => {
+        set((state) => ({
+          participants: [...(state.participants || []), {userId: participant.userId, name: participant.userName}],
+        }))
+      },
+
 
       clearSession: () => {
         set({
