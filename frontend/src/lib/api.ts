@@ -15,6 +15,8 @@ export type calculateBill = components['schemas']['CalculateBillRequest']
 export type JoinSessionCode = components['schemas']['JoinSessionCodeRequest']
 export type sessionResponse = components['schemas']['Session']
 export type menuResponse = components['schemas']['MenuDTO']
+export type orderItemDTO = components['schemas']['OrderItemDto']
+export type participantDTO = components['schemas']['ParticipantDto']
 
 declare global {
   interface Window {
@@ -185,6 +187,11 @@ export const SessionTableService = {
 
   joinSessionViaCode: async(joinCode: string ): Promise<sessionResponse> => {
     const { data } = await api.post<sessionResponse>(`/sessions/join`, { joinCode })
+    return data
+  },
+
+  addItem: async(sessionId: string, itemId: number): Promise<orderItemDTO> => {
+    const { data } = await api.post<orderItemDTO>(`/sessions/${sessionId}/items`, {menuItemId: itemId})
     return data
   }
 

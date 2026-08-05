@@ -101,7 +101,7 @@ export const TableInformation = () => {
                 Detalles de pedidos
               </CardTitle>
             </CardHeader>
-            <CardContent className="flex flex-col gap-3">
+            <CardContent className="flex flex-col gap-3 max-h-87.5 overflow-y-auto pr-2">
               {sessionData?.items && sessionData.items.length > 0 ? (
                 sessionData.items.map((item) => (
                   <div
@@ -177,7 +177,7 @@ export const TableInformation = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="ml-3 border-l-2 border-gray-200 pl-5 flex flex-col gap-6 pt-2">
+              <div className="ml-3 border-l-2 border-gray-200 pl-5 flex flex-col gap-6 pt-2 max-h-87.5 overflow-y-auto ">
                 {sessionData?.items && sessionData.items.length > 0
                   ? sessionData.items.map((item) => (
                       <div key={item.id} className="relative">
