@@ -1,9 +1,6 @@
 package com.vanter.ember.session.listener;
 
-import com.vanter.ember.session.event.ItemAdded;
-import com.vanter.ember.session.event.ItemStatusUpdated;
-import com.vanter.ember.session.event.ParticipantJoined;
-import com.vanter.ember.session.event.SessionClosed;
+import com.vanter.ember.session.event.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.event.EventListener;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -32,6 +29,12 @@ public class SessionWebSocketListener {
 
     @EventListener
     public void onSessionCLose(SessionClosed event) {
+        messagingTemplate.convertAndSend("/topic/session/" + event.sessionId(), event);
+    }
+
+    @EventListener
+    public void deleteItem(DeleteItem event) {
+        System.out.println("¡ATENCIÓN! Enviando evento WS para sesión: " + event.sessionId());
         messagingTemplate.convertAndSend("/topic/session/" + event.sessionId(), event);
     }
 

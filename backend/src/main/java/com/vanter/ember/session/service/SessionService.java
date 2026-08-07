@@ -302,14 +302,24 @@ public class SessionService {
                     "Cannot remove item '" + item.getName() + "' as it is already being prepared");
         }
 
-        boolean isWaiter = session.getWaiterId().equals(requesterId);
-        boolean isOwner = item.getParticipantId().equals(requesterId);
+        var user = userRepository.findByEmail(requesterId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + requesterId));
+
+        boolean isWaiter = session.getWaiterId().equals(user.getId());
+        boolean isOwner = item.getParticipantId().equals(user.getId());
         if (!isWaiter && !isOwner) {
             throw new IllegalStateException(
                     "Only the item's owner or the session waiter can remove it");
         }
 
         session.getItems().remove(item);
+
+        eventPublisher.publishEvent(new DeleteItem(
+                session.getId(), item.getId()
+        ));
+
         return sessionRepository.save(session);
+
+
     }
 }

@@ -66,6 +66,11 @@ export const useWebsocketStore = create<WebSocketState>((set, get) => ({
             if(eventData.type === 'ITEM_ADDED'){
                 useSessionStore.getState().updateSession({items: eventData.sessionItems})
             }
+            if(eventData.type === 'ITEM_DELETED'){
+                const currentState = useSessionStore.getState()
+                const updateItems = currentState.items?.filter((item) => item.id !== eventData.orderItemId)
+                useSessionStore.getState().updateSession({items: updateItems})
+            }
         })
 
         

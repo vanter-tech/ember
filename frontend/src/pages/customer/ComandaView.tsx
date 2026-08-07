@@ -1,14 +1,28 @@
 import { useMemo, useState } from 'react'
 import { useSessionStore } from '@/store/sessionStore'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { ArrowLeft, ArrowRight, Car, Minus, Plus, Send, User } from 'lucide-react'
+import {
+  ArrowLeft,
+  ArrowRight,
+  Car,
+  Minus,
+  Plus,
+  Send,
+  Trash,
+  User,
+} from 'lucide-react'
 import { AvatarInitials, AvatarColors } from '@/components/AvatarInitials'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Link } from 'react-router-dom'
+import { api, SessionTableService } from '@/lib/api'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import toast from 'react-hot-toast'
 
 export const ComandaView = () => {
   const items = useSessionStore((state) => state.items || [])
+  const sessionId = useSessionStore((state) => state.id)
+  const queryClient = useQueryClient()
 
   const Participants = useMemo(() => {
     const dicc = items.reduce(
@@ -45,9 +59,28 @@ export const ComandaView = () => {
     return Object.values(dicc)
   }, [items])
 
-  const tableSubTotal = Participants.reduce((acum, item) => 
-    acum += item.subtotal
-  , 0)
+  const mutation = useMutation({
+    mutationFn: ({
+      sessionId,
+      itemId,
+    }: {
+      sessionId: string
+      itemId: string
+    }) => SessionTableService.deleteItem(sessionId, itemId),
+
+    onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['deleteItem'] })
+        toast.success('Platillo eliminado')
+    },
+    onError: (e) => {
+        toast.error('Error al eliminar')
+    }
+  })
+
+  const tableSubTotal = Participants.reduce(
+    (acum, item) => (acum += item.subtotal),
+    0
+  )
   const services = tableSubTotal * 0.1
   const total = tableSubTotal + services
 
@@ -71,7 +104,7 @@ export const ComandaView = () => {
         </header>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6">
           {Participants.map((person, index) => (
-            <Card className="relative overflow-hidden">
+            <Card className="relative overflow-hidden" key={index}>
               <CardHeader>
                 <CardTitle className="flex justify-between items-center">
                   <div className="flex flex-row gap-4 p-5 items-center">
@@ -109,25 +142,39 @@ export const ComandaView = () => {
                           ${item.price?.toFixed(2)}
                         </span>
                       </div>
-                      <div className=" border-b-2 flex items-center gap-3 pb-2">
+                      <div className="flex justify-between">
+                        <div className='className=" border-b-2 flex items-center gap-3 pb-2'>
+                          <Button
+                            variant={'destructive'}
+                            className="h-8 w-8 cursor-pointer rounded-full p-3 items-center flex"
+                          >
+                            <Minus className="w-5 h-5" />
+                          </Button>
+                          <span className="text-xl font-bold">
+                            {item.cantidad}
+                          </span>
+                          <Button className=" h-8 w-8 cursor-pointer rounded-full p-3 items-center flex">
+                            <Plus className="w-5 h-5" />
+                          </Button>
+                        </div>
                         <Button
+                          className=""
                           variant={'destructive'}
-                          className="h-8 w-8 cursor-pointer rounded-full p-3 items-center flex"
+                          disabled={mutation.isPending}
+                          onClick={() => {
+                            mutation.mutate({
+                                sessionId: sessionId!,
+                                itemId: item.id!
+                            })
+                          }}
                         >
-                          <Minus className="w-5 h-5" />
-                        </Button>
-                        <span className="text-xl font-bold">
-                          {item.cantidad}
-                        </span>
-                        <Button className=" h-8 w-8 cursor-pointer rounded-full p-3 items-center flex">
-                          <Plus className="w-5 h-5" />
+                          <Trash />
                         </Button>
                       </div>
                     </div>
                   )
                 )}
               </CardContent>
-              
             </Card>
           ))}
         </div>
@@ -147,7 +194,7 @@ export const ComandaView = () => {
             </div>
           </div>
           <Button className="rounded-full h-auto px-12 py-8 text-xl font-semibold w-full md:w-auto gap-2">
-            <Send className='w-7 h-7'/>
+            <Send className="w-7 h-7" />
             Enviar a cocina
           </Button>
         </Card>
