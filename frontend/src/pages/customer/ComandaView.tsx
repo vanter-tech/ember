@@ -133,7 +133,7 @@ export const ComandaView = () => {
               <CardContent className="overflow-y-auto max-h-87.5 no-scrollbar">
                 {person.platillos.map(
                   (item: (typeof items)[0] & { cantidad: number }) => (
-                    <div className="flex flex-col gap-2 p-3">
+                    <div className="flex flex-col gap-2 p-3 border-b-2">
                       <div className="flex justify-between">
                         <span className="text-sm font-bold">
                           {item.name?.toUpperCase()}
@@ -143,7 +143,7 @@ export const ComandaView = () => {
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <div className='className=" border-b-2 flex items-center gap-3 pb-2'>
+                        <div className='className="  flex items-center gap-3 pb-2'>
                           <Button
                             variant={'destructive'}
                             className="h-8 w-8 cursor-pointer rounded-full p-3 items-center flex"

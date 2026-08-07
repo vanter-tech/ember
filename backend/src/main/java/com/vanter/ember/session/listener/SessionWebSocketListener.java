@@ -34,7 +34,6 @@ public class SessionWebSocketListener {
 
     @EventListener
     public void deleteItem(DeleteItem event) {
-        System.out.println("¡ATENCIÓN! Enviando evento WS para sesión: " + event.sessionId());
         messagingTemplate.convertAndSend("/topic/session/" + event.sessionId(), event);
     }
 
