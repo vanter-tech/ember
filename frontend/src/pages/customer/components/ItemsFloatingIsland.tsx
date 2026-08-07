@@ -1,13 +1,15 @@
 import { Button } from "@/components/ui/button"
 import {useSessionStore} from "@/store/sessionStore"
 import { ArrowRight } from "lucide-react"
+import { useNavigate } from "react-router-dom"
 
 export const ItemsFloatingIsland = () => {
-
+    const navigate = useNavigate()
     const items = useSessionStore((state) => state.items  || [])
+    const tableId = useSessionStore((state) => state.tableId)
     if(!items || items.length === 0) return null
     const previewItems = items.slice(0, 3)
-    const remainingCount = items.length - 2
+    const remainingCount = items.length - 3
 
     return(
         <div className="flex items-center gap-4 bg-white p-2 pr-2 rounded-full shadow-[0_3px_15px_rgba(0,0,0,0.1)] border border-gray-50">
@@ -30,7 +32,12 @@ export const ItemsFloatingIsland = () => {
             <span className="text-sm font-medium text-gray-600">
                 {items.length} platos seleccionados
             </span>
-            <Button className="px-5 rounded-full text-sm font-semibold flex items-center gap-2">
+            
+            <Button className="px-5 rounded-full text-sm font-semibold flex items-center gap-2"
+            onClick={()=> {
+                navigate(`${tableId}/comanda`)
+            }}
+            >
                 Ver Comanda
                 <ArrowRight />
             </Button>

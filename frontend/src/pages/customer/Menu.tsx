@@ -22,11 +22,19 @@ import { ItemsFloatingIsland } from './components/ItemsFloatingIsland'
 export const Menu = () => {
   const { settings } = settingStore()
   const [activeCategory, setActiveCategory] = useState<Number | undefined>()
-  const { connect, isConnected, subscribeToSession, stompClient } = useWebsocketStore()
+  const { connect, isConnected, subscribeToSession, stompClient } =
+    useWebsocketStore()
   const sessionId = useSessionStore((state) => state.id)
+  const joinCode = useSessionStore((state) => state.joinCode)
 
   const mutation = useMutation({
-    mutationFn: async ({ sessionId, itemId }: { sessionId: string, itemId: number }) => {
+    mutationFn: async ({
+      sessionId,
+      itemId,
+    }: {
+      sessionId: string
+      itemId: number
+    }) => {
       if (!sessionId) throw new Error('No session ID available')
       return SessionTableService.addItem(sessionId, itemId)
     },
@@ -36,7 +44,7 @@ export const Menu = () => {
     onError: (error) => {
       toast.error('Failed to add item. Please try again.')
       console.error('Error adding item:', error)
-    }
+    },
   })
 
   const {
@@ -88,7 +96,7 @@ export const Menu = () => {
                 Explora nuestra seleccion gourmet para hoy.
               </p>
             </div>
-            <Badge className="p-6 text-md font-bold ">Menu de almuerzo</Badge>
+              <Badge className="p-6 text-md font-bold flex gap-3"> Codigo de la mesa: {joinCode}</Badge>
           </div>
           <div className="flex flex-row gap-3 p-2 pb-5 border-b overflow-x-auto">
             {menuItems.map((categories) => (
@@ -129,8 +137,14 @@ export const Menu = () => {
                   <CardDescription>{item.description}</CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col items-end gap-2 p-0">
-                  <Button className="bg-[#8c1717] hover:bg-[#8c1717]/90 text-white p-7 rounded-full shadow-md"
-                    onClick={() => mutation.mutate({ sessionId: sessionId ?? '', itemId: item.id ?? 0 })}
+                  <Button
+                    className="bg-[#8c1717] hover:bg-[#8c1717]/90 text-white p-7 rounded-full shadow-md"
+                    onClick={() =>
+                      mutation.mutate({
+                        sessionId: sessionId ?? '',
+                        itemId: item.id ?? 0,
+                      })
+                    }
                   >
                     <Plus className="w-5 h-5" />
                   </Button>
@@ -142,8 +156,8 @@ export const Menu = () => {
         <div className="fixed bottom-10 left-11 z-50">
           <ParticipantsPopUp />
         </div>
-        <div className='fixed bottom-10 right-11 z-50'>
-          <ItemsFloatingIsland/>
+        <div className="fixed bottom-10 right-11 z-50">
+          <ItemsFloatingIsland />
         </div>
       </div>
     </>

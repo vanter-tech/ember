@@ -14,6 +14,13 @@
 .animate-shake {
   animation: shake-error 0.4s cubic-bezier(.36,.07,.19,.97) both;
 }
+.no-scrollbar::-webkit-scrollbar{
+  display: none;
+}
+.no-scrollbar{
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
 
 @theme inline {
     --font-heading: var(--font-sans);
