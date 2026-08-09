@@ -2,14 +2,19 @@ import { Button } from "@/components/ui/button"
 import {useSessionStore} from "@/store/sessionStore"
 import { ArrowRight } from "lucide-react"
 import { useNavigate } from "react-router-dom"
+import { useAuthStore } from "@/store/authStore"
 
 export const ItemsFloatingIsland = () => {
     const navigate = useNavigate()
     const items = useSessionStore((state) => state.items  || [])
     const tableId = useSessionStore((state) => state.tableId)
-    if(!items || items.length === 0) return null
-    const previewItems = items.slice(0, 3)
-    const remainingCount = items.length - 3
+    const currentId = useAuthStore((state) => state.userId)
+
+    const myFilterItems = items.filter((item) => item.participantId === currentId)
+
+    if(!myFilterItems || myFilterItems.length === 0) return null
+    const previewItems = myFilterItems.slice(0, 3)
+    const remainingCount = myFilterItems.length - 3
 
     return(
         <div className="flex items-center gap-4 bg-white p-2 pr-2 rounded-full shadow-[0_3px_15px_rgba(0,0,0,0.1)] border border-gray-50">
@@ -30,7 +35,7 @@ export const ItemsFloatingIsland = () => {
                 )}
             </div>
             <span className="text-sm font-medium text-gray-600">
-                {items.length} platos seleccionados
+                {myFilterItems.length} platos seleccionados
             </span>
             
             <Button className="px-5 rounded-full text-sm font-semibold flex items-center gap-2"

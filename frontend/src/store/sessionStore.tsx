@@ -11,6 +11,7 @@ interface sessionState extends sessionResponse {
   addParticipant: (participant: participantDTO) => void
   addItem: (item: orderItemDTO) => void
 
+
 }
 
 export const useSessionStore = create<sessionState>()(
@@ -24,6 +25,7 @@ export const useSessionStore = create<sessionState>()(
       participants: undefined,
       items: undefined,
 
+
       setSession: (data) => set(data),
       updateSession: (data) => set(data),
       addParticipant: (participant) => {
@@ -36,7 +38,7 @@ export const useSessionStore = create<sessionState>()(
           items: [...(state.items || []), item],
         }))
       },
-
+    
 
       clearSession: () => {
         set({

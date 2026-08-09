@@ -61,7 +61,11 @@ export const useWebsocketStore = create<WebSocketState>((set, get) => ({
             const eventData = JSON.parse(msg.body)
             console.log('Message received:', eventData)
             if(eventData.type === 'PARTICIPANT_JOINED'){
-                useSessionStore.getState().addParticipant(eventData)
+                const newParticipants = {
+                    userId: eventData.userId,
+                    name: eventData.userName
+                }
+                useSessionStore.getState().addParticipant(newParticipants)
             }
             if(eventData.type === 'ITEM_ADDED'){
                 useSessionStore.getState().updateSession({items: eventData.sessionItems})
