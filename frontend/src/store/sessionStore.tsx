@@ -1,12 +1,15 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { sessionResponse } from '@/lib/api'
+import type { orderItemDTO } from '@/lib/api'
+import type { participantDTO } from '@/lib/api'
 
 interface sessionState extends sessionResponse {
   setSession: (data: sessionResponse) => void
   clearSession: () => void
   updateSession: (data: any) => void
-  addParticipant: (participant: any) => void
+  addParticipant: (participant: participantDTO) => void
+  addItem: (item: orderItemDTO) => void
 
 }
 
@@ -19,12 +22,18 @@ export const useSessionStore = create<sessionState>()(
       status: undefined,
       joinCode: undefined,
       participants: undefined,
+      items: undefined,
 
       setSession: (data) => set(data),
-      updateSession: (data) =>({...data}),
+      updateSession: (data) => set(data),
       addParticipant: (participant) => {
         set((state) => ({
-          participants: [...(state.participants || []), {userId: participant.userId, name: participant.userName}],
+          participants: [...(state.participants || []), participant],
+        }))
+      },
+      addItem: (item) => {
+        set((state) => ({
+          items: [...(state.items || []), item],
         }))
       },
 
@@ -37,6 +46,7 @@ export const useSessionStore = create<sessionState>()(
           status: undefined,
           joinCode: undefined,
           participants: undefined,
+          items: undefined,
         })
       },
     }),

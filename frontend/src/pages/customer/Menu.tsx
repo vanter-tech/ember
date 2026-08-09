@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { menuServices } from '@/lib/api'
+import { menuServices, SessionTableService } from '@/lib/api'
 import { Badge } from '@/components/ui/badge'
 import toast from 'react-hot-toast'
 import { Button } from '@/components/ui/button'
@@ -16,7 +16,8 @@ import { settingStore } from '@/store/settingStore'
 import { ArrowLeft, Plus } from 'lucide-react'
 import { useWebsocketStore } from '@/store/websocket'
 import { useSessionStore } from '@/store/sessionStore'
-import {ParticipantsPopUp} from '@/pages/customer/components/ParticipantsPopUp'
+import { ParticipantsPopUp } from '@/pages/customer/components/ParticipantsPopUp'
+import { ItemsFloatingIsland } from './components/ItemsFloatingIsland'
 
 export const Menu = () => {
   const { settings } = settingStore()
@@ -24,6 +25,28 @@ export const Menu = () => {
   const { connect, isConnected, subscribeToSession, stompClient } =
     useWebsocketStore()
   const sessionId = useSessionStore((state) => state.id)
+  const joinCode = useSessionStore((state) => state.joinCode)
+
+  const mutation = useMutation({
+    mutationFn: async ({
+      sessionId,
+      itemId,
+    }: {
+      sessionId: string
+      itemId: number
+    }) => {
+      if (!sessionId) throw new Error('No session ID available')
+      return SessionTableService.addItem(sessionId, itemId)
+    },
+    onSuccess: (data) => {
+      toast.success('Item added successfully!')
+    },
+    onError: (error) => {
+      toast.error('Failed to add item. Please try again.')
+      console.error('Error adding item:', error)
+    },
+  })
+
   const {
     data: menuItems = [],
     isLoading,
@@ -61,10 +84,7 @@ export const Menu = () => {
           <Button className=" h-13 w-13 rounded-full hover:bg-gray-200">
             <ArrowLeft className="w-5 h-5" />
           </Button>
-          <h1
-            className="text-3xl font-bold
-                text-[#8c1717] tracking-tight"
-          >
+          <h1 className="text-3xl font-bold text-[#8c1717] tracking-tight">
             Ember
           </h1>
         </div>
@@ -76,7 +96,7 @@ export const Menu = () => {
                 Explora nuestra seleccion gourmet para hoy.
               </p>
             </div>
-            <Badge className="p-6 text-md font-bold">Menu de almuerzo</Badge>
+              <Badge className="p-6 text-md font-bold flex gap-3"> Codigo de la mesa: {joinCode}</Badge>
           </div>
           <div className="flex flex-row gap-3 p-2 pb-5 border-b overflow-x-auto">
             {menuItems.map((categories) => (
@@ -111,13 +131,21 @@ export const Menu = () => {
                   ${item.price?.toFixed(2)}
                 </Badge>
                 <CardHeader className="p-3">
-                  <CardTitle className="text-2xl font-bold">
+                  <CardTitle className="text-2xl font-bold ">
                     {item.name}
                   </CardTitle>
                   <CardDescription>{item.description}</CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col items-end gap-2 p-0">
-                  <Button className="bg-[#8c1717] hover:bg-[#8c1717]/90 text-white p-7 rounded-full shadow-md">
+                  <Button
+                    className="bg-[#8c1717] hover:bg-[#8c1717]/90 text-white p-7 rounded-full shadow-md"
+                    onClick={() =>
+                      mutation.mutate({
+                        sessionId: sessionId ?? '',
+                        itemId: item.id ?? 0,
+                      })
+                    }
+                  >
                     <Plus className="w-5 h-5" />
                   </Button>
                 </CardContent>
@@ -127,6 +155,9 @@ export const Menu = () => {
         </div>
         <div className="fixed bottom-10 left-11 z-50">
           <ParticipantsPopUp />
+        </div>
+        <div className="fixed bottom-10 right-11 z-50">
+          <ItemsFloatingIsland />
         </div>
       </div>
     </>

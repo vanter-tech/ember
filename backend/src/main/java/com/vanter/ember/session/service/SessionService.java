@@ -195,8 +195,11 @@ public class SessionService {
             throw new IllegalStateException("Session " + sessionId + " has expired");
         }
 
+        var user = userRepository.findByEmail(participantId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + participantId));
+
         Participant participant = session.getParticipants().stream()
-                .filter(p -> p.getUserId().equals(participantId))
+                .filter(p -> p.getUserId().equals(user.getId()))
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException(
                         participantId + " is not a participant of session " + sessionId));
@@ -211,7 +214,7 @@ public class SessionService {
                 .itemId(menuItem.getId())
                 .name(menuItem.getName())
                 .price(menuItem.getPrice())
-                .participantId(participantId)
+                .participantId(participant.getUserId())
                 .participantName(participant.getName())
                 .status(OrderItemStatus.PENDING)
                 .addedAt(LocalDateTime.now())
@@ -299,14 +302,24 @@ public class SessionService {
                     "Cannot remove item '" + item.getName() + "' as it is already being prepared");
         }
 
-        boolean isWaiter = session.getWaiterId().equals(requesterId);
-        boolean isOwner = item.getParticipantId().equals(requesterId);
+        var user = userRepository.findByEmail(requesterId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + requesterId));
+
+        boolean isWaiter = session.getWaiterId().equals(user.getId());
+        boolean isOwner = item.getParticipantId().equals(user.getId());
         if (!isWaiter && !isOwner) {
             throw new IllegalStateException(
                     "Only the item's owner or the session waiter can remove it");
         }
 
         session.getItems().remove(item);
+
+        eventPublisher.publishEvent(new DeleteItem(
+                session.getId(), item.getId()
+        ));
+
         return sessionRepository.save(session);
+
+
     }
 }

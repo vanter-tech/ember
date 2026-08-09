@@ -15,6 +15,7 @@ import { TableInformation } from './pages/waiter/TableInformation'
 import { CustomerLayout } from './layouts/CustomerLayout'
 import { Home } from './pages/customer/Home'
 import { Menu } from './pages/customer/Menu'
+import { ComandaView } from './pages/customer/ComandaView'
 
 const RoleRedirect = () => {
   const { role } = useAuthStore()
@@ -41,6 +42,7 @@ export default function App() {
           <Route path='/customer' element={<CustomerLayout/>}>
             <Route path='home' element={<Home/>}/>
             <Route path='menu' element={<Menu/>}/>
+            <Route path="menu/:id/comanda" element={<ComandaView/>} />
           </Route>
         </Route>
 

@@ -74,10 +74,8 @@ export const ParticipantQrModal = () => {
           <DialogTitle className="text-2xl font-bold text-zinc-800">
             Asignar Mesa
           </DialogTitle>
-          <DialogDescription>
-            <p className="text-zinc-500 text-sm mt-1">
-              Configure los detalles de la mesa antes de abrirla
-            </p>
+          <DialogDescription className="text-zinc-500 text-sm mt-1">
+            Configure los detalles de la mesa antes de abrirla
           </DialogDescription>
         </DialogHeader>
         <p className="text-zinc-500 text-sm">
