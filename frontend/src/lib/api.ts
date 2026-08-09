@@ -18,6 +18,7 @@ export type menuResponse = components['schemas']['MenuDTO']
 export type orderItemDTO = components['schemas']['OrderItemDto']
 export type participantDTO = components['schemas']['ParticipantDto']
 
+
 declare global {
   interface Window {
     ENV: {

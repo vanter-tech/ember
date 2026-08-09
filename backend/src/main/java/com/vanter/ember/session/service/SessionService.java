@@ -1,6 +1,8 @@
 package com.vanter.ember.session.service;
 
+import com.vanter.ember.catalog.model.MenuItem;
 import com.vanter.ember.catalog.model.dto.MenuItemResponse;
+import com.vanter.ember.catalog.repository.MenuItemRepository;
 import com.vanter.ember.catalog.service.MenuItemService;
 import com.vanter.ember.config.ResourceNotFoundException;
 import com.vanter.ember.identity.repository.UserRepository;
@@ -40,6 +42,7 @@ public class SessionService {
     private final ApplicationEventPublisher eventPublisher;
     private final QrTokenService qrTokenService;
     private final UserRepository userRepository;
+    private final MenuItemRepository menuItemRepository;
 
     public Session findById(String sessionId) {
         return sessionRepository.findById(sessionId)
