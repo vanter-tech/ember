@@ -3,6 +3,7 @@ package com.vanter.ember.session.controller;
 import com.vanter.ember.identity.repository.UserRepository;
 import com.vanter.ember.session.dto.*;
 import com.vanter.ember.session.model.Session;
+import com.vanter.ember.session.model.SessionStatus;
 import com.vanter.ember.session.service.QrTokenService;
 import com.vanter.ember.session.service.SessionService;
 import com.vanter.ember.settings.repository.DiningTableRepository;
@@ -61,6 +62,13 @@ public class SessionController {
             }
         }
         return session;
+    }
+
+    @Operation(summary = "Get table status")
+    @GetMapping("/{id}/status")
+    public SessionStatusDto getSessionStatus(@PathVariable String id){
+        SessionStatus status = sessionService.getSessionStatus(id);
+        return new SessionStatusDto(status);
     }
 
     @Operation(summary = "Generate QR token for a session (WAITER)")

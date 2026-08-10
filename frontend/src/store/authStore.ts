@@ -1,7 +1,6 @@
 import {create} from 'zustand'
 import { persist } from 'zustand/middleware'
 import type {LoginResponse} from '@/lib/api'
-import { useSessionStore } from './sessionStore'
 
 interface AuthState extends LoginResponse {
   setAuth: (data: LoginResponse) => void

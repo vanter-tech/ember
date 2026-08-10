@@ -349,4 +349,12 @@ public class SessionService {
             ));
         }
     }
+
+    public SessionStatus getSessionStatus(String id) {
+
+        Session session = sessionRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Session not found: " + id));
+        return session.getStatus();
+
+    }
 }

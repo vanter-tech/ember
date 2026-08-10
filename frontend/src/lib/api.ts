@@ -17,6 +17,7 @@ export type sessionResponse = components['schemas']['Session']
 export type menuResponse = components['schemas']['MenuDTO']
 export type orderItemDTO = components['schemas']['OrderItemDto']
 export type participantDTO = components['schemas']['ParticipantDto']
+export type tableStatus = components['schemas']['SessionStatusDto']
 
 
 declare global {
@@ -200,6 +201,11 @@ export const SessionTableService = {
 
   sessionInformation: async (sessionId: string): Promise<infoSession> => {
     const { data } = await api.get<infoSession>(`/sessions/${sessionId}`)
+    return data
+  },
+
+  sessionStatus: async(sessionId: string): Promise<tableStatus> => {
+    const { data } = await api.get<tableStatus>(`/sessions/${sessionId}/status`)
     return data
   },
 
