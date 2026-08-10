@@ -11,7 +11,7 @@ import toast from 'react-hot-toast'
 import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
 import { EditMenuModal } from './components/EditMenuModal'
-import { DeleteMenuModal } from './components/DeleteMenuModal'
+import { GlobalDeleteModal } from '@/components/GlobalDeleteModal'
 
 export const ListMenuItem = () => {
   const queryClient = useQueryClient()
@@ -123,7 +123,7 @@ export const ListMenuItem = () => {
 
       <NewMenuModal />
       <EditMenuModal/>
-      <DeleteMenuModal/>
+      <GlobalDeleteModal/>
     </div>
   )
 }

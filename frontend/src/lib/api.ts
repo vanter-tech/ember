@@ -233,6 +233,10 @@ export const SessionTableService = {
     return data
   },
 
+  confirmMyOrders: async(sessionId: string, userId: string): Promise<void> => {
+     await api.post<void>(`/sessions/${sessionId}/participants/${userId}/confirm`)
+  },
+
   deleteItem: async (sessionId: string, itemId: string): Promise<void> => {
     await api.delete<void>(`sessions/${sessionId}/items/${itemId}`)
   },

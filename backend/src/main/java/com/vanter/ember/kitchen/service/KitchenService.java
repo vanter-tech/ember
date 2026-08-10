@@ -6,7 +6,7 @@ import com.vanter.ember.kitchen.event.KitchenItemUpdated;
 import com.vanter.ember.kitchen.model.KitchenItem;
 import com.vanter.ember.kitchen.model.KitchenOrder;
 import com.vanter.ember.kitchen.repository.KitchenOrderRepository;
-import com.vanter.ember.session.event.OrderItemAdded;
+import com.vanter.ember.session.event.KitchenItemsConfirmed;
 import com.vanter.ember.session.model.OrderItemStatus;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -49,7 +49,7 @@ public class KitchenService {
     }
 
     @EventListener
-    public void handleOrderItemAdded(OrderItemAdded event) {
+    public void handleOrderItemAdded(KitchenItemsConfirmed event) {
         KitchenOrder order = kitchenOrderRepository.findBySessionId(event.sessionId())
                 .orElseGet(() -> KitchenOrder.builder()
                         .sessionId(event.sessionId())
@@ -58,13 +58,16 @@ public class KitchenService {
                         .items(new ArrayList<>())
                         .build());
 
-        order.getItems().add(KitchenItem.builder()
-                .itemId(event.orderItemId())
-                .name(event.itemName())
-                .participantName(event.participantName())
-                .status(OrderItemStatus.PENDING)
-                .updatedAt(LocalDateTime.now())
-                .build());
+        event.confirmedItems().forEach(item -> {
+            order.getItems().add(KitchenItem.builder()
+                    .itemId(item.getId())
+                    .name(item.getName())
+                    .participantName(item.getParticipantName())
+                    .status(OrderItemStatus.PENDING)
+                    .updatedAt(LocalDateTime.now())
+                    .build()
+            );
+        });
 
         kitchenOrderRepository.save(order);
     }
@@ -92,6 +95,7 @@ public class KitchenService {
 
     private boolean isValidTransition(OrderItemStatus current, OrderItemStatus next) {
         return switch (current) {
+            case DRAFT -> next == OrderItemStatus.PENDING;
             case PENDING -> next == OrderItemStatus.PREPARING;
             case PREPARING -> next == OrderItemStatus.READY;
             case READY -> next == OrderItemStatus.DELIVERED;
