@@ -75,6 +75,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/sessions/{sessionId}/participants/{userId}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Send item to KITCHEN */
+        post: operations["confirmMyOrder"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/sessions/{id}/join": {
         parameters: {
             query?: never;
@@ -101,7 +118,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Add item to session (CUSTOMER) */
+        /** Add item to session/Order (CUSTOMER) */
         post: operations["addItem"];
         delete?: never;
         options?: never;
@@ -600,7 +617,7 @@ export interface components {
             participantId?: string;
             participantName?: string;
             /** @enum {string} */
-            status?: "PENDING" | "PREPARING" | "READY" | "DELIVERED";
+            status?: "DRAFT" | "PENDING" | "PREPARING" | "READY" | "DELIVERED";
             /** Format: date-time */
             addedAt?: string;
         };
@@ -709,14 +726,14 @@ export interface components {
         };
         UpdateItemStatusRequest: {
             /** @enum {string} */
-            status: "PENDING" | "PREPARING" | "READY" | "DELIVERED";
+            status: "DRAFT" | "PENDING" | "PREPARING" | "READY" | "DELIVERED";
         };
         KitchenItem: {
             itemId?: string;
             name?: string;
             participantName?: string;
             /** @enum {string} */
-            status?: "PENDING" | "PREPARING" | "READY" | "DELIVERED";
+            status?: "DRAFT" | "PENDING" | "PREPARING" | "READY" | "DELIVERED";
             /** Format: date-time */
             updatedAt?: string;
         };
@@ -752,6 +769,9 @@ export interface components {
             name?: string;
             price?: number;
             participantName?: string;
+            participantId?: string;
+            /** @enum {string} */
+            status?: "DRAFT" | "PENDING" | "PREPARING" | "READY" | "DELIVERED";
             /** Format: date-time */
             addedAt?: string;
         };
@@ -1012,6 +1032,29 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["SessionCreatedResponse"];
+                };
+            };
+        };
+    };
+    confirmMyOrder: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sessionId: string;
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": Record<string, never>;
                 };
             };
         };

@@ -68,6 +68,8 @@ public class SessionService {
                         i.getName(),
                         i.getPrice(),
                         i.getParticipantName(),
+                        i.getParticipantId(),
+                        i.getStatus(),
                         i.getAddedAt()
                 ))
         ).toList();
@@ -219,15 +221,12 @@ public class SessionService {
                 .price(menuItem.getPrice())
                 .participantId(participant.getUserId())
                 .participantName(participant.getName())
-                .status(OrderItemStatus.PENDING)
+                .status(OrderItemStatus.DRAFT)
                 .addedAt(LocalDateTime.now())
                 .build();
         session.getItems().add(newItem);
 
         Session saved = sessionRepository.save(session);
-        int tableNumber = diningTableRepository.findById(saved.getTableId())
-                .orElseThrow(() -> new ResourceNotFoundException("Table not found"))
-                .getTableNumber();
 
         eventPublisher.publishEvent(new ItemAdded(
                 saved.getId(),
@@ -236,15 +235,6 @@ public class SessionService {
                 newItem.getParticipantName(),
                 newItem.getStatus(),
                 saved.getItems()));
-
-        eventPublisher.publishEvent(new OrderItemAdded(
-                saved.getId(),
-                newItem.getId(),
-                tableNumber,
-                newItem.getItemId(),
-                newItem.getName(),
-                newItem.getPrice(),
-                newItem.getParticipantName()));
 
         return saved;
     }
@@ -284,7 +274,10 @@ public class SessionService {
         Session session = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new ResourceNotFoundException("Session not found: " + sessionId));
 
-        if(session.getItems() != null && !session.getItems().isEmpty()){
+
+        boolean orderConfirmed = session.getItems().stream().anyMatch((item) -> item.getStatus() != OrderItemStatus.DRAFT);
+
+        if(orderConfirmed){
             throw new IllegalStateException("Cannot cancel session with billable items");
         }
 
@@ -308,11 +301,12 @@ public class SessionService {
         var user = userRepository.findByEmail(requesterId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found: " + requesterId));
 
-        boolean isWaiter = session.getWaiterId().equals(user.getId());
+        boolean isWaiter = session.getWaiterId().equals(user.getEmail());
+
         boolean isOwner = item.getParticipantId().equals(user.getId());
         if (!isWaiter && !isOwner) {
             throw new IllegalStateException(
-                    "Only the item's owner or the session waiter can remove it");
+                    "Only the item's owner or the session waiter can remove it" );
         }
 
         session.getItems().remove(item);
@@ -324,5 +318,35 @@ public class SessionService {
         return sessionRepository.save(session);
 
 
+    }
+
+    public void confirmDraftsForUser(String sessionId, String userId) {
+        Session session = sessionRepository.findById(sessionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Session not found: " + sessionId));
+
+        List<OrderItem> drafts = session.getItems().stream()
+                .filter(item  -> item.getParticipantId().equals(userId))
+                .filter(item -> item.getStatus() == OrderItemStatus.DRAFT)
+                .toList();
+
+        if(!drafts.isEmpty()){
+            drafts.forEach(item -> {
+                item.setStatus(OrderItemStatus.PENDING);
+                item.setAddedAt(LocalDateTime.now());
+            });
+
+            Session savedSession = sessionRepository.save(session);
+            eventPublisher.publishEvent(new ItemSent(savedSession));
+
+            int tableNumber = diningTableRepository.findById(savedSession.getTableId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Table not found"))
+                    .getTableNumber();
+
+            eventPublisher.publishEvent(new KitchenItemsConfirmed(
+                    savedSession.getId(),
+                    tableNumber,
+                    drafts
+            ));
+        }
     }
 }

@@ -1,9 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
-
 import { useSessionStore } from '@/store/sessionStore'
-
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-
 import {
   ArrowLeft,
   ArrowRight,
@@ -16,28 +13,20 @@ import {
 } from 'lucide-react'
 
 import { AvatarInitials, AvatarColors } from '@/components/AvatarInitials'
-
 import { Badge } from '@/components/ui/badge'
-
 import { Button } from '@/components/ui/button'
-
 import { Link } from 'react-router-dom'
-
 import { api, SessionTableService } from '@/lib/api'
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-
 import toast from 'react-hot-toast'
-
 import { useNavigate } from 'react-router-dom'
+import { useAuthStore } from '@/store/authStore'
 
 export const ComandaView = () => {
   const items = useSessionStore((state) => state.items || [])
-
+  const currentId = useAuthStore((state) => state.userId)
   const sessionId = useSessionStore((state) => state.id)
-
   const queryClient = useQueryClient()
-
   const navigate = useNavigate()
 
   const Participants = useMemo(() => {
@@ -75,7 +64,6 @@ export const ComandaView = () => {
 
         return acum
       },
-
       {} as Record<string, any>
     )
 
@@ -85,22 +73,37 @@ export const ComandaView = () => {
   const mutation = useMutation({
     mutationFn: ({
       sessionId,
-
       itemId,
     }: {
       sessionId: string
-
       itemId: string
     }) => SessionTableService.deleteItem(sessionId, itemId),
 
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['deleteItem'] })
-
       toast.success('Platillo eliminado')
     },
 
     onError: (e) => {
       toast.error('Error al eliminar')
+    },
+  })
+
+  const confirmItemsMutation = useMutation({
+    mutationFn: ({
+      sessionId,
+      currentId,
+    }: {
+      sessionId: string
+      currentId: string
+    }) => SessionTableService.confirmMyOrders(sessionId, currentId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['confirmItem'] })
+      toast.success('Comanda enviada')
+    },
+
+    onError: (e) => {
+      toast.error('Error al enviar comanda')
     },
   })
 
@@ -119,6 +122,10 @@ export const ComandaView = () => {
   const services = tableSubTotal * 0.1
 
   const total = tableSubTotal + services
+
+  const tengoBorradores = items.some(
+    (item) => item.participantId === currentId && item.status === 'DRAFT'
+  )
 
   return (
     <>
@@ -206,20 +213,21 @@ export const ComandaView = () => {
                           </Button>
                         </div>
 
-                        <Button
-                          className=""
-                          variant={'destructive'}
-                          disabled={mutation.isPending}
-                          onClick={() => {
-                            mutation.mutate({
-                              sessionId: sessionId!,
-
-                              itemId: item.id!,
-                            })
-                          }}
-                        >
-                          <Trash />
-                        </Button>
+                        {item.participantId === currentId &&
+                          item.status === 'DRAFT' && (
+                            <Button
+                              variant={'destructive'}
+                              disabled={mutation.isPending} 
+                              onClick={() => {
+                                mutation.mutate({
+                                  sessionId: sessionId!,
+                                  itemId: item.id!,
+                                })
+                              }}
+                            >
+                              <Trash className="w-5 h-5" />
+                            </Button>
+                          )}
                       </div>
                     </div>
                   )
@@ -250,9 +258,18 @@ export const ComandaView = () => {
             </div>
           </div>
 
-          <Button className="rounded-full h-auto px-12 py-8 text-xl font-semibold w-full md:w-auto gap-2">
+          <Button
+            className="rounded-full h-auto px-12 py-8 text-xl font-semibold w-full md:w-auto gap-2"
+            disabled={!tengoBorradores || confirmItemsMutation.isPending}
+            onClick={() => {
+              confirmItemsMutation.mutate({
+                sessionId: sessionId!,
+                currentId: currentId!,
+              })
+            }}
+          >
             <Send className="w-7 h-7" />
-            Enviar a cocina
+            {confirmItemsMutation.isPending ? 'Enviando...' : 'Enviar a cocina'}
           </Button>
         </Card>
       </div>

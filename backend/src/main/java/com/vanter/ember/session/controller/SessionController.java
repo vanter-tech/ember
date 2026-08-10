@@ -99,13 +99,21 @@ public class SessionController {
         return sessionService.expandCapacity(id, authentication.getName(), request.additional());
     }
 
-    @Operation(summary = "Add item to session (CUSTOMER)")
+    @Operation(summary = "Add item to session/Order (CUSTOMER)")
     @PostMapping("/{id}/items")
     @PreAuthorize("hasRole('CUSTOMER')")
     public Session addItem(@PathVariable String id,
                            @Valid @RequestBody AddItemRequest request,
                            Authentication authentication) {
         return sessionService.addItem(id, authentication.getName(), request.menuItemId());
+    }
+
+    @Operation(summary = "Send item to KITCHEN")
+    @PostMapping("/{sessionId}/participants/{userId}/confirm")
+    @PreAuthorize("hasRole('CUSTOMER')")
+    public ResponseEntity<?> confirmMyOrder(@PathVariable String sessionId, @PathVariable String userId ){
+        sessionService.confirmDraftsForUser(sessionId,userId);
+        return ResponseEntity.ok().build();
     }
 
     @Operation(summary = "Remove item from session (CUSTOMER/WAITER)")

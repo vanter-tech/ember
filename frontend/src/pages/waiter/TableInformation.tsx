@@ -1,11 +1,18 @@
-import { useParams } from 'react-router-dom'
+import { useParams, Link } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { SessionTableService } from '@/lib/api'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, User, Printer, ArrowRightLeft, Plus } from 'lucide-react'
+import {
+  ArrowLeft,
+  User,
+  Printer,
+  ArrowRightLeft,
+  Plus,
+  Trash2,
+} from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import toast from 'react-hot-toast'
-import { useNavigate} from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import {
   Card,
   CardContent,
@@ -13,16 +20,23 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { useUIStore } from '@/store/uiStore'
+import { GlobalDeleteModal } from '../../components/GlobalDeleteModal'
 
 export const TableInformation = () => {
   const { id } = useParams()
   const queryClient = useQueryClient()
   const navigate = useNavigate()
+  const { openModal } = useUIStore()
 
   const { data: sessionData, isPending: isLoadingData } = useQuery({
     queryKey: ['sessionDetails', id],
     queryFn: () => SessionTableService.sessionInformation(id!),
   })
+
+  const itemsToWaiter = sessionData?.items
+    ? sessionData.items.filter((item) => item.status != 'DRAFT')
+    : []
 
   const mutation = useMutation({
     mutationFn: SessionTableService.closeEmptySession,
@@ -30,14 +44,14 @@ export const TableInformation = () => {
       queryClient.invalidateQueries({ queryKey: ['sessionDetails'] })
       toast.success('Mesa cerrada.')
       navigate('/waiter/tables')
-    }
+    },
   })
 
   if (isLoadingData) {
     return <div className="p-6 text-zinc-500">Cargando datos del panel...</div>
   }
 
-  const hasItems = sessionData?.items && sessionData.items.length > 0
+  const hasItems = itemsToWaiter && itemsToWaiter.length > 0
 
   const subtotal =
     sessionData?.items?.reduce((total, item) => total + (item.price ?? 0), 0) ??
@@ -51,12 +65,14 @@ export const TableInformation = () => {
       <div className="flex justify-between items-start mb-6">
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-4 p-5 pb-0">
-            <Button
-              variant="ghost"
-              className=" h-13 w-13 rounded-full bg-gray-100 hover:bg-gray-200"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
+            <Link to={'/waiter/tables'}>
+              <Button
+                variant="ghost"
+                className=" h-13 w-13 rounded-full bg-gray-100 hover:bg-gray-200"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </Button>
+            </Link>
             <h1 className="text-4xl font-bold">
               Mesa M{sessionData?.tableNumber}
             </h1>
@@ -102,8 +118,8 @@ export const TableInformation = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-3 max-h-87.5 overflow-y-auto pr-2">
-              {sessionData?.items && sessionData.items.length > 0 ? (
-                sessionData.items.map((item) => (
+              {itemsToWaiter && itemsToWaiter.length > 0 ? (
+                itemsToWaiter.map((item) => (
                   <div
                     key={item.id}
                     className="flex items-center justify-between p-4 bg-gray-50/80 rounded-2xl"
@@ -124,9 +140,24 @@ export const TableInformation = () => {
                         </span>
                       </div>
                     </div>
-                    <span className="font-bold text-gray-700">
-                      ${item.price?.toFixed(2)}
-                    </span>
+                    <div className="flex items-center justify-center gap-4">
+                      <span className="font-bold text-gray-700">
+                        ${item.price?.toFixed(2)}
+                      </span>
+                      <Button
+                        className=""
+                        variant={'destructive'}
+                        onClick={(e) => {
+                          openModal('DELETE_ITEMS', {
+                            sessionId: id,
+                            itemId: item.id
+                          })
+                          ;(e.preventDefault(), e.stopPropagation())
+                        }}
+                      >
+                        <Trash2 />
+                      </Button>
+                    </div>
                   </div>
                 ))
               ) : (
@@ -148,7 +179,10 @@ export const TableInformation = () => {
               {sessionData?.participants &&
               sessionData.participants.length > 0 ? (
                 sessionData.participants.map((participant) => (
-                  <div key={participant.userId} className="mb-3 shadow-sm rounded-3xl">
+                  <div
+                    key={participant.userId}
+                    className="mb-3 shadow-sm rounded-3xl"
+                  >
                     <div className="bg-gray-100 rounded-3xl p-3 flex items-center gap-3">
                       <div className="bg-red-100 rounded-full w-10 h-10 flex items-center justify-center">
                         <User className="text-red-700" />
@@ -243,16 +277,16 @@ export const TableInformation = () => {
                 </span>
               </div>
               {hasItems ? (
-                <Button className="w-full h-15 text-2xl font-bold"
-                >
+                <Button className="w-full h-15 text-2xl font-bold">
                   Cobrar Mesa
                 </Button>
               ) : (
-                <Button className="w-full h-15 text-2xl font-bold"
-                onClick={() => {
-                  mutation.mutate(id!)
-                }}
-                disabled={mutation.isPending}
+                <Button
+                  className="w-full h-15 text-2xl font-bold"
+                  onClick={() => {
+                    mutation.mutate(id!)
+                  }}
+                  disabled={mutation.isPending}
                 >
                   {mutation.isPending ? 'Cerrando' : 'Cerrar mesa'}
                 </Button>
@@ -260,6 +294,7 @@ export const TableInformation = () => {
             </CardFooter>
           </Card>
         </div>
+        <GlobalDeleteModal/>
       </div>
     </>
   )
