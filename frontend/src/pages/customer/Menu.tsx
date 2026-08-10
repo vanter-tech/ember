@@ -11,13 +11,14 @@ import {
   CardHeader,
 } from '@/components/ui/card'
 import { useUIStore } from '@/store/uiStore'
-import { useEffect, useState } from 'react'
+import { use, useEffect, useState } from 'react'
 import { settingStore } from '@/store/settingStore'
 import { ArrowLeft, Plus } from 'lucide-react'
 import { useWebsocketStore } from '@/store/websocket'
 import { useSessionStore } from '@/store/sessionStore'
 import { ParticipantsPopUp } from '@/pages/customer/components/ParticipantsPopUp'
 import { ItemsFloatingIsland } from './components/ItemsFloatingIsland'
+import { useNavigate } from 'react-router-dom'
 
 export const Menu = () => {
   const { settings } = settingStore()
@@ -26,6 +27,8 @@ export const Menu = () => {
     useWebsocketStore()
   const sessionId = useSessionStore((state) => state.id)
   const joinCode = useSessionStore((state) => state.joinCode)
+  const navigate = useNavigate()
+  const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: async ({
@@ -55,8 +58,31 @@ export const Menu = () => {
     queryKey: ['digital-menu'],
     queryFn: () => menuServices.getMenu(),
   })
+
   const itemsCategory =
     menuItems.find((item) => item.id == activeCategory)?.items || []
+
+  const {
+    data: sessionData,
+    isError: isSessionError,
+    isLoading: isSessionLoading
+  } = useQuery({
+    queryKey: ['sessionStatus', sessionId],
+    queryFn: () => SessionTableService.sessionStatus(sessionId!),
+    enabled: !!sessionId,
+    retry: false
+  })
+
+  useEffect(() => {
+    if(isSessionLoading) return
+    if(sessionId && (isSessionError || sessionData?.status === 'CLOSED')){
+      useSessionStore.getState().clearSession()
+      queryClient.removeQueries({queryKey: ['sessionStatus', sessionId]})
+      navigate('/customer/home')
+    }
+  },[sessionId, isSessionError, isSessionLoading, navigate, sessionData])
+    
+
 
   useEffect(() => {
     if (menuItems.length > 0 && activeCategory === undefined) {
@@ -69,6 +95,7 @@ export const Menu = () => {
       subscribeToSession(sessionId)
     }
   }, [isConnected, sessionId, connect, subscribeToSession, stompClient])
+
 
   if (isLoading)
     return <div className="p-6 text-zinc-500">Cargando platillos...</div>
@@ -96,7 +123,10 @@ export const Menu = () => {
                 Explora nuestra seleccion gourmet para hoy.
               </p>
             </div>
-              <Badge className="p-6 text-md font-bold flex gap-3"> Codigo de la mesa: {joinCode}</Badge>
+            <Badge className="p-6 text-md font-bold flex gap-3">
+              {' '}
+              Codigo de la mesa: {joinCode}
+            </Badge>
           </div>
           <div className="flex flex-row gap-3 p-2 pb-5 border-b overflow-x-auto">
             {menuItems.map((categories) => (

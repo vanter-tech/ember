@@ -383,6 +383,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/sessions/{id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get table status */
+        get: operations["getSessionStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/sessions/{id}/qr": {
         parameters: {
             query?: never;
@@ -795,6 +812,10 @@ export interface components {
             items?: components["schemas"]["OrderItemDto"][];
             /** Format: date-time */
             createdAt?: string;
+        };
+        SessionStatusDto: {
+            /** @enum {string} */
+            status?: "OPEN" | "BILLING" | "CLOSED";
         };
         MenuDTO: {
             /** Format: int64 */
@@ -1518,6 +1539,28 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["SessionDetailResponseDto"];
+                };
+            };
+        };
+    };
+    getSessionStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["SessionStatusDto"];
                 };
             };
         };

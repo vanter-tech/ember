@@ -54,7 +54,7 @@ export const TableInformation = () => {
   const hasItems = itemsToWaiter && itemsToWaiter.length > 0
 
   const subtotal =
-    sessionData?.items?.reduce((total, item) => total + (item.price ?? 0), 0) ??
+    itemsToWaiter.reduce((total, item) => total + (item.price ?? 0), 0) ??
     0
   const taxes = subtotal * 0.1
   const tip = subtotal * 0.15
@@ -212,8 +212,8 @@ export const TableInformation = () => {
             </CardHeader>
             <CardContent>
               <div className="ml-3 border-l-2 border-gray-200 pl-5 flex flex-col gap-6 pt-2 max-h-87.5 overflow-y-auto ">
-                {sessionData?.items && sessionData.items.length > 0
-                  ? sessionData.items.map((item) => (
+                {itemsToWaiter.length > 0
+                  ? itemsToWaiter.map((item) => (
                       <div key={item.id} className="relative">
                         <div className="absolute -left-6.25 top-1.5 w-2.5 h-2.5 rounded-full bg-[#8B0000]"></div>
                         <div className="flex flex-col gap-2">
