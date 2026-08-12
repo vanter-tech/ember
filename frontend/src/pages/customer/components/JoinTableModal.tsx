@@ -42,7 +42,6 @@ export const JoinTableModal = () => {
         }
       }
       toast.error('An ERROR has occurred')
-      console.error('Error during joining a table', error)
     },
   })
 

@@ -47,8 +47,7 @@ export const useWebsocketStore = create<WebSocketState>((set, get) => ({
             set({isConnected: false})
         }
 
-        client.onStompError = (frame) => {
-            console.error('STOMP protocol error:', frame.headers['message'])
+        client.onStompError = () => {
             set({isConnected: false})
         }
 
@@ -61,7 +60,6 @@ export const useWebsocketStore = create<WebSocketState>((set, get) => ({
         const currentClient = get().stompClient
 
         if(!currentClient || !currentClient.connected) {
-            console.error("WebSocket is not connected")
             return
         }
 
@@ -73,7 +71,6 @@ export const useWebsocketStore = create<WebSocketState>((set, get) => ({
         
         const subscription = currentClient.subscribe(`/topic/session/${sessionId}`, (msg) => {
             const eventData = JSON.parse(msg.body)
-            console.log('Message received:', eventData)
             if(eventData.type === 'PARTICIPANT_JOINED'){
                 const newParticipants = {
                     userId: eventData.userId,

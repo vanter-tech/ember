@@ -61,7 +61,6 @@ api.interceptors.response.use(
   },
   (error) => {
     if (error.response && error.response.status === 401) {
-      console.warn('logging out')
       useAuthStore.getState().logout()
     }
     return Promise.reject(error)

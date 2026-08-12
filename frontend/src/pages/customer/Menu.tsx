@@ -41,9 +41,8 @@ export const Menu = () => {
     onSuccess: () => {
       toast.success('Item added successfully!')
     },
-    onError: (error) => {
+    onError: () => {
       toast.error('Failed to add item. Please try again.')
-      console.error('Error adding item:', error)
     },
   })
 

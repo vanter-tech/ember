@@ -65,9 +65,8 @@ export const NewMenuModal = () => {
       form.reset()
       closeModal()
     },
-    onError: (Error) => {
+    onError: () => {
       toast.error('An ERROR has occurred')
-      console.error('Error during creating an item menu', Error)
     },
   })
 

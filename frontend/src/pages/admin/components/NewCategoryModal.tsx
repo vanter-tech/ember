@@ -58,9 +58,8 @@ export const NewCategoryModal = () => {
       form.reset()
       closeModal()
     },
-    onError: (Error) => {
+    onError: () => {
       toast.error('An ERROR has occurred')
-      console.error('Error during creating a category', Error)
     },
   })
 
