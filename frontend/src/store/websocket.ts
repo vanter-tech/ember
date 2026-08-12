@@ -43,6 +43,15 @@ export const useWebsocketStore = create<WebSocketState>((set, get) => ({
             set({isConnected: true})
         }
 
+        client.onDisconnect = () => {
+            set({isConnected: false})
+        }
+
+        client.onStompError = (frame) => {
+            console.error('STOMP protocol error:', frame.headers['message'])
+            set({isConnected: false})
+        }
+
         client.activate()
 
         set({stompClient: client})
