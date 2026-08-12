@@ -4,7 +4,11 @@ import { QueueCard } from './components/QueueCard'
 import { FocusedCard } from './components/FocusedCard'
 
 export const OrdersDisplays = () => {
-  const { data: info = [] } = useQuery({
+  const {
+    data: info = [],
+    isLoading,
+    isError,
+  } = useQuery({
     queryKey: ['kitchenOrders'],
     queryFn: () => kitchenServices.getOrdersByTables(),
   })
@@ -14,6 +18,24 @@ export const OrdersDisplays = () => {
     (a, b) =>
       new Date(a?.createdAt!).getTime() - new Date(b?.createdAt!).getTime()
   )
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-1 items-center justify-center h-full">
+        <span className="text-gray-500">Cargando pedidos...</span>
+      </div>
+    )
+  }
+
+  if (isError) {
+    return (
+      <div className="flex flex-1 items-center justify-center h-full">
+        <span className="text-red-600">
+          No se pudieron cargar los pedidos.
+        </span>
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col h-full p-2">
@@ -27,7 +49,7 @@ export const OrdersDisplays = () => {
       </div>
       <div className="flex flex-1 items-start gap-6 overflow-x-auto p-6">
         {orders.map((item, index) => (
-          <QueueCard key={index} order={item!} />
+          <QueueCard key={item?.id ?? index} order={item!} />
         ))}
       </div>
       {orders.length > 0 && (

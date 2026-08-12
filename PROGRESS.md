@@ -1,9 +1,9 @@
 # PROGRESS.md — Active Execution State
 
 ## Current Execution State
-- **Last Completed Task:** task-1.5 (Fix WebSocket state handling with onDisconnect/onStompError) — report 05
-- **Current Active Task:** task-1.6 (Add Global Error Boundary + fix key props/loading states in OrdersDisplay.tsx)
-- **Predecessor Task:** task-1.5
+- **Last Completed Task:** task-1.6 (Add Global Error Boundary + fix key props/loading states in OrdersDisplay.tsx) — report 06
+- **Current Active Task:** task-1.7 (Remove leftover console.log/console.error statements from production frontend code)
+- **Predecessor Task:** task-1.6
 - **System Health:**
     - Frontend (`pnpm run build`): PASSING (0 TS errors)
     - Frontend (`pnpm run lint`): RUNS (19 pre-existing errors/6 warnings unrelated to config, tracked in later tasks)
@@ -21,7 +21,7 @@
 - [x] **task-1.3:** Replace hardcoded WebSocket `localhost` URL in `store/websocket.ts` with environment variable resolution.
 - [x] **task-1.4:** Deduplicate WebSocket subscriptions in `FloatingNav.tsx` and centralize `SESSION_CLOSED` handling in `store/websocket.ts`.
 - [x] **task-1.5:** Fix WebSocket state handling by adding `onDisconnect`/`onStompError` handlers to reset `isConnected`.
-- [ ] **task-1.6:** Add Global Error Boundary to React app and fix missing `key` props and loading states in `OrdersDisplay.tsx`.
+- [x] **task-1.6:** Add Global Error Boundary to React app and fix missing `key` props and loading states in `OrdersDisplay.tsx`.
 - [ ] **task-1.7:** Remove leftover `console.log` and `console.error` statements from production frontend code.
 - [ ] **task-2.1:** Add `@Version` optimistic locking to MongoDB `Session.java` model to prevent collaborative cart race conditions.
 - [ ] **task-2.2:** Add `@Transactional` boundaries to multi-write operations in `BillingService` and `PaymentService`.
