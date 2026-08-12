@@ -1,12 +1,12 @@
 # PROGRESS.md — Active Execution State
 
 ## Current Execution State
-- **Last Completed Task:** None (Execution start)
-- **Current Active Task:** task-1.1 (Fix TypeScript compilation errors)
-- **Predecessor Task:** None
+- **Last Completed Task:** task-1.1 (Fix TypeScript compilation errors) — report 01
+- **Current Active Task:** task-1.2 (Repair eslint.config.js)
+- **Predecessor Task:** task-1.1
 - **System Health:**
-    - Frontend (`pnpm run build`): FAIL (TypeScript compilation errors)
-    - Backend (`mvn test`): PASSING (39 tests passing)
+    - Frontend (`pnpm run build`): PASSING (0 TS errors)
+    - Backend (`./mvnw test`): PASSING (39 tests passing)
 
 ## Active Context & Recent Decisions
 - Monolith root confirmed at `ember/`.
@@ -15,7 +15,7 @@
 - Kafka dependency in `pom.xml` ignored; Spring `ApplicationEventPublisher` used for internal synchronous events.
 
 ## Task Queue Status
-- [ ] **task-1.1:** Fix `tsc -b` compilation errors (`TS6133`/`TS6192`) in frontend (`pages/kitchen/`, `ComandaView.tsx`, `Menu.tsx`, `ItemsFloatingIsland.tsx`, `Tables.tsx`).
+- [x] **task-1.1:** Fix `tsc -b` compilation errors (`TS6133`/`TS6192`) in frontend (`pages/kitchen/`, `ComandaView.tsx`, `Menu.tsx`, `ItemsFloatingIsland.tsx`, `Tables.tsx`).
 - [ ] **task-1.2:** Repair `eslint.config.js` by installing `eslint-plugin-prettier` or removing broken import.
 - [ ] **task-1.3:** Replace hardcoded WebSocket `localhost` URL in `store/websocket.ts` with environment variable resolution.
 - [ ] **task-1.4:** Deduplicate WebSocket subscriptions in `FloatingNav.tsx` and centralize `SESSION_CLOSED` handling in `store/websocket.ts`.

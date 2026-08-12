@@ -10,9 +10,7 @@ import {
   CardTitle,
   CardHeader,
 } from '@/components/ui/card'
-import { useUIStore } from '@/store/uiStore'
-import { use, useEffect, useState } from 'react'
-import { settingStore } from '@/store/settingStore'
+import { useEffect, useState } from 'react'
 import { ArrowLeft, Plus } from 'lucide-react'
 import { useWebsocketStore } from '@/store/websocket'
 import { useSessionStore } from '@/store/sessionStore'
@@ -21,7 +19,6 @@ import { ItemsFloatingIsland } from './components/ItemsFloatingIsland'
 import { useNavigate } from 'react-router-dom'
 
 export const Menu = () => {
-  const { settings } = settingStore()
   const [activeCategory, setActiveCategory] = useState<Number | undefined>()
   const { connect, isConnected, subscribeToSession, stompClient } =
     useWebsocketStore()
@@ -41,7 +38,7 @@ export const Menu = () => {
       if (!sessionId) throw new Error('No session ID available')
       return SessionTableService.addItem(sessionId, itemId)
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       toast.success('Item added successfully!')
     },
     onError: (error) => {
