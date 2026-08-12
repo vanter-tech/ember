@@ -18,12 +18,15 @@ export type menuResponse = components['schemas']['MenuDTO']
 export type orderItemDTO = components['schemas']['OrderItemDto']
 export type participantDTO = components['schemas']['ParticipantDto']
 export type tableStatus = components['schemas']['SessionStatusDto']
+export type kitchenOrdersDisplayByTables = components['schemas']['KitchenDisplayEntry']
+export type kitchenOrders = components['schemas']['KitchenOrder']
 
 
 declare global {
   interface Window {
     ENV: {
       EMBW_API_URL?: string
+      EMBW_WS_URL?: string
     }
   }
 }
@@ -252,5 +255,17 @@ export const menuServices = {
   getMenu: async (): Promise<menuResponse[]> => {
     const { data } = await api.get<menuResponse[]>('/menu')
     return data
+  }, 
+}
+
+export const kitchenServices = {
+  getOrdersByTables: async (): Promise<kitchenOrdersDisplayByTables[]> => {
+    const { data } = await api.get<kitchenOrdersDisplayByTables[]>('/kitchen/display')
+    return data
   },
+  getOrders: async(): Promise<kitchenOrders[]> => {
+    const { data } = await api.get<kitchenOrders[]>('/kitchen/orders')
+    return data
+  }
+
 }

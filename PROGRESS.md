@@ -1,9 +1,9 @@
 # PROGRESS.md — Active Execution State
 
 ## Current Execution State
-- **Last Completed Task:** task-1.2 (Repair eslint.config.js) — report 02
-- **Current Active Task:** task-1.3 (Replace hardcoded WebSocket localhost URL)
-- **Predecessor Task:** task-1.2
+- **Last Completed Task:** task-1.3 (Replace hardcoded WebSocket localhost URL) — report 03
+- **Current Active Task:** task-1.4 (Deduplicate WebSocket subscriptions in FloatingNav.tsx)
+- **Predecessor Task:** task-1.3
 - **System Health:**
     - Frontend (`pnpm run build`): PASSING (0 TS errors)
     - Frontend (`pnpm run lint`): RUNS (19 pre-existing errors/6 warnings unrelated to config, tracked in later tasks)
@@ -18,7 +18,7 @@
 ## Task Queue Status
 - [x] **task-1.1:** Fix `tsc -b` compilation errors (`TS6133`/`TS6192`) in frontend (`pages/kitchen/`, `ComandaView.tsx`, `Menu.tsx`, `ItemsFloatingIsland.tsx`, `Tables.tsx`).
 - [x] **task-1.2:** Repair `eslint.config.js` by installing `eslint-plugin-prettier` or removing broken import.
-- [ ] **task-1.3:** Replace hardcoded WebSocket `localhost` URL in `store/websocket.ts` with environment variable resolution.
+- [x] **task-1.3:** Replace hardcoded WebSocket `localhost` URL in `store/websocket.ts` with environment variable resolution.
 - [ ] **task-1.4:** Deduplicate WebSocket subscriptions in `FloatingNav.tsx` and centralize `SESSION_CLOSED` handling in `store/websocket.ts`.
 - [ ] **task-1.5:** Fix WebSocket state handling by adding `onDisconnect`/`onStompError` handlers to reset `isConnected`.
 - [ ] **task-1.6:** Add Global Error Boundary to React app and fix missing `key` props and loading states in `OrdersDisplay.tsx`.
