@@ -9,20 +9,17 @@ import {
   User,
   Home,
   Menu,
+  ChefHat,
 } from 'lucide-react'
 import { useSessionStore } from '@/store/sessionStore'
-import { useWebsocketStore } from '@/store/websocket'
-import { useEffect } from 'react'
 
 export const FloatingNav = () => {
   const role = useAuthStore((state) => state.role)
   const logout = useAuthStore((state) => state.logout)
-  const clearSession = useSessionStore((state) => state.clearSession)
   const navigate = useNavigate()
   const location = useLocation()
   const { userId } = useAuthStore()
-  const { participants, id } = useSessionStore()
-  const {stompClient, isConnected} = useWebsocketStore()
+  const { participants } = useSessionStore()
 
   const amiIn = participants?.find((data) => data.userId === userId)
 
@@ -32,26 +29,6 @@ export const FloatingNav = () => {
     logout()
     navigate('/login')
   }
-
-
-  useEffect(() => {
-    if(isConnected && id != null && stompClient?.connected){
-      const suscription = stompClient?.subscribe(`/topic/session/${id}`, (msg) => {
-        const eventData = JSON.parse(msg.body)
-        console.log('Mensage recibido:', eventData)
-
-        if(eventData.status === 'CLOSED'){
-          clearSession()
-          navigate('/customer/home')
-        }
-        
-      })
-
-      return () => {
-        suscription?.unsubscribe()
-      }
-    }
-  },[isConnected, id, stompClient])
 
   const isActive = (path: string) => location.pathname.includes(path)
   const navItemClass = (path: string) => `
@@ -74,6 +51,16 @@ export const FloatingNav = () => {
           title="mesas"
         >
           <LayoutDashboard strokeWidth={1.5} size={24} />
+        </Link>
+      )}
+
+      {(role === 'KITCHEN' || role === 'ADMIN') && (
+        <Link
+          to="/kitchen/orders"
+          className={navItemClass('/kitchen/orders')}
+          title="kitchen"
+        >
+          <ChefHat strokeWidth={1.5} size={24} />
         </Link>
       )}
 
@@ -116,15 +103,16 @@ export const FloatingNav = () => {
         ) : (
           ''
         ))}
-        {role === 'CUSTOMER' &&(
-          <Link
-            to="/customer/home"
-            className={navItemClass('/customer/home')}
-            title="Home"
-          >
-            <Home strokeWidth={1.5} size={24} />
-          </Link>
-        )}
+      {role === 'CUSTOMER' && (
+        <Link
+          to="/customer/home"
+          className={navItemClass('/customer/home')}
+          title="Home"
+        >
+          <Home strokeWidth={1.5} size={24} />
+        </Link>
+      )}
+
       <div
         className="flex items-center gap-4 pl-2 border-l
             border-zinc-200 dark:border-zinc-700"
