@@ -39,7 +39,7 @@ management:
       application: ember-saas
 
 jwt:
-  secret: ember-secret-key-must-be-at-least-32-characters-long-for-hs256
+  secret: 33Zx/bcWITide07xKgSHzBXpfMEKICi01oPmHr+jKEiBpBDXH6U6PVjEMc4Iu9yq
   expiration-ms: 86400000
 
 minio:
