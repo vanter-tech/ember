@@ -1,23 +1,20 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useSessionStore } from '@/store/sessionStore'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   ArrowLeft,
-  ArrowRight,
-  Car,
   Minus,
   Plus,
   Send,
   Trash,
-  User,
 } from 'lucide-react'
 
 import { AvatarInitials, AvatarColors } from '@/components/AvatarInitials'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Link } from 'react-router-dom'
-import { api, SessionTableService } from '@/lib/api'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { SessionTableService } from '@/lib/api'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/authStore'
@@ -84,7 +81,7 @@ export const ComandaView = () => {
       toast.success('Platillo eliminado')
     },
 
-    onError: (e) => {
+    onError: () => {
       toast.error('Error al eliminar')
     },
   })
@@ -102,7 +99,7 @@ export const ComandaView = () => {
       toast.success('Comanda enviada')
     },
 
-    onError: (e) => {
+    onError: () => {
       toast.error('Error al enviar comanda')
     },
   })

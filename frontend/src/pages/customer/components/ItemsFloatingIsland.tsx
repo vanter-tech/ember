@@ -20,7 +20,7 @@ export const ItemsFloatingIsland = () => {
         <div className="flex items-center gap-4 bg-white p-2 pr-2 rounded-full shadow-[0_3px_15px_rgba(0,0,0,0.1)] border border-gray-50">
             <div className="flex items-center ml-2">
                 <div className="flex -space-x-2">
-                    {previewItems.map((item,index) => (
+                    {previewItems.map((_item,index) => (
                         <div key={index} className="w-10 h-10 rounded-full border-2 border-white bg-gray-800
                         flex items-center justify-centerr text-xs text-white">
                             Foto

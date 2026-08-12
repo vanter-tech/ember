@@ -1,12 +1,18 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git -C \"C:/Users/ferob/Downloads/Java_SpringBoot_Kafka_Courses/ember/.claude/worktrees/sprint-1-foundation-identity\" add docker-compose.yml)",
-      "Bash(git -C \"C:/Users/ferob/Downloads/Java_SpringBoot_Kafka_Courses/ember/.claude/worktrees/sprint-1-foundation-identity\" add -u infra/docker-compose.yml)",
-      "Bash(git -C \"C:/Users/ferob/Downloads/Java_SpringBoot_Kafka_Courses/ember/.claude/worktrees/sprint-1-foundation-identity\" status)",
-      "Bash(./mvnw compile *)",
-      "Bash(./mvnw test *)",
-      "Bash(mvn test *)"
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git add*)",
+      "Bash(git commit*)",
+      "Bash(pnpm run build*)",
+      "Bash(pnpm run lint*)",
+      "Bash(pnpm test*)",
+      "Bash(cd frontend && pnpm *)",
+      "Bash(./mvnw *)",
+      "Bash(mvn *)",
+      "Bash(cd backend && *)"
     ]
   }
 }

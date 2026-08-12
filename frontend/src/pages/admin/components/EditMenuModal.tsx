@@ -73,14 +73,12 @@ export const EditMenuModal = () => {
       form.reset()
       closeModal()
     },
-    onError: (Error) => {
+    onError: () => {
       toast.error('An ERROR has occurred')
-      console.error('Error during updating a menuItem', Error)
     },
   })
 
   const onSubmit = (data: menuItemsFormInputs) => {
-    console.log(data)
     const formData = new FormData()
     formData.append('name', data.name)
     formData.append('description', data.description)

@@ -1,4 +1,3 @@
-import { settingStore } from '@/store/settingStore'
 import { ParticipantQrModal } from './components/ParticipantsQrModal'
 import { DashboardService } from '@/lib/api'
 import { useQuery } from '@tanstack/react-query'
@@ -11,7 +10,6 @@ import { useUIStore } from '@/store/uiStore'
 import { Link } from 'react-router-dom'
 
 export const Tables = () => {
-  const { settings } = settingStore()
   const { restaurantId } = useAuthStore()
   const [selectedTable, setSelectedTable] = useState<string | undefined>(
     undefined

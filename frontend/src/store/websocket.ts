@@ -3,7 +3,7 @@ import { Client } from '@stomp/stompjs'
 import SockJS from 'sockjs-client'
 import { useAuthStore } from "./authStore";
 import { useSessionStore } from "./sessionStore";
-import { queryClient } from "@/main";
+import { queryClient } from "@/queryClient";
 
 interface WebSocketState {
     stompClient: Client | null,
@@ -25,9 +25,14 @@ export const useWebsocketStore = create<WebSocketState>((set, get) => ({
         if (get().stompClient) return;
         const token = useAuthStore.getState().token;
 
+        const wsUrl =
+            window.ENV?.EMBW_WS_URL ||
+            import.meta.env.VITE_WS_URL ||
+            'http://localhost:8080/v1/ws'
+
         const client = new Client({
             webSocketFactory: () => {
-                return new SockJS('http://localhost:8080/v1/ws')
+                return new SockJS(wsUrl)
             },
             connectHeaders: {
                Authorization: `Bearer ${token}`
@@ -36,6 +41,14 @@ export const useWebsocketStore = create<WebSocketState>((set, get) => ({
 
         client.onConnect = () => {
             set({isConnected: true})
+        }
+
+        client.onDisconnect = () => {
+            set({isConnected: false})
+        }
+
+        client.onStompError = () => {
+            set({isConnected: false})
         }
 
         client.activate()
@@ -47,7 +60,6 @@ export const useWebsocketStore = create<WebSocketState>((set, get) => ({
         const currentClient = get().stompClient
 
         if(!currentClient || !currentClient.connected) {
-            console.error("WebSocket is not connected")
             return
         }
 
@@ -59,7 +71,6 @@ export const useWebsocketStore = create<WebSocketState>((set, get) => ({
         
         const subscription = currentClient.subscribe(`/topic/session/${sessionId}`, (msg) => {
             const eventData = JSON.parse(msg.body)
-            console.log('Message received:', eventData)
             if(eventData.type === 'PARTICIPANT_JOINED'){
                 const newParticipants = {
                     userId: eventData.userId,

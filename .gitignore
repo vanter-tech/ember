@@ -1,0 +1,4 @@
+# Environment secrets — never commit real values, only .env.example
+.env
+.env.local
+.env.*.local

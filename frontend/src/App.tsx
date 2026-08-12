@@ -1,4 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { QueryClientProvider } from '@tanstack/react-query';
+import { queryClient } from '@/queryClient';
 import { useAuthStore } from './store/authStore'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { NotFound } from './components/NotFound'
@@ -16,6 +18,8 @@ import { CustomerLayout } from './layouts/CustomerLayout'
 import { Home } from './pages/customer/Home'
 import { Menu } from './pages/customer/Menu'
 import { ComandaView } from './pages/customer/ComandaView'
+import { OrdersDisplays } from './pages/kitchen/OrdersDisplay'
+import { KitchenLayout } from './layouts/KitchenLayout'
 
 const RoleRedirect = () => {
   const { role } = useAuthStore()
@@ -31,6 +35,7 @@ const RoleRedirect = () => {
 
 export default function App() {
   return (
+    <QueryClientProvider client={queryClient}>
     <BrowserRouter>
       <Toaster />
       <Routes>
@@ -62,14 +67,14 @@ export default function App() {
         </Route>
 
         <Route element={<ProtectedRoute allowedRoles={['KITCHEN', 'ADMIN']} />}>
-          <Route
-            path="/kitchen/*"
-            element={<div className="p-10 text-2xl">Área de Cocina</div>}
-          />
+          <Route path="/kitchen" element={<KitchenLayout/>}>
+            <Route path='orders' element={<OrdersDisplays/>}/>
+          </Route>
         </Route>
 
         <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>
+    </QueryClientProvider>
   )
 }

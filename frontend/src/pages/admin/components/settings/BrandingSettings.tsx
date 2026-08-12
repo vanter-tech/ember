@@ -38,8 +38,7 @@ export const BrandingSettings = () => {
       queryClient.invalidateQueries({ queryKey: ['restaurantSettings'] })
       toast.success('Configuración guardada con éxito')
     },
-    onError: (error) => {
-      console.error('Error al guardar', error)
+    onError: () => {
       toast.error('Error al guardar la configuración')
     },
   })
