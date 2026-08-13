@@ -14,6 +14,9 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Component;
 
+import java.util.Map;
+import java.util.UUID;
+
 @Component
 @RequiredArgsConstructor
 public class JwtChannelInterceptor implements ChannelInterceptor {
@@ -21,12 +24,19 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
     private final JwtService jwtService;
     private final UserDetailsService userDetailsService;
 
+    static final String TENANT_SESSION_ATTRIBUTE = "tenantId";
+
     @Override
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
         StompHeaderAccessor accessor =
                 MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
 
-        if (accessor == null || !StompCommand.CONNECT.equals(accessor.getCommand())) {
+        if (accessor == null) {
+            return message;
+        }
+
+        if (!StompCommand.CONNECT.equals(accessor.getCommand())) {
+            bindTenantFromSession(accessor);
             return message;
         }
 
@@ -46,6 +56,29 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
                 new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
         accessor.setUser(auth);
 
+        UUID tenantId = jwtService.extractTenantId(token);
+        Map<String, Object> sessionAttributes = accessor.getSessionAttributes();
+        if (sessionAttributes != null) {
+            sessionAttributes.put(TENANT_SESSION_ATTRIBUTE, tenantId);
+        }
+        TenantContextHolder.setTenantId(tenantId);
+
         return message;
+    }
+
+    @Override
+    public void afterSendCompletion(Message<?> message, MessageChannel channel, boolean sent, Exception ex) {
+        TenantContextHolder.clear();
+    }
+
+    private void bindTenantFromSession(StompHeaderAccessor accessor) {
+        Map<String, Object> sessionAttributes = accessor.getSessionAttributes();
+        if (sessionAttributes == null) {
+            return;
+        }
+        Object tenantId = sessionAttributes.get(TENANT_SESSION_ATTRIBUTE);
+        if (tenantId instanceof UUID uuid) {
+            TenantContextHolder.setTenantId(uuid);
+        }
     }
 }

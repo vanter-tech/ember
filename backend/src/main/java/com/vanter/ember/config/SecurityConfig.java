@@ -98,7 +98,12 @@ public class SecurityConfig {
                                     userDetails, null, userDetails.getAuthorities());
                     SecurityContextHolder.getContext().setAuthentication(authToken);
                 }
-                chain.doFilter(request, response);
+                TenantContextHolder.setTenantId(jwtService.extractTenantId(token));
+                try {
+                    chain.doFilter(request, response);
+                } finally {
+                    TenantContextHolder.clear();
+                }
             }
         };
     }

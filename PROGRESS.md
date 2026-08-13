@@ -1,13 +1,13 @@
 # PROGRESS.md — Active Execution State
 
 ## Current Execution State
-- **Last Completed Task:** task-2.10 (Flesh out `Restaurant` entity/repo/service; wire create-or-join tenant provisioning + `rid` JWT claim into registration/login) — report 18
-- **Current Active Task:** none — next up task-2.11
-- **Predecessor Task:** task-2.9
+- **Last Completed Task:** task-2.11 (`TenantContextHolder` from JWT `rid`, wired into `jwtAuthFilter`/`JwtChannelInterceptor`; `SettingsController` ad hoc resolver removed) — report 19
+- **Current Active Task:** none — next up task-2.12
+- **Predecessor Task:** task-2.10
 - **System Health:**
     - Frontend (`pnpm run build`): PASSING (0 TS errors)
     - Frontend (`pnpm run lint`): RUNS (19 pre-existing errors/6 warnings unrelated to config, tracked in later tasks)
-    - Backend (`./mvnw test`): test-compile CLEAN; 288/288 tests passing
+    - Backend (`./mvnw test`): test-compile CLEAN; 295/295 tests passing
 
 ## Active Context & Recent Decisions
 - Monolith root confirmed at `ember/`.
@@ -17,7 +17,8 @@
 - Backend test-compile was broken suite-wide (dead `RestaurantTable`/`OrderItemAdded` refs from historical refactors); repaired in task-2.1a — see report 09. Prior "39 tests passing" health claim was stale/inaccurate.
 - Pending backlog unified 2026-08-12: former `EMB-MT-*` multi-tenancy tasks merged into the main `task-2.x`/`3.x`/`4.x` queue (prefix retired); task-2.9, 2.10, 2.13, 3.4, 3.5 rewritten to be tenant-aware from the start.
 - No Mongo replica set/`MongoTransactionManager` configured — `@Transactional` is not viable on `Session`/Mongo services; use fail-fast validation-before-mutation ordering instead (see task-2.8).
-- task-2.10 wired tenant provisioning at registration (create-or-join `Restaurant`, `rid` JWT claim), resolving task-2.9's interim regression. Verifying against `E2EOrderFlowTest` also surfaced/fixed two pre-existing, tenant-unrelated bugs (user-approved): `SessionService.joinSession` stored participant email instead of `User.getId()`, and `SessionController.getSession`'s participant check compared against the raw JWT email instead of the resolved user id.
+- task-2.10 wired tenant provisioning at registration (create-or-join `Restaurant`, `rid` JWT claim) and fixed two pre-existing bugs found via `E2EOrderFlowTest`: `SessionService.joinSession` stored participant email instead of `User.getId()`, and `SessionController.getSession` compared the raw JWT email instead of the resolved user id.
+- task-2.11 added `config/TenantContextHolder` (ThreadLocal `UUID`) fed by `JwtService.extractTenantId` (`rid` claim, null for QR tokens). Bound + cleared in `jwtAuthFilter` (`finally`) and `JwtChannelInterceptor` (CONNECT stores tenant in STOMP session attrs; other frames rehydrate; `afterSendCompletion` clears). All downstream tenant work (2.12/2.14/2.17) must read from this holder, never from client input.
 
 ## Task Queue Status
 - [x] **task-1.1:** Fix `tsc -b` compilation errors (`TS6133`/`TS6192`) in frontend (`pages/kitchen/`, `ComandaView.tsx`, `Menu.tsx`, `ItemsFloatingIsland.tsx`, `Tables.tsx`).
@@ -38,7 +39,7 @@
 - [x] **task-2.8:** Ensure transactional safety in `confirmDraftsForUser` to prevent orphan items when table lookup fails.
 - [x] **task-2.9:** Rewrite `confirmMyOrder` validation to assert the path `userId` AND the resolved tenant both match the authenticated JWT context (not a trusted path parameter alone).
 - [x] **task-2.10:** Flesh out `Restaurant` entity (name, slug, plan, status, timezone, currency) + `RestaurantRepository`/`RestaurantService`; update `RegisterRequest`/`AuthService` to create-or-join a `Restaurant` at registration and add its id as a `rid` JWT claim, binding every `User.restaurantId` explicitly (real fix — supersedes a narrow test-only patch).
-- [ ] **task-2.11:** Build `TenantContextHolder` (from the JWT `rid` claim) and wire into `jwtAuthFilter`/`JwtChannelInterceptor`; remove `SettingsController`'s ad hoc `getRestaurantIdFromAuth()`.
+- [x] **task-2.11:** Build `TenantContextHolder` (from the JWT `rid` claim) and wire into `jwtAuthFilter`/`JwtChannelInterceptor`; remove `SettingsController`'s ad hoc `getRestaurantIdFromAuth()`.
 - [ ] **task-2.12:** Fix `DashboardController`'s client-supplied `restaurantId` `@RequestParam` — derive tenant from `TenantContextHolder`, not client input (closes a live cross-tenant IDOR).
 - [ ] **task-2.13:** Fix `joinSession` capacity check to read live `session.getMaxParticipants()` instead of a stale QR-JWT claim, and scope `QrTokenService`/`SessionRepository.findByJoinCodeAndStatus` by tenant in the same pass.
 - [ ] **task-2.14:** Configure Hibernate `DISCRIMINATOR` multi-tenancy (`CurrentTenantIdentifierResolver`) and add `@TenantId` to `Category`, `MenuItem`, `Bill`, `BillSplit`, `Payment`, `RestaurantSettings`, `DiningTables`, `User`.
