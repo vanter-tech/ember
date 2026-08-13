@@ -30,7 +30,7 @@ public class ImageUploadService {
     public String uploadImage(MultipartFile file, String bucketName) {
         String contentType = file.getContentType();
         if(contentType == null || !allowed_types.contains(contentType)){
-            throw new IllegalArgumentException("Unsupported content type: " + contentType);
+            throw new IllegalArgumentException("Unsupported file type: " + contentType);
         }
         if(file.getSize() > max_file_size){
             throw new IllegalArgumentException("File size exceeds maximum allowed size: of 5MB " + max_file_size);
