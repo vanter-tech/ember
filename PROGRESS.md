@@ -1,13 +1,13 @@
 # PROGRESS.md — Active Execution State
 
 ## Current Execution State
-- **Last Completed Task:** task-2.1a (Repair backend test-compile baseline, discovered while verifying task-2.1) — report 09
-- **Current Active Task:** none — task-2.1 and task-2.1a complete; next up task-2.2
-- **Predecessor Task:** task-2.1
+- **Last Completed Task:** task-2.2 (Fix SessionControllerTest response-shape drift in getSession/createSession) — report 10
+- **Current Active Task:** none — next up task-2.3
+- **Predecessor Task:** task-2.1a
 - **System Health:**
     - Frontend (`pnpm run build`): PASSING (0 TS errors)
     - Frontend (`pnpm run lint`): RUNS (19 pre-existing errors/6 warnings unrelated to config, tracked in later tasks)
-    - Backend (`./mvnw test`): test-compile CLEAN; 274/284 tests passing (6 failures/4 errors — pre-existing, see task-2.2–2.5, task-2.10)
+    - Backend (`./mvnw test`): test-compile CLEAN; 278/284 tests passing (4 failures/2 errors — pre-existing, see task-2.3–2.5, task-2.10)
 
 ## Active Context & Recent Decisions
 - Monolith root confirmed at `ember/`.
@@ -27,7 +27,7 @@
 - [x] **task-1.7:** Remove leftover `console.log` and `console.error` statements from production frontend code.
 - [x] **task-2.1:** Add `@Version` optimistic locking to MongoDB `Session.java` model to prevent collaborative cart race conditions.
 - [x] **task-2.1a:** Repair backend test-compile baseline (dead `RestaurantTable`/`OrderItemAdded` refs, `Long`→`UUID` tableId in tests).
-- [ ] **task-2.2:** Fix `SessionController.getSession` response drift (missing `$.id`, NPE on participants) vs. `SessionControllerTest`.
+- [x] **task-2.2:** Fix `SessionController.getSession` response drift (missing `$.id`, NPE on participants) vs. `SessionControllerTest`.
 - [ ] **task-2.3:** Update `OrderItemTest` enum coverage to include `DRAFT` status.
 - [ ] **task-2.4:** Fix `ImageUploadServiceTest` image fixture (`No suitable ImageReader found`).
 - [ ] **task-2.5:** Align WebSocket topic naming: code sends `/topic/session/{id}`, tests expect `/topic/sessions/{id}`.

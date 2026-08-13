@@ -8,6 +8,8 @@ import com.vanter.ember.session.dto.AddItemRequest;
 import com.vanter.ember.session.dto.CreateSessionRequest;
 import com.vanter.ember.session.dto.ExpandCapacityRequest;
 import com.vanter.ember.session.dto.JoinSessionRequest;
+import com.vanter.ember.session.dto.ParticipantDto;
+import com.vanter.ember.session.dto.SessionDetailResponseDto;
 import com.vanter.ember.session.exception.TooManyParticipantsException;
 import com.vanter.ember.session.model.Participant;
 import com.vanter.ember.session.model.Session;
@@ -73,8 +75,7 @@ class SessionControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new CreateSessionRequest(TABLE_ID, 4))))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").value("sess-1"))
-                .andExpect(jsonPath("$.status").value("OPEN"));
+                .andExpect(jsonPath("$.sessionId").value("sess-1"));
     }
 
     @Test
@@ -203,13 +204,17 @@ class SessionControllerTest {
 
     // --- GET /sessions/{id} ---
 
+    private SessionDetailResponseDto sampleSessionDetail(List<ParticipantDto> participants) {
+        return new SessionDetailResponseDto(
+                "sess-1", TABLE_ID, 5, true, "waiter@test.com",
+                SessionStatus.OPEN, 4, participants, List.of(), LocalDateTime.now());
+    }
+
     @Test
     @WithMockUser(username = "customer@test.com", roles = "CUSTOMER")
     void getSession_returnsFullSessionForParticipant() throws Exception {
-        Session session = sampleSession();
-        session.getParticipants().add(
-                Participant.builder().userId("customer@test.com").name("Alice").build());
-        when(sessionService.findById("sess-1")).thenReturn(session);
+        when(sessionService.getSessionDetails("sess-1")).thenReturn(
+                sampleSessionDetail(List.of(new ParticipantDto("customer@test.com", "Alice"))));
 
         mockMvc.perform(get("/sessions/sess-1"))
                 .andExpect(status().isOk())
@@ -220,7 +225,7 @@ class SessionControllerTest {
     @Test
     @WithMockUser(username = "waiter@test.com", roles = "WAITER")
     void getSession_returnsFullSessionForAssignedWaiter() throws Exception {
-        when(sessionService.findById("sess-1")).thenReturn(sampleSession());
+        when(sessionService.getSessionDetails("sess-1")).thenReturn(sampleSessionDetail(List.of()));
 
         mockMvc.perform(get("/sessions/sess-1"))
                 .andExpect(status().isOk())
@@ -230,7 +235,7 @@ class SessionControllerTest {
     @Test
     @WithMockUser(username = "outsider@test.com", roles = "CUSTOMER")
     void getSession_forbiddenForCustomerNotInSession() throws Exception {
-        when(sessionService.findById("sess-1")).thenReturn(sampleSession());
+        when(sessionService.getSessionDetails("sess-1")).thenReturn(sampleSessionDetail(List.of()));
 
         mockMvc.perform(get("/sessions/sess-1"))
                 .andExpect(status().isForbidden());
