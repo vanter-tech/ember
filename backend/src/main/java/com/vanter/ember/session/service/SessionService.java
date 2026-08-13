@@ -330,6 +330,10 @@ public class SessionService {
                 .toList();
 
         if(!drafts.isEmpty()){
+            int tableNumber = diningTableRepository.findById(session.getTableId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Table not found"))
+                    .getTableNumber();
+
             drafts.forEach(item -> {
                 item.setStatus(OrderItemStatus.PENDING);
                 item.setAddedAt(LocalDateTime.now());
@@ -337,10 +341,6 @@ public class SessionService {
 
             Session savedSession = sessionRepository.save(session);
             eventPublisher.publishEvent(new ItemSent(savedSession));
-
-            int tableNumber = diningTableRepository.findById(savedSession.getTableId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Table not found"))
-                    .getTableNumber();
 
             eventPublisher.publishEvent(new KitchenItemsConfirmed(
                     savedSession.getId(),

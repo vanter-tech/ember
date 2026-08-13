@@ -1,9 +1,9 @@
 # PROGRESS.md — Active Execution State
 
 ## Current Execution State
-- **Last Completed Task:** task-2.7 (Pessimistic-lock the Bill row so PaymentService's allPaid check is atomic) — report 15
-- **Current Active Task:** none — next up task-2.8
-- **Predecessor Task:** task-2.6
+- **Last Completed Task:** task-2.8 (Reorder table lookup before mutation/save in `confirmDraftsForUser` to prevent orphan items) — report 16
+- **Current Active Task:** none — next up task-2.9
+- **Predecessor Task:** task-2.7
 - **System Health:**
     - Frontend (`pnpm run build`): PASSING (0 TS errors)
     - Frontend (`pnpm run lint`): RUNS (19 pre-existing errors/6 warnings unrelated to config, tracked in later tasks)
@@ -16,6 +16,7 @@
 - Kafka dependency in `pom.xml` ignored; Spring `ApplicationEventPublisher` used for internal synchronous events.
 - Backend test-compile was broken suite-wide (dead `RestaurantTable`/`OrderItemAdded` refs from historical refactors); repaired in task-2.1a — see report 09. Prior "39 tests passing" health claim was stale/inaccurate.
 - Pending backlog unified 2026-08-12: former `EMB-MT-*` multi-tenancy tasks merged into the main `task-2.x`/`3.x`/`4.x` queue (prefix retired); task-2.9, 2.10, 2.13, 3.4, 3.5 rewritten to be tenant-aware from the start.
+- No Mongo replica set/`MongoTransactionManager` configured — `@Transactional` is not viable on `Session`/Mongo services; use fail-fast validation-before-mutation ordering instead (see task-2.8).
 
 ## Task Queue Status
 - [x] **task-1.1:** Fix `tsc -b` compilation errors (`TS6133`/`TS6192`) in frontend (`pages/kitchen/`, `ComandaView.tsx`, `Menu.tsx`, `ItemsFloatingIsland.tsx`, `Tables.tsx`).
@@ -33,7 +34,7 @@
 - [x] **task-2.5:** Align WebSocket topic naming: code sends `/topic/session/{id}`, tests expect `/topic/sessions/{id}`.
 - [x] **task-2.6:** Add `@Transactional` boundaries to multi-write operations in `BillingService` and `PaymentService`.
 - [x] **task-2.7:** Ensure atomic execution of `allPaid == true` check in `PaymentService` to reliably trigger `PaymentCompleted`.
-- [ ] **task-2.8:** Ensure transactional safety in `confirmDraftsForUser` to prevent orphan items when table lookup fails.
+- [x] **task-2.8:** Ensure transactional safety in `confirmDraftsForUser` to prevent orphan items when table lookup fails.
 - [ ] **task-2.9:** Rewrite `confirmMyOrder` validation to assert the path `userId` AND the resolved tenant both match the authenticated JWT context (not a trusted path parameter alone).
 - [ ] **task-2.10:** Flesh out `Restaurant` entity (name, slug, plan, status, timezone, currency) + `RestaurantRepository`/`RestaurantService`; update `RegisterRequest`/`AuthService` to create-or-join a `Restaurant` at registration and add its id as a `rid` JWT claim, binding every `User.restaurantId` explicitly (real fix — supersedes a narrow test-only patch).
 - [ ] **task-2.11:** Build `TenantContextHolder` (from the JWT `rid` claim) and wire into `jwtAuthFilter`/`JwtChannelInterceptor`; remove `SettingsController`'s ad hoc `getRestaurantIdFromAuth()`.
