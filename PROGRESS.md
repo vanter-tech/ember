@@ -1,13 +1,13 @@
 # PROGRESS.md — Active Execution State
 
 ## Current Execution State
-- **Last Completed Task:** task-2.2 (Fix SessionControllerTest response-shape drift in getSession/createSession) — report 10
-- **Current Active Task:** none — next up task-2.3
-- **Predecessor Task:** task-2.1a
+- **Last Completed Task:** task-2.3 (Update OrderItemTest enum coverage to include DRAFT status) — report 11
+- **Current Active Task:** none — next up task-2.4
+- **Predecessor Task:** task-2.2
 - **System Health:**
     - Frontend (`pnpm run build`): PASSING (0 TS errors)
     - Frontend (`pnpm run lint`): RUNS (19 pre-existing errors/6 warnings unrelated to config, tracked in later tasks)
-    - Backend (`./mvnw test`): test-compile CLEAN; 278/284 tests passing (4 failures/2 errors — pre-existing, see task-2.3–2.5, task-2.10)
+    - Backend (`./mvnw test`): test-compile CLEAN; 279/284 tests passing (3 failures/2 errors — pre-existing, see task-2.4, task-2.5, task-2.10)
 
 ## Active Context & Recent Decisions
 - Monolith root confirmed at `ember/`.
@@ -28,7 +28,7 @@
 - [x] **task-2.1:** Add `@Version` optimistic locking to MongoDB `Session.java` model to prevent collaborative cart race conditions.
 - [x] **task-2.1a:** Repair backend test-compile baseline (dead `RestaurantTable`/`OrderItemAdded` refs, `Long`→`UUID` tableId in tests).
 - [x] **task-2.2:** Fix `SessionController.getSession` response drift (missing `$.id`, NPE on participants) vs. `SessionControllerTest`.
-- [ ] **task-2.3:** Update `OrderItemTest` enum coverage to include `DRAFT` status.
+- [x] **task-2.3:** Update `OrderItemTest` enum coverage to include `DRAFT` status.
 - [ ] **task-2.4:** Fix `ImageUploadServiceTest` image fixture (`No suitable ImageReader found`).
 - [ ] **task-2.5:** Align WebSocket topic naming: code sends `/topic/session/{id}`, tests expect `/topic/sessions/{id}`.
 - [ ] **task-2.6:** Add `@Transactional` boundaries to multi-write operations in `BillingService` and `PaymentService`.

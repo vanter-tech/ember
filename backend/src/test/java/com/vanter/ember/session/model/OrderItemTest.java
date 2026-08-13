@@ -35,6 +35,7 @@ class OrderItemTest {
     @Test
     void orderItemStatus_hasAllValues() {
         assertThat(OrderItemStatus.values()).containsExactlyInAnyOrder(
+                OrderItemStatus.DRAFT,
                 OrderItemStatus.PENDING,
                 OrderItemStatus.PREPARING,
                 OrderItemStatus.READY,
