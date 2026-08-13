@@ -30,7 +30,7 @@
 - [ ] **task-2.1c:** Fix `SessionController.getSession` response drift (missing `$.id`, NPE on participants) vs. `SessionControllerTest`.
 - [ ] **task-2.1d:** Align WebSocket topic naming: code sends `/topic/session/{id}`, tests expect `/topic/sessions/{id}`.
 - [ ] **task-2.1e:** Update `OrderItemTest` enum coverage to include `DRAFT` status.
-- [ ] **task-2.1f:** Fix `ImageUploadServiceTest` image fixture (`No suitable ImageReader found`).
+  - [ ] **task-2.1f:** Fix `ImageUploadServiceTest` image fixture (`No suitable ImageReader found`).
 - [ ] **task-2.2:** Add `@Transactional` boundaries to multi-write operations in `BillingService` and `PaymentService`.
 - [ ] **task-2.3:** Add unique constraint on `Bill.sessionId` to prevent duplicate billing.
 - [ ] **task-2.4:** Ensure atomic execution of `allPaid == true` check in `PaymentService` to reliably trigger `PaymentCompleted`.
@@ -45,3 +45,18 @@
 - [ ] **task-3.6:** Implement pagination for `KitchenController` and `MenuItemController` endpoints.
 - [ ] **task-3.7:** Add minimum length and complexity rules to user registration password validation.
 - [ ] **task-4.1:** Setup Vitest and React Testing Library for frontend unit tests.
+- [ ] **EMB-MT-1.1:** Flesh out `Restaurant` entity (name, slug, plan, status, timezone, currency) and add `RestaurantRepository`/`RestaurantService`.
+- [ ] **EMB-MT-1.2:** Add `rid` (restaurantId) claim to JWT; update `RegisterRequest`/`AuthService` to create-or-join a `Restaurant` at registration.
+- [ ] **EMB-MT-1.3:** Build `TenantContextHolder` and wire into `jwtAuthFilter`/`JwtChannelInterceptor`; remove `SettingsController`'s ad hoc `getRestaurantIdFromAuth()`.
+- [ ] **EMB-MT-1.4:** [Urgent] Fix `DashboardController`'s client-supplied `restaurantId` `@RequestParam` (unvalidated cross-tenant IDOR).
+- [ ] **EMB-MT-2.1:** Configure Hibernate `DISCRIMINATOR` multi-tenancy (`CurrentTenantIdentifierResolver`) and add `@TenantId` to `Category`, `MenuItem`, `Bill`, `BillSplit`, `Payment`, `RestaurantSettings`, `DiningTables`, `User`.
+- [ ] **EMB-MT-2.2:** Migrate: backfill `tenant_id` on existing rows, add `unique(tenant_id, name)` on `Category`, add tenant indexes.
+- [ ] **EMB-MT-2.3:** Add cross-tenant isolation regression tests for every JPA repository.
+- [ ] **EMB-MT-3.1:** Add `tenantId` to `Session`/`KitchenOrder`; scope `SessionRepository`/`KitchenOrderRepository` custom queries by tenant.
+- [ ] **EMB-MT-3.2:** Fix `KitchenService.findDisplay()`'s untenanted `findAll()` call.
+- [ ] **EMB-MT-3.3:** Scope `SessionRepository.findByJoinCodeAndStatus` and `QrTokenService` by tenant.
+- [ ] **EMB-MT-3.4:** Backfill migration for existing Mongo documents; add cross-tenant isolation regression tests for Mongo repositories.
+- [ ] **EMB-MT-4.1:** Extend `SettingsPayload` with `PaymentGatewaySettings` (secret-reference pattern), structured `BusinessHoursSettings`, and list-based `TaxRules`.
+- [ ] **EMB-MT-5.1:** Audit frontend `api.ts` for client-supplied tenant-id usage; ensure `restaurantId` is only ever read from authenticated session state.
+- [ ] **EMB-MT-5.2:** Build tenant onboarding UX (subdomain/slug-based routing for pre-login branding/landing page).
+- [ ] **EMB-MT-6.1:** Wire `Restaurant.plan`/`status` to a subscription-billing integration (billing the tenant, distinct from the existing diner-facing billing module).
