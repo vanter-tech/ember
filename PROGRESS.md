@@ -1,9 +1,9 @@
 # PROGRESS.md — Active Execution State
 
 ## Current Execution State
-- **Last Completed Task:** task-5.1 (global 403/tenant-suspended handling in `api.ts` + `TenantSuspendedModal`; predecessor task-4.4) — report 39
-- **Current Active Task:** none — task-5.2 next in the frontend/backend gap-analysis backlog (task-5.2–5.21 remain; EMB-PC-01–14 Platform/Super-Admin Console also queued), awaiting task selection/approval
-- **System Health:** Frontend `pnpm run build` PASSING (0 TS errors, `tsc -b && vite build`). Backend unchanged this task (still 423/423 passing per task-4.4). `pnpm run test:run`/`pnpm run lint` not rerun this task (no test or lint-scoped files touched).
+- **Last Completed Task:** task-5.2 (hand-synced `backend-types.ts`: full `Restaurant`, `UpdateRestaurantPlanRequest`, `PublicBrandingResponse`, extended `SettingsPayload`; predecessor task-5.1) — report 40
+- **Current Active Task:** none — task-5.3 next in the frontend/backend gap-analysis backlog (task-5.3–5.21 remain; EMB-PC-01–14 Platform/Super-Admin Console also queued), awaiting task selection/approval
+- **System Health:** Frontend `pnpm run build` PASSING (0 TS errors, `tsc -b && vite build`). Backend unchanged this task; **local backend currently fails to boot** (JDBC `08001` against Postgres, unrelated to app code — needs the `.env` DB credentials/connection fixed before `pnpm run openapi` or `./mvnw test` can run). `pnpm run test:run`/`pnpm run lint` not rerun this task.
 
 ## Active Context & Recent Decisions
 - Monolith root at `ember/`; Java 17 + Spring Boot 3.5.14 / React 19 + TS + pnpm. Product: multi-tenant restaurant platform (collaborative cart, KDS, floor/waiter management, admin analytics). task-3.2 deleted `spring-kafka` — Spring `ApplicationEventPublisher` is the only event bus, do not reintroduce a broker.
@@ -23,7 +23,7 @@
 - [x] **Milestone 3 (task-3.1–3.8):** Security & config hardening — secrets externalization, Kafka removal, RFC 7807 errors, dynamic CORS/rate-limiting, pagination, password rules, extended `SettingsPayload`. Reports 27–34.
 - [x] **Milestone 4 (task-4.1–4.4):** Frontend testing & tenant lifecycle — Vitest/RTL, `Page<T>` consumption, tenant onboarding landing page, `Restaurant.plan`/`status` enforcement. Reports 35–38.
 - [x] **task-5.1:** Add global 403/tenant-suspended handling to `api.ts`'s response interceptor (currently only 401→logout) — detect the `jwtAuthFilter` `ProblemDetail` and route to a suspended-tenant modal/page instead of a silently rejected promise. Report 39.
-- [ ] **task-5.2:** Regenerate/extend `frontend/src/lib/backend-types.ts` — missing `Restaurant`, `RestaurantPlan`, `RestaurantStatus`, `UpdateRestaurantPlanRequest`, `PublicBrandingResponse`, and `SettingsPayload.paymentGateway`/`businessHours`/`billing.taxRules` (predates task-3.8/4.3/4.4).
+- [x] **task-5.2:** Regenerate/extend `frontend/src/lib/backend-types.ts` — missing `Restaurant`, `RestaurantPlan`, `RestaurantStatus`, `UpdateRestaurantPlanRequest`, `PublicBrandingResponse`, and `SettingsPayload.paymentGateway`/`businessHours`/`billing.taxRules` (predates task-3.8/4.3/4.4). Hand-extended (backend DB unreachable). Report 40.
 - [ ] **task-5.3:** Build ADMIN "Plan & Estado" UI + `restaurantAdminService` in `api.ts` consuming `GET`/`PATCH /admin/restaurant/plan` (`RestaurantAdminController`) — zero frontend surface exists for task-4.4's plan self-service.
 - [ ] **task-5.4:** Wire the `MENU` tab in `Settings.tsx`/`SettingsBar.tsx` (currently `<div>Menu Settings</div>`) to `SettingsPayload.menu` (`showOutOfStockItems`, `enableItemSearch`).
 - [ ] **task-5.5:** Wire the `BILLING` tab to `SettingsPayload.billing` (`currencySymbol`, `taxRate`, `isTaxIncludeInMenuPrice`, `suggestedTipPercentage`) plus a `TaxRules` list editor (task-3.8).

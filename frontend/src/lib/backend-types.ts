@@ -545,6 +545,29 @@ export interface components {
             taxRate?: number;
             suggestedTipPercentage?: number[];
             taxIncludeInMenuPrice?: boolean;
+            taxRules?: components["schemas"]["TaxRule"][];
+        };
+        TaxRule: {
+            name?: string;
+            /** Format: double */
+            rate?: number;
+            includedInPrice?: boolean;
+        };
+        PaymentGatewaySettings: {
+            enabled?: boolean;
+            provider?: string;
+            publicKey?: string;
+            secretRef?: string;
+        };
+        BusinessHoursSettings: {
+            schedule?: components["schemas"]["DaySchedule"][];
+        };
+        DaySchedule: {
+            /** @enum {string} */
+            day?: "MONDAY" | "TUESDAY" | "WEDNESDAY" | "THURSDAY" | "FRIDAY" | "SATURDAY" | "SUNDAY";
+            closed?: boolean;
+            openTime?: string;
+            closeTime?: string;
         };
         BrandingSettings: {
             businessName?: string;
@@ -571,6 +594,8 @@ export interface components {
             billing?: components["schemas"]["BillingSettings"];
             hardware?: components["schemas"]["HardwareSettings"];
             space?: components["schemas"]["SpaceSettings"];
+            paymentGateway?: components["schemas"]["PaymentGatewaySettings"];
+            businessHours?: components["schemas"]["BusinessHoursSettings"];
         };
         SpaceSettings: {
             /** Format: int32 */
@@ -770,6 +795,27 @@ export interface components {
         Restaurant: {
             /** Format: uuid */
             id?: string;
+            name?: string;
+            slug?: string;
+            /** @enum {string} */
+            plan?: "FREE" | "STARTER" | "PRO" | "ENTERPRISE";
+            /** @enum {string} */
+            status?: "ACTIVE" | "SUSPENDED" | "INACTIVE";
+            timezone?: string;
+            currency?: string;
+            /** Format: date-time */
+            createdAt?: string;
+        };
+        UpdateRestaurantPlanRequest: {
+            /** @enum {string} */
+            plan: "FREE" | "STARTER" | "PRO" | "ENTERPRISE";
+        };
+        PublicBrandingResponse: {
+            slug?: string;
+            businessName?: string;
+            primaryThemeColor?: string;
+            openingTime?: string;
+            closingTime?: string;
         };
         User: {
             id?: string;
