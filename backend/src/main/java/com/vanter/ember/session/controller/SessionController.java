@@ -35,6 +35,7 @@ public class SessionController {
 
     private final SessionService sessionService;
     private final QrTokenService qrTokenService;
+    private final UserRepository userRepository;
 
     @Operation(summary = "Create a session (WAITER)")
     @PostMapping
@@ -55,8 +56,11 @@ public class SessionController {
         boolean isCustomer = authentication.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ROLE_CUSTOMER"));
         if (isCustomer) {
+            String requesterId = userRepository.findByEmail(authentication.getName())
+                    .map(u -> u.getId())
+                    .orElse(null);
             boolean isParticipant = session.participants().stream()
-                    .anyMatch(p -> p.userId().equals(authentication.getName()));
+                    .anyMatch(p -> p.userId().equals(requesterId));
             if (!isParticipant) {
                 throw new AccessDeniedException("Not authorized to view this session");
             }

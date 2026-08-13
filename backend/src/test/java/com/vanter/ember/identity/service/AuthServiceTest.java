@@ -6,6 +6,8 @@ import com.vanter.ember.identity.model.dto.AuthResponse;
 import com.vanter.ember.identity.model.dto.LoginRequest;
 import com.vanter.ember.identity.model.dto.RegisterRequest;
 import com.vanter.ember.identity.repository.UserRepository;
+import com.vanter.ember.restaurant.model.Restaurant;
+import com.vanter.ember.restaurant.service.RestaurantService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -15,6 +17,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -30,6 +33,7 @@ class AuthServiceTest {
     @Mock UserRepository userRepository;
     @Mock JwtService jwtService;
     @Mock PasswordEncoder passwordEncoder;
+    @Mock RestaurantService restaurantService;
     @InjectMocks AuthService authService;
 
     @Test
@@ -39,8 +43,11 @@ class AuthServiceTest {
         req.setEmail("ana@test.com");
         req.setPassword("secret");
 
+        Restaurant restaurant = Restaurant.builder().id(UUID.randomUUID()).name("Ana's Restaurant").build();
+
         when(userRepository.existsByEmail("ana@test.com")).thenReturn(false);
         when(passwordEncoder.encode("secret")).thenReturn("hashed");
+        when(restaurantService.createOrJoin(null, null, "Ana")).thenReturn(restaurant);
         when(userRepository.save(any())).thenAnswer(inv -> {
             User u = inv.getArgument(0);
             u.setId("user-1");
@@ -69,9 +76,10 @@ class AuthServiceTest {
 
     @Test
     void login_returnsTokenForValidCredentials() {
+        Restaurant restaurant = Restaurant.builder().id(UUID.randomUUID()).name("Ana's Restaurant").build();
         User user = User.builder()
                 .id("user-1").name("Ana").email("ana@test.com")
-                .passwordHash("hashed").role(Role.CUSTOMER).build();
+                .passwordHash("hashed").role(Role.CUSTOMER).restaurantId(restaurant).build();
         LoginRequest req = new LoginRequest();
         req.setEmail("ana@test.com");
         req.setPassword("secret");

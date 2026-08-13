@@ -20,6 +20,8 @@ import com.vanter.ember.identity.model.dto.LoginRequest;
 import com.vanter.ember.identity.repository.UserRepository;
 import com.vanter.ember.kitchen.model.KitchenOrder;
 import com.vanter.ember.kitchen.repository.KitchenOrderRepository;
+import com.vanter.ember.restaurant.model.Restaurant;
+import com.vanter.ember.restaurant.repository.RestaurantRepository;
 import com.vanter.ember.session.dto.AddItemRequest;
 import com.vanter.ember.session.dto.CreateSessionRequest;
 import com.vanter.ember.session.dto.JoinSessionRequest;
@@ -51,6 +53,7 @@ class E2EOrderFlowTest {
     @Autowired MockMvc mockMvc;
     @Autowired ObjectMapper objectMapper;
     @Autowired UserRepository userRepository;
+    @Autowired RestaurantRepository restaurantRepository;
     @Autowired PasswordEncoder passwordEncoder;
     @Autowired CategoryRepository categoryRepository;
     @Autowired MenuItemService menuItemService;
@@ -64,6 +67,7 @@ class E2EOrderFlowTest {
     private String waiterToken;
     private String customerToken;
     private String kitchenToken;
+    private String customerId;
     private UUID tableId;
     private Long menuItemId;
 
@@ -76,25 +80,31 @@ class E2EOrderFlowTest {
         menuItemRepository.deleteAll();
         categoryRepository.deleteAll();
         userRepository.deleteAll();
+        restaurantRepository.deleteAll();
 
         String password = "password123";
 
-        User waiter = userRepository.save(User.builder()
-                .name("Waiter").email("waiter@e2e.com")
+        Restaurant restaurant = restaurantRepository.save(Restaurant.builder()
+                .name("E2E Restaurant").slug("e2e-restaurant-" + UUID.randomUUID())
+                .build());
+
+        userRepository.save(User.builder()
+                .name("Waiter").email("waiter@e2e.com").restaurantId(restaurant)
                 .passwordHash(passwordEncoder.encode(password)).role(Role.WAITER).build());
         User customer = userRepository.save(User.builder()
-                .name("Alice").email("customer@e2e.com")
+                .name("Alice").email("customer@e2e.com").restaurantId(restaurant)
                 .passwordHash(passwordEncoder.encode(password)).role(Role.CUSTOMER).build());
         userRepository.save(User.builder()
-                .name("Kitchen").email("kitchen@e2e.com")
+                .name("Kitchen").email("kitchen@e2e.com").restaurantId(restaurant)
                 .passwordHash(passwordEncoder.encode(password)).role(Role.KITCHEN).build());
+        customerId = customer.getId();
 
         waiterToken = login("waiter@e2e.com", password);
         customerToken = login("customer@e2e.com", password);
         kitchenToken = login("kitchen@e2e.com", password);
 
         DiningTables table = diningTableRepository.save(DiningTables.builder()
-                .restaurantId(UUID.randomUUID())
+                .restaurantId(restaurant.getId())
                 .tableNumber(7)
                 .isActive(true)
                 .build());
@@ -106,6 +116,7 @@ class E2EOrderFlowTest {
         itemReq.setName("E2E Burger");
         itemReq.setPrice(new BigDecimal("12.00"));
         itemReq.setCategoryId(category.getId());
+        itemReq.setAvailable(true);
         menuItemId = menuItemService.create(itemReq, null).getId();
     }
 
@@ -137,7 +148,7 @@ class E2EOrderFlowTest {
                 .andExpect(status().isCreated())
                 .andReturn();
         String sessionId = objectMapper.readTree(
-                sessionResult.getResponse().getContentAsString()).get("id").asText();
+                sessionResult.getResponse().getContentAsString()).get("sessionId").asText();
 
         // 2 — Waiter gets QR token
         MvcResult qrResult = mockMvc.perform(get("/sessions/" + sessionId + "/qr")
@@ -165,6 +176,11 @@ class E2EOrderFlowTest {
         String orderItemId = objectMapper.readTree(
                 addItemResult.getResponse().getContentAsString())
                 .get("items").get(0).get("id").asText();
+
+        // 4b — Customer confirms their draft items, sending them to the kitchen
+        mockMvc.perform(post("/sessions/" + sessionId + "/participants/" + customerId + "/confirm")
+                        .header("Authorization", bearer(customerToken)))
+                .andExpect(status().isOk());
 
         // 5 — Kitchen finds the order and drives item to DELIVERED
         KitchenOrder kitchenOrder = kitchenOrderRepository.findBySessionId(sessionId).orElseThrow();

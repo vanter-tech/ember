@@ -16,4 +16,10 @@ public class RegisterRequest {
 
     @NotBlank(message = "Password is required")
     private String password;
+
+    /** Name for a new restaurant to create; ignored when restaurantSlug is set. */
+    private String restaurantName;
+
+    /** Slug of an existing restaurant to join; if blank, a new restaurant is created. */
+    private String restaurantSlug;
 }

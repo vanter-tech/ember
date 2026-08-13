@@ -118,9 +118,12 @@ public class SessionService {
         return session;
     }
 
-    public Session joinSession(String qrToken, String userId, String userName) {
+    public Session joinSession(String qrToken, String requesterEmail, String userName) {
         String sessionId = qrTokenService.validateQrToken(qrToken);
         int maxParticipants = qrTokenService.extractMaxParticipants(qrToken);
+
+        var user = userRepository.findByEmail(requesterEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + requesterEmail));
 
         Session session = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new ResourceNotFoundException("Session not found: " + sessionId));
@@ -131,16 +134,16 @@ public class SessionService {
         }
 
         boolean alreadyJoined = session.getParticipants().stream()
-                .anyMatch(p -> p.getUserId().equals(userId));
+                .anyMatch(p -> p.getUserId().equals(user.getId()));
         if (alreadyJoined) {
             throw new IllegalStateException(
-                    "User " + userId + " has already joined this session");
+                    "User " + user.getId() + " has already joined this session");
         }
 
-        session.getParticipants().add(Participant.builder().userId(userId).name(userName).build());
+        session.getParticipants().add(Participant.builder().userId(user.getId()).name(userName).build());
         Session saved = sessionRepository.save(session);
 
-        eventPublisher.publishEvent(new ParticipantJoined(saved.getId(), userId, userName));
+        eventPublisher.publishEvent(new ParticipantJoined(saved.getId(), user.getId(), userName));
         return saved;
     }
 

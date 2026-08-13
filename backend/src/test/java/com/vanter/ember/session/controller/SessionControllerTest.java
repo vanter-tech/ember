@@ -3,6 +3,8 @@ package com.vanter.ember.session.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vanter.ember.config.CorsConfig;
 import com.vanter.ember.config.SecurityConfig;
+import com.vanter.ember.identity.model.User;
+import com.vanter.ember.identity.repository.UserRepository;
 import com.vanter.ember.identity.service.JwtService;
 import com.vanter.ember.session.dto.AddItemRequest;
 import com.vanter.ember.session.dto.CreateSessionRequest;
@@ -29,6 +31,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -51,6 +54,7 @@ class SessionControllerTest {
     @MockBean QrTokenService qrTokenService;
     @MockBean JwtService jwtService;
     @MockBean UserDetailsService userDetailsService;
+    @MockBean UserRepository userRepository;
 
     private static final UUID TABLE_ID = UUID.randomUUID();
 
@@ -213,8 +217,10 @@ class SessionControllerTest {
     @Test
     @WithMockUser(username = "customer@test.com", roles = "CUSTOMER")
     void getSession_returnsFullSessionForParticipant() throws Exception {
+        when(userRepository.findByEmail("customer@test.com"))
+                .thenReturn(Optional.of(User.builder().id("cust-1").build()));
         when(sessionService.getSessionDetails("sess-1")).thenReturn(
-                sampleSessionDetail(List.of(new ParticipantDto("customer@test.com", "Alice"))));
+                sampleSessionDetail(List.of(new ParticipantDto("cust-1", "Alice"))));
 
         mockMvc.perform(get("/sessions/sess-1"))
                 .andExpect(status().isOk())
@@ -235,6 +241,8 @@ class SessionControllerTest {
     @Test
     @WithMockUser(username = "outsider@test.com", roles = "CUSTOMER")
     void getSession_forbiddenForCustomerNotInSession() throws Exception {
+        when(userRepository.findByEmail("outsider@test.com"))
+                .thenReturn(Optional.of(User.builder().id("outsider-1").build()));
         when(sessionService.getSessionDetails("sess-1")).thenReturn(sampleSessionDetail(List.of()));
 
         mockMvc.perform(get("/sessions/sess-1"))

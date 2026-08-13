@@ -142,6 +142,7 @@ class SessionServiceTest {
     void join_addsParticipantWhenTokenValidAndCapacityAvailable() {
         when(qrTokenService.validateQrToken("qr-token")).thenReturn("sess-1");
         when(qrTokenService.extractMaxParticipants("qr-token")).thenReturn(4);
+        when(userRepository.findByEmail("user-1")).thenReturn(Optional.of(user("user-1")));
         when(sessionRepository.findById("sess-1"))
                 .thenReturn(Optional.of(openSessionWithCapacity(4, List.of())));
         when(sessionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -160,6 +161,7 @@ class SessionServiceTest {
                 Participant.builder().userId("u2").name("B").build());
         when(qrTokenService.validateQrToken("qr-token")).thenReturn("sess-1");
         when(qrTokenService.extractMaxParticipants("qr-token")).thenReturn(2);
+        when(userRepository.findByEmail("u3")).thenReturn(Optional.of(user("u3")));
         when(sessionRepository.findById("sess-1"))
                 .thenReturn(Optional.of(openSessionWithCapacity(2, full)));
 
@@ -182,6 +184,7 @@ class SessionServiceTest {
                 Participant.builder().userId("user-1").name("Alice").build());
         when(qrTokenService.validateQrToken("qr-token")).thenReturn("sess-1");
         when(qrTokenService.extractMaxParticipants("qr-token")).thenReturn(4);
+        when(userRepository.findByEmail("user-1")).thenReturn(Optional.of(user("user-1")));
         when(sessionRepository.findById("sess-1"))
                 .thenReturn(Optional.of(openSessionWithCapacity(4, existing)));
 
@@ -194,6 +197,7 @@ class SessionServiceTest {
     void join_publishesParticipantJoinedEvent() {
         when(qrTokenService.validateQrToken("qr-token")).thenReturn("sess-1");
         when(qrTokenService.extractMaxParticipants("qr-token")).thenReturn(4);
+        when(userRepository.findByEmail("user-1")).thenReturn(Optional.of(user("user-1")));
         when(sessionRepository.findById("sess-1"))
                 .thenReturn(Optional.of(openSessionWithCapacity(4, List.of())));
         when(sessionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
