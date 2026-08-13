@@ -18,6 +18,7 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -29,6 +30,7 @@ public class PaymentService {
     private final SessionService sessionService;
     private final ApplicationEventPublisher eventPublisher;
 
+    @Transactional
     public Payment registerPhysicalPayment(Long billId, String participantName, BigDecimal amount) {
         Bill bill = billRepository.findById(billId)
                 .orElseThrow(() -> new ResourceNotFoundException("Bill not found: " + billId));
@@ -64,6 +66,7 @@ public class PaymentService {
         return payment;
     }
 
+    @Transactional
     public Payment initiateDigitalPayment(Long billId, String participantName, BigDecimal amount) {
         Bill bill = billRepository.findById(billId)
                 .orElseThrow(() -> new ResourceNotFoundException("Bill not found: " + billId));
@@ -88,6 +91,7 @@ public class PaymentService {
                 .build());
     }
 
+    @Transactional
     public Payment confirmDigitalPayment(Long paymentId) {
         Payment payment = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Payment not found: " + paymentId));

@@ -1,9 +1,9 @@
 # PROGRESS.md — Active Execution State
 
 ## Current Execution State
-- **Last Completed Task:** task-2.5 (Align SessionWebSocketListenerTest topic naming) — report 13
-- **Current Active Task:** none — next up task-2.6
-- **Predecessor Task:** task-2.4
+- **Last Completed Task:** task-2.6 (Add @Transactional boundaries to BillingService/PaymentService) — report 14
+- **Current Active Task:** none — next up task-2.7
+- **Predecessor Task:** task-2.5
 - **System Health:**
     - Frontend (`pnpm run build`): PASSING (0 TS errors)
     - Frontend (`pnpm run lint`): RUNS (19 pre-existing errors/6 warnings unrelated to config, tracked in later tasks)
@@ -31,7 +31,7 @@
 - [x] **task-2.3:** Update `OrderItemTest` enum coverage to include `DRAFT` status.
 - [x] **task-2.4:** Fix `ImageUploadServiceTest` image fixture (`No suitable ImageReader found`).
 - [x] **task-2.5:** Align WebSocket topic naming: code sends `/topic/session/{id}`, tests expect `/topic/sessions/{id}`.
-- [ ] **task-2.6:** Add `@Transactional` boundaries to multi-write operations in `BillingService` and `PaymentService`.
+- [x] **task-2.6:** Add `@Transactional` boundaries to multi-write operations in `BillingService` and `PaymentService`.
 - [ ] **task-2.7:** Ensure atomic execution of `allPaid == true` check in `PaymentService` to reliably trigger `PaymentCompleted`.
 - [ ] **task-2.8:** Ensure transactional safety in `confirmDraftsForUser` to prevent orphan items when table lookup fails.
 - [ ] **task-2.9:** Rewrite `confirmMyOrder` validation to assert the path `userId` AND the resolved tenant both match the authenticated JWT context (not a trusted path parameter alone).

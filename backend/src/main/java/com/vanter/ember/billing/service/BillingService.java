@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -30,6 +31,7 @@ public class BillingService {
     private final BillSplitRepository billSplitRepository;
     private final SessionService sessionService;
 
+    @Transactional
     public Bill calculateBill(String sessionId, SplitMethod splitMethod) {
         if (billRepository.findBySessionId(sessionId).isPresent()) {
             throw new IllegalStateException("Session already billed: " + sessionId);
@@ -62,6 +64,7 @@ public class BillingService {
                 .build());
     }
 
+    @Transactional
     public List<BillSplit> splitByConsumption(Long billId) {
         Bill bill = billRepository.findById(billId)
                 .orElseThrow(() -> new ResourceNotFoundException("Bill not found: " + billId));
@@ -86,6 +89,7 @@ public class BillingService {
         return billSplitRepository.saveAll(splits);
     }
 
+    @Transactional
     public List<BillSplit> splitEqually(Long billId, int participantCount) {
         Bill bill = billRepository.findById(billId)
                 .orElseThrow(() -> new ResourceNotFoundException("Bill not found: " + billId));
