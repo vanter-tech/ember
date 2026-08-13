@@ -12,7 +12,9 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "dining_table")
+@Table(
+        name = "dining_table",
+        indexes = @Index(name = "idx_dining_table_tenant", columnList = "restaurant_id"))
 public class DiningTables {
 
     @Id
