@@ -1,6 +1,7 @@
 package com.vanter.ember.kitchen.service;
 
 import com.vanter.ember.config.ResourceNotFoundException;
+import com.vanter.ember.config.TenantContextHolder;
 import com.vanter.ember.kitchen.dto.KitchenDisplayEntry;
 import com.vanter.ember.kitchen.event.KitchenItemUpdated;
 import com.vanter.ember.kitchen.model.KitchenItem;
@@ -26,11 +27,11 @@ public class KitchenService {
     private final ApplicationEventPublisher eventPublisher;
 
     public List<KitchenOrder> findAll() {
-        return kitchenOrderRepository.findAll();
+        return kitchenOrderRepository.findByTenantId(TenantContextHolder.requireTenantId());
     }
 
     public List<KitchenDisplayEntry> findDisplay() {
-        return kitchenOrderRepository.findAll().stream()
+        return findAll().stream()
                 .collect(Collectors.groupingBy(KitchenOrder::getTableNumber))
                 .entrySet().stream()
                 .sorted(Comparator.comparingInt(java.util.Map.Entry::getKey))
@@ -44,14 +45,17 @@ public class KitchenService {
     }
 
     public KitchenOrder findBySessionId(String sessionId) {
-        return kitchenOrderRepository.findBySessionId(sessionId)
+        return kitchenOrderRepository
+                .findByTenantIdAndSessionId(TenantContextHolder.requireTenantId(), sessionId)
                 .orElseThrow(() -> new ResourceNotFoundException("Kitchen order not found for session: " + sessionId));
     }
 
     @EventListener
     public void handleOrderItemAdded(KitchenItemsConfirmed event) {
-        KitchenOrder order = kitchenOrderRepository.findBySessionId(event.sessionId())
+        KitchenOrder order = kitchenOrderRepository
+                .findByTenantIdAndSessionId(event.tenantId(), event.sessionId())
                 .orElseGet(() -> KitchenOrder.builder()
+                        .tenantId(event.tenantId())
                         .sessionId(event.sessionId())
                         .tableNumber(event.tableNumber())
                         .createdAt(LocalDateTime.now())
@@ -73,7 +77,8 @@ public class KitchenService {
     }
 
     public KitchenOrder updateItemStatus(String orderId, String itemId, OrderItemStatus newStatus) {
-        KitchenOrder order = kitchenOrderRepository.findById(orderId)
+        KitchenOrder order = kitchenOrderRepository
+                .findByIdAndTenantId(orderId, TenantContextHolder.requireTenantId())
                 .orElseThrow(() -> new ResourceNotFoundException("Kitchen order not found: " + orderId));
 
         KitchenItem item = order.getItems().stream()

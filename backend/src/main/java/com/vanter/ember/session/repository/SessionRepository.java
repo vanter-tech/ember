@@ -10,12 +10,15 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 
 public interface SessionRepository extends MongoRepository<Session, String> {
 
-    List<Session> findByTableIdAndStatus(UUID tableId, SessionStatus status);
+    Optional<Session> findByIdAndTenantId(String id, UUID tenantId);
 
-    List<Session> findByParticipants_UserId(String userId);
+    List<Session> findByTenantIdAndTableIdAndStatus(UUID tenantId, UUID tableId, SessionStatus status);
 
-    List<Session> findByTableIdInAndStatus(List<UUID> tableIds, SessionStatus status);
+    List<Session> findByTenantIdAndParticipants_UserId(UUID tenantId, String userId);
 
-    Optional<Session> findByJoinCodeAndStatusAndTableIdIn(
-            String joinCode, SessionStatus status, List<UUID> tableIds);
+    List<Session> findByTenantIdAndTableIdInAndStatus(
+            UUID tenantId, List<UUID> tableIds, SessionStatus status);
+
+    Optional<Session> findByTenantIdAndJoinCodeAndStatus(
+            UUID tenantId, String joinCode, SessionStatus status);
 }

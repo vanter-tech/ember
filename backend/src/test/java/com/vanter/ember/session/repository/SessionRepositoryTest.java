@@ -19,6 +19,7 @@ class SessionRepositoryTest {
 
     private static final UUID TABLE_1_ID = UUID.randomUUID();
     private static final UUID TABLE_2_ID = UUID.randomUUID();
+    private static final UUID TENANT_ID = UUID.randomUUID();
 
     @Autowired SessionRepository sessionRepository;
 
@@ -30,7 +31,7 @@ class SessionRepositoryTest {
     @Test
     void save_persistsSession() {
         Session session = Session.builder()
-                .tableId(TABLE_1_ID).waiterId("waiter@test.com")
+                .tenantId(TENANT_ID).tableId(TABLE_1_ID).waiterId("waiter@test.com")
                 .status(SessionStatus.OPEN)
                 .maxParticipants(4)
                 .createdAt(LocalDateTime.now())
@@ -44,17 +45,18 @@ class SessionRepositoryTest {
 
     @Test
     void findByTableIdAndStatus_returnsMatchingSessions() {
-        sessionRepository.save(Session.builder().tableId(TABLE_1_ID).waiterId("waiter@test.com")
+        sessionRepository.save(Session.builder().tenantId(TENANT_ID).tableId(TABLE_1_ID).waiterId("waiter@test.com")
                 .status(SessionStatus.OPEN).maxParticipants(4)
                 .createdAt(LocalDateTime.now()).build());
-        sessionRepository.save(Session.builder().tableId(TABLE_1_ID).waiterId("waiter@test.com")
+        sessionRepository.save(Session.builder().tenantId(TENANT_ID).tableId(TABLE_1_ID).waiterId("waiter@test.com")
                 .status(SessionStatus.CLOSED).maxParticipants(4)
                 .createdAt(LocalDateTime.now()).build());
-        sessionRepository.save(Session.builder().tableId(TABLE_2_ID).waiterId("waiter@test.com")
+        sessionRepository.save(Session.builder().tenantId(TENANT_ID).tableId(TABLE_2_ID).waiterId("waiter@test.com")
                 .status(SessionStatus.OPEN).maxParticipants(4)
                 .createdAt(LocalDateTime.now()).build());
 
-        List<Session> result = sessionRepository.findByTableIdAndStatus(TABLE_1_ID, SessionStatus.OPEN);
+        List<Session> result = sessionRepository.findByTenantIdAndTableIdAndStatus(
+                TENANT_ID, TABLE_1_ID, SessionStatus.OPEN);
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getTableId()).isEqualTo(TABLE_1_ID);
@@ -66,18 +68,42 @@ class SessionRepositoryTest {
         Participant alice = Participant.builder().userId("user-1").name("Alice").build();
         Participant bob = Participant.builder().userId("user-2").name("Bob").build();
 
-        sessionRepository.save(Session.builder().tableId(TABLE_1_ID).waiterId("waiter@test.com")
+        sessionRepository.save(Session.builder().tenantId(TENANT_ID).tableId(TABLE_1_ID).waiterId("waiter@test.com")
                 .status(SessionStatus.OPEN).maxParticipants(4)
                 .participants(List.of(alice))
                 .createdAt(LocalDateTime.now()).build());
-        sessionRepository.save(Session.builder().tableId(TABLE_2_ID).waiterId("waiter@test.com")
+        sessionRepository.save(Session.builder().tenantId(TENANT_ID).tableId(TABLE_2_ID).waiterId("waiter@test.com")
                 .status(SessionStatus.OPEN).maxParticipants(4)
                 .participants(List.of(bob))
                 .createdAt(LocalDateTime.now()).build());
 
-        List<Session> result = sessionRepository.findByParticipants_UserId("user-1");
+        List<Session> result = sessionRepository.findByTenantIdAndParticipants_UserId(TENANT_ID, "user-1");
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getParticipants().get(0).getUserId()).isEqualTo("user-1");
+    }
+
+    @Test
+    void findByIdAndTenantId_doesNotResolveAnotherTenantsSession() {
+        Session saved = sessionRepository.save(Session.builder()
+                .tenantId(TENANT_ID).tableId(TABLE_1_ID).waiterId("waiter@test.com")
+                .status(SessionStatus.OPEN).maxParticipants(4)
+                .createdAt(LocalDateTime.now()).build());
+
+        assertThat(sessionRepository.findByIdAndTenantId(saved.getId(), UUID.randomUUID())).isEmpty();
+        assertThat(sessionRepository.findByIdAndTenantId(saved.getId(), TENANT_ID)).isPresent();
+    }
+
+    @Test
+    void findByTenantIdAndJoinCodeAndStatus_doesNotResolveAnotherTenantsJoinCode() {
+        sessionRepository.save(Session.builder()
+                .tenantId(TENANT_ID).tableId(TABLE_1_ID).waiterId("waiter@test.com")
+                .status(SessionStatus.OPEN).maxParticipants(4).joinCode("AB3CD")
+                .createdAt(LocalDateTime.now()).build());
+
+        assertThat(sessionRepository.findByTenantIdAndJoinCodeAndStatus(
+                UUID.randomUUID(), "AB3CD", SessionStatus.OPEN)).isEmpty();
+        assertThat(sessionRepository.findByTenantIdAndJoinCodeAndStatus(
+                TENANT_ID, "AB3CD", SessionStatus.OPEN)).isPresent();
     }
 }

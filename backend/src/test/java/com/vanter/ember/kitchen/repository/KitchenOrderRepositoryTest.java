@@ -12,11 +12,14 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DataMongoTest
 class KitchenOrderRepositoryTest {
+
+    private static final UUID TENANT_ID = UUID.randomUUID();
 
     @Autowired KitchenOrderRepository kitchenOrderRepository;
 
@@ -28,7 +31,7 @@ class KitchenOrderRepositoryTest {
     @Test
     void save_persistsKitchenOrder() {
         KitchenOrder order = KitchenOrder.builder()
-                .sessionId("sess-1").tableNumber(5)
+                .tenantId(TENANT_ID).sessionId("sess-1").tableNumber(5)
                 .items(new ArrayList<>())
                 .build();
 
@@ -40,13 +43,13 @@ class KitchenOrderRepositoryTest {
     }
 
     @Test
-    void findBySessionId_returnsMatchingOrder() {
+    void findByTenantIdAndSessionId_returnsMatchingOrder() {
         kitchenOrderRepository.save(KitchenOrder.builder()
-                .sessionId("sess-1").tableNumber(5).items(new ArrayList<>()).build());
+                .tenantId(TENANT_ID).sessionId("sess-1").tableNumber(5).items(new ArrayList<>()).build());
         kitchenOrderRepository.save(KitchenOrder.builder()
-                .sessionId("sess-2").tableNumber(3).items(new ArrayList<>()).build());
+                .tenantId(TENANT_ID).sessionId("sess-2").tableNumber(3).items(new ArrayList<>()).build());
 
-        Optional<KitchenOrder> result = kitchenOrderRepository.findBySessionId("sess-1");
+        Optional<KitchenOrder> result = kitchenOrderRepository.findByTenantIdAndSessionId(TENANT_ID, "sess-1");
 
         assertThat(result).isPresent();
         assertThat(result.get().getSessionId()).isEqualTo("sess-1");
@@ -54,7 +57,7 @@ class KitchenOrderRepositoryTest {
     }
 
     @Test
-    void findByItems_Status_returnsOrdersContainingItemWithGivenStatus() {
+    void findByTenantIdAndItems_Status_returnsOrdersContainingItemWithGivenStatus() {
         KitchenItem pendingItem = KitchenItem.builder()
                 .itemId("order-item-1").name("Tacos").participantName("Alice")
                 .status(OrderItemStatus.PENDING).updatedAt(LocalDateTime.now()).build();
@@ -63,15 +66,31 @@ class KitchenOrderRepositoryTest {
                 .status(OrderItemStatus.PREPARING).updatedAt(LocalDateTime.now()).build();
 
         kitchenOrderRepository.save(KitchenOrder.builder()
-                .sessionId("sess-1").tableNumber(5)
+                .tenantId(TENANT_ID).sessionId("sess-1").tableNumber(5)
                 .items(new ArrayList<>(List.of(pendingItem))).build());
         kitchenOrderRepository.save(KitchenOrder.builder()
-                .sessionId("sess-2").tableNumber(3)
+                .tenantId(TENANT_ID).sessionId("sess-2").tableNumber(3)
                 .items(new ArrayList<>(List.of(preparingItem))).build());
 
-        List<KitchenOrder> result = kitchenOrderRepository.findByItems_Status(OrderItemStatus.PENDING);
+        List<KitchenOrder> result = kitchenOrderRepository.findByTenantIdAndItems_Status(
+                TENANT_ID, OrderItemStatus.PENDING);
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getSessionId()).isEqualTo("sess-1");
+    }
+
+    @Test
+    void tenantScopedQueries_doNotResolveAnotherTenantsOrders() {
+        KitchenOrder saved = kitchenOrderRepository.save(KitchenOrder.builder()
+                .tenantId(TENANT_ID).sessionId("sess-1").tableNumber(5)
+                .items(new ArrayList<>()).build());
+        UUID otherTenant = UUID.randomUUID();
+
+        assertThat(kitchenOrderRepository.findByTenantId(otherTenant)).isEmpty();
+        assertThat(kitchenOrderRepository.findByIdAndTenantId(saved.getId(), otherTenant)).isEmpty();
+        assertThat(kitchenOrderRepository.findByTenantIdAndSessionId(otherTenant, "sess-1")).isEmpty();
+
+        assertThat(kitchenOrderRepository.findByTenantId(TENANT_ID)).hasSize(1);
+        assertThat(kitchenOrderRepository.findByIdAndTenantId(saved.getId(), TENANT_ID)).isPresent();
     }
 }

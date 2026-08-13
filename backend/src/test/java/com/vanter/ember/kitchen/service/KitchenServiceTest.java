@@ -1,6 +1,7 @@
 package com.vanter.ember.kitchen.service;
 
 import com.vanter.ember.config.ResourceNotFoundException;
+import com.vanter.ember.config.TenantContextHolder;
 import com.vanter.ember.kitchen.dto.KitchenDisplayEntry;
 import com.vanter.ember.kitchen.event.KitchenItemUpdated;
 import com.vanter.ember.kitchen.model.KitchenItem;
@@ -10,6 +11,8 @@ import com.vanter.ember.session.event.KitchenItemsConfirmed;
 import com.vanter.ember.session.model.OrderItem;
 import com.vanter.ember.session.model.OrderItemStatus;
 import org.springframework.context.ApplicationEventPublisher;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -22,6 +25,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -32,9 +36,21 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class KitchenServiceTest {
 
+    private static final UUID TENANT_ID = UUID.randomUUID();
+
     @Mock KitchenOrderRepository kitchenOrderRepository;
     @Mock ApplicationEventPublisher eventPublisher;
     @InjectMocks KitchenService kitchenService;
+
+    @BeforeEach
+    void bindTenant() {
+        TenantContextHolder.setTenantId(TENANT_ID);
+    }
+
+    @AfterEach
+    void clearTenant() {
+        TenantContextHolder.clear();
+    }
 
     private OrderItem confirmedItem(String id, String name, String participantName) {
         return OrderItem.builder()
@@ -46,12 +62,12 @@ class KitchenServiceTest {
 
     private KitchenItemsConfirmed sampleEvent() {
         return new KitchenItemsConfirmed(
-                "sess-1", 5, List.of(confirmedItem("order-item-1", "Tacos", "Alice")));
+                TENANT_ID, "sess-1", 5, List.of(confirmedItem("order-item-1", "Tacos", "Alice")));
     }
 
     @Test
     void handleOrderItemAdded_createsNewKitchenOrderWhenNoneExists() {
-        when(kitchenOrderRepository.findBySessionId("sess-1")).thenReturn(Optional.empty());
+        when(kitchenOrderRepository.findByTenantIdAndSessionId(TENANT_ID, "sess-1")).thenReturn(Optional.empty());
         when(kitchenOrderRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         kitchenService.handleOrderItemAdded(sampleEvent());
@@ -68,6 +84,25 @@ class KitchenServiceTest {
         assertThat(item.getParticipantName()).isEqualTo("Alice");
         assertThat(item.getStatus()).isEqualTo(OrderItemStatus.PENDING);
         assertThat(item.getUpdatedAt()).isNotNull();
+        assertThat(saved.getTenantId()).isEqualTo(TENANT_ID);
+    }
+
+    @Test
+    void updateItemStatus_throwsWhenOrderBelongsToAnotherTenant() {
+        // the order exists, but under another tenant, so the scoped lookup returns nothing
+        when(kitchenOrderRepository.findByIdAndTenantId("ko-1", TENANT_ID)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> kitchenService.updateItemStatus("ko-1", "order-item-1", OrderItemStatus.PREPARING))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void findBySessionId_scopesLookupToCurrentTenant() {
+        when(kitchenOrderRepository.findByTenantIdAndSessionId(TENANT_ID, "sess-1"))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> kitchenService.findBySessionId("sess-1"))
+                .isInstanceOf(ResourceNotFoundException.class);
     }
 
     @Test
@@ -75,7 +110,7 @@ class KitchenServiceTest {
         KitchenOrder existing = KitchenOrder.builder()
                 .id("ko-1").sessionId("sess-1").tableNumber(5)
                 .items(new ArrayList<>()).build();
-        when(kitchenOrderRepository.findBySessionId("sess-1")).thenReturn(Optional.of(existing));
+        when(kitchenOrderRepository.findByTenantIdAndSessionId(TENANT_ID, "sess-1")).thenReturn(Optional.of(existing));
         when(kitchenOrderRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         kitchenService.handleOrderItemAdded(sampleEvent());
@@ -89,8 +124,9 @@ class KitchenServiceTest {
     @Test
     void handleOrderItemAdded_copiesTableNumberAndParticipantNameFromEvent() {
         KitchenItemsConfirmed event = new KitchenItemsConfirmed(
-                "sess-2", 12, List.of(confirmedItem("order-item-5", "Burger", "Bob")));
-        when(kitchenOrderRepository.findBySessionId("sess-2")).thenReturn(Optional.empty());
+                TENANT_ID, "sess-2", 12, List.of(confirmedItem("order-item-5", "Burger", "Bob")));
+        when(kitchenOrderRepository.findByTenantIdAndSessionId(TENANT_ID, "sess-2"))
+                .thenReturn(Optional.empty());
         when(kitchenOrderRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         kitchenService.handleOrderItemAdded(event);
@@ -108,13 +144,13 @@ class KitchenServiceTest {
                 .itemId("order-item-1").name("Tacos").participantName("Alice")
                 .status(status).updatedAt(LocalDateTime.now()).build();
         return KitchenOrder.builder()
-                .id("ko-1").sessionId("sess-1").tableNumber(5)
+                .id("ko-1").tenantId(TENANT_ID).sessionId("sess-1").tableNumber(5)
                 .items(new ArrayList<>(List.of(item))).build();
     }
 
     @Test
     void updateItemStatus_persistsNewStatusAndUpdatedAt() {
-        when(kitchenOrderRepository.findById("ko-1")).thenReturn(Optional.of(orderWithItem(OrderItemStatus.PENDING)));
+        when(kitchenOrderRepository.findByIdAndTenantId("ko-1", TENANT_ID)).thenReturn(Optional.of(orderWithItem(OrderItemStatus.PENDING)));
         when(kitchenOrderRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         KitchenOrder result = kitchenService.updateItemStatus("ko-1", "order-item-1", OrderItemStatus.PREPARING);
@@ -125,7 +161,7 @@ class KitchenServiceTest {
 
     @Test
     void updateItemStatus_throwsOnInvalidTransition() {
-        when(kitchenOrderRepository.findById("ko-1")).thenReturn(Optional.of(orderWithItem(OrderItemStatus.DELIVERED)));
+        when(kitchenOrderRepository.findByIdAndTenantId("ko-1", TENANT_ID)).thenReturn(Optional.of(orderWithItem(OrderItemStatus.DELIVERED)));
 
         assertThatThrownBy(() -> kitchenService.updateItemStatus("ko-1", "order-item-1", OrderItemStatus.PENDING))
                 .isInstanceOf(IllegalStateException.class)
@@ -134,7 +170,7 @@ class KitchenServiceTest {
 
     @Test
     void updateItemStatus_throwsWhenItemNotFound() {
-        when(kitchenOrderRepository.findById("ko-1")).thenReturn(Optional.of(orderWithItem(OrderItemStatus.PENDING)));
+        when(kitchenOrderRepository.findByIdAndTenantId("ko-1", TENANT_ID)).thenReturn(Optional.of(orderWithItem(OrderItemStatus.PENDING)));
 
         assertThatThrownBy(() -> kitchenService.updateItemStatus("ko-1", "nonexistent-item", OrderItemStatus.PREPARING))
                 .isInstanceOf(ResourceNotFoundException.class);
@@ -142,7 +178,7 @@ class KitchenServiceTest {
 
     @Test
     void updateItemStatus_throwsWhenOrderNotFound() {
-        when(kitchenOrderRepository.findById("ko-999")).thenReturn(Optional.empty());
+        when(kitchenOrderRepository.findByIdAndTenantId("ko-999", TENANT_ID)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> kitchenService.updateItemStatus("ko-999", "order-item-1", OrderItemStatus.PREPARING))
                 .isInstanceOf(ResourceNotFoundException.class);
@@ -150,7 +186,7 @@ class KitchenServiceTest {
 
     @Test
     void updateItemStatus_publishesKitchenItemUpdatedEvent() {
-        when(kitchenOrderRepository.findById("ko-1")).thenReturn(Optional.of(orderWithItem(OrderItemStatus.PENDING)));
+        when(kitchenOrderRepository.findByIdAndTenantId("ko-1", TENANT_ID)).thenReturn(Optional.of(orderWithItem(OrderItemStatus.PENDING)));
         when(kitchenOrderRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         kitchenService.updateItemStatus("ko-1", "order-item-1", OrderItemStatus.PREPARING);
@@ -176,7 +212,7 @@ class KitchenServiceTest {
         KitchenOrder orderTable3b = KitchenOrder.builder()
                 .id("ko-3").sessionId("sess-3").tableNumber(3)
                 .createdAt(now.minusMinutes(2)).items(new ArrayList<>()).build();
-        when(kitchenOrderRepository.findAll()).thenReturn(List.of(orderTable3a, orderTable1, orderTable3b));
+        when(kitchenOrderRepository.findByTenantId(TENANT_ID)).thenReturn(List.of(orderTable3a, orderTable1, orderTable3b));
 
         List<KitchenDisplayEntry> display = kitchenService.findDisplay();
 
@@ -196,7 +232,7 @@ class KitchenServiceTest {
         KitchenOrder newer = KitchenOrder.builder()
                 .id("ko-3").sessionId("sess-3").tableNumber(3)
                 .createdAt(now.minusMinutes(2)).items(new ArrayList<>()).build();
-        when(kitchenOrderRepository.findAll()).thenReturn(List.of(newer, older));
+        when(kitchenOrderRepository.findByTenantId(TENANT_ID)).thenReturn(List.of(newer, older));
 
         List<KitchenDisplayEntry> display = kitchenService.findDisplay();
 
@@ -214,7 +250,7 @@ class KitchenServiceTest {
         KitchenOrder table2 = KitchenOrder.builder()
                 .id("ko-2").sessionId("sess-2").tableNumber(2)
                 .createdAt(now).items(new ArrayList<>()).build();
-        when(kitchenOrderRepository.findAll()).thenReturn(List.of(table5, table2));
+        when(kitchenOrderRepository.findByTenantId(TENANT_ID)).thenReturn(List.of(table5, table2));
 
         List<KitchenDisplayEntry> display = kitchenService.findDisplay();
 

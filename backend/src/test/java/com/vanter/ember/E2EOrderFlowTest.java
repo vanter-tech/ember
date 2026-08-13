@@ -70,6 +70,7 @@ class E2EOrderFlowTest {
     private String customerToken;
     private String kitchenToken;
     private String customerId;
+    private UUID restaurantId;
     private UUID tableId;
     private Long menuItemId;
 
@@ -89,6 +90,7 @@ class E2EOrderFlowTest {
         Restaurant restaurant = restaurantRepository.save(Restaurant.builder()
                 .name("E2E Restaurant").slug("e2e-restaurant-" + UUID.randomUUID())
                 .build());
+        restaurantId = restaurant.getId();
 
         // Seeding below writes @TenantId entities directly through repositories/services, which
         // Hibernate stamps from the resolved tenant — without this the rows would land on the
@@ -195,7 +197,9 @@ class E2EOrderFlowTest {
                 .andExpect(status().isOk());
 
         // 5 — Kitchen finds the order and drives item to DELIVERED
-        KitchenOrder kitchenOrder = kitchenOrderRepository.findBySessionId(sessionId).orElseThrow();
+        KitchenOrder kitchenOrder = kitchenOrderRepository
+                .findByTenantIdAndSessionId(restaurantId, sessionId)
+                .orElseThrow();
         String kitchenOrderId = kitchenOrder.getId();
 
         mockMvc.perform(patch("/kitchen/orders/" + kitchenOrderId + "/items/" + orderItemId + "/status")

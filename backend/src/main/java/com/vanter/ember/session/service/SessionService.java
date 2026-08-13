@@ -49,8 +49,12 @@ public class SessionService {
     private final UserRepository userRepository;
     private final MenuItemRepository menuItemRepository;
 
+    /**
+     * Loads a session scoped to the tenant bound to the current request: a session owned by another
+     * restaurant is indistinguishable from a nonexistent one.
+     */
     public Session findById(String sessionId) {
-        return sessionRepository.findById(sessionId)
+        return sessionRepository.findByIdAndTenantId(sessionId, TenantContextHolder.requireTenantId())
                 .orElseThrow(() -> new ResourceNotFoundException("Session not found: " + sessionId));
     }
 
@@ -94,10 +98,13 @@ public class SessionService {
     }
 
     public Session createSession(UUID tableId, String waiterId, int maxParticipants) {
+        UUID tenantId = TenantContextHolder.requireTenantId();
+
         var table = diningTableRepository.findById(tableId)
                 .orElseThrow(() -> new ResourceNotFoundException("Session not found: " + tableId));
 
-        var OpenSession = sessionRepository.findByTableIdAndStatus(tableId, SessionStatus.OPEN);
+        var OpenSession = sessionRepository.findByTenantIdAndTableIdAndStatus(
+                tenantId, tableId, SessionStatus.OPEN);
 
         if (!OpenSession.isEmpty()) {
             throw new IllegalStateException(
@@ -105,6 +112,7 @@ public class SessionService {
         }
 
         Session session = sessionRepository.save(Session.builder()
+                .tenantId(tenantId)
                 .tableId(tableId)
                 .waiterId(waiterId)
                 .status(SessionStatus.OPEN)
@@ -125,10 +133,7 @@ public class SessionService {
         var user = userRepository.findByEmail(requesterEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found: " + requesterEmail));
 
-        Session session = sessionRepository.findById(sessionId)
-                .orElseThrow(() -> new ResourceNotFoundException("Session not found: " + sessionId));
-
-        assertSessionBelongsToCurrentTenant(session);
+        Session session = findById(sessionId);
 
         int maxParticipants = session.getMaxParticipants();
         if (session.getParticipants().size() >= maxParticipants) {
@@ -156,7 +161,8 @@ public class SessionService {
                 .orElseThrow(() -> new ResourceNotFoundException("User not found: " + userId));
 
         Session session = sessionRepository
-                .findByJoinCodeAndStatusAndTableIdIn(joinCode, SessionStatus.OPEN, currentTenantTableIds())
+                .findByTenantIdAndJoinCodeAndStatus(
+                        TenantContextHolder.requireTenantId(), joinCode, SessionStatus.OPEN)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,  "Code not found" + joinCode));
 
 
@@ -169,28 +175,6 @@ public class SessionService {
         Session saved = sessionRepository.save(session);
         eventPublisher.publishEvent(new ParticipantJoined(saved.getId(), user.getId(), user.getName()));
         return saved;
-    }
-
-    /**
-     * `Session` carries no tenant field yet (task-2.17), so tenant ownership is resolved through the
-     * session's dining table, which is tenant-owned.
-     */
-    private void assertSessionBelongsToCurrentTenant(Session session) {
-        UUID tenantId = TenantContextHolder.requireTenantId();
-        DiningTables table = diningTableRepository.findById(session.getTableId())
-                .orElseThrow(() -> new ResourceNotFoundException("Table not found: " + session.getTableId()));
-
-        if (!tenantId.equals(table.getRestaurantId())) {
-            throw new ResourceNotFoundException("Session not found: " + session.getId());
-        }
-    }
-
-    private List<UUID> currentTenantTableIds() {
-        return diningTableRepository
-                .findByRestaurantIdAndIsActiveTrueOrderByTableNumberAsc(TenantContextHolder.requireTenantId())
-                .stream()
-                .map(DiningTables::getId)
-                .toList();
     }
 
     private String generateJoinCode(){
@@ -207,8 +191,7 @@ public class SessionService {
     }
 
     public Session expandCapacity(String sessionId, String requestingWaiter, int additional) {
-        Session session = sessionRepository.findById(sessionId)
-                .orElseThrow(() -> new ResourceNotFoundException("Session not found: " + sessionId));
+        Session session = findById(sessionId);
 
         if (!session.getWaiterId().equals(requestingWaiter)) {
             throw new IllegalStateException(
@@ -293,8 +276,7 @@ public class SessionService {
     }
 
     public void closeSession(String sessionId) {
-        Session session = sessionRepository.findById(sessionId)
-                .orElseThrow(() -> new ResourceNotFoundException("Session not found: " + sessionId));
+        Session session = findById(sessionId);
         session.setStatus(SessionStatus.CLOSED);
         sessionRepository.save(session);
 
@@ -304,8 +286,7 @@ public class SessionService {
     }
 
     public void closeEmptySession(String sessionId){
-        Session session = sessionRepository.findById(sessionId)
-                .orElseThrow(() -> new ResourceNotFoundException("Session not found: " + sessionId));
+        Session session = findById(sessionId);
 
 
         boolean orderConfirmed = session.getItems().stream().anyMatch((item) -> item.getStatus() != OrderItemStatus.DRAFT);
@@ -354,8 +335,7 @@ public class SessionService {
     }
 
     public void confirmDraftsForUser(String sessionId, String userId, String requesterEmail) {
-        Session session = sessionRepository.findById(sessionId)
-                .orElseThrow(() -> new ResourceNotFoundException("Session not found: " + sessionId));
+        Session session = findById(sessionId);
 
         User requester = userRepository.findByEmail(requesterEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found: " + requesterEmail));
@@ -387,6 +367,7 @@ public class SessionService {
             eventPublisher.publishEvent(new ItemSent(savedSession));
 
             eventPublisher.publishEvent(new KitchenItemsConfirmed(
+                    savedSession.getTenantId(),
                     savedSession.getId(),
                     table.getTableNumber(),
                     drafts
@@ -396,9 +377,7 @@ public class SessionService {
 
     public SessionStatus getSessionStatus(String id) {
 
-        Session session = sessionRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Session not found: " + id));
-        return session.getStatus();
+        return findById(id).getStatus();
 
     }
 }

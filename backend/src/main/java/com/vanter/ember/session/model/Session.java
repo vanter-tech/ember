@@ -26,6 +26,8 @@ public class Session {
     @Version
     private Long version;
 
+    private UUID tenantId;
+
     private UUID tableId;
     private String waiterId;
 

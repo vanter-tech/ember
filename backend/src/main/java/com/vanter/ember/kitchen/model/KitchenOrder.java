@@ -3,6 +3,7 @@ package com.vanter.ember.kitchen.model;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -19,6 +20,8 @@ public class KitchenOrder {
 
     @Id
     private String id;
+
+    private UUID tenantId;
 
     private String sessionId;
     private int tableNumber;
