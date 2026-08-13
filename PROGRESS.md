@@ -3,7 +3,7 @@
 ## Current Execution State
 - **Last Completed Task:** ad-hoc fix — backend boot restored: `.env` host fix + `V3__restaurant_columns_backfill.sql` (predecessor task-5.2) — report 41
 - **Current Active Task:** none — task-5.3 next in the frontend/backend gap-analysis backlog (task-5.3–5.21 remain; EMB-PC-01–14 Platform/Super-Admin Console also queued), awaiting task selection/approval
-- **System Health:** Frontend `pnpm run build` PASSING (0 TS errors). Backend now boots and serves (`/actuator/health` DB+Mongo UP, verified live) — `./mvnw test` not yet rerun against the fixed schema, do that before trusting the 423/423 figure from task-4.4 still holds.
+- **System Health:** Frontend `pnpm run build` PASSING (0 TS errors). Backend boots and serves (`/actuator/health` DB+Mongo UP); `./mvnw test` reconfirmed 423/423 passing (tests use H2 `create-drop`, unaffected by the Postgres-only V3 fix, but reran anyway — clean).
 
 ## Active Context & Recent Decisions
 - Monolith root at `ember/`; Java 17 + Spring Boot 3.5.14 / React 19 + TS + pnpm. Product: multi-tenant restaurant platform (collaborative cart, KDS, floor/waiter management, admin analytics). task-3.2 deleted `spring-kafka` — Spring `ApplicationEventPublisher` is the only event bus, do not reintroduce a broker.
