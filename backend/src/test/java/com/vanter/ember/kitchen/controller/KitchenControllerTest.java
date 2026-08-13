@@ -9,6 +9,7 @@ import com.vanter.ember.kitchen.dto.UpdateItemStatusRequest;
 import com.vanter.ember.kitchen.model.KitchenItem;
 import com.vanter.ember.kitchen.model.KitchenOrder;
 import com.vanter.ember.kitchen.service.KitchenService;
+import com.vanter.ember.restaurant.repository.RestaurantRepository;
 import com.vanter.ember.session.model.OrderItemStatus;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,6 +42,7 @@ class KitchenControllerTest {
     @MockBean KitchenService kitchenService;
     @MockBean JwtService jwtService;
     @MockBean UserDetailsService userDetailsService;
+    @MockBean RestaurantRepository restaurantRepository;
 
     private KitchenOrder sampleOrder() {
         KitchenItem item = KitchenItem.builder()

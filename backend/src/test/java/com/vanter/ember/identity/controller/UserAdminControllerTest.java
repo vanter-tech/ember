@@ -8,6 +8,7 @@ import com.vanter.ember.identity.model.Role;
 import com.vanter.ember.identity.model.User;
 import com.vanter.ember.identity.service.JwtService;
 import com.vanter.ember.identity.service.UserAdminService;
+import com.vanter.ember.restaurant.repository.RestaurantRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -34,6 +35,7 @@ class UserAdminControllerTest {
     @MockBean UserAdminService userAdminService;
     @MockBean JwtService jwtService;
     @MockBean UserDetailsService userDetailsService;
+    @MockBean RestaurantRepository restaurantRepository;
 
     private User waiterUser() {
         return User.builder()

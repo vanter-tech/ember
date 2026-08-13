@@ -12,6 +12,7 @@ import com.vanter.ember.session.dto.ExpandCapacityRequest;
 import com.vanter.ember.session.dto.JoinSessionRequest;
 import com.vanter.ember.session.dto.ParticipantDto;
 import com.vanter.ember.session.dto.SessionDetailResponseDto;
+import com.vanter.ember.restaurant.repository.RestaurantRepository;
 import com.vanter.ember.session.exception.TooManyParticipantsException;
 import com.vanter.ember.session.model.Participant;
 import com.vanter.ember.session.model.Session;
@@ -55,6 +56,7 @@ class SessionControllerTest {
     @MockBean JwtService jwtService;
     @MockBean UserDetailsService userDetailsService;
     @MockBean UserRepository userRepository;
+    @MockBean RestaurantRepository restaurantRepository;
 
     private static final UUID TABLE_ID = UUID.randomUUID();
 

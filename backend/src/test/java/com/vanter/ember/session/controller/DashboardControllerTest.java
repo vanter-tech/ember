@@ -5,6 +5,7 @@ import com.vanter.ember.config.SecurityConfig;
 import com.vanter.ember.config.TenantContextHolder;
 import com.vanter.ember.identity.repository.UserRepository;
 import com.vanter.ember.identity.service.JwtService;
+import com.vanter.ember.restaurant.repository.RestaurantRepository;
 import com.vanter.ember.session.dto.TableStatusResponse;
 import com.vanter.ember.session.service.DashboardService;
 import org.junit.jupiter.api.AfterEach;
@@ -36,6 +37,7 @@ class DashboardControllerTest {
     @MockBean JwtService jwtService;
     @MockBean UserDetailsService userDetailsService;
     @MockBean UserRepository userRepository;
+    @MockBean RestaurantRepository restaurantRepository;
 
     private static final UUID TENANT_ID = UUID.randomUUID();
     private static final UUID OTHER_TENANT_ID = UUID.randomUUID();
