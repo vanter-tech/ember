@@ -1,10 +1,10 @@
 # PROGRESS.md — Active Execution State
 
 ## Current Execution State
-- **Last Completed Task:** task-3.8 (SettingsPayload: PaymentGatewaySettings/BusinessHoursSettings/TaxRules) — report 34
-- **Current Active Task:** none — next up task-4.1
-- **Predecessor Task:** task-3.7
-- **System Health:** Frontend `pnpm run build` PASSING (0 TS errors, but see below — `/kitchen/orders` & `/catalog/items` now return `Page<T>`, frontend not yet updated); `pnpm run lint` runs with 19 pre-existing errors/6 warnings (tracked in later tasks); Backend `./mvnw test` 431/431 passing.
+- **Last Completed Task:** task-4.1 (Vitest + React Testing Library setup) — report 35
+- **Current Active Task:** none — next up task-4.2
+- **Predecessor Task:** task-3.8
+- **System Health:** Frontend `pnpm run build` PASSING (0 TS errors, but see below — `/kitchen/orders` & `/catalog/items` now return `Page<T>`, frontend not yet updated); `pnpm run test:run` (Vitest) PASSING (1/1); `pnpm run lint` runs with 19 pre-existing errors/6 warnings (tracked in later tasks); Backend `./mvnw test` 431/431 passing.
 
 ## Active Context & Recent Decisions
 - Monolith root at `ember/`; Java 17 + Spring Boot 3.5.14 / React 19 + TS + pnpm. Product: multi-tenant restaurant platform (collaborative cart, KDS, floor/waiter management, admin analytics). task-3.2 deleted `spring-kafka` — Spring `ApplicationEventPublisher` is the only event bus, do not reintroduce a broker.
@@ -16,6 +16,7 @@
 - task-3.1: `application.yml`/`application-dev.properties` hold NO credentials — they read `${VAR}` from the gitignored root `.env` (`spring.config.import`, `optional:`, `.env.local` wins last). Core secrets have NO fallback (fail-fast boot); add any new secret to `.env.example` too. Old secrets remain in git history — rotation still pending.
 - task-3.6: `GET /kitchen/orders` and `GET /catalog/items` are paginated and now return `Page<T>`, NOT a bare array — **BREAKING for frontend `api.ts`**, deferred to task-4.2 by explicit user decision. `GET /kitchen/display` and single-entity GETs are unchanged.
 - task-3.7 added password length/complexity validation on `RegisterRequest` (DTO-only, via existing `@Valid`). task-3.8 extended `SettingsPayload` (JSON column, so the DTO is the schema) with `paymentGateway` (secret-reference only — no field shaped to hold a raw secret), `businessHours`, and `billing.taxRules`, all additive so `BrandingSettings.tsx`/`billing.taxRate` are untouched.
+- task-4.1: Vitest configured inside `vite.config.ts`'s `test` block (reuses existing plugins/`@` alias, no separate `vitest.config.ts`); jsdom env, `src/test/setup.ts` loads `@testing-library/jest-dom`. Run via `pnpm run test`/`test:run`. Future component tests go in `src/test/` or colocated `*.test.tsx`.
 
 ## Task Queue Status
 - [x] **task-1.1:** Fix `tsc -b` compilation errors (`TS6133`/`TS6192`) in frontend (`pages/kitchen/`, `ComandaView.tsx`, `Menu.tsx`, `ItemsFloatingIsland.tsx`, `Tables.tsx`).
@@ -52,7 +53,7 @@
 - [x] **task-3.6:** Implement pagination for `KitchenController` and `MenuItemController` endpoints, tenant-scoped (sequence after task-2.14/2.17 land tenant filtering).
 - [x] **task-3.7:** Add minimum length and complexity rules to user registration password validation.
 - [x] **task-3.8:** Extend `SettingsPayload` with `PaymentGatewaySettings` (secret-reference pattern, never raw secrets), structured `BusinessHoursSettings`, and list-based `TaxRules`.
-- [ ] **task-4.1:** Setup Vitest and React Testing Library for frontend unit tests.
+- [x] **task-4.1:** Setup Vitest and React Testing Library for frontend unit tests.
 - [ ] **task-4.2:** Audit frontend `api.ts` for client-supplied tenant-id usage (ensure `restaurantId` only from session state) AND update `kitchenService.getAllOrders`/`menuItemService.getAll` to consume the `Page<T>` envelope task-3.6 introduced.
 - [ ] **task-4.3:** Build tenant onboarding UX (subdomain/slug-based routing for the pre-login branding/landing page) — depends on task-3.4's dynamic origin config.
 - [ ] **task-4.4:** Wire `Restaurant.plan`/`status` to a subscription-billing integration (billing the tenant, distinct from the existing diner-facing `billing` module).
