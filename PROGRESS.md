@@ -1,10 +1,10 @@
 # PROGRESS.md — Active Execution State
 
 ## Current Execution State
-- **Last Completed Task:** task-3.6 (tenant-scoped pagination: Kitchen/MenuItem) — report 32
-- **Current Active Task:** none — next up task-3.7
-- **Predecessor Task:** task-3.5
-- **System Health:** Frontend `pnpm run build` PASSING (0 TS errors, but see below — `/kitchen/orders` & `/catalog/items` now return `Page<T>`, frontend not yet updated); `pnpm run lint` runs with 19 pre-existing errors/6 warnings (tracked in later tasks); Backend `./mvnw test` 404/404 passing.
+- **Last Completed Task:** task-3.7 (registration password length/complexity validation) — report 33
+- **Current Active Task:** none — next up task-3.8
+- **Predecessor Task:** task-3.6
+- **System Health:** Frontend `pnpm run build` PASSING (0 TS errors, but see below — `/kitchen/orders` & `/catalog/items` now return `Page<T>`, frontend not yet updated); `pnpm run lint` runs with 19 pre-existing errors/6 warnings (tracked in later tasks); Backend `./mvnw test` 405/405 passing.
 
 ## Active Context & Recent Decisions
 - Monolith root at `ember/`; Java 17 + Spring Boot 3.5.14 / React 19 + TS + pnpm. Product: multi-tenant restaurant platform (collaborative cart, KDS, floor/waiter management, admin analytics). task-3.2 deleted `spring-kafka` — Spring `ApplicationEventPublisher` is the only event bus, do not reintroduce a broker.
@@ -17,6 +17,7 @@
 - task-3.1: `application.yml` + `application-dev.properties` hold NO credentials — they read `${VAR}` from the gitignored root `.env`, imported via `spring.config.import` (`./` and `../` variants, all `optional:`; `.env.local` imported last wins, for host-vs-docker hostname overrides). `SPRING_DATASOURCE_PASSWORD`/`SPRING_DATA_MONGODB_URI`/`JWT_SECRET`/`MINIO_ACCESS_KEY`/`MINIO_SECRET_KEY` have NO fallback (fail-fast boot); add any new secret to `.env.example` too. The old secrets remain in git history — rotation is still pending.
 - task-3.5: `AuthRateLimiterFilter` + `RateLimitProperties` (`ember.ratelimit.*`). It had never fired in prod — it compared `getRequestURI()` (which includes `server.servlet.context-path: /v1/`) to `/auth/login`; match on the context-stripped path (`pathWithinApplication`) for any new filter. Buckets are `(tenant, clientIp)` where tenant = host's leading label under `tenant-host-suffixes`; because `Host` is client-controlled, a second per-IP counter (`ip-max-requests`) caps all tenants for one IP. `X-Forwarded-For`/`-Host` are read ONLY when the peer matches `trusted-proxies` (empty default) — set `EMBER_RATELIMIT_TRUSTED_PROXIES` when deploying behind a LB or every client keys to the LB. Eviction = CAS-guarded sweep once per window; all bucket mutation goes through `ConcurrentHashMap.compute`, never a bare `remove`.
 - task-3.6: `GET /kitchen/orders` and `GET /catalog/items` are paginated (`Pageable` query params, `spring.data.web.pageable.max-page-size: 100` cap in `application.yml`); both now return `Page<T>` (`{content, totalElements, ...}`), NOT a bare array — **BREAKING for frontend `api.ts`**, deferred to task-4.2 by explicit user decision. `GET /kitchen/display` is unchanged (still an array — it groups by table in-memory, not a pagination target) and neither are single-entity GETs. `KitchenService` keeps both `findAll()` (unpaged, used by `findDisplay()`) and `findAll(Pageable)` (new, controller-only).
+- task-3.7: `RegisterRequest.password` now requires `@Size(min=8, max=128)` + a `@Pattern` (lowercase+uppercase+digit+special char), enforced via the existing `@Valid` on `AuthController.register` → task-3.3's `GlobalExceptionHandler` (400 `ProblemDetail`). DTO-only change; `AuthServiceTest` (Mockito, bypasses bean validation) and `LoginRequest` flows are unaffected — only `AuthControllerTest`'s MockMvc-based registration tests needed compliant passwords.
 - task-2.11 added `config/TenantContextHolder` (ThreadLocal `UUID`) fed by `JwtService.extractTenantId` (`rid` claim, null for QR tokens). Bound + cleared in `jwtAuthFilter` (`finally`) and `JwtChannelInterceptor` (CONNECT stores tenant in STOMP session attrs; other frames rehydrate; `afterSendCompletion` clears). All downstream tenant work (2.14/2.17) must read from this holder, never from client input — task-2.12 did so, dropping `/dashboard/status`'s `restaurantId` param (frontend `api.ts` still sends it, inert; removal is task-4.2's scope).
 
 ## Task Queue Status
@@ -52,7 +53,7 @@
 - [x] **task-3.4:** Rewrite CORS and WebSocket origin config to be dynamic, supporting tenant-specific subdomains/headers (replacing the hardcoded `localhost:5173` origin in `WebSocketConfig`).
 - [x] **task-3.5:** Fix the login rate limiter's memory leak and proxy IP resolution, and rescope its buckets to `(tenantId + IP)` instead of IP alone, so one tenant's traffic can't throttle another's.
 - [x] **task-3.6:** Implement pagination for `KitchenController` and `MenuItemController` endpoints, tenant-scoped (sequence after task-2.14/2.17 land tenant filtering).
-- [ ] **task-3.7:** Add minimum length and complexity rules to user registration password validation.
+- [x] **task-3.7:** Add minimum length and complexity rules to user registration password validation.
 - [ ] **task-3.8:** Extend `SettingsPayload` with `PaymentGatewaySettings` (secret-reference pattern, never raw secrets), structured `BusinessHoursSettings`, and list-based `TaxRules`.
 - [ ] **task-4.1:** Setup Vitest and React Testing Library for frontend unit tests.
 - [ ] **task-4.2:** Audit frontend `api.ts` for client-supplied tenant-id usage (ensure `restaurantId` only from session state) AND update `kitchenService.getAllOrders`/`menuItemService.getAll` to consume the `Page<T>` envelope task-3.6 introduced.
