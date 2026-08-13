@@ -1,6 +1,7 @@
 import type { components } from '@/lib/backend-types'
 import axios from 'axios'
 import { useAuthStore } from '@/store/authStore'
+import { useUIStore } from '@/store/uiStore'
 export type LoginRequest = components['schemas']['LoginRequest']
 export type LoginResponse = components['schemas']['AuthResponse']
 export type CategoryResponse = components['schemas']['CategoryResponse']
@@ -70,6 +71,13 @@ api.interceptors.request.use(
   }
 )
 
+// Matches the exact ProblemDetail.detail strings written by SecurityConfig.jwtAuthFilter's
+// writeSuspendedTenantResponse (backend). @PreAuthorize role denials also return a 403, but with
+// detail "Access denied" (GlobalExceptionHandler.handleAccessDenied) — that path is left alone.
+const isTenantSuspendedDetail = (detail: unknown): detail is string =>
+  typeof detail === 'string' &&
+  (detail.startsWith('This tenant account is') || detail === 'Tenant account not found.')
+
 api.interceptors.response.use(
   (response) => {
     return response
@@ -77,6 +85,12 @@ api.interceptors.response.use(
   (error) => {
     if (error.response && error.response.status === 401) {
       useAuthStore.getState().logout()
+    }
+    if (error.response && error.response.status === 403) {
+      const detail = error.response.data?.detail
+      if (isTenantSuspendedDetail(detail)) {
+        useUIStore.getState().openModal('TENANT_SUSPENDED', { detail })
+      }
     }
     return Promise.reject(error)
   }
