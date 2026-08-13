@@ -366,6 +366,23 @@ export interface paths {
         patch: operations["updateRole"];
         trace?: never;
     };
+    "/admin/restaurant/plan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Change the current tenant's subscription plan (ADMIN) */
+        patch: operations["updatePlan"];
+        trace?: never;
+    };
     "/sessions/{id}": {
         parameters: {
             query?: never;
@@ -409,6 +426,23 @@ export interface paths {
         };
         /** Generate QR token for a session (WAITER) */
         get: operations["getQrToken"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/public/restaurants/{slug}/branding": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Pre-login branding for a tenant landing page, by slug */
+        get: operations["getBranding"];
         put?: never;
         post?: never;
         delete?: never;
@@ -491,8 +525,25 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get live status of all tables */
+        /** Get live status of all tables for the authenticated tenant */
         get: operations["getLiveTableStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/restaurant": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get the current tenant's subscription plan and account status (ADMIN) */
+        get: operations["get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -544,30 +595,8 @@ export interface components {
             /** Format: double */
             taxRate?: number;
             suggestedTipPercentage?: number[];
-            taxIncludeInMenuPrice?: boolean;
             taxRules?: components["schemas"]["TaxRule"][];
-        };
-        TaxRule: {
-            name?: string;
-            /** Format: double */
-            rate?: number;
-            includedInPrice?: boolean;
-        };
-        PaymentGatewaySettings: {
-            enabled?: boolean;
-            provider?: string;
-            publicKey?: string;
-            secretRef?: string;
-        };
-        BusinessHoursSettings: {
-            schedule?: components["schemas"]["DaySchedule"][];
-        };
-        DaySchedule: {
-            /** @enum {string} */
-            day?: "MONDAY" | "TUESDAY" | "WEDNESDAY" | "THURSDAY" | "FRIDAY" | "SATURDAY" | "SUNDAY";
-            closed?: boolean;
-            openTime?: string;
-            closeTime?: string;
+            taxIncludeInMenuPrice?: boolean;
         };
         BrandingSettings: {
             businessName?: string;
@@ -580,6 +609,16 @@ export interface components {
             wifiName?: string;
             primaryThemeColor?: string;
         };
+        BusinessHoursSettings: {
+            schedule?: components["schemas"]["DaySchedule"][];
+        };
+        DaySchedule: {
+            /** @enum {string} */
+            day?: "MONDAY" | "TUESDAY" | "WEDNESDAY" | "THURSDAY" | "FRIDAY" | "SATURDAY" | "SUNDAY";
+            closed?: boolean;
+            openTime?: string;
+            closeTime?: string;
+        };
         HardwareSettings: {
             autoPrintTickets?: boolean;
             printCustomerReceipt?: boolean;
@@ -587,6 +626,12 @@ export interface components {
         MenuSettings: {
             showOutOfStockItems?: boolean;
             enableItemSearch?: boolean;
+        };
+        PaymentGatewaySettings: {
+            enabled?: boolean;
+            provider?: string;
+            publicKey?: string;
+            secretRef?: string;
         };
         SettingsPayload: {
             branding?: components["schemas"]["BrandingSettings"];
@@ -600,6 +645,12 @@ export interface components {
         SpaceSettings: {
             /** Format: int32 */
             totalTables?: number;
+        };
+        TaxRule: {
+            name?: string;
+            /** Format: double */
+            rate?: number;
+            includedInPrice?: boolean;
         };
         MenuItemRequest: {
             name: string;
@@ -669,6 +720,10 @@ export interface components {
         };
         Session: {
             id?: string;
+            /** Format: int64 */
+            version?: number;
+            /** Format: uuid */
+            tenantId?: string;
             /** Format: uuid */
             tableId?: string;
             waiterId?: string;
@@ -696,6 +751,8 @@ export interface components {
         Bill: {
             /** Format: int64 */
             id?: number;
+            /** Format: uuid */
+            tenantId?: string;
             sessionId?: string;
             total?: number;
             /** @enum {string} */
@@ -708,6 +765,8 @@ export interface components {
         Payment: {
             /** Format: int64 */
             id?: number;
+            /** Format: uuid */
+            tenantId?: string;
             bill?: components["schemas"]["Bill"];
             amount?: number;
             /** @enum {string} */
@@ -740,6 +799,8 @@ export interface components {
         BillSplit: {
             /** Format: int64 */
             id?: number;
+            /** Format: uuid */
+            tenantId?: string;
             bill?: components["schemas"]["Bill"];
             participantName?: string;
             amount?: number;
@@ -749,6 +810,8 @@ export interface components {
             name: string;
             email: string;
             password: string;
+            restaurantName?: string;
+            restaurantSlug?: string;
         };
         AuthResponse: {
             token?: string;
@@ -781,6 +844,8 @@ export interface components {
         };
         KitchenOrder: {
             id?: string;
+            /** Format: uuid */
+            tenantId?: string;
             sessionId?: string;
             /** Format: int32 */
             tableNumber?: number;
@@ -806,17 +871,6 @@ export interface components {
             /** Format: date-time */
             createdAt?: string;
         };
-        UpdateRestaurantPlanRequest: {
-            /** @enum {string} */
-            plan: "FREE" | "STARTER" | "PRO" | "ENTERPRISE";
-        };
-        PublicBrandingResponse: {
-            slug?: string;
-            businessName?: string;
-            primaryThemeColor?: string;
-            openingTime?: string;
-            closingTime?: string;
-        };
         User: {
             id?: string;
             restaurantId?: components["schemas"]["Restaurant"];
@@ -826,6 +880,10 @@ export interface components {
             role?: "CUSTOMER" | "WAITER" | "KITCHEN" | "ADMIN";
             /** Format: date-time */
             createdAt?: string;
+        };
+        UpdateRestaurantPlanRequest: {
+            /** @enum {string} */
+            plan: "FREE" | "STARTER" | "PRO" | "ENTERPRISE";
         };
         OrderItemDto: {
             id?: string;
@@ -863,6 +921,13 @@ export interface components {
             /** @enum {string} */
             status?: "OPEN" | "BILLING" | "CLOSED";
         };
+        PublicBrandingResponse: {
+            slug?: string;
+            businessName?: string;
+            primaryThemeColor?: string;
+            openingTime?: string;
+            closingTime?: string;
+        };
         MenuDTO: {
             /** Format: int64 */
             id?: number;
@@ -870,6 +935,47 @@ export interface components {
             description?: string;
             imgUrl?: string;
             items?: components["schemas"]["MenuItemResponse"][];
+        };
+        Pageable: {
+            /** Format: int32 */
+            page?: number;
+            /** Format: int32 */
+            size?: number;
+            sort?: string[];
+        };
+        PageKitchenOrder: {
+            /** Format: int64 */
+            totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
+            first?: boolean;
+            last?: boolean;
+            /** Format: int32 */
+            size?: number;
+            content?: components["schemas"]["KitchenOrder"][];
+            /** Format: int32 */
+            number?: number;
+            sort?: components["schemas"]["SortObject"];
+            /** Format: int32 */
+            numberOfElements?: number;
+            pageable?: components["schemas"]["PageableObject"];
+            empty?: boolean;
+        };
+        PageableObject: {
+            /** Format: int64 */
+            offset?: number;
+            sort?: components["schemas"]["SortObject"];
+            /** Format: int32 */
+            pageNumber?: number;
+            paged?: boolean;
+            /** Format: int32 */
+            pageSize?: number;
+            unpaged?: boolean;
+        };
+        SortObject: {
+            empty?: boolean;
+            sorted?: boolean;
+            unsorted?: boolean;
         };
         KitchenDisplayEntry: {
             /** Format: int32 */
@@ -891,6 +997,24 @@ export interface components {
             tableNumber?: number;
             isOccupied?: boolean;
             currentSession?: components["schemas"]["ActiveSessionSummary"];
+        };
+        PageMenuItemResponse: {
+            /** Format: int64 */
+            totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
+            first?: boolean;
+            last?: boolean;
+            /** Format: int32 */
+            size?: number;
+            content?: components["schemas"]["MenuItemResponse"][];
+            /** Format: int32 */
+            number?: number;
+            sort?: components["schemas"]["SortObject"];
+            /** Format: int32 */
+            numberOfElements?: number;
+            pageable?: components["schemas"]["PageableObject"];
+            empty?: boolean;
         };
     };
     responses: never;
@@ -1204,8 +1328,9 @@ export interface operations {
     };
     getAll: {
         parameters: {
-            query?: {
+            query: {
                 id?: number;
+                pageable: components["schemas"]["Pageable"];
             };
             header?: never;
             path?: never;
@@ -1219,7 +1344,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["MenuItemResponse"][];
+                    "*/*": components["schemas"]["PageMenuItemResponse"];
                 };
             };
         };
@@ -1567,6 +1692,30 @@ export interface operations {
             };
         };
     };
+    updatePlan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateRestaurantPlanRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["Restaurant"];
+                };
+            };
+        };
+    };
     getSession: {
         parameters: {
             query?: never;
@@ -1635,6 +1784,28 @@ export interface operations {
             };
         };
     };
+    getBranding: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PublicBrandingResponse"];
+                };
+            };
+        };
+    };
     getMenus: {
         parameters: {
             query?: never;
@@ -1657,7 +1828,9 @@ export interface operations {
     };
     getAllOrders: {
         parameters: {
-            query?: never;
+            query: {
+                pageable: components["schemas"]["Pageable"];
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -1670,7 +1843,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["KitchenOrder"][];
+                    "*/*": components["schemas"]["PageKitchenOrder"];
                 };
             };
         };
@@ -1719,9 +1892,7 @@ export interface operations {
     };
     getLiveTableStatus: {
         parameters: {
-            query: {
-                restaurantId: string;
-            };
+            query?: never;
             header?: never;
             path?: never;
             cookie?: never;
@@ -1735,6 +1906,26 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["TableStatusResponse"][];
+                };
+            };
+        };
+    };
+    get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["Restaurant"];
                 };
             };
         };

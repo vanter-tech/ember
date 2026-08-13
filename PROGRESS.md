@@ -1,7 +1,7 @@
 # PROGRESS.md — Active Execution State
 
 ## Current Execution State
-- **Last Completed Task:** ad-hoc fix — backend boot restored: `.env` host fix + `V3__restaurant_columns_backfill.sql` (predecessor task-5.2) — report 41
+- **Last Completed Task:** ad-hoc — `backend-types.ts` live-regenerated via `pnpm run openapi` now that the backend boots, replacing task-5.2's hand-extension (predecessor: backend boot fix, report 41) — report 42
 - **Current Active Task:** none — task-5.3 next in the frontend/backend gap-analysis backlog (task-5.3–5.21 remain; EMB-PC-01–14 Platform/Super-Admin Console also queued), awaiting task selection/approval
 - **System Health:** Frontend `pnpm run build` PASSING (0 TS errors). Backend boots and serves (`/actuator/health` DB+Mongo UP); `./mvnw test` reconfirmed 423/423 passing (tests use H2 `create-drop`, unaffected by the Postgres-only V3 fix, but reran anyway — clean).
 
