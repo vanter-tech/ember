@@ -25,6 +25,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -43,7 +44,7 @@ class BillingServiceTest {
 
     private Session sessionWithMixedItems() {
         return Session.builder()
-                .id("sess-1").tableId(1L).status(SessionStatus.OPEN)
+                .id("sess-1").tableId(UUID.randomUUID()).status(SessionStatus.OPEN)
                 .items(new ArrayList<>(List.of(
                         OrderItem.builder().id("i-1").name("Tacos")
                                 .price(new BigDecimal("12.50")).participantName("Alice")
@@ -70,7 +71,7 @@ class BillingServiceTest {
 
     @Test
     void calculateBill_excludesPendingAndPreparingItems() {
-        Session session = Session.builder().id("sess-1").tableId(1L).status(SessionStatus.OPEN)
+        Session session = Session.builder().id("sess-1").tableId(UUID.randomUUID()).status(SessionStatus.OPEN)
                 .items(new ArrayList<>(List.of(
                         OrderItem.builder().id("i-1").price(new BigDecimal("20.00"))
                                 .status(OrderItemStatus.DELIVERED).build(),
@@ -90,7 +91,7 @@ class BillingServiceTest {
 
     @Test
     void calculateBill_throwsWhenSessionHasNoBillableItems() {
-        Session session = Session.builder().id("sess-1").tableId(1L).status(SessionStatus.OPEN)
+        Session session = Session.builder().id("sess-1").tableId(UUID.randomUUID()).status(SessionStatus.OPEN)
                 .items(new ArrayList<>(List.of(
                         OrderItem.builder().id("i-1").price(new BigDecimal("8.00"))
                                 .status(OrderItemStatus.PENDING).build()
@@ -105,7 +106,7 @@ class BillingServiceTest {
 
     @Test
     void calculateBill_throwsWhenSessionNotOpen() {
-        Session closed = Session.builder().id("sess-1").tableId(1L).status(SessionStatus.CLOSED)
+        Session closed = Session.builder().id("sess-1").tableId(UUID.randomUUID()).status(SessionStatus.CLOSED)
                 .items(new ArrayList<>()).build();
         when(sessionService.findById("sess-1")).thenReturn(closed);
         when(billRepository.findBySessionId("sess-1")).thenReturn(Optional.empty());
@@ -117,7 +118,7 @@ class BillingServiceTest {
 
     @Test
     void calculateBill_throwsWhenEmptyItemsList() {
-        Session session = Session.builder().id("sess-1").tableId(1L).status(SessionStatus.OPEN)
+        Session session = Session.builder().id("sess-1").tableId(UUID.randomUUID()).status(SessionStatus.OPEN)
                 .items(new ArrayList<>()).build();
         when(sessionService.findById("sess-1")).thenReturn(session);
         when(billRepository.findBySessionId("sess-1")).thenReturn(Optional.empty());
@@ -236,7 +237,7 @@ class BillingServiceTest {
 
     private Session sessionWithThreeParticipants() {
         return Session.builder()
-                .id("sess-1").tableId(1L)
+                .id("sess-1").tableId(UUID.randomUUID())
                 .participants(new ArrayList<>(List.of(
                         Participant.builder().userId("u-1").name("Alice").build(),
                         Participant.builder().userId("u-2").name("Bob").build(),

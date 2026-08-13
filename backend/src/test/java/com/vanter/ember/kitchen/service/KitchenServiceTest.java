@@ -6,7 +6,8 @@ import com.vanter.ember.kitchen.event.KitchenItemUpdated;
 import com.vanter.ember.kitchen.model.KitchenItem;
 import com.vanter.ember.kitchen.model.KitchenOrder;
 import com.vanter.ember.kitchen.repository.KitchenOrderRepository;
-import com.vanter.ember.session.event.OrderItemAdded;
+import com.vanter.ember.session.event.KitchenItemsConfirmed;
+import com.vanter.ember.session.model.OrderItem;
 import com.vanter.ember.session.model.OrderItemStatus;
 import org.springframework.context.ApplicationEventPublisher;
 import org.junit.jupiter.api.Test;
@@ -35,10 +36,17 @@ class KitchenServiceTest {
     @Mock ApplicationEventPublisher eventPublisher;
     @InjectMocks KitchenService kitchenService;
 
-    private OrderItemAdded sampleEvent() {
-        return new OrderItemAdded(
-                "sess-1", "order-item-1", 5, 10L,
-                "Tacos", new BigDecimal("12.50"), "Alice");
+    private OrderItem confirmedItem(String id, String name, String participantName) {
+        return OrderItem.builder()
+                .id(id).itemId(1L).name(name).price(new BigDecimal("12.50"))
+                .participantId("p-1").participantName(participantName)
+                .status(OrderItemStatus.PENDING).addedAt(LocalDateTime.now())
+                .build();
+    }
+
+    private KitchenItemsConfirmed sampleEvent() {
+        return new KitchenItemsConfirmed(
+                "sess-1", 5, List.of(confirmedItem("order-item-1", "Tacos", "Alice")));
     }
 
     @Test
@@ -80,9 +88,8 @@ class KitchenServiceTest {
 
     @Test
     void handleOrderItemAdded_copiesTableNumberAndParticipantNameFromEvent() {
-        OrderItemAdded event = new OrderItemAdded(
-                "sess-2", "order-item-5", 12, 20L,
-                "Burger", new BigDecimal("9.00"), "Bob");
+        KitchenItemsConfirmed event = new KitchenItemsConfirmed(
+                "sess-2", 12, List.of(confirmedItem("order-item-5", "Burger", "Bob")));
         when(kitchenOrderRepository.findBySessionId("sess-2")).thenReturn(Optional.empty());
         when(kitchenOrderRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 

@@ -27,6 +27,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -49,9 +50,11 @@ class SessionControllerTest {
     @MockBean JwtService jwtService;
     @MockBean UserDetailsService userDetailsService;
 
+    private static final UUID TABLE_ID = UUID.randomUUID();
+
     private Session sampleSession() {
         return Session.builder()
-                .id("sess-1").tableId(1L).waiterId("waiter@test.com")
+                .id("sess-1").tableId(TABLE_ID).waiterId("waiter@test.com")
                 .status(SessionStatus.OPEN).maxParticipants(4)
                 .participants(new ArrayList<>())
                 .createdAt(LocalDateTime.now())
@@ -63,12 +66,12 @@ class SessionControllerTest {
     @Test
     @WithMockUser(username = "waiter@test.com", roles = "WAITER")
     void createSession_returnsCreatedSession() throws Exception {
-        when(sessionService.createSession(1L, "waiter@test.com", 4))
+        when(sessionService.createSession(TABLE_ID, "waiter@test.com", 4))
                 .thenReturn(sampleSession());
 
         mockMvc.perform(post("/sessions")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new CreateSessionRequest(1L, 4))))
+                        .content(objectMapper.writeValueAsString(new CreateSessionRequest(TABLE_ID, 4))))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value("sess-1"))
                 .andExpect(jsonPath("$.status").value("OPEN"));
@@ -79,7 +82,7 @@ class SessionControllerTest {
     void createSession_forbiddenForCustomer() throws Exception {
         mockMvc.perform(post("/sessions")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new CreateSessionRequest(1L, 4))))
+                        .content(objectMapper.writeValueAsString(new CreateSessionRequest(TABLE_ID, 4))))
                 .andExpect(status().isForbidden());
     }
 
@@ -87,7 +90,7 @@ class SessionControllerTest {
     void createSession_unauthenticatedReturns401() throws Exception {
         mockMvc.perform(post("/sessions")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new CreateSessionRequest(1L, 4))))
+                        .content(objectMapper.writeValueAsString(new CreateSessionRequest(TABLE_ID, 4))))
                 .andExpect(status().isUnauthorized());
     }
 

@@ -12,9 +12,8 @@ import com.vanter.ember.catalog.model.dto.MenuItemRequest;
 import com.vanter.ember.catalog.repository.CategoryRepository;
 import com.vanter.ember.catalog.repository.MenuItemRepository;
 import com.vanter.ember.catalog.service.MenuItemService;
-import com.vanter.ember.catalog.service.RestaurantTableService;
-import com.vanter.ember.catalog.model.dto.RestaurantTableRequest;
-import com.vanter.ember.catalog.model.TableStatus;
+import com.vanter.ember.settings.model.DiningTables;
+import com.vanter.ember.settings.repository.DiningTableRepository;
 import com.vanter.ember.identity.model.Role;
 import com.vanter.ember.identity.model.User;
 import com.vanter.ember.identity.model.dto.LoginRequest;
@@ -28,6 +27,7 @@ import com.vanter.ember.session.model.OrderItemStatus;
 import com.vanter.ember.session.model.SessionStatus;
 import com.vanter.ember.session.repository.SessionRepository;
 import java.math.BigDecimal;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,7 +55,7 @@ class E2EOrderFlowTest {
     @Autowired CategoryRepository categoryRepository;
     @Autowired MenuItemService menuItemService;
     @Autowired MenuItemRepository menuItemRepository;
-    @Autowired RestaurantTableService tableService;
+    @Autowired DiningTableRepository diningTableRepository;
     @Autowired SessionRepository sessionRepository;
     @Autowired KitchenOrderRepository kitchenOrderRepository;
     @Autowired BillRepository billRepository;
@@ -64,7 +64,7 @@ class E2EOrderFlowTest {
     private String waiterToken;
     private String customerToken;
     private String kitchenToken;
-    private Long tableId;
+    private UUID tableId;
     private Long menuItemId;
 
     @BeforeEach
@@ -93,10 +93,12 @@ class E2EOrderFlowTest {
         customerToken = login("customer@e2e.com", password);
         kitchenToken = login("kitchen@e2e.com", password);
 
-        RestaurantTableRequest tableReq = new RestaurantTableRequest();
-        tableReq.setNumber(7);
-        tableReq.setCapacity(4);
-        tableId = tableService.create(tableReq).getId();
+        DiningTables table = diningTableRepository.save(DiningTables.builder()
+                .restaurantId(UUID.randomUUID())
+                .tableNumber(7)
+                .isActive(true)
+                .build());
+        tableId = table.getId();
 
         Category category = categoryRepository.save(
                 Category.builder().name("E2E-Food").build());
@@ -218,11 +220,9 @@ class E2EOrderFlowTest {
                         .content(objectMapper.writeValueAsString(payReq)))
                 .andExpect(status().isCreated());
 
-        // 9 — Verify session is CLOSED and table is AVAILABLE
+        // 9 — Verify session is CLOSED
         assertThat(sessionRepository.findById(sessionId))
                 .isPresent()
                 .hasValueSatisfying(s -> assertThat(s.getStatus()).isEqualTo(SessionStatus.CLOSED));
-
-        assertThat(tableService.findById(tableId).getStatus()).isEqualTo(TableStatus.AVAILABLE);
     }
 }

@@ -27,6 +27,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -45,6 +46,8 @@ class PaymentServiceTest {
     @Mock ApplicationEventPublisher eventPublisher;
     @InjectMocks PaymentService paymentService;
 
+    private static final UUID TABLE_ID = UUID.randomUUID();
+
     private Bill sampleBill() {
         return Bill.builder()
                 .id(1L).sessionId("sess-1").total(new BigDecimal("22.50"))
@@ -59,7 +62,7 @@ class PaymentServiceTest {
     }
 
     private Session sampleSession() {
-        return Session.builder().id("sess-1").tableId(5L).build();
+        return Session.builder().id("sess-1").tableId(TABLE_ID).build();
     }
 
     @Test
@@ -119,7 +122,7 @@ class PaymentServiceTest {
         ArgumentCaptor<PaymentCompleted> captor = ArgumentCaptor.forClass(PaymentCompleted.class);
         verify(eventPublisher).publishEvent(captor.capture());
         assertThat(captor.getValue().sessionId()).isEqualTo("sess-1");
-        assertThat(captor.getValue().tableId()).isEqualTo(5L);
+        assertThat(captor.getValue().tableId()).isEqualTo(TABLE_ID);
         assertThat(captor.getValue().billId()).isEqualTo(1L);
     }
 

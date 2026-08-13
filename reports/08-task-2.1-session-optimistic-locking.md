@@ -9,6 +9,8 @@ Add `@Version` optimistic locking to the MongoDB `Session` model to prevent lost
 ## Modified Files
 - `backend/src/main/java/com/vanter/ember/session/model/Session.java`
 
+**Note:** this commit also carried 3 file deletions belonging to task-2.1a (`RestaurantTableControllerTest.java`, `RestaurantTableRepositoryTest.java`, `RestaurantTableServiceTest.java`) — they were staged via `git rm` during task-2.1a's investigation before this commit was cut and got swept in unintentionally. They are unrelated to task-2.1 itself; see report 09 for their rationale.
+
 ## What Changed?
 Added a `private Long version;` field annotated with `@Version` (`org.springframework.data.annotation.Version`) to `Session`.
 
