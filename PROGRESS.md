@@ -1,13 +1,13 @@
 # PROGRESS.md — Active Execution State
 
 ## Current Execution State
-- **Last Completed Task:** task-2.4 (Fix ImageUploadServiceTest fixture + message drift) — report 12
-- **Current Active Task:** none — next up task-2.5
-- **Predecessor Task:** task-2.3
+- **Last Completed Task:** task-2.5 (Align SessionWebSocketListenerTest topic naming) — report 13
+- **Current Active Task:** none — next up task-2.6
+- **Predecessor Task:** task-2.4
 - **System Health:**
     - Frontend (`pnpm run build`): PASSING (0 TS errors)
     - Frontend (`pnpm run lint`): RUNS (19 pre-existing errors/6 warnings unrelated to config, tracked in later tasks)
-    - Backend (`./mvnw test`): test-compile CLEAN; 281/284 tests passing (2 failures/1 error — pre-existing, see task-2.5, task-2.10)
+    - Backend (`./mvnw test`): test-compile CLEAN; 283/284 tests passing (1 error — pre-existing `E2EOrderFlowTest` restaurant_id NULL constraint, see task-2.10)
 
 ## Active Context & Recent Decisions
 - Monolith root confirmed at `ember/`.
@@ -30,7 +30,7 @@
 - [x] **task-2.2:** Fix `SessionController.getSession` response drift (missing `$.id`, NPE on participants) vs. `SessionControllerTest`.
 - [x] **task-2.3:** Update `OrderItemTest` enum coverage to include `DRAFT` status.
 - [x] **task-2.4:** Fix `ImageUploadServiceTest` image fixture (`No suitable ImageReader found`).
-- [ ] **task-2.5:** Align WebSocket topic naming: code sends `/topic/session/{id}`, tests expect `/topic/sessions/{id}`.
+- [x] **task-2.5:** Align WebSocket topic naming: code sends `/topic/session/{id}`, tests expect `/topic/sessions/{id}`.
 - [ ] **task-2.6:** Add `@Transactional` boundaries to multi-write operations in `BillingService` and `PaymentService`.
 - [ ] **task-2.7:** Ensure atomic execution of `allPaid == true` check in `PaymentService` to reliably trigger `PaymentCompleted`.
 - [ ] **task-2.8:** Ensure transactional safety in `confirmDraftsForUser` to prevent orphan items when table lookup fails.
