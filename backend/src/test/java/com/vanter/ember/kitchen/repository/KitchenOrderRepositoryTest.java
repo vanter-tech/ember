@@ -78,19 +78,4 @@ class KitchenOrderRepositoryTest {
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getSessionId()).isEqualTo("sess-1");
     }
-
-    @Test
-    void tenantScopedQueries_doNotResolveAnotherTenantsOrders() {
-        KitchenOrder saved = kitchenOrderRepository.save(KitchenOrder.builder()
-                .tenantId(TENANT_ID).sessionId("sess-1").tableNumber(5)
-                .items(new ArrayList<>()).build());
-        UUID otherTenant = UUID.randomUUID();
-
-        assertThat(kitchenOrderRepository.findByTenantId(otherTenant)).isEmpty();
-        assertThat(kitchenOrderRepository.findByIdAndTenantId(saved.getId(), otherTenant)).isEmpty();
-        assertThat(kitchenOrderRepository.findByTenantIdAndSessionId(otherTenant, "sess-1")).isEmpty();
-
-        assertThat(kitchenOrderRepository.findByTenantId(TENANT_ID)).hasSize(1);
-        assertThat(kitchenOrderRepository.findByIdAndTenantId(saved.getId(), TENANT_ID)).isPresent();
-    }
 }

@@ -82,28 +82,4 @@ class SessionRepositoryTest {
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getParticipants().get(0).getUserId()).isEqualTo("user-1");
     }
-
-    @Test
-    void findByIdAndTenantId_doesNotResolveAnotherTenantsSession() {
-        Session saved = sessionRepository.save(Session.builder()
-                .tenantId(TENANT_ID).tableId(TABLE_1_ID).waiterId("waiter@test.com")
-                .status(SessionStatus.OPEN).maxParticipants(4)
-                .createdAt(LocalDateTime.now()).build());
-
-        assertThat(sessionRepository.findByIdAndTenantId(saved.getId(), UUID.randomUUID())).isEmpty();
-        assertThat(sessionRepository.findByIdAndTenantId(saved.getId(), TENANT_ID)).isPresent();
-    }
-
-    @Test
-    void findByTenantIdAndJoinCodeAndStatus_doesNotResolveAnotherTenantsJoinCode() {
-        sessionRepository.save(Session.builder()
-                .tenantId(TENANT_ID).tableId(TABLE_1_ID).waiterId("waiter@test.com")
-                .status(SessionStatus.OPEN).maxParticipants(4).joinCode("AB3CD")
-                .createdAt(LocalDateTime.now()).build());
-
-        assertThat(sessionRepository.findByTenantIdAndJoinCodeAndStatus(
-                UUID.randomUUID(), "AB3CD", SessionStatus.OPEN)).isEmpty();
-        assertThat(sessionRepository.findByTenantIdAndJoinCodeAndStatus(
-                TENANT_ID, "AB3CD", SessionStatus.OPEN)).isPresent();
-    }
 }
