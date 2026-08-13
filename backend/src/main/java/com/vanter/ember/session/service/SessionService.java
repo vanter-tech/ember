@@ -5,8 +5,10 @@ import com.vanter.ember.catalog.model.dto.MenuItemResponse;
 import com.vanter.ember.catalog.repository.MenuItemRepository;
 import com.vanter.ember.catalog.service.MenuItemService;
 import com.vanter.ember.config.ResourceNotFoundException;
+import com.vanter.ember.identity.model.User;
 import com.vanter.ember.identity.repository.UserRepository;
 import com.vanter.ember.kitchen.event.KitchenItemUpdated;
+import com.vanter.ember.restaurant.model.Restaurant;
 import com.vanter.ember.session.dto.OrderItemDto;
 import com.vanter.ember.session.dto.ParticipantDto;
 import com.vanter.ember.session.dto.SessionDetailResponseDto;
@@ -24,11 +26,13 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
+import com.vanter.ember.settings.model.DiningTables;
 import com.vanter.ember.settings.repository.DiningTableRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.event.EventListener;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -320,9 +324,24 @@ public class SessionService {
 
     }
 
-    public void confirmDraftsForUser(String sessionId, String userId) {
+    public void confirmDraftsForUser(String sessionId, String userId, String requesterEmail) {
         Session session = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new ResourceNotFoundException("Session not found: " + sessionId));
+
+        User requester = userRepository.findByEmail(requesterEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + requesterEmail));
+
+        if (!requester.getId().equals(userId)) {
+            throw new AccessDeniedException("Not authorized to confirm this user's order");
+        }
+
+        DiningTables table = diningTableRepository.findById(session.getTableId())
+                .orElseThrow(() -> new ResourceNotFoundException("Table not found"));
+
+        Restaurant requesterRestaurant = requester.getRestaurantId();
+        if (requesterRestaurant == null || !requesterRestaurant.getId().equals(table.getRestaurantId())) {
+            throw new AccessDeniedException("Not authorized to confirm orders for this restaurant");
+        }
 
         List<OrderItem> drafts = session.getItems().stream()
                 .filter(item  -> item.getParticipantId().equals(userId))
@@ -330,10 +349,6 @@ public class SessionService {
                 .toList();
 
         if(!drafts.isEmpty()){
-            int tableNumber = diningTableRepository.findById(session.getTableId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Table not found"))
-                    .getTableNumber();
-
             drafts.forEach(item -> {
                 item.setStatus(OrderItemStatus.PENDING);
                 item.setAddedAt(LocalDateTime.now());
@@ -344,7 +359,7 @@ public class SessionService {
 
             eventPublisher.publishEvent(new KitchenItemsConfirmed(
                     savedSession.getId(),
-                    tableNumber,
+                    table.getTableNumber(),
                     drafts
             ));
         }

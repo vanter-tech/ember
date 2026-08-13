@@ -6,8 +6,10 @@ import com.vanter.ember.config.ResourceNotFoundException;
 import com.vanter.ember.identity.model.User;
 import com.vanter.ember.identity.repository.UserRepository;
 import com.vanter.ember.kitchen.event.KitchenItemUpdated;
+import com.vanter.ember.restaurant.model.Restaurant;
 import com.vanter.ember.session.event.ItemAdded;
 import com.vanter.ember.session.event.ItemStatusUpdated;
+import com.vanter.ember.session.event.KitchenItemsConfirmed;
 import com.vanter.ember.session.event.ParticipantJoined;
 import com.vanter.ember.session.event.SessionOpened;
 import com.vanter.ember.session.exception.TooManyParticipantsException;
@@ -27,6 +29,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.security.access.AccessDeniedException;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -487,5 +490,83 @@ class SessionServiceTest {
 
         assertThatThrownBy(() -> sessionService.closeSession("sess-999"))
                 .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    // --- confirmDraftsForUser tests ---
+
+    private static final UUID RESTAURANT_ID = UUID.randomUUID();
+
+    private User userWithRestaurant(String id, UUID restaurantId) {
+        Restaurant restaurant = restaurantId == null ? null : Restaurant.builder().id(restaurantId).build();
+        return User.builder().id(id).email(id + "@test.com").name("Alice")
+                .restaurantId(restaurant).build();
+    }
+
+    private DiningTables diningTableForRestaurant(UUID restaurantId) {
+        return DiningTables.builder().id(TABLE_ID).tableNumber(5).isActive(true)
+                .restaurantId(restaurantId).build();
+    }
+
+    @Test
+    void confirmDraftsForUser_throwsWhenPathUserIdDoesNotMatchRequester() {
+        Session session = openSessionWithParticipant("user-1");
+        when(sessionRepository.findById("sess-1")).thenReturn(Optional.of(session));
+        when(userRepository.findByEmail("user-2@test.com"))
+                .thenReturn(Optional.of(userWithRestaurant("user-2", RESTAURANT_ID)));
+
+        assertThatThrownBy(() -> sessionService.confirmDraftsForUser("sess-1", "user-1", "user-2@test.com"))
+                .isInstanceOf(AccessDeniedException.class);
+    }
+
+    @Test
+    void confirmDraftsForUser_throwsWhenTenantMismatch() {
+        Session session = openSessionWithParticipant("user-1");
+        when(sessionRepository.findById("sess-1")).thenReturn(Optional.of(session));
+        when(userRepository.findByEmail("user-1@test.com"))
+                .thenReturn(Optional.of(userWithRestaurant("user-1", UUID.randomUUID())));
+        when(diningTableRepository.findById(TABLE_ID))
+                .thenReturn(Optional.of(diningTableForRestaurant(RESTAURANT_ID)));
+
+        assertThatThrownBy(() -> sessionService.confirmDraftsForUser("sess-1", "user-1", "user-1@test.com"))
+                .isInstanceOf(AccessDeniedException.class);
+    }
+
+    @Test
+    void confirmDraftsForUser_throwsWhenRequesterHasNoRestaurant() {
+        Session session = openSessionWithParticipant("user-1");
+        when(sessionRepository.findById("sess-1")).thenReturn(Optional.of(session));
+        when(userRepository.findByEmail("user-1@test.com"))
+                .thenReturn(Optional.of(userWithRestaurant("user-1", null)));
+        when(diningTableRepository.findById(TABLE_ID))
+                .thenReturn(Optional.of(diningTableForRestaurant(RESTAURANT_ID)));
+
+        assertThatThrownBy(() -> sessionService.confirmDraftsForUser("sess-1", "user-1", "user-1@test.com"))
+                .isInstanceOf(AccessDeniedException.class);
+    }
+
+    @Test
+    void confirmDraftsForUser_confirmsDraftsWhenUserIdAndTenantMatch() {
+        Session session = openSessionWithParticipant("user-1");
+        session.getItems().add(OrderItem.builder()
+                .id("item-1").itemId(10L).name("Tacos").price(new java.math.BigDecimal("12.50"))
+                .participantId("user-1").participantName("Alice")
+                .status(OrderItemStatus.DRAFT).addedAt(LocalDateTime.now())
+                .build());
+        when(sessionRepository.findById("sess-1")).thenReturn(Optional.of(session));
+        when(userRepository.findByEmail("user-1@test.com"))
+                .thenReturn(Optional.of(userWithRestaurant("user-1", RESTAURANT_ID)));
+        when(diningTableRepository.findById(TABLE_ID))
+                .thenReturn(Optional.of(diningTableForRestaurant(RESTAURANT_ID)));
+        when(sessionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        sessionService.confirmDraftsForUser("sess-1", "user-1", "user-1@test.com");
+
+        assertThat(session.getItems().get(0).getStatus()).isEqualTo(OrderItemStatus.PENDING);
+        ArgumentCaptor<Object> captor = ArgumentCaptor.forClass(Object.class);
+        verify(eventPublisher, org.mockito.Mockito.times(2)).publishEvent(captor.capture());
+        assertThat(captor.getAllValues())
+                .filteredOn(KitchenItemsConfirmed.class::isInstance)
+                .extracting(e -> ((KitchenItemsConfirmed) e).tableNumber())
+                .containsExactly(5);
     }
 }

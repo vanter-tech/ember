@@ -1,13 +1,13 @@
 # PROGRESS.md — Active Execution State
 
 ## Current Execution State
-- **Last Completed Task:** task-2.8 (Reorder table lookup before mutation/save in `confirmDraftsForUser` to prevent orphan items) — report 16
-- **Current Active Task:** none — next up task-2.9
-- **Predecessor Task:** task-2.7
+- **Last Completed Task:** task-2.9 (Rewrite `confirmMyOrder`/`confirmDraftsForUser` to assert path `userId` and resolved tenant against the authenticated JWT context, fail-closed) — report 17
+- **Current Active Task:** none — next up task-2.10
+- **Predecessor Task:** task-2.8
 - **System Health:**
     - Frontend (`pnpm run build`): PASSING (0 TS errors)
     - Frontend (`pnpm run lint`): RUNS (19 pre-existing errors/6 warnings unrelated to config, tracked in later tasks)
-    - Backend (`./mvnw test`): test-compile CLEAN; 283/284 tests passing (1 error — pre-existing `E2EOrderFlowTest` restaurant_id NULL constraint, see task-2.10)
+    - Backend (`./mvnw test`): test-compile CLEAN; 287/288 tests passing (1 error — pre-existing `E2EOrderFlowTest` restaurant_id NULL constraint, see task-2.10)
 
 ## Active Context & Recent Decisions
 - Monolith root confirmed at `ember/`.
@@ -17,6 +17,7 @@
 - Backend test-compile was broken suite-wide (dead `RestaurantTable`/`OrderItemAdded` refs from historical refactors); repaired in task-2.1a — see report 09. Prior "39 tests passing" health claim was stale/inaccurate.
 - Pending backlog unified 2026-08-12: former `EMB-MT-*` multi-tenancy tasks merged into the main `task-2.x`/`3.x`/`4.x` queue (prefix retired); task-2.9, 2.10, 2.13, 3.4, 3.5 rewritten to be tenant-aware from the start.
 - No Mongo replica set/`MongoTransactionManager` configured — `@Transactional` is not viable on `Session`/Mongo services; use fail-fast validation-before-mutation ordering instead (see task-2.8).
+- task-2.9 enforces `User.restaurantId == table.restaurantId` fail-closed in `confirmMyOrder`; since registration never sets `User.restaurantId` yet, this denies all customer confirms until task-2.10 wires tenant assignment at registration (accepted interim regression, user-approved).
 
 ## Task Queue Status
 - [x] **task-1.1:** Fix `tsc -b` compilation errors (`TS6133`/`TS6192`) in frontend (`pages/kitchen/`, `ComandaView.tsx`, `Menu.tsx`, `ItemsFloatingIsland.tsx`, `Tables.tsx`).
@@ -35,7 +36,7 @@
 - [x] **task-2.6:** Add `@Transactional` boundaries to multi-write operations in `BillingService` and `PaymentService`.
 - [x] **task-2.7:** Ensure atomic execution of `allPaid == true` check in `PaymentService` to reliably trigger `PaymentCompleted`.
 - [x] **task-2.8:** Ensure transactional safety in `confirmDraftsForUser` to prevent orphan items when table lookup fails.
-- [ ] **task-2.9:** Rewrite `confirmMyOrder` validation to assert the path `userId` AND the resolved tenant both match the authenticated JWT context (not a trusted path parameter alone).
+- [x] **task-2.9:** Rewrite `confirmMyOrder` validation to assert the path `userId` AND the resolved tenant both match the authenticated JWT context (not a trusted path parameter alone).
 - [ ] **task-2.10:** Flesh out `Restaurant` entity (name, slug, plan, status, timezone, currency) + `RestaurantRepository`/`RestaurantService`; update `RegisterRequest`/`AuthService` to create-or-join a `Restaurant` at registration and add its id as a `rid` JWT claim, binding every `User.restaurantId` explicitly (real fix — supersedes a narrow test-only patch).
 - [ ] **task-2.11:** Build `TenantContextHolder` (from the JWT `rid` claim) and wire into `jwtAuthFilter`/`JwtChannelInterceptor`; remove `SettingsController`'s ad hoc `getRestaurantIdFromAuth()`.
 - [ ] **task-2.12:** Fix `DashboardController`'s client-supplied `restaurantId` `@RequestParam` — derive tenant from `TenantContextHolder`, not client input (closes a live cross-tenant IDOR).

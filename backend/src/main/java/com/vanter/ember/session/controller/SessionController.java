@@ -119,8 +119,9 @@ public class SessionController {
     @Operation(summary = "Send item to KITCHEN")
     @PostMapping("/{sessionId}/participants/{userId}/confirm")
     @PreAuthorize("hasRole('CUSTOMER')")
-    public ResponseEntity<?> confirmMyOrder(@PathVariable String sessionId, @PathVariable String userId ){
-        sessionService.confirmDraftsForUser(sessionId,userId);
+    public ResponseEntity<?> confirmMyOrder(@PathVariable String sessionId, @PathVariable String userId,
+                                             Authentication authentication){
+        sessionService.confirmDraftsForUser(sessionId, userId, authentication.getName());
         return ResponseEntity.ok().build();
     }
 
