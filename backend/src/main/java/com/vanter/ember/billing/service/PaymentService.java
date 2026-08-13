@@ -32,7 +32,7 @@ public class PaymentService {
 
     @Transactional
     public Payment registerPhysicalPayment(Long billId, String participantName, BigDecimal amount) {
-        Bill bill = billRepository.findById(billId)
+        Bill bill = billRepository.findByIdForUpdate(billId)
                 .orElseThrow(() -> new ResourceNotFoundException("Bill not found: " + billId));
 
         BillSplit split = billSplitRepository.findByBillIdAndParticipantName(billId, participantName)
@@ -95,6 +95,9 @@ public class PaymentService {
     public Payment confirmDigitalPayment(Long paymentId) {
         Payment payment = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Payment not found: " + paymentId));
+
+        billRepository.findByIdForUpdate(payment.getBill().getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Bill not found: " + payment.getBill().getId()));
 
         BillSplit split = billSplitRepository
                 .findByBillIdAndParticipantName(payment.getBill().getId(), payment.getParticipantName())
