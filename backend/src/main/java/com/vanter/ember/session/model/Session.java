@@ -10,6 +10,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Version;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 @Document(collection = "sessions")
@@ -21,6 +22,9 @@ public class Session {
 
     @Id
     private String id;
+
+    @Version
+    private Long version;
 
     private UUID tableId;
     private String waiterId;
