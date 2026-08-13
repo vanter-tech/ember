@@ -3,6 +3,7 @@ package com.vanter.ember.settings.model;
 import jakarta.persistence.*;
 import lombok.Data;
 import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.annotations.TenantId;
 import org.hibernate.type.SqlTypes;
 import java.util.UUID;
 
@@ -16,7 +17,8 @@ public class RestaurantSettings {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(name = "restaurant_id", unique = true, nullable = false)
+    @TenantId
+    @Column(name = "restaurant_id", unique = true, nullable = false, updatable = false)
     private UUID restaurantId;
 
     @JdbcTypeCode(SqlTypes.JSON)

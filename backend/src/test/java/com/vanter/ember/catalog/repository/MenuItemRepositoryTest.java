@@ -5,7 +5,9 @@ import com.vanter.ember.catalog.model.MenuItem;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import com.vanter.ember.config.TenantIdentifierResolver;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.context.annotation.Import;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -13,6 +15,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
+@Import(TenantIdentifierResolver.class)
 class MenuItemRepositoryTest {
 
     @Autowired MenuItemRepository menuItemRepository;

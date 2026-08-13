@@ -3,7 +3,9 @@ package com.vanter.ember.catalog.repository;
 import com.vanter.ember.catalog.model.Category;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import com.vanter.ember.config.TenantIdentifierResolver;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.dao.DataIntegrityViolationException;
 
 import java.util.Optional;
@@ -12,6 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DataJpaTest
+@Import(TenantIdentifierResolver.class)
 class CategoryRepositoryTest {
 
     @Autowired CategoryRepository repository;

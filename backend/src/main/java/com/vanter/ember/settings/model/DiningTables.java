@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.TenantId;
 import java.util.UUID;
 
 @Data
@@ -18,7 +19,8 @@ public class DiningTables {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(name = "restaurant_id", nullable = false)
+    @TenantId
+    @Column(name = "restaurant_id", nullable = false, updatable = false)
     private UUID restaurantId;
 
     @Column(name = "table_number", nullable = false)

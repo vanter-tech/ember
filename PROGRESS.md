@@ -1,9 +1,9 @@
 # PROGRESS.md — Active Execution State
 
 ## Current Execution State
-- **Last Completed Task:** task-2.13 (live join capacity; QR token + join-code lookup scoped to the authenticated tenant) — report 21
-- **Current Active Task:** none — next up task-2.14
-- **Predecessor Task:** task-2.12
+- **Last Completed Task:** task-2.14 (Hibernate DISCRIMINATOR multi-tenancy; `@TenantId` on 7 JPA entities) — report 22
+- **Current Active Task:** none — next up task-2.15
+- **Predecessor Task:** task-2.13
 - **System Health:**
     - Frontend (`pnpm run build`): PASSING (0 TS errors)
     - Frontend (`pnpm run lint`): RUNS (19 pre-existing errors/6 warnings unrelated to config, tracked in later tasks)
@@ -17,6 +17,7 @@
 - Pending backlog unified 2026-08-12: former `EMB-MT-*` multi-tenancy tasks merged into the main `task-2.x`/`3.x`/`4.x` queue (prefix retired); task-2.9, 2.10, 2.13, 3.4, 3.5 rewritten to be tenant-aware from the start.
 - No Mongo replica set/`MongoTransactionManager` configured — `@Transactional` is not viable on `Session`/Mongo services; use fail-fast validation-before-mutation ordering instead (see task-2.8).
 - task-2.13: `Session` still has no tenant field, so tenant ownership is resolved via its `DiningTables` row (`restaurantId`); the join-code query is scoped by the tenant's **active** table ids. Task-2.17 should swap both for a real `Session.tenantId` without moving the enforcement points.
+- task-2.14 added `config/TenantIdentifierResolver` (`CurrentTenantIdentifierResolver<UUID>` + `HibernatePropertiesCustomizer`) reading `TenantContextHolder`; unbound contexts (login/register, repo bootstrap) resolve to a `NO_TENANT` zero-UUID sentinel because Hibernate rejects null. `@TenantId` is on `Category`/`MenuItem`/`Bill`/`BillSplit`/`Payment` (new `tenant_id`) and on the **existing** `restaurant_id` field of `DiningTables`/`RestaurantSettings`. `User` is deliberately excluded — it is looked up by email before any tenant is bound (login + `jwtAuthFilter`), so `@TenantId` there would 401 every request; see report 22. `@DataJpaTest` slices need `@Import(TenantIdentifierResolver.class)`.
 - task-2.11 added `config/TenantContextHolder` (ThreadLocal `UUID`) fed by `JwtService.extractTenantId` (`rid` claim, null for QR tokens). Bound + cleared in `jwtAuthFilter` (`finally`) and `JwtChannelInterceptor` (CONNECT stores tenant in STOMP session attrs; other frames rehydrate; `afterSendCompletion` clears). All downstream tenant work (2.14/2.17) must read from this holder, never from client input — task-2.12 did so, dropping `/dashboard/status`'s `restaurantId` param (frontend `api.ts` still sends it, inert; removal is task-4.2's scope).
 
 ## Task Queue Status
@@ -41,7 +42,7 @@
 - [x] **task-2.11:** Build `TenantContextHolder` (from the JWT `rid` claim) and wire into `jwtAuthFilter`/`JwtChannelInterceptor`; remove `SettingsController`'s ad hoc `getRestaurantIdFromAuth()`.
 - [x] **task-2.12:** Fix `DashboardController`'s client-supplied `restaurantId` `@RequestParam` — derive tenant from `TenantContextHolder`, not client input (closes a live cross-tenant IDOR).
 - [x] **task-2.13:** Fix `joinSession` capacity check to read live `session.getMaxParticipants()` instead of a stale QR-JWT claim, and scope `QrTokenService`/`SessionRepository.findByJoinCodeAndStatus` by tenant in the same pass.
-- [ ] **task-2.14:** Configure Hibernate `DISCRIMINATOR` multi-tenancy (`CurrentTenantIdentifierResolver`) and add `@TenantId` to `Category`, `MenuItem`, `Bill`, `BillSplit`, `Payment`, `RestaurantSettings`, `DiningTables`, `User`.
+- [x] **task-2.14:** Configure Hibernate `DISCRIMINATOR` multi-tenancy (`CurrentTenantIdentifierResolver`) and add `@TenantId` to `Category`, `MenuItem`, `Bill`, `BillSplit`, `Payment`, `RestaurantSettings`, `DiningTables` (`User` excluded — see report 22).
 - [ ] **task-2.15:** Migrate: backfill `tenant_id` on existing rows, add `unique(tenant_id, name)` on `Category` and `unique(tenant_id, sessionId)` on `Bill`, add tenant indexes.
 - [ ] **task-2.16:** Add cross-tenant isolation regression tests for every JPA repository.
 - [ ] **task-2.17:** Add `tenantId` to `Session`/`KitchenOrder`; scope `SessionRepository`/`KitchenOrderRepository` custom queries by tenant, including fixing `KitchenService.findDisplay()`'s untenanted `findAll()`.
@@ -57,5 +58,4 @@
 - [ ] **task-4.1:** Setup Vitest and React Testing Library for frontend unit tests.
 - [ ] **task-4.2:** Audit frontend `api.ts` for client-supplied tenant-id usage; ensure `restaurantId` is only ever read from authenticated session state.
 - [ ] **task-4.3:** Build tenant onboarding UX (subdomain/slug-based routing for the pre-login branding/landing page) — depends on task-3.4's dynamic origin config.
-- [ ] **task-4.4:** Wire `Restaur
-- ant.plan`/`status` to a subscription-billing integration (billing the tenant, distinct from the existing diner-facing `billing` module).
+- [ ] **task-4.4:** Wire `Restaurant.plan`/`status` to a subscription-billing integration (billing the tenant, distinct from the existing diner-facing `billing` module).

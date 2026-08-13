@@ -12,6 +12,7 @@ import com.vanter.ember.catalog.model.dto.MenuItemRequest;
 import com.vanter.ember.catalog.repository.CategoryRepository;
 import com.vanter.ember.catalog.repository.MenuItemRepository;
 import com.vanter.ember.catalog.service.MenuItemService;
+import com.vanter.ember.config.TenantContextHolder;
 import com.vanter.ember.settings.model.DiningTables;
 import com.vanter.ember.settings.repository.DiningTableRepository;
 import com.vanter.ember.identity.model.Role;
@@ -30,6 +31,7 @@ import com.vanter.ember.session.model.SessionStatus;
 import com.vanter.ember.session.repository.SessionRepository;
 import java.math.BigDecimal;
 import java.util.UUID;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -88,6 +90,11 @@ class E2EOrderFlowTest {
                 .name("E2E Restaurant").slug("e2e-restaurant-" + UUID.randomUUID())
                 .build());
 
+        // Seeding below writes @TenantId entities directly through repositories/services, which
+        // Hibernate stamps from the resolved tenant — without this the rows would land on the
+        // no-tenant sentinel and be invisible to the JWT-scoped requests under test.
+        TenantContextHolder.setTenantId(restaurant.getId());
+
         userRepository.save(User.builder()
                 .name("Waiter").email("waiter@e2e.com").restaurantId(restaurant)
                 .passwordHash(passwordEncoder.encode(password)).role(Role.WAITER).build());
@@ -118,6 +125,11 @@ class E2EOrderFlowTest {
         itemReq.setCategoryId(category.getId());
         itemReq.setAvailable(true);
         menuItemId = menuItemService.create(itemReq, null).getId();
+    }
+
+    @AfterEach
+    void tearDown() {
+        TenantContextHolder.clear();
     }
 
     private String login(String email, String password) throws Exception {
