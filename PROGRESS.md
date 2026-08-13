@@ -1,9 +1,9 @@
 # PROGRESS.md — Active Execution State
 
 ## Current Execution State
-- **Last Completed Task:** task-3.1 (externalize credentials from `application.yml` to `.env`) — report 27
-- **Current Active Task:** none — next up task-3.2
-- **Predecessor Task:** task-2.18
+- **Last Completed Task:** task-3.2 (remove unused `spring-kafka` dependency) — report 28
+- **Current Active Task:** none — next up task-3.3
+- **Predecessor Task:** task-3.1
 - **System Health:**
     - Frontend (`pnpm run build`): PASSING (0 TS errors)
     - Frontend (`pnpm run lint`): RUNS (19 pre-existing errors/6 warnings unrelated to config, tracked in later tasks)
@@ -11,7 +11,7 @@
 
 ## Active Context & Recent Decisions
 - Monolith root at `ember/`; Java 17 + Spring Boot 3.5.14 / React 19 + TS + pnpm. Product: multi-tenant restaurant platform (collaborative cart, KDS, floor/waiter management, admin analytics).
-- Kafka dependency in `pom.xml` ignored; Spring `ApplicationEventPublisher` used for internal synchronous events.
+- task-3.2 deleted `spring-kafka`/`spring-kafka-test` from `pom.xml` plus the test `spring.autoconfigure.exclude` (Boot throws when an excluded autoconfig class is off-classpath). Spring `ApplicationEventPublisher` is the only event bus — do not reintroduce a broker.
 - task-2.15 introduced **Flyway** (`baseline-on-migrate`, existing Hibernate-built schema = V1, migrations start at V2; disabled in tests, where H2 `create-drop` builds from entities). All future schema changes go in `backend/src/main/resources/db/migration/` AND in the entity mapping, so H2 tests and prod `ddl-auto=validate` agree. V2 backfills `tenant_id` (single-restaurant only, else raises), adds `uk_categories_tenant_name`/`uk_bills_tenant_session`, and indexes the discriminator columns.
 - No Mongo replica set/`MongoTransactionManager` configured — `@Transactional` is not viable on `Session`/Mongo services; use fail-fast validation-before-mutation ordering instead (see task-2.8). task-2.17: `Session`/`KitchenOrder` now carry `tenantId` (Mongo has no `@TenantId` equivalent, so every finder is tenant-first: the unscoped variants were deleted). `SessionService.findById` is the single tenant-enforcing load point — route new session reads through it, never `sessionRepository.findById`. `KitchenItemsConfirmed` carries `tenantId` so the kitchen listener stamps the **session's** tenant, not the ambient thread-local.
 - task-2.18: Mongo has no Flyway, so `config/MongoTenantBackfill` (an `ApplicationRunner`, no new dependency) backfills `tenantId` — sessions from their dining table's tenant, kitchen orders from their session, orphans to the sole restaurant if there is exactly one, else left untenanted + logged at ERROR (invisible ⇒ fail-closed, never aborts boot). Idempotent (`tenantId: null` filter); audits to `mongo_migrations`. Mongo isolation suites do NOT extend `AbstractTenantIsolationTest` — there is no ambient filter to defeat.
@@ -48,7 +48,7 @@
 - [x] **task-2.17:** Add `tenantId` to `Session`/`KitchenOrder`; scope `SessionRepository`/`KitchenOrderRepository` custom queries by tenant, including fixing `KitchenService.findDisplay()`'s untenanted `findAll()`.
 - [x] **task-2.18:** Backfill migration for existing Mongo documents; add cross-tenant isolation regression tests for Mongo repositories.
 - [x] **task-3.1:** Externalize sensitive default credentials (DB, JWT secret, MinIO) from `application.yml` to `.env` variables.
-- [ ] **task-3.2:** Remove unused `spring-kafka` dependency from `backend/pom.xml`.
+- [x] **task-3.2:** Remove unused `spring-kafka` dependency from `backend/pom.xml`.
 - [ ] **task-3.3:** Extend `GlobalExceptionHandler` to catch `Exception.class` using standardized `ProblemDetail` format.
 - [ ] **task-3.4:** Rewrite CORS and WebSocket origin config to be dynamic, supporting tenant-specific subdomains/headers (replacing the hardcoded `localhost:5173` origin in `WebSocketConfig`).
 - [ ] **task-3.5:** Fix the login rate limiter's memory leak and proxy IP resolution, and rescope its buckets to `(tenantId + IP)` instead of IP alone, so one tenant's traffic can't throttle another's.
