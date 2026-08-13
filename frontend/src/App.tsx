@@ -20,6 +20,7 @@ import { Menu } from './pages/customer/Menu'
 import { ComandaView } from './pages/customer/ComandaView'
 import { OrdersDisplays } from './pages/kitchen/OrdersDisplay'
 import { KitchenLayout } from './layouts/KitchenLayout'
+import { TenantLanding } from './pages/public/TenantLanding'
 
 const RoleRedirect = () => {
   const { role } = useAuthStore()
@@ -42,6 +43,7 @@ export default function App() {
         <Route path="/" element={<RoleRedirect />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/t/:slug" element={<TenantLanding />} />
 
         <Route element={<ProtectedRoute allowedRoles={['CUSTOMER']} />}>
           <Route path='/customer' element={<CustomerLayout/>}>

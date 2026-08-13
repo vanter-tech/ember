@@ -1,10 +1,10 @@
 # PROGRESS.md — Active Execution State
 
 ## Current Execution State
-- **Last Completed Task:** task-4.2 (audit `api.ts` tenant-id usage, consume `Page<T>` envelope) — report 36
-- **Current Active Task:** none — next up task-4.3
-- **Predecessor Task:** task-4.1
-- **System Health:** Frontend `pnpm run build` PASSING (0 TS errors; `kitchenServices.getOrders`/`menuItemService.getAll` now consume `Page<T>`); `pnpm run test:run` (Vitest) PASSING (1/1); `pnpm run lint` runs with 19 pre-existing errors/6 warnings (tracked in later tasks); Backend `./mvnw test` 431/431 passing (untouched this task).
+- **Last Completed Task:** task-4.3 (tenant onboarding: public branding endpoint + `/t/:slug` landing page) — report 37
+- **Current Active Task:** none — next up task-4.4
+- **Predecessor Task:** task-4.2
+- **System Health:** Frontend `pnpm run build` PASSING (0 TS errors); `pnpm run test:run` (Vitest) PASSING (1/1); `pnpm run lint` runs with 19 pre-existing errors/6 warnings (tracked in later tasks); Backend `./mvnw test` 435/435 passing (+4 for `PublicRestaurantControllerTest`).
 
 ## Active Context & Recent Decisions
 - Monolith root at `ember/`; Java 17 + Spring Boot 3.5.14 / React 19 + TS + pnpm. Product: multi-tenant restaurant platform (collaborative cart, KDS, floor/waiter management, admin analytics). task-3.2 deleted `spring-kafka` — Spring `ApplicationEventPublisher` is the only event bus, do not reintroduce a broker.
@@ -14,10 +14,10 @@
 - task-3.4: `config/CorsProperties` (`ember.cors.*`) is the ONE origin policy — `CorsConfig` and `WebSocketConfig`'s `/ws` endpoint both read it. Tenant subdomains go in `allowed-origin-patterns`, never `allowed-origins` (`allowCredentials=true` makes `*` illegal). task-3.5's `AuthRateLimiterFilter` buckets on `(tenant, clientIp)`, tenant from the `Host` header's leading label; `X-Forwarded-For/-Host` only trusted when the peer matches `trusted-proxies` (empty by default).
 - Hibernate `DISCRIMINATOR` multi-tenancy (task-2.14): `config/TenantIdentifierResolver` reads `config/TenantContextHolder` (ThreadLocal, bound/cleared in `jwtAuthFilter` + `JwtChannelInterceptor` from the JWT `rid` claim — task-2.11/2.12, never trust client-supplied tenant ids). `@TenantId` is on `Category`/`MenuItem`/`Bill`/`BillSplit`/`Payment`/`DiningTables`/`RestaurantSettings`; `User` is deliberately excluded (looked up by email pre-tenant-bind, see report 22). Tenant-isolation repo tests MUST extend `config/AbstractTenantIsolationTest` (task-2.16).
 - task-3.1: `application.yml`/`application-dev.properties` hold NO credentials — they read `${VAR}` from the gitignored root `.env` (`spring.config.import`, `optional:`, `.env.local` wins last). Core secrets have NO fallback (fail-fast boot); add any new secret to `.env.example` too. Old secrets remain in git history — rotation still pending.
-- task-3.6: `GET /kitchen/orders` and `GET /catalog/items` are paginated and now return `Page<T>`, NOT a bare array — **BREAKING for frontend `api.ts`**, deferred to task-4.2 by explicit user decision. `GET /kitchen/display` and single-entity GETs are unchanged.
-- task-3.7 added password length/complexity validation on `RegisterRequest` (DTO-only, via existing `@Valid`). task-3.8 extended `SettingsPayload` (JSON column, so the DTO is the schema) with `paymentGateway` (secret-reference only — no field shaped to hold a raw secret), `businessHours`, and `billing.taxRules`, all additive so `BrandingSettings.tsx`/`billing.taxRate` are untouched.
+- task-3.6: `GET /kitchen/orders`/`GET /catalog/items` return `Page<T>` (fixed frontend-side in task-4.2), `GET /kitchen/display` unchanged. task-3.7/3.8 added password complexity validation and extended `SettingsPayload` with `paymentGateway`/`businessHours`/`billing.taxRules` (additive, `BrandingSettings.tsx` untouched).
 - task-4.1: Vitest configured inside `vite.config.ts`'s `test` block (reuses existing plugins/`@` alias, no separate `vitest.config.ts`); jsdom env, `src/test/setup.ts` loads `@testing-library/jest-dom`. Run via `pnpm run test`/`test:run`. Future component tests go in `src/test/` or colocated `*.test.tsx`.
-- task-4.2: `restaurantId` audit confirmed session-only sourcing (no IDOR); removed the now-dead `restaurantId` query param `DashboardService.getDashboardData` sent (backend has ignored it since task-2.12). Added a local `Page<T>` type in `api.ts` (Spring Data shape) instead of regenerating `backend-types.ts` (that requires a live backend via `pnpm run openapi`); `menuItemService.getAll`/`kitchenServices.getOrders` now return `Page<T>`. `ListMenuItem.tsx` reads `.content`. `kitchenServices.getOrdersByTables` (`/kitchen/display`) stayed a bare array per task-3.6.
+- task-4.2: `restaurantId` audit confirmed session-only sourcing (no IDOR); dropped the now-dead `restaurantId` param `DashboardService.getDashboardData` sent (backend ignores it since task-2.12). `menuItemService.getAll`/`kitchenServices.getOrders` now return the new local `Page<T>` type (`api.ts`, hand-written, not regenerated); `ListMenuItem.tsx` reads `.content`.
+- task-4.3: New `GET /public/restaurants/{slug}/branding` (permitAll, `PublicRestaurantController`) resolves slug→id via `RestaurantRepository` then binds/clears `TenantContextHolder` around `SettingService.getSettings` (same bind-then-clear shape as `jwtAuthFilter`, sourced from a DB-verified slug not client input) — the ONLY other place besides the JWT filters allowed to touch `TenantContextHolder`, don't add a second one. Returns a curated `PublicBrandingResponse` (businessName/primaryThemeColor/openingTime/closingTime only — never legalName/ruc/phone/address/wifiName). Frontend: `/t/:slug` → `TenantLanding.tsx`, path-based (not real subdomains — Windows won't resolve `*.localhost` without hosts-file edits); `/` `RoleRedirect` untouched.
 
 ## Task Queue Status
 - [x] **task-1.1:** Fix `tsc -b` compilation errors (`TS6133`/`TS6192`) in frontend (`pages/kitchen/`, `ComandaView.tsx`, `Menu.tsx`, `ItemsFloatingIsland.tsx`, `Tables.tsx`).
@@ -56,5 +56,5 @@
 - [x] **task-3.8:** Extend `SettingsPayload` with `PaymentGatewaySettings` (secret-reference pattern, never raw secrets), structured `BusinessHoursSettings`, and list-based `TaxRules`.
 - [x] **task-4.1:** Setup Vitest and React Testing Library for frontend unit tests.
 - [x] **task-4.2:** Audit frontend `api.ts` for client-supplied tenant-id usage (ensure `restaurantId` only from session state) AND update `kitchenService.getAllOrders`/`menuItemService.getAll` to consume the `Page<T>` envelope task-3.6 introduced.
-- [ ] **task-4.3:** Build tenant onboarding UX (subdomain/slug-based routing for the pre-login branding/landing page) — depends on task-3.4's dynamic origin config.
+- [x] **task-4.3:** Build tenant onboarding UX (subdomain/slug-based routing for the pre-login branding/landing page) — depends on task-3.4's dynamic origin config.
 - [ ] **task-4.4:** Wire `Restaurant.plan`/`status` to a subscription-billing integration (billing the tenant, distinct from the existing diner-facing `billing` module).

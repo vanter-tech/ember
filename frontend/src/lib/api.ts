@@ -29,6 +29,14 @@ export interface Page<T> {
   number: number
 }
 
+export interface PublicBranding {
+  slug: string
+  businessName: string
+  primaryThemeColor: string
+  openingTime: string
+  closingTime: string
+}
+
 declare global {
   interface Window {
     ENV: {
@@ -268,4 +276,13 @@ export const kitchenServices = {
     return data
   }
 
+}
+
+export const publicService = {
+  getBranding: async (slug: string): Promise<PublicBranding> => {
+    const { data } = await api.get<PublicBranding>(
+      `/public/restaurants/${slug}/branding`
+    )
+    return data
+  },
 }
