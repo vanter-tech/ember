@@ -62,6 +62,20 @@ ember:
     # Wildcard patterns for the per-tenant subdomains (`<businessName>.ember.vanter.com`),
     # which cannot be enumerated up front. Empty by default so dev/self-hosted stays closed.
     allowed-origin-patterns: ${EMBER_CORS_ALLOWED_ORIGIN_PATTERNS:}
+  ratelimit:
+    # Throttle on /auth/login and /auth/register. Buckets are keyed by (tenant + client IP), so a
+    # tenant behind a shared office/NAT egress cannot eat another tenant's allowance.
+    enabled: ${EMBER_RATELIMIT_ENABLED:true}
+    max-requests: ${EMBER_RATELIMIT_MAX_REQUESTS:10}
+    # Ceiling per IP across every tenant: the tenant comes from the client-controlled Host, so
+    # without this a forged Host would mint an unlimited number of fresh buckets.
+    ip-max-requests: ${EMBER_RATELIMIT_IP_MAX_REQUESTS:30}
+    window: ${EMBER_RATELIMIT_WINDOW:60s}
+    # Peers whose X-Forwarded-For/X-Forwarded-Host are believed (literal IPs or CIDR blocks).
+    # Empty by default: with no proxy in front, forwarded headers are attacker-supplied.
+    trusted-proxies: ${EMBER_RATELIMIT_TRUSTED_PROXIES:}
+    # Host suffixes whose leading label names the tenant (acme.ember.vanter.com -> `acme`).
+    tenant-host-suffixes: ${EMBER_RATELIMIT_TENANT_HOST_SUFFIXES:}
 
 jwt:
   secret: ${JWT_SECRET}

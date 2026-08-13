@@ -1,13 +1,10 @@
 # PROGRESS.md — Active Execution State
 
 ## Current Execution State
-- **Last Completed Task:** task-3.4 (dynamic CORS + WebSocket origin config via `CorsProperties`) — report 30
-- **Current Active Task:** none — next up task-3.5
-- **Predecessor Task:** task-3.3
-- **System Health:**
-    - Frontend (`pnpm run build`): PASSING (0 TS errors)
-    - Frontend (`pnpm run lint`): RUNS (19 pre-existing errors/6 warnings unrelated to config, tracked in later tasks)
-    - Backend (`./mvnw test`): test-compile CLEAN; 384/384 tests passing
+- **Last Completed Task:** task-3.5 (auth rate limiter: leak, proxy IPs, tenant buckets) — report 31
+- **Current Active Task:** none — next up task-3.6
+- **Predecessor Task:** task-3.4
+- **System Health:** Frontend `pnpm run build` PASSING (0 TS errors); `pnpm run lint` runs with 19 pre-existing errors/6 warnings (tracked in later tasks); Backend `./mvnw test` 398/398 passing.
 
 ## Active Context & Recent Decisions
 - Monolith root at `ember/`; Java 17 + Spring Boot 3.5.14 / React 19 + TS + pnpm. Product: multi-tenant restaurant platform (collaborative cart, KDS, floor/waiter management, admin analytics). task-3.2 deleted `spring-kafka` — Spring `ApplicationEventPublisher` is the only event bus, do not reintroduce a broker.
@@ -18,6 +15,7 @@
 - task-3.4: `config/CorsProperties` (`ember.cors.*`, env `EMBER_CORS_ALLOWED_ORIGINS` / `EMBER_CORS_ALLOWED_ORIGIN_PATTERNS`) is the ONE origin policy — `CorsConfig` and `WebSocketConfig`'s `/ws` SockJS endpoint both read it, so REST and socket origins cannot drift. Tenant subdomains (`<businessName>.ember.vanter.com`) go in `allowed-origin-patterns`, never `allowed-origins`: `allowCredentials=true` makes `*` illegal per spec, and patterns echo the concrete origin back. Patterns default to empty (fail-closed).
 - task-2.14 added `config/TenantIdentifierResolver` (`CurrentTenantIdentifierResolver<UUID>` + `HibernatePropertiesCustomizer`) reading `TenantContextHolder`; unbound contexts (login/register, repo bootstrap) resolve to a `NO_TENANT` zero-UUID sentinel because Hibernate rejects null. `@TenantId` is on `Category`/`MenuItem`/`Bill`/`BillSplit`/`Payment` (new `tenant_id`) and on the **existing** `restaurant_id` field of `DiningTables`/`RestaurantSettings`. `User` is deliberately excluded — it is looked up by email before any tenant is bound (login + `jwtAuthFilter`), so `@TenantId` there would 401 every request; see report 22. `@DataJpaTest` slices need `@Import(TenantIdentifierResolver.class)`. task-2.16 added `config/AbstractTenantIsolationTest` — tenant-isolation repo tests MUST extend it: Hibernate resolves the tenant once per session, so `@Transactional(NOT_SUPPORTED)` is required to write as A and read as B (rows then commit, so each subclass purges via `deleteAll()`). `User`/`Restaurant` have tests pinning that they stay UNfiltered.
 - task-3.1: `application.yml` + `application-dev.properties` hold NO credentials — they read `${VAR}` from the gitignored root `.env`, imported via `spring.config.import` (`./` and `../` variants, all `optional:`; `.env.local` imported last wins, for host-vs-docker hostname overrides). `SPRING_DATASOURCE_PASSWORD`/`SPRING_DATA_MONGODB_URI`/`JWT_SECRET`/`MINIO_ACCESS_KEY`/`MINIO_SECRET_KEY` have NO fallback (fail-fast boot); add any new secret to `.env.example` too. The old secrets remain in git history — rotation is still pending.
+- task-3.5: `AuthRateLimiterFilter` + `RateLimitProperties` (`ember.ratelimit.*`). It had never fired in prod — it compared `getRequestURI()` (which includes `server.servlet.context-path: /v1/`) to `/auth/login`; match on the context-stripped path (`pathWithinApplication`) for any new filter. Buckets are `(tenant, clientIp)` where tenant = host's leading label under `tenant-host-suffixes`; because `Host` is client-controlled, a second per-IP counter (`ip-max-requests`) caps all tenants for one IP. `X-Forwarded-For`/`-Host` are read ONLY when the peer matches `trusted-proxies` (empty default) — set `EMBER_RATELIMIT_TRUSTED_PROXIES` when deploying behind a LB or every client keys to the LB. Eviction = CAS-guarded sweep once per window; all bucket mutation goes through `ConcurrentHashMap.compute`, never a bare `remove`.
 - task-2.11 added `config/TenantContextHolder` (ThreadLocal `UUID`) fed by `JwtService.extractTenantId` (`rid` claim, null for QR tokens). Bound + cleared in `jwtAuthFilter` (`finally`) and `JwtChannelInterceptor` (CONNECT stores tenant in STOMP session attrs; other frames rehydrate; `afterSendCompletion` clears). All downstream tenant work (2.14/2.17) must read from this holder, never from client input — task-2.12 did so, dropping `/dashboard/status`'s `restaurantId` param (frontend `api.ts` still sends it, inert; removal is task-4.2's scope).
 
 ## Task Queue Status
@@ -51,7 +49,7 @@
 - [x] **task-3.2:** Remove unused `spring-kafka` dependency from `backend/pom.xml`.
 - [x] **task-3.3:** Extend `GlobalExceptionHandler` to catch `Exception.class` using standardized `ProblemDetail` format.
 - [x] **task-3.4:** Rewrite CORS and WebSocket origin config to be dynamic, supporting tenant-specific subdomains/headers (replacing the hardcoded `localhost:5173` origin in `WebSocketConfig`).
-- [ ] **task-3.5:** Fix the login rate limiter's memory leak and proxy IP resolution, and rescope its buckets to `(tenantId + IP)` instead of IP alone, so one tenant's traffic can't throttle another's.
+- [x] **task-3.5:** Fix the login rate limiter's memory leak and proxy IP resolution, and rescope its buckets to `(tenantId + IP)` instead of IP alone, so one tenant's traffic can't throttle another's.
 - [ ] **task-3.6:** Implement pagination for `KitchenController` and `MenuItemController` endpoints, tenant-scoped (sequence after task-2.14/2.17 land tenant filtering).
 - [ ] **task-3.7:** Add minimum length and complexity rules to user registration password validation.
 - [ ] **task-3.8:** Extend `SettingsPayload` with `PaymentGatewaySettings` (secret-reference pattern, never raw secrets), structured `BusinessHoursSettings`, and list-based `TaxRules`.
