@@ -8,6 +8,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import com.vanter.ember.config.TenantIdentifierResolver;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -59,6 +61,22 @@ class MenuItemRepositoryTest {
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getName()).isEqualTo("Burger");
+    }
+
+    @Test
+    void findByCategoryId_paginated_returnsOnePageAtATime() {
+        menuItemRepository.save(MenuItem.builder().name("Burger").price(new BigDecimal("8.00"))
+                .category(burgers).available(true).build());
+        menuItemRepository.save(MenuItem.builder().name("Cheeseburger").price(new BigDecimal("9.00"))
+                .category(burgers).available(true).build());
+        menuItemRepository.save(MenuItem.builder().name("Veggie Burger").price(new BigDecimal("8.50"))
+                .category(burgers).available(true).build());
+
+        Page<MenuItem> firstPage = menuItemRepository.findByCategoryId(burgers.getId(), PageRequest.of(0, 2));
+
+        assertThat(firstPage.getContent()).hasSize(2);
+        assertThat(firstPage.getTotalElements()).isEqualTo(3);
+        assertThat(firstPage.getTotalPages()).isEqualTo(2);
     }
 
     @Test

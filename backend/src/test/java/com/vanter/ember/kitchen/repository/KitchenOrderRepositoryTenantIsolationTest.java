@@ -11,6 +11,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest;
+import org.springframework.data.domain.PageRequest;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -55,6 +56,14 @@ class KitchenOrderRepositoryTenantIsolationTest {
         assertThat(kitchenOrderRepository.findByTenantId(TENANT_A))
                 .extracting(KitchenOrder::getId).containsExactly(orderA.getId());
         assertThat(kitchenOrderRepository.findByTenantId(UUID.randomUUID())).isEmpty();
+    }
+
+    @Test
+    void findByTenantId_paginated_returnsOnlyTheOwningTenantsOrders() {
+        assertThat(kitchenOrderRepository.findByTenantId(TENANT_A, PageRequest.of(0, 10)).getContent())
+                .extracting(KitchenOrder::getId).containsExactly(orderA.getId());
+        assertThat(kitchenOrderRepository.findByTenantId(UUID.randomUUID(), PageRequest.of(0, 10)).getContent())
+                .isEmpty();
     }
 
     @Test

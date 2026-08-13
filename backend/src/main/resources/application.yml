@@ -42,6 +42,12 @@ spring:
     mongodb:
       # No fallback: the URI embeds the Mongo credentials.
       uri: ${SPRING_DATA_MONGODB_URI}
+    web:
+      pageable:
+        default-page-size: 20
+        # Hard ceiling on ?size=, so a paginated endpoint can't be asked to return everything at once.
+        max-page-size: 100
+        one-indexed-parameters: false
 
 management:
   endpoints:

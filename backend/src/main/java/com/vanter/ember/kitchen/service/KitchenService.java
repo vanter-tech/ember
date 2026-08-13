@@ -17,6 +17,8 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -30,6 +32,11 @@ public class KitchenService {
         return kitchenOrderRepository.findByTenantId(TenantContextHolder.requireTenantId());
     }
 
+    public Page<KitchenOrder> findAll(Pageable pageable) {
+        return kitchenOrderRepository.findByTenantId(TenantContextHolder.requireTenantId(), pageable);
+    }
+
+    /** Unpaginated: the kitchen display groups every open order by table, not a paged list. */
     public List<KitchenDisplayEntry> findDisplay() {
         return findAll().stream()
                 .collect(Collectors.groupingBy(KitchenOrder::getTableNumber))

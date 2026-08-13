@@ -9,6 +9,7 @@ import java.math.BigDecimal;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
 
 class MenuItemRepositoryTenantIsolationTest extends AbstractTenantIsolationTest {
 
@@ -62,6 +63,18 @@ class MenuItemRepositoryTenantIsolationTest extends AbstractTenantIsolationTest 
         assertThat(readAs(TENANT_B, () -> menuItemRepository.findByCategoryId(categoryId))).isEmpty();
         assertThat(readAs(TENANT_B, () -> menuItemRepository.countByCategoryId(categoryId))).isZero();
         assertThat(readAs(TENANT_A, () -> menuItemRepository.findByCategoryId(categoryId))).hasSize(1);
+    }
+
+    @Test
+    void findByCategoryId_paginated_doesNotReachAnotherTenantsItems() {
+        MenuItem tenantAItem = itemSavedFor(TENANT_A, "Classic Burger", true);
+        Long categoryId = tenantAItem.getCategory().getId();
+        PageRequest pageable = PageRequest.of(0, 10);
+
+        assertThat(readAs(TENANT_B, () -> menuItemRepository.findByCategoryId(categoryId, pageable))
+                .getContent()).isEmpty();
+        assertThat(readAs(TENANT_A, () -> menuItemRepository.findByCategoryId(categoryId, pageable))
+                .getContent()).hasSize(1);
     }
 
     @Test

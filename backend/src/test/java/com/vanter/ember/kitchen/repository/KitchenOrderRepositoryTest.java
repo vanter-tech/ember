@@ -7,6 +7,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -54,6 +56,22 @@ class KitchenOrderRepositoryTest {
         assertThat(result).isPresent();
         assertThat(result.get().getSessionId()).isEqualTo("sess-1");
         assertThat(result.get().getTableNumber()).isEqualTo(5);
+    }
+
+    @Test
+    void findByTenantId_paginated_returnsOnePageAtATime() {
+        kitchenOrderRepository.save(KitchenOrder.builder()
+                .tenantId(TENANT_ID).sessionId("sess-1").tableNumber(1).items(new ArrayList<>()).build());
+        kitchenOrderRepository.save(KitchenOrder.builder()
+                .tenantId(TENANT_ID).sessionId("sess-2").tableNumber(2).items(new ArrayList<>()).build());
+        kitchenOrderRepository.save(KitchenOrder.builder()
+                .tenantId(TENANT_ID).sessionId("sess-3").tableNumber(3).items(new ArrayList<>()).build());
+
+        Page<KitchenOrder> firstPage = kitchenOrderRepository.findByTenantId(TENANT_ID, PageRequest.of(0, 2));
+
+        assertThat(firstPage.getContent()).hasSize(2);
+        assertThat(firstPage.getTotalElements()).isEqualTo(3);
+        assertThat(firstPage.getTotalPages()).isEqualTo(2);
     }
 
     @Test

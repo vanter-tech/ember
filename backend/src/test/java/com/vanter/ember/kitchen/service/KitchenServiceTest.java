@@ -19,6 +19,9 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -196,6 +199,17 @@ class KitchenServiceTest {
         assertThat(captor.getValue().sessionId()).isEqualTo("sess-1");
         assertThat(captor.getValue().itemId()).isEqualTo("order-item-1");
         assertThat(captor.getValue().newStatus()).isEqualTo(OrderItemStatus.PREPARING);
+    }
+
+    // --- findAll(Pageable) tests ---
+
+    @Test
+    void findAllPaged_scopesLookupToCurrentTenant() {
+        PageRequest pageable = PageRequest.of(0, 20);
+        Page<KitchenOrder> page = new PageImpl<>(List.of(orderWithItem(OrderItemStatus.PENDING)));
+        when(kitchenOrderRepository.findByTenantId(TENANT_ID, pageable)).thenReturn(page);
+
+        assertThat(kitchenService.findAll(pageable).getContent()).hasSize(1);
     }
 
     // --- findDisplay tests ---

@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -24,6 +25,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -53,24 +55,25 @@ class KitchenControllerTest {
 
     @Test
     @WithMockUser(roles = "KITCHEN")
-    void getAllOrders_returnsListForKitchen() throws Exception {
-        when(kitchenService.findAll()).thenReturn(List.of(sampleOrder()));
+    void getAllOrders_returnsPageForKitchen() throws Exception {
+        when(kitchenService.findAll(any())).thenReturn(new PageImpl<>(List.of(sampleOrder())));
 
         mockMvc.perform(get("/kitchen/orders"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value("ko-1"))
-                .andExpect(jsonPath("$[0].sessionId").value("sess-1"))
-                .andExpect(jsonPath("$[0].tableNumber").value(5));
+                .andExpect(jsonPath("$.content[0].id").value("ko-1"))
+                .andExpect(jsonPath("$.content[0].sessionId").value("sess-1"))
+                .andExpect(jsonPath("$.content[0].tableNumber").value(5))
+                .andExpect(jsonPath("$.totalElements").value(1));
     }
 
     @Test
     @WithMockUser(roles = "ADMIN")
-    void getAllOrders_returnsListForAdmin() throws Exception {
-        when(kitchenService.findAll()).thenReturn(List.of(sampleOrder()));
+    void getAllOrders_returnsPageForAdmin() throws Exception {
+        when(kitchenService.findAll(any())).thenReturn(new PageImpl<>(List.of(sampleOrder())));
 
         mockMvc.perform(get("/kitchen/orders"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value("ko-1"));
+                .andExpect(jsonPath("$.content[0].id").value("ko-1"));
     }
 
     @Test
