@@ -1,22 +1,22 @@
 # PROGRESS.md — Active Execution State
 
 ## Current Execution State
-- **Last Completed Task:** task-2.15 (Flyway V2: `tenant_id` backfill, per-tenant uniques, tenant indexes) — report 23
-- **Current Active Task:** none — next up task-2.16
-- **Predecessor Task:** task-2.14
+- **Last Completed Task:** task-2.16 (cross-tenant isolation regression tests for every JPA repository) — report 24
+- **Current Active Task:** none — next up task-2.17
+- **Predecessor Task:** task-2.15
 - **System Health:**
     - Frontend (`pnpm run build`): PASSING (0 TS errors)
     - Frontend (`pnpm run lint`): RUNS (19 pre-existing errors/6 warnings unrelated to config, tracked in later tasks)
-    - Backend (`./mvnw test`): test-compile CLEAN; 305/305 tests passing
+    - Backend (`./mvnw test`): test-compile CLEAN; 348/348 tests passing
 
 ## Active Context & Recent Decisions
-- Monolith root at `ember/`; stack Java 17 + Spring Boot 3.5.14 (Backend) / React 19 + TypeScript + pnpm (Frontend).
-- Product: Multi-tenant restaurant platform (collaborative cart, KDS, floor/waiter management, admin analytics).
+- Monolith root at `ember/`; Java 17 + Spring Boot 3.5.14 / React 19 + TS + pnpm. Product: multi-tenant restaurant platform (collaborative cart, KDS, floor/waiter management, admin analytics).
 - Kafka dependency in `pom.xml` ignored; Spring `ApplicationEventPublisher` used for internal synchronous events.
 - task-2.15 introduced **Flyway** (`baseline-on-migrate`, existing Hibernate-built schema = V1, migrations start at V2; disabled in tests, where H2 `create-drop` builds from entities). All future schema changes go in `backend/src/main/resources/db/migration/` AND in the entity mapping, so H2 tests and prod `ddl-auto=validate` agree. V2 backfills `tenant_id` (single-restaurant only, else raises), adds `uk_categories_tenant_name`/`uk_bills_tenant_session`, and indexes the discriminator columns.
 - No Mongo replica set/`MongoTransactionManager` configured — `@Transactional` is not viable on `Session`/Mongo services; use fail-fast validation-before-mutation ordering instead (see task-2.8).
 - task-2.13: `Session` still has no tenant field, so tenant ownership is resolved via its `DiningTables` row (`restaurantId`); the join-code query is scoped by the tenant's **active** table ids. Task-2.17 should swap both for a real `Session.tenantId` without moving the enforcement points.
 - task-2.14 added `config/TenantIdentifierResolver` (`CurrentTenantIdentifierResolver<UUID>` + `HibernatePropertiesCustomizer`) reading `TenantContextHolder`; unbound contexts (login/register, repo bootstrap) resolve to a `NO_TENANT` zero-UUID sentinel because Hibernate rejects null. `@TenantId` is on `Category`/`MenuItem`/`Bill`/`BillSplit`/`Payment` (new `tenant_id`) and on the **existing** `restaurant_id` field of `DiningTables`/`RestaurantSettings`. `User` is deliberately excluded — it is looked up by email before any tenant is bound (login + `jwtAuthFilter`), so `@TenantId` there would 401 every request; see report 22. `@DataJpaTest` slices need `@Import(TenantIdentifierResolver.class)`.
+- task-2.16 added `config/AbstractTenantIsolationTest` — tenant-isolation repo tests MUST extend it: Hibernate resolves the tenant once per session, so `@Transactional(NOT_SUPPORTED)` is required to write as A and read as B (rows then commit, so each subclass purges via `deleteAll()`). `User`/`Restaurant` have tests pinning that they stay UNfiltered. Also dropped `RestaurantSettings.payload`'s `columnDefinition = "jsonb"` — it made H2 skip creating `restaurant_settings` entirely; `SqlTypes.JSON` still yields `jsonb` on PostgreSQL.
 - task-2.11 added `config/TenantContextHolder` (ThreadLocal `UUID`) fed by `JwtService.extractTenantId` (`rid` claim, null for QR tokens). Bound + cleared in `jwtAuthFilter` (`finally`) and `JwtChannelInterceptor` (CONNECT stores tenant in STOMP session attrs; other frames rehydrate; `afterSendCompletion` clears). All downstream tenant work (2.14/2.17) must read from this holder, never from client input — task-2.12 did so, dropping `/dashboard/status`'s `restaurantId` param (frontend `api.ts` still sends it, inert; removal is task-4.2's scope).
 
 ## Task Queue Status
@@ -43,7 +43,7 @@
 - [x] **task-2.13:** Fix `joinSession` capacity check to read live `session.getMaxParticipants()` instead of a stale QR-JWT claim, and scope `QrTokenService`/`SessionRepository.findByJoinCodeAndStatus` by tenant in the same pass.
 - [x] **task-2.14:** Configure Hibernate `DISCRIMINATOR` multi-tenancy (`CurrentTenantIdentifierResolver`) and add `@TenantId` to `Category`, `MenuItem`, `Bill`, `BillSplit`, `Payment`, `RestaurantSettings`, `DiningTables` (`User` excluded — see report 22).
 - [x] **task-2.15:** Migrate: backfill `tenant_id` on existing rows, add `unique(tenant_id, name)` on `Category` and `unique(tenant_id, sessionId)` on `Bill`, add tenant indexes.
-- [ ] **task-2.16:** Add cross-tenant isolation regression tests for every JPA repository.
+- [x] **task-2.16:** Add cross-tenant isolation regression tests for every JPA repository.
 - [ ] **task-2.17:** Add `tenantId` to `Session`/`KitchenOrder`; scope `SessionRepository`/`KitchenOrderRepository` custom queries by tenant, including fixing `KitchenService.findDisplay()`'s untenanted `findAll()`.
 - [ ] **task-2.18:** Backfill migration for existing Mongo documents; add cross-tenant isolation regression tests for Mongo repositories.
 - [ ] **task-3.1:** Externalize sensitive default credentials (DB, JWT secret, MinIO) from `application.yml` to `.env` variables.
