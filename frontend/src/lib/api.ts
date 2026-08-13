@@ -21,6 +21,13 @@ export type tableStatus = components['schemas']['SessionStatusDto']
 export type kitchenOrdersDisplayByTables = components['schemas']['KitchenDisplayEntry']
 export type kitchenOrders = components['schemas']['KitchenOrder']
 
+export interface Page<T> {
+  content: T[]
+  totalElements: number
+  totalPages: number
+  size: number
+  number: number
+}
 
 declare global {
   interface Window {
@@ -117,8 +124,8 @@ export const categoryService = {
 }
 
 export const menuItemService = {
-  getAll: async (id: number): Promise<MenuItemResponse[]> => {
-    const { data } = await api.get<MenuItemResponse[]>(
+  getAll: async (id: number): Promise<Page<MenuItemResponse>> => {
+    const { data } = await api.get<Page<MenuItemResponse>>(
       `/catalog/items?id=${id}`
     )
     return data
@@ -170,14 +177,8 @@ export const SettingsService = {
 }
 
 export const DashboardService = {
-  getDashboardData: async (
-    resturantid: string
-  ): Promise<DashboardResponse[]> => {
-    const { data } = await api.get<DashboardResponse[]>('/dashboard/status', {
-      params: {
-        restaurantId: resturantid,
-      },
-    })
+  getDashboardData: async (): Promise<DashboardResponse[]> => {
+    const { data } = await api.get<DashboardResponse[]>('/dashboard/status')
     return data
   },
 }
@@ -262,8 +263,8 @@ export const kitchenServices = {
     const { data } = await api.get<kitchenOrdersDisplayByTables[]>('/kitchen/display')
     return data
   },
-  getOrders: async(): Promise<kitchenOrders[]> => {
-    const { data } = await api.get<kitchenOrders[]>('/kitchen/orders')
+  getOrders: async(): Promise<Page<kitchenOrders>> => {
+    const { data } = await api.get<Page<kitchenOrders>>('/kitchen/orders')
     return data
   }
 

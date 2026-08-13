@@ -26,13 +26,14 @@ export const ListMenuItem = () => {
   const { id } = useParams()
   const { openModal } = useUIStore()
   const {
-    data: menuItems = [],
+    data: menuItemsPage,
     isLoading,
     isError,
   } = useQuery({
     queryKey: ['menuItems', id],
     queryFn: () => menuItemService.getAll(Number(id)),
   })
+  const menuItems = menuItemsPage?.content ?? []
 
   if (isLoading) {
     return <div className="p-6 text-zinc-500">Cargando platillos...</div>
