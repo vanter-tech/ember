@@ -16,5 +16,6 @@ public interface SessionRepository extends MongoRepository<Session, String> {
 
     List<Session> findByTableIdInAndStatus(List<UUID> tableIds, SessionStatus status);
 
-    Optional<Session> findByJoinCodeAndStatus(String joinCode, SessionStatus status);
+    Optional<Session> findByJoinCodeAndStatusAndTableIdIn(
+            String joinCode, SessionStatus status, List<UUID> tableIds);
 }

@@ -83,7 +83,7 @@ public class SessionController {
         if (!session.getWaiterId().equals(authentication.getName())) {
             throw new AccessDeniedException("Only the assigned waiter can generate QR codes");
         }
-        String token = qrTokenService.generateQrToken(session.getId(), session.getMaxParticipants());
+        String token = qrTokenService.generateQrToken(session.getId());
         return Map.of("qrToken", token);
     }
 

@@ -3,6 +3,7 @@ package com.vanter.ember.session.service;
 import com.vanter.ember.catalog.model.dto.MenuItemResponse;
 import com.vanter.ember.catalog.service.MenuItemService;
 import com.vanter.ember.config.ResourceNotFoundException;
+import com.vanter.ember.config.TenantContextHolder;
 import com.vanter.ember.identity.model.User;
 import com.vanter.ember.identity.repository.UserRepository;
 import com.vanter.ember.kitchen.event.KitchenItemUpdated;
@@ -22,6 +23,7 @@ import com.vanter.ember.session.repository.SessionRepository;
 import com.vanter.ember.settings.model.DiningTables;
 import com.vanter.ember.settings.repository.DiningTableRepository;
 import io.jsonwebtoken.ExpiredJwtException;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -30,6 +32,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -40,6 +43,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -138,10 +142,21 @@ class SessionServiceTest {
                 .build();
     }
 
+    private void bindTenant() {
+        TenantContextHolder.setTenantId(RESTAURANT_ID);
+        when(diningTableRepository.findById(TABLE_ID))
+                .thenReturn(Optional.of(diningTableForRestaurant(RESTAURANT_ID)));
+    }
+
+    @AfterEach
+    void clearTenant() {
+        TenantContextHolder.clear();
+    }
+
     @Test
     void join_addsParticipantWhenTokenValidAndCapacityAvailable() {
+        bindTenant();
         when(qrTokenService.validateQrToken("qr-token")).thenReturn("sess-1");
-        when(qrTokenService.extractMaxParticipants("qr-token")).thenReturn(4);
         when(userRepository.findByEmail("user-1")).thenReturn(Optional.of(user("user-1")));
         when(sessionRepository.findById("sess-1"))
                 .thenReturn(Optional.of(openSessionWithCapacity(4, List.of())));
@@ -159,14 +174,47 @@ class SessionServiceTest {
         List<Participant> full = List.of(
                 Participant.builder().userId("u1").name("A").build(),
                 Participant.builder().userId("u2").name("B").build());
+        bindTenant();
         when(qrTokenService.validateQrToken("qr-token")).thenReturn("sess-1");
-        when(qrTokenService.extractMaxParticipants("qr-token")).thenReturn(2);
         when(userRepository.findByEmail("u3")).thenReturn(Optional.of(user("u3")));
         when(sessionRepository.findById("sess-1"))
                 .thenReturn(Optional.of(openSessionWithCapacity(2, full)));
 
         assertThatThrownBy(() -> sessionService.joinSession("qr-token", "u3", "C"))
                 .isInstanceOf(TooManyParticipantsException.class);
+    }
+
+    @Test
+    void join_readsCapacityFromLiveSessionNotFromToken() {
+        List<Participant> twoJoined = List.of(
+                Participant.builder().userId("u1").name("A").build(),
+                Participant.builder().userId("u2").name("B").build());
+        bindTenant();
+        when(qrTokenService.validateQrToken("qr-token")).thenReturn("sess-1");
+        when(userRepository.findByEmail("u3")).thenReturn(Optional.of(user("u3")));
+        // capacity was expanded to 4 after the QR token was minted for a 2-seat session
+        when(sessionRepository.findById("sess-1"))
+                .thenReturn(Optional.of(openSessionWithCapacity(4, twoJoined)));
+        when(sessionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        Session result = sessionService.joinSession("qr-token", "u3", "C");
+
+        assertThat(result.getParticipants()).hasSize(3);
+    }
+
+    @Test
+    void join_throwsWhenSessionBelongsToAnotherTenant() {
+        TenantContextHolder.setTenantId(RESTAURANT_ID);
+        when(qrTokenService.validateQrToken("qr-token")).thenReturn("sess-1");
+        when(userRepository.findByEmail("user-1")).thenReturn(Optional.of(user("user-1")));
+        when(sessionRepository.findById("sess-1"))
+                .thenReturn(Optional.of(openSessionWithCapacity(4, List.of())));
+        when(diningTableRepository.findById(TABLE_ID))
+                .thenReturn(Optional.of(diningTableForRestaurant(UUID.randomUUID())));
+
+        assertThatThrownBy(() -> sessionService.joinSession("qr-token", "user-1", "Alice"))
+                .isInstanceOf(ResourceNotFoundException.class);
+        verify(sessionRepository, never()).save(any());
     }
 
     @Test
@@ -182,8 +230,8 @@ class SessionServiceTest {
     void join_throwsOnDuplicateUserId() {
         List<Participant> existing = List.of(
                 Participant.builder().userId("user-1").name("Alice").build());
+        bindTenant();
         when(qrTokenService.validateQrToken("qr-token")).thenReturn("sess-1");
-        when(qrTokenService.extractMaxParticipants("qr-token")).thenReturn(4);
         when(userRepository.findByEmail("user-1")).thenReturn(Optional.of(user("user-1")));
         when(sessionRepository.findById("sess-1"))
                 .thenReturn(Optional.of(openSessionWithCapacity(4, existing)));
@@ -195,8 +243,8 @@ class SessionServiceTest {
 
     @Test
     void join_publishesParticipantJoinedEvent() {
+        bindTenant();
         when(qrTokenService.validateQrToken("qr-token")).thenReturn("sess-1");
-        when(qrTokenService.extractMaxParticipants("qr-token")).thenReturn(4);
         when(userRepository.findByEmail("user-1")).thenReturn(Optional.of(user("user-1")));
         when(sessionRepository.findById("sess-1"))
                 .thenReturn(Optional.of(openSessionWithCapacity(4, List.of())));
@@ -209,6 +257,40 @@ class SessionServiceTest {
         assertThat(captor.getValue().sessionId()).isEqualTo("sess-1");
         assertThat(captor.getValue().userId()).isEqualTo("user-1");
         assertThat(captor.getValue().userName()).isEqualTo("Alice");
+    }
+
+    // --- joinSessionCode tests ---
+
+    @Test
+    void joinCode_scopesLookupToCurrentTenantTables() {
+        TenantContextHolder.setTenantId(RESTAURANT_ID);
+        when(diningTableRepository.findByRestaurantIdAndIsActiveTrueOrderByTableNumberAsc(RESTAURANT_ID))
+                .thenReturn(List.of(diningTableForRestaurant(RESTAURANT_ID)));
+        when(userRepository.findByEmail("user-1")).thenReturn(Optional.of(user("user-1")));
+        when(sessionRepository.findByJoinCodeAndStatusAndTableIdIn(
+                "AB3CD", SessionStatus.OPEN, List.of(TABLE_ID)))
+                .thenReturn(Optional.of(openSessionWithCapacity(4, List.of())));
+        when(sessionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        Session result = sessionService.joinSessionCode("AB3CD", "user-1");
+
+        assertThat(result.getParticipants()).hasSize(1);
+        assertThat(result.getParticipants().get(0).getUserId()).isEqualTo("user-1");
+    }
+
+    @Test
+    void joinCode_throwsNotFoundWhenCodeBelongsToAnotherTenant() {
+        TenantContextHolder.setTenantId(RESTAURANT_ID);
+        when(diningTableRepository.findByRestaurantIdAndIsActiveTrueOrderByTableNumberAsc(RESTAURANT_ID))
+                .thenReturn(List.of(diningTableForRestaurant(RESTAURANT_ID)));
+        when(userRepository.findByEmail("user-1")).thenReturn(Optional.of(user("user-1")));
+        when(sessionRepository.findByJoinCodeAndStatusAndTableIdIn(
+                "AB3CD", SessionStatus.OPEN, List.of(TABLE_ID)))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> sessionService.joinSessionCode("AB3CD", "user-1"))
+                .isInstanceOf(ResponseStatusException.class);
+        verify(sessionRepository, never()).save(any());
     }
 
     // --- expandCapacity tests ---

@@ -1,13 +1,13 @@
 # PROGRESS.md — Active Execution State
 
 ## Current Execution State
-- **Last Completed Task:** task-2.12 (`DashboardController` cross-tenant IDOR closed — tenant now from `TenantContextHolder`, not a query param) — report 20
-- **Current Active Task:** none — next up task-2.13
-- **Predecessor Task:** task-2.11
+- **Last Completed Task:** task-2.13 (live join capacity; QR token + join-code lookup scoped to the authenticated tenant) — report 21
+- **Current Active Task:** none — next up task-2.14
+- **Predecessor Task:** task-2.12
 - **System Health:**
     - Frontend (`pnpm run build`): PASSING (0 TS errors)
     - Frontend (`pnpm run lint`): RUNS (19 pre-existing errors/6 warnings unrelated to config, tracked in later tasks)
-    - Backend (`./mvnw test`): test-compile CLEAN; 299/299 tests passing
+    - Backend (`./mvnw test`): test-compile CLEAN; 305/305 tests passing
 
 ## Active Context & Recent Decisions
 - Monolith root confirmed at `ember/`.
@@ -16,7 +16,7 @@
 - Kafka dependency in `pom.xml` ignored; Spring `ApplicationEventPublisher` used for internal synchronous events.
 - Pending backlog unified 2026-08-12: former `EMB-MT-*` multi-tenancy tasks merged into the main `task-2.x`/`3.x`/`4.x` queue (prefix retired); task-2.9, 2.10, 2.13, 3.4, 3.5 rewritten to be tenant-aware from the start.
 - No Mongo replica set/`MongoTransactionManager` configured — `@Transactional` is not viable on `Session`/Mongo services; use fail-fast validation-before-mutation ordering instead (see task-2.8).
-- task-2.10 wired tenant provisioning at registration (create-or-join `Restaurant`, `rid` JWT claim) and fixed two pre-existing bugs found via `E2EOrderFlowTest`: `SessionService.joinSession` stored participant email instead of `User.getId()`, and `SessionController.getSession` compared the raw JWT email instead of the resolved user id.
+- task-2.13: `Session` still has no tenant field, so tenant ownership is resolved via its `DiningTables` row (`restaurantId`); the join-code query is scoped by the tenant's **active** table ids. Task-2.17 should swap both for a real `Session.tenantId` without moving the enforcement points.
 - task-2.11 added `config/TenantContextHolder` (ThreadLocal `UUID`) fed by `JwtService.extractTenantId` (`rid` claim, null for QR tokens). Bound + cleared in `jwtAuthFilter` (`finally`) and `JwtChannelInterceptor` (CONNECT stores tenant in STOMP session attrs; other frames rehydrate; `afterSendCompletion` clears). All downstream tenant work (2.14/2.17) must read from this holder, never from client input — task-2.12 did so, dropping `/dashboard/status`'s `restaurantId` param (frontend `api.ts` still sends it, inert; removal is task-4.2's scope).
 
 ## Task Queue Status
@@ -40,7 +40,7 @@
 - [x] **task-2.10:** Flesh out `Restaurant` entity (name, slug, plan, status, timezone, currency) + `RestaurantRepository`/`RestaurantService`; update `RegisterRequest`/`AuthService` to create-or-join a `Restaurant` at registration and add its id as a `rid` JWT claim, binding every `User.restaurantId` explicitly (real fix — supersedes a narrow test-only patch).
 - [x] **task-2.11:** Build `TenantContextHolder` (from the JWT `rid` claim) and wire into `jwtAuthFilter`/`JwtChannelInterceptor`; remove `SettingsController`'s ad hoc `getRestaurantIdFromAuth()`.
 - [x] **task-2.12:** Fix `DashboardController`'s client-supplied `restaurantId` `@RequestParam` — derive tenant from `TenantContextHolder`, not client input (closes a live cross-tenant IDOR).
-- [ ] **task-2.13:** Fix `joinSession` capacity check to read live `session.getMaxParticipants()` instead of a stale QR-JWT claim, and scope `QrTokenService`/`SessionRepository.findByJoinCodeAndStatus` by tenant in the same pass.
+- [x] **task-2.13:** Fix `joinSession` capacity check to read live `session.getMaxParticipants()` instead of a stale QR-JWT claim, and scope `QrTokenService`/`SessionRepository.findByJoinCodeAndStatus` by tenant in the same pass.
 - [ ] **task-2.14:** Configure Hibernate `DISCRIMINATOR` multi-tenancy (`CurrentTenantIdentifierResolver`) and add `@TenantId` to `Category`, `MenuItem`, `Bill`, `BillSplit`, `Payment`, `RestaurantSettings`, `DiningTables`, `User`.
 - [ ] **task-2.15:** Migrate: backfill `tenant_id` on existing rows, add `unique(tenant_id, name)` on `Category` and `unique(tenant_id, sessionId)` on `Bill`, add tenant indexes.
 - [ ] **task-2.16:** Add cross-tenant isolation regression tests for every JPA repository.

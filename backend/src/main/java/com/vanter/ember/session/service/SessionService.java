@@ -5,6 +5,7 @@ import com.vanter.ember.catalog.model.dto.MenuItemResponse;
 import com.vanter.ember.catalog.repository.MenuItemRepository;
 import com.vanter.ember.catalog.service.MenuItemService;
 import com.vanter.ember.config.ResourceNotFoundException;
+import com.vanter.ember.config.TenantContextHolder;
 import com.vanter.ember.identity.model.User;
 import com.vanter.ember.identity.repository.UserRepository;
 import com.vanter.ember.kitchen.event.KitchenItemUpdated;
@@ -120,7 +121,6 @@ public class SessionService {
 
     public Session joinSession(String qrToken, String requesterEmail, String userName) {
         String sessionId = qrTokenService.validateQrToken(qrToken);
-        int maxParticipants = qrTokenService.extractMaxParticipants(qrToken);
 
         var user = userRepository.findByEmail(requesterEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found: " + requesterEmail));
@@ -128,6 +128,9 @@ public class SessionService {
         Session session = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new ResourceNotFoundException("Session not found: " + sessionId));
 
+        assertSessionBelongsToCurrentTenant(session);
+
+        int maxParticipants = session.getMaxParticipants();
         if (session.getParticipants().size() >= maxParticipants) {
             throw new TooManyParticipantsException(
                     "Session " + sessionId + " is at full capacity (" + maxParticipants + ")");
@@ -152,7 +155,8 @@ public class SessionService {
         var user = userRepository.findByEmail(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found: " + userId));
 
-        Session session = sessionRepository.findByJoinCodeAndStatus(joinCode, SessionStatus.OPEN)
+        Session session = sessionRepository
+                .findByJoinCodeAndStatusAndTableIdIn(joinCode, SessionStatus.OPEN, currentTenantTableIds())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,  "Code not found" + joinCode));
 
 
@@ -165,6 +169,28 @@ public class SessionService {
         Session saved = sessionRepository.save(session);
         eventPublisher.publishEvent(new ParticipantJoined(saved.getId(), user.getId(), user.getName()));
         return saved;
+    }
+
+    /**
+     * `Session` carries no tenant field yet (task-2.17), so tenant ownership is resolved through the
+     * session's dining table, which is tenant-owned.
+     */
+    private void assertSessionBelongsToCurrentTenant(Session session) {
+        UUID tenantId = TenantContextHolder.requireTenantId();
+        DiningTables table = diningTableRepository.findById(session.getTableId())
+                .orElseThrow(() -> new ResourceNotFoundException("Table not found: " + session.getTableId()));
+
+        if (!tenantId.equals(table.getRestaurantId())) {
+            throw new ResourceNotFoundException("Session not found: " + session.getId());
+        }
+    }
+
+    private List<UUID> currentTenantTableIds() {
+        return diningTableRepository
+                .findByRestaurantIdAndIsActiveTrueOrderByTableNumberAsc(TenantContextHolder.requireTenantId())
+                .stream()
+                .map(DiningTables::getId)
+                .toList();
     }
 
     private String generateJoinCode(){

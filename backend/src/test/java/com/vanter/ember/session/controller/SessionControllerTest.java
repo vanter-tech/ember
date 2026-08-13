@@ -105,7 +105,7 @@ class SessionControllerTest {
     @WithMockUser(username = "waiter@test.com", roles = "WAITER")
     void getQr_returnsToken() throws Exception {
         when(sessionService.findById("sess-1")).thenReturn(sampleSession());
-        when(qrTokenService.generateQrToken("sess-1", 4)).thenReturn("qr-jwt-token");
+        when(qrTokenService.generateQrToken("sess-1")).thenReturn("qr-jwt-token");
 
         mockMvc.perform(get("/sessions/sess-1/qr"))
                 .andExpect(status().isOk())
