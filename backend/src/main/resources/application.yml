@@ -55,6 +55,14 @@ management:
     tags:
       application: ember-saas
 
+ember:
+  cors:
+    # Fixed origins (comma-separated). Defaults cover local Vite/Next dev servers.
+    allowed-origins: ${EMBER_CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:3000}
+    # Wildcard patterns for the per-tenant subdomains (`<businessName>.ember.vanter.com`),
+    # which cannot be enumerated up front. Empty by default so dev/self-hosted stays closed.
+    allowed-origin-patterns: ${EMBER_CORS_ALLOWED_ORIGIN_PATTERNS:}
+
 jwt:
   secret: ${JWT_SECRET}
   expiration-ms: ${JWT_EXPIRATION_MS:86400000}
