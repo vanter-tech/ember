@@ -2,7 +2,7 @@
 
 ## Current Execution State
 - **Last Completed Task:** ad-hoc — reverted task-5.3's Plan settings tab, paused pending a separate customer/billing portal design (predecessor task-5.3) — report 44
-- **Current Active Task:** none — task-5.4 next in the frontend/backend gap-analysis backlog (task-5.4–5.21 remain; EMB-PC-01–14 Platform/Super-Admin Console also queued), awaiting task selection/approval
+- **Current Active Task:** none — task-5.4 next in the frontend/backend gap-analysis backlog (task-5.4–5.21 remain; EMB-PC-01–14 Platform/Super-Admin Console and EMB-LP-01–18 Landing Page also queued), awaiting task selection/approval
 - **System Health:** Frontend `pnpm run build` PASSING (0 TS errors). Backend boots and serves locally (`ember-postgres-1`/`ember-mongodb-1`/`ember-minio-1` via Docker, app itself runs on host, `.env` points at `localhost` per report 41); `./mvnw test` last confirmed 423/423 passing (report 41), not rerun this task (no backend files touched).
 
 ## Active Context & Recent Decisions
@@ -18,13 +18,7 @@
 - EMB-PC backlog (Platform/Super-Admin Console, brainstormed 2026-08-13): `PlatformOperator` is a separate entity/table with NO FK to `Restaurant`/`User`, signed with its own `platform.jwt.secret` (never the tenant `jwt.secret`), authenticated through a second `SecurityFilterChain` matched to `/platform/**` that never sets `TenantContextHolder` — mutual exclusion from the tenant JWT chain comes from the two different signing keys, not just a claim check, so a tenant token fails signature verification before any claim is read. `Restaurant` has no owner/contact fields; tenant "owner info" is the `User` row(s) where `restaurantId` matches and `role = ADMIN`, looked up untenanted (deliberately, same caution as `PublicRestaurantController`). `PlatformAuditLog` has no `@TenantId` either — it's cross-tenant by design.
 
 ## Task Queue Status
-- [x] **Milestone 1 (task-1.1–1.7):** Frontend build/lint stability, WebSocket robustness, error boundary, console cleanup. Reports 01–07.
-- [x] **Milestone 2 (task-2.1–2.18):** Backend data consistency & multi-tenancy — Mongo versioning/tenant scoping, transactional billing, Hibernate `DISCRIMINATOR` tenancy, cross-tenant isolation tests. Reports 08–26.
-- [x] **Milestone 3 (task-3.1–3.8):** Security & config hardening — secrets externalization, Kafka removal, RFC 7807 errors, dynamic CORS/rate-limiting, pagination, password rules, extended `SettingsPayload`. Reports 27–34.
-- [x] **Milestone 4 (task-4.1–4.4):** Frontend testing & tenant lifecycle — Vitest/RTL, `Page<T>` consumption, tenant onboarding landing page, `Restaurant.plan`/`status` enforcement. Reports 35–38.
-- [x] **task-5.1:** Add global 403/tenant-suspended handling to `api.ts`'s response interceptor (currently only 401→logout) — detect the `jwtAuthFilter` `ProblemDetail` and route to a suspended-tenant modal/page instead of a silently rejected promise. Report 39.
-- [x] **task-5.2:** Regenerate/extend `frontend/src/lib/backend-types.ts` — missing `Restaurant`, `RestaurantPlan`, `RestaurantStatus`, `UpdateRestaurantPlanRequest`, `PublicBrandingResponse`, and `SettingsPayload.paymentGateway`/`businessHours`/`billing.taxRules` (predates task-3.8/4.3/4.4). Hand-extended (backend DB unreachable). Report 40.
-- [x] **task-5.3:** Build ADMIN "Plan & Estado" UI + `restaurantAdminService` in `api.ts` consuming `GET`/`PATCH /admin/restaurant/plan` (`RestaurantAdminController`) — zero frontend surface exists for task-4.4's plan self-service. Report 43; UI reverted/paused, report 44 — `restaurantAdminService` kept for a future customer/billing portal.
+- [x] **Completed (Milestones 1–4, task-5.1–5.3):** Frontend/backend stability, WebSocket/error-boundary hardening, backend multi-tenancy & transactional billing, security/config hardening (secrets, Kafka removal, RFC 7807, CORS/rate-limiting), frontend testing & tenant lifecycle, global 403 handling, `backend-types.ts` regen, ADMIN Plan/Estado UI (built then reverted — `restaurantAdminService` kept for a future billing portal, see notes below). Reports 01–44.
 - [ ] **task-5.4:** Wire the `MENU` tab in `Settings.tsx`/`SettingsBar.tsx` (currently `<div>Menu Settings</div>`) to `SettingsPayload.menu` (`showOutOfStockItems`, `enableItemSearch`).
 - [ ] **task-5.5:** Wire the `BILLING` tab to `SettingsPayload.billing` (`currencySymbol`, `taxRate`, `isTaxIncludeInMenuPrice`, `suggestedTipPercentage`) plus a `TaxRules` list editor (task-3.8).
 - [ ] **task-5.6:** Add a `PaymentGatewaySettings` UI section (enabled/provider/publicKey/secretRef — secret-reference pattern, never a raw-secret input) wired to `SettingsPayload.paymentGateway`.
@@ -57,3 +51,21 @@
 - [ ] **EMB-PC-12:** Frontend — restaurant list page consuming `GET /platform/restaurants` (paginated table).
 - [ ] **EMB-PC-13:** Frontend — restaurant detail page (info + owner + enable/disable button wired to `PATCH .../status` + per-tenant audit history from `GET /platform/audit-log?restaurantId=`).
 - [ ] **EMB-PC-14:** Frontend — create-restaurant form wired to `POST /platform/restaurants`, and self password-change UI wired to `PATCH /platform/auth/password`.
+- [ ] **EMB-LP-01:** Scaffold standalone `ember/landing/` Astro project (own `package.json`/lockfile, not a `frontend` workspace member) + Tailwind CSS 4 via Astro's Vite integration + `@astrojs/react`; `astro.config.mjs` dev server on port 5174.
+- [ ] **EMB-LP-02:** Add `@astrojs/sitemap` integration + `public/robots.txt` (allow-all, references `sitemap.xml`) — checklist #7/#8.
+- [ ] **EMB-LP-03:** `src/layouts/Layout.astro` + `src/components/SEO.astro` — per-page `<title>`/`<meta description>` props, OG/Twitter tags → `/public/og-image.png`, favicon set (`favicon.ico`/`.svg`, `apple-touch-icon.png`, `site.webmanifest`) — #3/#4/#5/#6.
+- [ ] **EMB-LP-04:** Brutalist Tailwind 4 theme tokens — palette (`#0a0a0a`/`#f5f5f0`/`#8c1717`), 3–4px borders, `6px 6px 0 #000` hard shadows, zero `border-radius`, Inter/Geist + monospace stack.
+- [ ] **EMB-LP-05:** `src/components/Nav.astro` + `MobileNavDrawer.tsx` island — wordmark, anchors, "Iniciar sesión"/"Registrarme" CTAs → `frontend`, hamburger drawer.
+- [ ] **EMB-LP-06:** `src/components/Hero.astro` — headline/subheadline, above-the-fold primary/secondary CTAs, product screenshot via `<Image/>` with explicit width/height + alt text — #2/#9/#20.
+- [ ] **EMB-LP-07:** `src/components/Features.astro` — 3–6 card grid (collaborative cart, KDS, floor/waiter mgmt, admin analytics).
+- [ ] **EMB-LP-08:** `src/components/Pricing.astro` — four static cards matching `RestaurantPlan` (FREE/STARTER/PRO/ENTERPRISE), ENTERPRISE CTA → `mailto:`/contact form → thank-you redirect.
+- [ ] **EMB-LP-09:** `src/components/CTASection.astro` — high-contrast full-width closing band before the footer.
+- [ ] **EMB-LP-10:** `src/components/Footer.astro` — wordmark, copyright, real physical address/business entity, links to privacy/terms/contact — #19.
+- [ ] **EMB-LP-11:** `src/components/StickyMobileCTA.tsx` island — persistent bottom bar (Register/Iniciar Sesión), mobile-only, appears once scrolled past hero — #11.
+- [ ] **EMB-LP-12:** `src/components/CookieBanner.tsx` island — non-intrusive brutalist cookie consent — #17.
+- [ ] **EMB-LP-13:** Assemble `src/pages/index.astro` wiring Nav/Hero/Features/Pricing/CTASection/Footer/StickyMobileCTA/CookieBanner.
+- [ ] **EMB-LP-14:** `src/pages/404.astro` custom error page — #1.
+- [ ] **EMB-LP-15:** `src/pages/privacy.astro` + `src/pages/terms.astro` legal pages — #15/#16.
+- [ ] **EMB-LP-16:** Contact/lead form island + `src/pages/thank-you.astro` confirmation page, with loading spinner/skeleton + form error states — #12/#13/#14.
+- [ ] **EMB-LP-17:** Privacy-first analytics script (Vercel Analytics/Plausible/Cloudflare, zero tracking cookies by default) wired into `SEO.astro`/`Layout.astro` head — #18.
+- [ ] **EMB-LP-18:** A11y/perf pass — WCAG AAA contrast audit, visible focus indicators, alt-text audit on every `<img>`/`<Image/>`, Lighthouse/axe check across all pages, final `astro build` verification.
