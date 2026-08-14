@@ -1,7 +1,10 @@
 package com.vanter.ember.analytics.controller;
 
 import com.vanter.ember.analytics.dto.AnalyticsRangeResponse;
+import com.vanter.ember.analytics.dto.AnalyticsSalesResponse;
 import com.vanter.ember.analytics.dto.AnalyticsSummaryResponse;
+import com.vanter.ember.analytics.dto.SalesBucket;
+import com.vanter.ember.analytics.dto.SalesGranularity;
 import com.vanter.ember.analytics.service.AnalyticsService;
 import com.vanter.ember.config.CorsConfig;
 import com.vanter.ember.config.SecurityConfig;
@@ -19,7 +22,9 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -184,5 +189,100 @@ class AnalyticsControllerTest {
         mockMvc.perform(get("/admin/analytics/summary")).andExpect(status().isUnauthorized());
 
         verify(analyticsService, never()).getSummary(any(), any(), any());
+    }
+
+    private static AnalyticsSalesResponse salesFixture() {
+        return new AnalyticsSalesResponse(
+                SalesGranularity.DAY,
+                LocalDateTime.of(2026, 8, 1, 0, 0),
+                LocalDateTime.of(2026, 8, 14, 23, 59, 59),
+                new BigDecimal("150.50"),
+                3L,
+                List.of(
+                        new SalesBucket(
+                                LocalDate.of(2026, 8, 1),
+                                LocalDate.of(2026, 8, 1),
+                                new BigDecimal("100.00"),
+                                2L),
+                        new SalesBucket(
+                                LocalDate.of(2026, 8, 2),
+                                LocalDate.of(2026, 8, 2),
+                                new BigDecimal("50.50"),
+                                1L)));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void sales_passesTheGranularityAndParsedWindowFromTheRequest() throws Exception {
+        TenantContextHolder.setTenantId(TENANT_ID);
+        LocalDateTime from = LocalDateTime.of(2026, 8, 1, 0, 0);
+        LocalDateTime to = LocalDateTime.of(2026, 8, 14, 23, 59, 59);
+        when(analyticsService.getSales(TENANT_ID, "week", from, to)).thenReturn(salesFixture());
+
+        mockMvc.perform(get("/admin/analytics/sales")
+                        .param("granularity", "week")
+                        .param("from", "2026-08-01T00:00:00")
+                        .param("to", "2026-08-14T23:59:59"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.granularity").value("DAY"))
+                .andExpect(jsonPath("$.totalRevenue").value(150.50))
+                .andExpect(jsonPath("$.paidBillCount").value(3))
+                .andExpect(jsonPath("$.buckets.length()").value(2))
+                .andExpect(jsonPath("$.buckets[0].bucketStart").value("2026-08-01"))
+                .andExpect(jsonPath("$.buckets[0].bucketEnd").value("2026-08-01"))
+                .andExpect(jsonPath("$.buckets[0].revenue").value(100.00))
+                .andExpect(jsonPath("$.buckets[0].paidBillCount").value(2));
+
+        verify(analyticsService).getSales(TENANT_ID, "week", from, to);
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void sales_withoutParams_leavesTheDefaultingToTheService() throws Exception {
+        TenantContextHolder.setTenantId(TENANT_ID);
+        when(analyticsService.getSales(TENANT_ID, null, null, null)).thenReturn(salesFixture());
+
+        mockMvc.perform(get("/admin/analytics/sales")).andExpect(status().isOk());
+
+        verify(analyticsService).getSales(TENANT_ID, null, null, null);
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void sales_ignoresClientSuppliedRestaurantId() throws Exception {
+        TenantContextHolder.setTenantId(TENANT_ID);
+        when(analyticsService.getSales(TENANT_ID, null, null, null)).thenReturn(salesFixture());
+
+        mockMvc.perform(get("/admin/analytics/sales")
+                        .param("restaurantId", OTHER_TENANT_ID.toString()))
+                .andExpect(status().isOk());
+
+        verify(analyticsService).getSales(TENANT_ID, null, null, null);
+        verify(analyticsService, never()).getSales(eq(OTHER_TENANT_ID), any(), any(), any());
+    }
+
+    @Test
+    @WithMockUser(roles = "WAITER")
+    void sales_forbiddenForNonAdmin() throws Exception {
+        TenantContextHolder.setTenantId(TENANT_ID);
+
+        mockMvc.perform(get("/admin/analytics/sales")).andExpect(status().isForbidden());
+
+        verify(analyticsService, never()).getSales(any(), any(), any(), any());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void sales_withoutTenantBound_isRejected() throws Exception {
+        mockMvc.perform(get("/admin/analytics/sales")).andExpect(status().isConflict());
+
+        verify(analyticsService, never()).getSales(any(), any(), any(), any());
+    }
+
+    @Test
+    void sales_unauthenticatedReturns401() throws Exception {
+        mockMvc.perform(get("/admin/analytics/sales")).andExpect(status().isUnauthorized());
+
+        verify(analyticsService, never()).getSales(any(), any(), any(), any());
     }
 }

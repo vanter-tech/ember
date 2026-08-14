@@ -1,6 +1,7 @@
 package com.vanter.ember.analytics.controller;
 
 import com.vanter.ember.analytics.dto.AnalyticsRangeResponse;
+import com.vanter.ember.analytics.dto.AnalyticsSalesResponse;
 import com.vanter.ember.analytics.dto.AnalyticsSummaryResponse;
 import com.vanter.ember.analytics.service.AnalyticsService;
 import com.vanter.ember.config.TenantContextHolder;
@@ -43,5 +44,22 @@ public class AnalyticsController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
                     LocalDateTime to) {
         return analyticsService.getSummary(TenantContextHolder.requireTenantId(), from, to);
+    }
+
+    @Operation(
+            summary = "Temporal sales series: revenue and settled orders bucketed over time",
+            description =
+                    "'granularity' is one of day|week|month|year (case-insensitive, defaults to day) "
+                            + "and 'from'/'to' are the same optional inclusive window the summary uses. "
+                            + "The returned series is gap-free, with quiet buckets reported as zeros.")
+    @GetMapping("/sales")
+    public AnalyticsSalesResponse getSales(
+            @RequestParam(required = false) String granularity,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+                    LocalDateTime from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+                    LocalDateTime to) {
+        return analyticsService.getSales(
+                TenantContextHolder.requireTenantId(), granularity, from, to);
     }
 }

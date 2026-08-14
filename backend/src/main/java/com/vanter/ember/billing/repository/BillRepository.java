@@ -56,4 +56,26 @@ public interface BillRepository extends JpaRepository<Bill, Long> {
             @Param("tenantId") UUID tenantId,
             @Param("from") LocalDateTime from,
             @Param("to") LocalDateTime to);
+
+    /**
+     * The {@code PAID} bill count behind {@link #findSalesTotals}, split into one row per calendar
+     * day that actually settled a bill — quiet days are absent and the caller zero-fills them.
+     * Ordered oldest-first. Carries the same deliberate {@code tenantId} predicate.
+     */
+    @Query(
+            """
+            select new com.vanter.ember.billing.repository.BillDailyOrders(
+                year(b.createdAt), month(b.createdAt), day(b.createdAt), count(b))
+            from Bill b
+            where b.tenantId = :tenantId
+              and b.status = com.vanter.ember.billing.model.BillStatus.PAID
+              and b.createdAt >= :from
+              and b.createdAt <= :to
+            group by year(b.createdAt), month(b.createdAt), day(b.createdAt)
+            order by year(b.createdAt), month(b.createdAt), day(b.createdAt)
+            """)
+    List<BillDailyOrders> findPaidBillsByDay(
+            @Param("tenantId") UUID tenantId,
+            @Param("from") LocalDateTime from,
+            @Param("to") LocalDateTime to);
 }
