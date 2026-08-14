@@ -2,8 +2,12 @@ import { kitchenServices } from '@/lib/api'
 import { useQuery } from '@tanstack/react-query'
 import { QueueCard } from './components/QueueCard'
 import { FocusedCard } from './components/FocusedCard'
+import { useWebsocketStore } from '@/store/websocket'
+import { Badge } from '@/components/ui/badge'
 
 export const OrdersDisplays = () => {
+  const isConnected = useWebsocketStore((state) => state.isConnected)
+
   const {
     data: info = [],
     isLoading,
@@ -39,7 +43,16 @@ export const OrdersDisplays = () => {
 
   return (
     <div className="flex flex-col h-full p-2">
-      <div className="flex items-center justify-center flex-col w-full h-20 shadow-sm rounded-3xl p-4">
+      <div className="flex items-center justify-center flex-col relative w-full h-20 shadow-sm rounded-3xl p-4">
+        <Badge
+          variant={isConnected ? 'default' : 'destructive'}
+          className="absolute top-3 right-4"
+        >
+          <span
+            className={`size-1.5 rounded-full ${isConnected ? 'bg-primary-foreground' : 'bg-destructive'}`}
+          />
+          {isConnected ? 'Conectado' : 'Desconectado'}
+        </Badge>
         <h1 className="text-3xl font-bold text-[#8c1717] tracking-tight">
           Ember
         </h1>
