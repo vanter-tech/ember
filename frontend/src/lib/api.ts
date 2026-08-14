@@ -30,6 +30,9 @@ export interface Page<T> {
   number: number
 }
 
+export type RestaurantResponse = components['schemas']['Restaurant']
+export type UpdateRestaurantPlanRequest = components['schemas']['UpdateRestaurantPlanRequest']
+
 export interface PublicBranding {
   slug: string
   businessName: string
@@ -290,6 +293,17 @@ export const kitchenServices = {
     return data
   }
 
+}
+
+export const restaurantAdminService = {
+  getPlan: async (): Promise<RestaurantResponse> => {
+    const { data } = await api.get<RestaurantResponse>('/admin/restaurant')
+    return data
+  },
+  updatePlan: async (plan: UpdateRestaurantPlanRequest['plan']): Promise<RestaurantResponse> => {
+    const { data } = await api.patch<RestaurantResponse>('/admin/restaurant/plan', { plan })
+    return data
+  },
 }
 
 export const publicService = {

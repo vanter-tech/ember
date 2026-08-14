@@ -1,11 +1,12 @@
 import { useSettingsStore } from '@/store/uiStore'
 import { Button } from './ui/button'
-import { 
-  Store, 
-  Utensils, 
-  ConciergeBell, 
-  Receipt, 
-  Printer, 
+import {
+  Store,
+  Utensils,
+  ConciergeBell,
+  Receipt,
+  Printer,
+  CreditCard,
 } from 'lucide-react';
 
 export const SettingsBar = () => {
@@ -56,6 +57,15 @@ export const SettingsBar = () => {
             >
                 <ConciergeBell className="mr-2 h-4 w-4" />
                 Espacio
+            </Button>
+            <Button
+                variant={activeSettings === 'PLAN' ?
+                    'default' : 'ghost'}
+                onClick={() => openSettings('PLAN')}
+                className="justify-start"
+            >
+                <CreditCard className="mr-2 h-4 w-4" />
+                Plan y Estado
             </Button>
         </nav>
     )

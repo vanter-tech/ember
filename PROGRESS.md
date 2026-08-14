@@ -1,9 +1,9 @@
 # PROGRESS.md — Active Execution State
 
 ## Current Execution State
-- **Last Completed Task:** ad-hoc — `backend-types.ts` live-regenerated via `pnpm run openapi` now that the backend boots, replacing task-5.2's hand-extension (predecessor: backend boot fix, report 41) — report 42
-- **Current Active Task:** none — task-5.3 next in the frontend/backend gap-analysis backlog (task-5.3–5.21 remain; EMB-PC-01–14 Platform/Super-Admin Console also queued), awaiting task selection/approval
-- **System Health:** Frontend `pnpm run build` PASSING (0 TS errors). Backend boots and serves (`/actuator/health` DB+Mongo UP); `./mvnw test` reconfirmed 423/423 passing (tests use H2 `create-drop`, unaffected by the Postgres-only V3 fix, but reran anyway — clean).
+- **Last Completed Task:** task-5.3 (ADMIN "Plan y Estado" UI + `restaurantAdminService`; predecessor task-5.2) — report 43
+- **Current Active Task:** none — task-5.4 next in the frontend/backend gap-analysis backlog (task-5.4–5.21 remain; EMB-PC-01–14 Platform/Super-Admin Console also queued), awaiting task selection/approval
+- **System Health:** Frontend `pnpm run build` PASSING (0 TS errors). Backend boots and serves locally (`ember-postgres-1`/`ember-mongodb-1`/`ember-minio-1` via Docker, app itself runs on host, `.env` points at `localhost` per report 41); `./mvnw test` last confirmed 423/423 passing (report 41), not rerun this task (no backend files touched).
 
 ## Active Context & Recent Decisions
 - Monolith root at `ember/`; Java 17 + Spring Boot 3.5.14 / React 19 + TS + pnpm. Product: multi-tenant restaurant platform (collaborative cart, KDS, floor/waiter management, admin analytics). task-3.2 deleted `spring-kafka` — Spring `ApplicationEventPublisher` is the only event bus, do not reintroduce a broker.
@@ -24,7 +24,7 @@
 - [x] **Milestone 4 (task-4.1–4.4):** Frontend testing & tenant lifecycle — Vitest/RTL, `Page<T>` consumption, tenant onboarding landing page, `Restaurant.plan`/`status` enforcement. Reports 35–38.
 - [x] **task-5.1:** Add global 403/tenant-suspended handling to `api.ts`'s response interceptor (currently only 401→logout) — detect the `jwtAuthFilter` `ProblemDetail` and route to a suspended-tenant modal/page instead of a silently rejected promise. Report 39.
 - [x] **task-5.2:** Regenerate/extend `frontend/src/lib/backend-types.ts` — missing `Restaurant`, `RestaurantPlan`, `RestaurantStatus`, `UpdateRestaurantPlanRequest`, `PublicBrandingResponse`, and `SettingsPayload.paymentGateway`/`businessHours`/`billing.taxRules` (predates task-3.8/4.3/4.4). Hand-extended (backend DB unreachable). Report 40.
-- [ ] **task-5.3:** Build ADMIN "Plan & Estado" UI + `restaurantAdminService` in `api.ts` consuming `GET`/`PATCH /admin/restaurant/plan` (`RestaurantAdminController`) — zero frontend surface exists for task-4.4's plan self-service.
+- [x] **task-5.3:** Build ADMIN "Plan & Estado" UI + `restaurantAdminService` in `api.ts` consuming `GET`/`PATCH /admin/restaurant/plan` (`RestaurantAdminController`) — zero frontend surface exists for task-4.4's plan self-service. Report 43.
 - [ ] **task-5.4:** Wire the `MENU` tab in `Settings.tsx`/`SettingsBar.tsx` (currently `<div>Menu Settings</div>`) to `SettingsPayload.menu` (`showOutOfStockItems`, `enableItemSearch`).
 - [ ] **task-5.5:** Wire the `BILLING` tab to `SettingsPayload.billing` (`currencySymbol`, `taxRate`, `isTaxIncludeInMenuPrice`, `suggestedTipPercentage`) plus a `TaxRules` list editor (task-3.8).
 - [ ] **task-5.6:** Add a `PaymentGatewaySettings` UI section (enabled/provider/publicKey/secretRef — secret-reference pattern, never a raw-secret input) wired to `SettingsPayload.paymentGateway`.
