@@ -8,6 +8,7 @@ import com.vanter.ember.kitchen.model.KitchenItem;
 import com.vanter.ember.kitchen.model.KitchenOrder;
 import com.vanter.ember.kitchen.repository.KitchenOrderRepository;
 import com.vanter.ember.session.event.KitchenItemsConfirmed;
+import com.vanter.ember.session.event.SessionClosed;
 import com.vanter.ember.session.model.OrderItemStatus;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -36,9 +37,14 @@ public class KitchenService {
         return kitchenOrderRepository.findByTenantId(TenantContextHolder.requireTenantId(), pageable);
     }
 
-    /** Unpaginated: the kitchen display groups every open order by table, not a paged list. */
+    /**
+     * Unpaginated: the kitchen display groups every open order by table, not a paged list.
+     * Only {@code active} orders are shown — an order is retired (see
+     * {@link #handleSessionClosed}) once its session closes, so tickets from long-ended
+     * sessions don't linger on the live display.
+     */
     public List<KitchenDisplayEntry> findDisplay() {
-        return findAll().stream()
+        return kitchenOrderRepository.findByTenantIdAndActiveTrue(TenantContextHolder.requireTenantId()).stream()
                 .collect(Collectors.groupingBy(KitchenOrder::getTableNumber))
                 .entrySet().stream()
                 .sorted(Comparator.comparingInt(java.util.Map.Entry::getKey))
@@ -67,6 +73,7 @@ public class KitchenService {
                         .tableNumber(event.tableNumber())
                         .createdAt(LocalDateTime.now())
                         .items(new ArrayList<>())
+                        .active(true)
                         .build());
 
         event.confirmedItems().forEach(item -> {
@@ -103,6 +110,17 @@ public class KitchenService {
         KitchenOrder saved = kitchenOrderRepository.save(order);
         eventPublisher.publishEvent(new KitchenItemUpdated(saved.getSessionId(), itemId, newStatus));
         return saved;
+    }
+
+    /** Retires the order from the live display once its session closes; history is kept, not shown. */
+    @EventListener
+    public void handleSessionClosed(SessionClosed event) {
+        kitchenOrderRepository
+                .findByTenantIdAndSessionId(TenantContextHolder.requireTenantId(), event.sessionId())
+                .ifPresent(order -> {
+                    order.setActive(false);
+                    kitchenOrderRepository.save(order);
+                });
     }
 
     private boolean isValidTransition(OrderItemStatus current, OrderItemStatus next) {
