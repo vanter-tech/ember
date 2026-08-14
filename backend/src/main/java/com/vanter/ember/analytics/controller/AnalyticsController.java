@@ -4,6 +4,7 @@ import com.vanter.ember.analytics.dto.AnalyticsProductsResponse;
 import com.vanter.ember.analytics.dto.AnalyticsRangeResponse;
 import com.vanter.ember.analytics.dto.AnalyticsSalesResponse;
 import com.vanter.ember.analytics.dto.AnalyticsSummaryResponse;
+import com.vanter.ember.analytics.dto.AnalyticsTablesResponse;
 import com.vanter.ember.analytics.service.AnalyticsService;
 import com.vanter.ember.config.TenantContextHolder;
 import io.swagger.v3.oas.annotations.Operation;
@@ -79,5 +80,21 @@ public class AnalyticsController {
                     LocalDateTime to,
             @RequestParam(required = false) Integer limit) {
         return analyticsService.getProducts(TenantContextHolder.requireTenantId(), from, to, limit);
+    }
+
+    @Operation(
+            summary = "Table performance: turnover, revenue and average session duration per table",
+            description =
+                    "'from'/'to' are the same optional inclusive window the summary uses. Tables "
+                            + "come back ordered by revenue and only include tables that turned over "
+                            + "at least once in the window; 'activeTableCount' and "
+                            + "'averageTurnoverRate' are always live and ignore the window.")
+    @GetMapping("/tables")
+    public AnalyticsTablesResponse getTables(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+                    LocalDateTime from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+                    LocalDateTime to) {
+        return analyticsService.getTables(TenantContextHolder.requireTenantId(), from, to);
     }
 }
