@@ -3,6 +3,7 @@ import {SettingsBar} from "@/components/SettingsBar";
 import { BrandingSettings } from "./components/settings/BrandingSettings";
 import { SpacesSettings } from "./components/settings/SpaceSettings";
 import { MenuSettings } from "./components/settings/MenuSettings";
+import { BillingSettings } from "./components/settings/BillingSettings";
 
 export const Settings = () => {
     const { activeSettings } = useSettingsStore();
@@ -14,7 +15,7 @@ export const Settings = () => {
             case 'MENU':
                 return <MenuSettings />;
             case 'BILLING':
-                return <div>Billing Settings</div>;
+                return <BillingSettings />;
             case 'HARDWARE':
                 return <div>Hardware Settings</div>;
             case 'SPACE':
