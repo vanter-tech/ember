@@ -108,9 +108,9 @@ class E2EOrderFlowTest {
                 .passwordHash(passwordEncoder.encode(password)).role(Role.KITCHEN).build());
         customerId = customer.getId();
 
-        waiterToken = login("waiter@e2e.com", password);
-        customerToken = login("customer@e2e.com", password);
-        kitchenToken = login("kitchen@e2e.com", password);
+        waiterToken = login("waiter@e2e.com", password, null);
+        customerToken = login("customer@e2e.com", password, restaurant.getSlug());
+        kitchenToken = login("kitchen@e2e.com", password, null);
 
         DiningTables table = diningTableRepository.save(DiningTables.builder()
                 .restaurantId(restaurant.getId())
@@ -134,10 +134,11 @@ class E2EOrderFlowTest {
         TenantContextHolder.clear();
     }
 
-    private String login(String email, String password) throws Exception {
+    private String login(String email, String password, String restaurantSlug) throws Exception {
         LoginRequest req = new LoginRequest();
         req.setEmail(email);
         req.setPassword(password);
+        req.setRestaurantSlug(restaurantSlug);
         MvcResult result = mockMvc.perform(post("/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))

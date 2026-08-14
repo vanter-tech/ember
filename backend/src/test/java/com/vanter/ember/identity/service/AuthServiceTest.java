@@ -42,12 +42,13 @@ class AuthServiceTest {
         req.setName("Ana");
         req.setEmail("ana@test.com");
         req.setPassword("secret");
+        req.setRestaurantSlug("anas-diner");
 
-        Restaurant restaurant = Restaurant.builder().id(UUID.randomUUID()).name("Ana's Restaurant").build();
+        Restaurant restaurant = Restaurant.builder().id(UUID.randomUUID()).name("Ana's Diner").build();
 
         when(userRepository.existsByEmail("ana@test.com")).thenReturn(false);
         when(passwordEncoder.encode("secret")).thenReturn("hashed");
-        when(restaurantService.createOrJoin(null, null, "Ana")).thenReturn(restaurant);
+        when(restaurantService.getBySlug("anas-diner")).thenReturn(restaurant);
         when(userRepository.save(any())).thenAnswer(inv -> {
             User u = inv.getArgument(0);
             u.setId("user-1");
@@ -60,6 +61,7 @@ class AuthServiceTest {
         assertThat(response.getToken()).isEqualTo("jwt-token");
         assertThat(response.getName()).isEqualTo("Ana");
         assertThat(response.getRole()).isEqualTo("CUSTOMER");
+        assertThat(response.getRestaurantId()).isEqualTo(restaurant.getId());
         verify(userRepository).save(any(User.class));
     }
 
@@ -75,23 +77,61 @@ class AuthServiceTest {
     }
 
     @Test
-    void login_returnsTokenForValidCredentials() {
-        Restaurant restaurant = Restaurant.builder().id(UUID.randomUUID()).name("Ana's Restaurant").build();
+    void login_resolvesRestaurantFromSlugForCustomer() {
+        Restaurant restaurant = Restaurant.builder().id(UUID.randomUUID()).name("Ana's Diner").build();
         User user = User.builder()
                 .id("user-1").name("Ana").email("ana@test.com")
-                .passwordHash("hashed").role(Role.CUSTOMER).restaurantId(restaurant).build();
+                .passwordHash("hashed").role(Role.CUSTOMER).build();
         LoginRequest req = new LoginRequest();
         req.setEmail("ana@test.com");
         req.setPassword("secret");
+        req.setRestaurantSlug("anas-diner");
 
         when(userRepository.findByEmail("ana@test.com")).thenReturn(Optional.of(user));
         when(passwordEncoder.matches("secret", "hashed")).thenReturn(true);
+        when(restaurantService.getBySlug("anas-diner")).thenReturn(restaurant);
         when(jwtService.generateToken(eq("ana@test.com"), anyMap())).thenReturn("jwt-token");
 
         AuthResponse response = authService.login(req);
 
         assertThat(response.getToken()).isEqualTo("jwt-token");
         assertThat(response.getRole()).isEqualTo("CUSTOMER");
+        assertThat(response.getRestaurantId()).isEqualTo(restaurant.getId());
+    }
+
+    @Test
+    void login_throwsWhenCustomerOmitsRestaurantSlug() {
+        User user = User.builder()
+                .id("user-1").name("Ana").email("ana@test.com")
+                .passwordHash("hashed").role(Role.CUSTOMER).build();
+        LoginRequest req = new LoginRequest();
+        req.setEmail("ana@test.com");
+        req.setPassword("secret");
+
+        when(userRepository.findByEmail("ana@test.com")).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("secret", "hashed")).thenReturn(true);
+
+        assertThatThrownBy(() -> authService.login(req))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void login_usesStoredRestaurantForNonCustomerRoles() {
+        Restaurant restaurant = Restaurant.builder().id(UUID.randomUUID()).name("HQ").build();
+        User user = User.builder()
+                .id("user-1").name("Walter").email("walter@test.com")
+                .passwordHash("hashed").role(Role.WAITER).restaurantId(restaurant).build();
+        LoginRequest req = new LoginRequest();
+        req.setEmail("walter@test.com");
+        req.setPassword("secret");
+
+        when(userRepository.findByEmail("walter@test.com")).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("secret", "hashed")).thenReturn(true);
+        when(jwtService.generateToken(eq("walter@test.com"), anyMap())).thenReturn("jwt-token");
+
+        AuthResponse response = authService.login(req);
+
+        assertThat(response.getRestaurantId()).isEqualTo(restaurant.getId());
     }
 
     @Test

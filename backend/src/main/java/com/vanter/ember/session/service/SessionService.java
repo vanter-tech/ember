@@ -9,7 +9,6 @@ import com.vanter.ember.config.TenantContextHolder;
 import com.vanter.ember.identity.model.User;
 import com.vanter.ember.identity.repository.UserRepository;
 import com.vanter.ember.kitchen.event.KitchenItemUpdated;
-import com.vanter.ember.restaurant.model.Restaurant;
 import com.vanter.ember.session.dto.OrderItemDto;
 import com.vanter.ember.session.dto.ParticipantDto;
 import com.vanter.ember.session.dto.SessionDetailResponseDto;
@@ -346,11 +345,6 @@ public class SessionService {
 
         DiningTables table = diningTableRepository.findById(session.getTableId())
                 .orElseThrow(() -> new ResourceNotFoundException("Table not found"));
-
-        Restaurant requesterRestaurant = requester.getRestaurantId();
-        if (requesterRestaurant == null || !requesterRestaurant.getId().equals(table.getRestaurantId())) {
-            throw new AccessDeniedException("Not authorized to confirm orders for this restaurant");
-        }
 
         List<OrderItem> drafts = session.getItems().stream()
                 .filter(item  -> item.getParticipantId().equals(userId))

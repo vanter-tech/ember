@@ -612,32 +612,6 @@ class SessionServiceTest {
     }
 
     @Test
-    void confirmDraftsForUser_throwsWhenTenantMismatch() {
-        Session session = openSessionWithParticipant("user-1");
-        when(sessionRepository.findByIdAndTenantId("sess-1", RESTAURANT_ID)).thenReturn(Optional.of(session));
-        when(userRepository.findByEmail("user-1@test.com"))
-                .thenReturn(Optional.of(userWithRestaurant("user-1", UUID.randomUUID())));
-        when(diningTableRepository.findById(TABLE_ID))
-                .thenReturn(Optional.of(diningTableForRestaurant(RESTAURANT_ID)));
-
-        assertThatThrownBy(() -> sessionService.confirmDraftsForUser("sess-1", "user-1", "user-1@test.com"))
-                .isInstanceOf(AccessDeniedException.class);
-    }
-
-    @Test
-    void confirmDraftsForUser_throwsWhenRequesterHasNoRestaurant() {
-        Session session = openSessionWithParticipant("user-1");
-        when(sessionRepository.findByIdAndTenantId("sess-1", RESTAURANT_ID)).thenReturn(Optional.of(session));
-        when(userRepository.findByEmail("user-1@test.com"))
-                .thenReturn(Optional.of(userWithRestaurant("user-1", null)));
-        when(diningTableRepository.findById(TABLE_ID))
-                .thenReturn(Optional.of(diningTableForRestaurant(RESTAURANT_ID)));
-
-        assertThatThrownBy(() -> sessionService.confirmDraftsForUser("sess-1", "user-1", "user-1@test.com"))
-                .isInstanceOf(AccessDeniedException.class);
-    }
-
-    @Test
     void confirmDraftsForUser_confirmsDraftsWhenUserIdAndTenantMatch() {
         Session session = openSessionWithParticipant("user-1");
         session.getItems().add(OrderItem.builder()

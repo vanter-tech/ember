@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.util.Map;
 
@@ -29,15 +30,13 @@ public class AuthService {
             throw new IllegalArgumentException("Email already in use");
         }
 
-        Restaurant restaurant = restaurantService.createOrJoin(
-                request.getRestaurantName(), request.getRestaurantSlug(), request.getName());
+        Restaurant restaurant = restaurantService.getBySlug(request.getRestaurantSlug());
 
         User user = User.builder()
                 .name(request.getName())
                 .email(request.getEmail())
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
                 .role(Role.CUSTOMER)
-                .restaurantId(restaurant)
                 .build();
 
         userRepository.save(user);
@@ -51,7 +50,7 @@ public class AuthService {
                 .token(token)
                 .userId(user.getId())
                 .name(user.getName())
-                .restaurantId(user.getRestaurantId() != null ? user.getRestaurantId().getId() : null)
+                .restaurantId(restaurant.getId())
                 .role(user.getRole().name())
                 .build();
     }
@@ -64,10 +63,12 @@ public class AuthService {
             throw new BadCredentialsException("Invalid credentials");
         }
 
+        Restaurant restaurant = resolveLoginRestaurant(user, request.getRestaurantSlug());
+
         String token = jwtService.generateToken(
                 user.getEmail(),
                 Map.of("role", user.getRole().name(), "userId", user.getId(),
-                        "rid", user.getRestaurantId().getId())
+                        "rid", restaurant.getId())
         );
 
         return AuthResponse.builder()
@@ -75,7 +76,22 @@ public class AuthService {
                 .userId(user.getId())
                 .name(user.getName())
                 .role(user.getRole().name())
-                .restaurantId(user.getRestaurantId() != null ? user.getRestaurantId().getId() : null)
+                .restaurantId(restaurant.getId())
                 .build();
+    }
+
+    /**
+     * CUSTOMER accounts aren't bound to one restaurant, so their "current" tenant comes from the
+     * QR/table-code landing page they logged in from, not from a stored field. ADMIN/WAITER
+     * accounts are tenant-bound at creation, so they keep using {@code User.restaurantId}.
+     */
+    private Restaurant resolveLoginRestaurant(User user, String restaurantSlug) {
+        if (user.getRole() != Role.CUSTOMER) {
+            return user.getRestaurantId();
+        }
+        if (!StringUtils.hasText(restaurantSlug)) {
+            throw new IllegalArgumentException("restaurantSlug is required for customer login");
+        }
+        return restaurantService.getBySlug(restaurantSlug);
     }
 }
