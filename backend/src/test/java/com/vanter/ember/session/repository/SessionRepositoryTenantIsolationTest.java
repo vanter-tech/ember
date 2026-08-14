@@ -93,6 +93,16 @@ class SessionRepositoryTenantIsolationTest {
     }
 
     @Test
+    void findByTenantIdAndIdIn_doesNotResolveAnotherTenantsSessions() {
+        List<String> bothIds = List.of(sessionA.getId(), sessionB.getId());
+
+        assertThat(sessionRepository.findByTenantIdAndIdIn(TENANT_A, bothIds))
+                .extracting(Session::getId)
+                .containsExactly(sessionA.getId());
+        assertThat(sessionRepository.findByTenantIdAndIdIn(UUID.randomUUID(), bothIds)).isEmpty();
+    }
+
+    @Test
     void findByTenantIdAndJoinCodeAndStatus_doesNotResolveAnotherTenantsJoinCode() {
         assertThat(sessionRepository.findByTenantIdAndJoinCodeAndStatus(
                 TENANT_B, "AB3CD", SessionStatus.OPEN))
