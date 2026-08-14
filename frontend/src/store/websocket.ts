@@ -10,6 +10,7 @@ interface WebSocketState {
     isConnected: boolean,
     currentSubscription: any | null,
     subscribeToSession:(sessionId: string) => void,
+    subscribeToKitchen:(tenantId: string) => void,
     connect: () => void,
     disconnect: () => void
 }
@@ -93,7 +94,27 @@ export const useWebsocketStore = create<WebSocketState>((set, get) => ({
             }
         })
 
-        
+
+        set({currentSubscription: subscription})
+    },
+
+    subscribeToKitchen: (tenantId: string) => {
+        const currentClient = get().stompClient
+
+        if(!currentClient || !currentClient.connected) {
+            return
+        }
+
+        const existingSub = get().currentSubscription
+
+        if(existingSub) {
+            existingSub.unsubscribe()
+        }
+
+        const subscription = currentClient.subscribe(`/topic/kitchen/${tenantId}`, () => {
+            queryClient.invalidateQueries({queryKey: ['kitchenOrders']})
+        })
+
         set({currentSubscription: subscription})
     },
 

@@ -515,7 +515,7 @@ class SessionServiceTest {
         when(sessionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         sessionService.handleKitchenItemUpdated(
-                new KitchenItemUpdated("sess-1", "order-item-1", OrderItemStatus.PREPARING));
+                new KitchenItemUpdated(RESTAURANT_ID, "sess-1", "order-item-1", OrderItemStatus.PREPARING));
 
         ArgumentCaptor<Session> captor = ArgumentCaptor.forClass(Session.class);
         verify(sessionRepository).save(captor.capture());
@@ -527,7 +527,7 @@ class SessionServiceTest {
         when(sessionRepository.findByIdAndTenantId("sess-999", RESTAURANT_ID)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> sessionService.handleKitchenItemUpdated(
-                new KitchenItemUpdated("sess-999", "order-item-1", OrderItemStatus.PREPARING)))
+                new KitchenItemUpdated(RESTAURANT_ID, "sess-999", "order-item-1", OrderItemStatus.PREPARING)))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
@@ -537,7 +537,7 @@ class SessionServiceTest {
         when(sessionRepository.findByIdAndTenantId("sess-1", RESTAURANT_ID)).thenReturn(Optional.of(session));
 
         assertThatThrownBy(() -> sessionService.handleKitchenItemUpdated(
-                new KitchenItemUpdated("sess-1", "nonexistent-id", OrderItemStatus.PREPARING)))
+                new KitchenItemUpdated(RESTAURANT_ID, "sess-1", "nonexistent-id", OrderItemStatus.PREPARING)))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
@@ -548,7 +548,7 @@ class SessionServiceTest {
         when(sessionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         sessionService.handleKitchenItemUpdated(
-                new KitchenItemUpdated("sess-1", "order-item-1", OrderItemStatus.PREPARING));
+                new KitchenItemUpdated(RESTAURANT_ID, "sess-1", "order-item-1", OrderItemStatus.PREPARING));
 
         ArgumentCaptor<Object> captor = ArgumentCaptor.forClass(Object.class);
         verify(eventPublisher).publishEvent(captor.capture());

@@ -4,6 +4,7 @@ import com.vanter.ember.config.ResourceNotFoundException;
 import com.vanter.ember.config.TenantContextHolder;
 import com.vanter.ember.kitchen.dto.KitchenDisplayEntry;
 import com.vanter.ember.kitchen.event.KitchenItemUpdated;
+import com.vanter.ember.kitchen.event.KitchenOrderRetired;
 import com.vanter.ember.kitchen.model.KitchenItem;
 import com.vanter.ember.kitchen.model.KitchenOrder;
 import com.vanter.ember.kitchen.repository.KitchenOrderRepository;
@@ -198,6 +199,7 @@ class KitchenServiceTest {
 
         ArgumentCaptor<KitchenItemUpdated> captor = ArgumentCaptor.forClass(KitchenItemUpdated.class);
         verify(eventPublisher).publishEvent(captor.capture());
+        assertThat(captor.getValue().tenantId()).isEqualTo(TENANT_ID);
         assertThat(captor.getValue().sessionId()).isEqualTo("sess-1");
         assertThat(captor.getValue().itemId()).isEqualTo("order-item-1");
         assertThat(captor.getValue().newStatus()).isEqualTo(OrderItemStatus.PREPARING);
@@ -217,6 +219,11 @@ class KitchenServiceTest {
         ArgumentCaptor<KitchenOrder> captor = ArgumentCaptor.forClass(KitchenOrder.class);
         verify(kitchenOrderRepository).save(captor.capture());
         assertThat(captor.getValue().isActive()).isFalse();
+
+        ArgumentCaptor<KitchenOrderRetired> eventCaptor = ArgumentCaptor.forClass(KitchenOrderRetired.class);
+        verify(eventPublisher).publishEvent(eventCaptor.capture());
+        assertThat(eventCaptor.getValue().tenantId()).isEqualTo(TENANT_ID);
+        assertThat(eventCaptor.getValue().sessionId()).isEqualTo("sess-1");
     }
 
     @Test
@@ -227,6 +234,7 @@ class KitchenServiceTest {
         kitchenService.handleSessionClosed(new SessionClosed("sess-1", UUID.randomUUID(), SessionStatus.CLOSED));
 
         verify(kitchenOrderRepository, org.mockito.Mockito.never()).save(any());
+        verify(eventPublisher, org.mockito.Mockito.never()).publishEvent(any(KitchenOrderRetired.class));
     }
 
     // --- findAll(Pageable) tests ---
