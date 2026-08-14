@@ -6,6 +6,7 @@ import com.vanter.ember.catalog.model.Category;
 import com.vanter.ember.catalog.model.MenuItem;
 import com.vanter.ember.config.AbstractTenantIsolationTest;
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -93,5 +94,26 @@ class MenuItemRepositoryTenantIsolationTest extends AbstractTenantIsolationTest 
 
         assertThat(readAs(TENANT_B, () -> menuItemRepository.findById(id))).isEmpty();
         assertThat(readAs(TENANT_A, () -> menuItemRepository.findById(id))).isPresent();
+    }
+
+    @Test
+    void findByTenantIdAndIdInWithCategory_doesNotRelabelAnotherTenantsItems() {
+        Long tenantAItemId = itemSavedFor(TENANT_A, "Classic Burger", true).getId();
+        Long tenantBItemId = itemSavedFor(TENANT_B, "Veggie Burger", true).getId();
+        var bothIds = List.of(tenantAItemId, tenantBItemId);
+
+        assertThat(readAs(
+                        TENANT_A,
+                        () -> menuItemRepository.findByTenantIdAndIdInWithCategory(TENANT_A, bothIds)))
+                .singleElement()
+                .satisfies(item -> {
+                    assertThat(item.getName()).isEqualTo("Classic Burger");
+                    assertThat(item.getCategory().getName()).isEqualTo("Burgers");
+                });
+        assertThat(readAs(
+                        TENANT_B,
+                        () -> menuItemRepository.findByTenantIdAndIdInWithCategory(TENANT_B, bothIds)))
+                .singleElement()
+                .satisfies(item -> assertThat(item.getName()).isEqualTo("Veggie Burger"));
     }
 }

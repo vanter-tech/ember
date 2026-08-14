@@ -1,8 +1,11 @@
 package com.vanter.ember.analytics.service;
 
+import com.vanter.ember.analytics.dto.AnalyticsProductsResponse;
 import com.vanter.ember.analytics.dto.AnalyticsRangeResponse;
 import com.vanter.ember.analytics.dto.AnalyticsSalesResponse;
 import com.vanter.ember.analytics.dto.AnalyticsSummaryResponse;
+import com.vanter.ember.analytics.dto.CategoryPerformance;
+import com.vanter.ember.analytics.dto.ProductPerformance;
 import com.vanter.ember.analytics.dto.SalesBucket;
 import com.vanter.ember.analytics.dto.SalesGranularity;
 import com.vanter.ember.billing.repository.BillActivityWindow;
@@ -11,6 +14,11 @@ import com.vanter.ember.billing.repository.BillRepository;
 import com.vanter.ember.billing.repository.BillSalesTotals;
 import com.vanter.ember.billing.repository.PaymentDailyRevenue;
 import com.vanter.ember.billing.repository.PaymentRepository;
+import com.vanter.ember.catalog.model.MenuItem;
+import com.vanter.ember.catalog.repository.MenuItemRepository;
+import com.vanter.ember.session.model.OrderItem;
+import com.vanter.ember.session.model.OrderItemStatus;
+import com.vanter.ember.session.model.Session;
 import com.vanter.ember.session.model.SessionStatus;
 import com.vanter.ember.session.repository.SessionRepository;
 import java.math.BigDecimal;
@@ -18,7 +26,10 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -42,6 +53,7 @@ public class AnalyticsService {
     private final BillRepository billRepository;
     private final PaymentRepository paymentRepository;
     private final SessionRepository sessionRepository;
+    private final MenuItemRepository menuItemRepository;
 
     @Transactional(readOnly = true)
     public AnalyticsRangeResponse getRange(UUID restaurantId) {
@@ -150,6 +162,156 @@ public class AnalyticsService {
                 buckets);
     }
 
+    /**
+     * Product performance (Pareto / top-selling) for the dashboard. Shares the window rules of the
+     * summary and the sales series, and the same definition of a sale: only the line items of
+     * sessions whose bill settled ({@code PAID}) inside the window count, so an open table or an
+     * abandoned cart never shows up as a top seller.
+     *
+     * <p>This is the one analytics read that spans both stores — the line items live on the Mongo
+     * {@code Session}, the catalogue in Postgres — so the join happens here rather than in a query.
+     * Items still in {@code DRAFT} when the table paid were never ordered and are skipped, and a
+     * line item whose menu item has since been deleted keeps the name it was sold under instead of
+     * being dropped.
+     *
+     * <p>Shares are always computed over the whole product set; {@code limit} only truncates the
+     * returned list, so a top-10 view still reports true percentages.
+     *
+     * @throws IllegalArgumentException on an inverted window or a non-positive {@code limit}.
+     */
+    @Transactional(readOnly = true)
+    public AnalyticsProductsResponse getProducts(
+            UUID restaurantId, LocalDateTime from, LocalDateTime to, Integer limit) {
+        Window window = resolveWindow(from, to);
+        if (limit != null && limit < 1) {
+            throw new IllegalArgumentException("Analytics 'limit' must be a positive number");
+        }
+
+        List<String> soldSessionIds =
+                billRepository.findPaidSessionIds(restaurantId, window.start(), window.end());
+        if (soldSessionIds.isEmpty()) {
+            return emptyProducts(window);
+        }
+
+        Map<ProductKey, Tally> tallies = new LinkedHashMap<>();
+        for (Session session : sessionRepository.findByTenantIdAndIdIn(restaurantId, soldSessionIds)) {
+            if (session.getItems() == null) {
+                continue;
+            }
+            for (OrderItem item : session.getItems()) {
+                if (item == null || item.getStatus() == OrderItemStatus.DRAFT) {
+                    continue;
+                }
+                tallies.computeIfAbsent(ProductKey.of(item), key -> new Tally(item.getName()))
+                        .add(item.getPrice());
+            }
+        }
+        if (tallies.isEmpty()) {
+            return emptyProducts(window);
+        }
+
+        Map<Long, MenuItem> catalog = loadCatalog(restaurantId, tallies.keySet());
+
+        BigDecimal totalRevenue = BigDecimal.ZERO;
+        long totalQuantity = 0L;
+        for (Tally tally : tallies.values()) {
+            totalRevenue = totalRevenue.add(tally.revenue);
+            totalQuantity += tally.quantity;
+        }
+
+        List<Map.Entry<ProductKey, Tally>> ranked = new ArrayList<>(tallies.entrySet());
+        ranked.sort(byRevenueThenQuantityThenName());
+
+        List<ProductPerformance> products = new ArrayList<>(ranked.size());
+        Map<Long, Tally> byCategory = new LinkedHashMap<>();
+        BigDecimal running = BigDecimal.ZERO;
+        for (Map.Entry<ProductKey, Tally> entry : ranked) {
+            Tally tally = entry.getValue();
+            MenuItem menuItem = catalog.get(entry.getKey().itemId());
+            Long categoryId = menuItem == null ? null : menuItem.getCategory().getId();
+            String categoryName = menuItem == null ? null : menuItem.getCategory().getName();
+
+            running = running.add(tally.revenue);
+            products.add(new ProductPerformance(
+                    menuItem == null ? null : menuItem.getId(),
+                    menuItem == null ? tally.name : menuItem.getName(),
+                    categoryId,
+                    categoryName,
+                    tally.quantity,
+                    scaled(tally.revenue),
+                    percentOf(tally.revenue, totalRevenue),
+                    percentOf(running, totalRevenue)));
+
+            byCategory.computeIfAbsent(categoryId, id -> new Tally(categoryName)).merge(tally);
+        }
+
+        List<Map.Entry<Long, Tally>> rankedCategories = new ArrayList<>(byCategory.entrySet());
+        rankedCategories.sort(byRevenueThenQuantityThenName());
+        List<CategoryPerformance> categories = new ArrayList<>(rankedCategories.size());
+        for (Map.Entry<Long, Tally> entry : rankedCategories) {
+            Tally tally = entry.getValue();
+            categories.add(new CategoryPerformance(
+                    entry.getKey(),
+                    tally.name,
+                    tally.quantity,
+                    scaled(tally.revenue),
+                    percentOf(tally.revenue, totalRevenue)));
+        }
+
+        return new AnalyticsProductsResponse(
+                window.start(),
+                window.end(),
+                scaled(totalRevenue),
+                totalQuantity,
+                products.size(),
+                limit == null || limit >= products.size()
+                        ? products
+                        : List.copyOf(products.subList(0, limit)),
+                categories);
+    }
+
+    /** Catalogue rows for the tallied items, skipped entirely when nothing carried a menu-item id. */
+    private Map<Long, MenuItem> loadCatalog(UUID restaurantId, Set<ProductKey> keys) {
+        Set<Long> itemIds = new LinkedHashSet<>();
+        for (ProductKey key : keys) {
+            if (key.itemId() != null) {
+                itemIds.add(key.itemId());
+            }
+        }
+        if (itemIds.isEmpty()) {
+            return Map.of();
+        }
+        Map<Long, MenuItem> catalog = new HashMap<>();
+        for (MenuItem menuItem :
+                menuItemRepository.findByTenantIdAndIdInWithCategory(restaurantId, itemIds)) {
+            catalog.put(menuItem.getId(), menuItem);
+        }
+        return catalog;
+    }
+
+    /** Biggest seller first; quantity then name break ties so the ranking is stable across calls. */
+    private <K> Comparator<Map.Entry<K, Tally>> byRevenueThenQuantityThenName() {
+        return Comparator
+                .comparing((Map.Entry<K, Tally> entry) -> entry.getValue().revenue).reversed()
+                .thenComparing(entry -> entry.getValue().quantity, Comparator.reverseOrder())
+                .thenComparing(
+                        entry -> entry.getValue().name,
+                        Comparator.nullsLast(Comparator.naturalOrder()));
+    }
+
+    private AnalyticsProductsResponse emptyProducts(Window window) {
+        return new AnalyticsProductsResponse(
+                window.start(), window.end(), scaled(BigDecimal.ZERO), 0L, 0, List.of(), List.of());
+    }
+
+    /** Percentage of the window's item revenue, from unrounded money so shares do not drift. */
+    private BigDecimal percentOf(BigDecimal part, BigDecimal total) {
+        if (total.signum() == 0) {
+            return scaled(BigDecimal.ZERO);
+        }
+        return part.multiply(BigDecimal.valueOf(100)).divide(total, 2, RoundingMode.HALF_UP);
+    }
+
     /** The window both analytics reads apply: optional, inclusive, and never inverted. */
     private Window resolveWindow(LocalDateTime from, LocalDateTime to) {
         LocalDateTime start = from == null ? EPOCH_FLOOR : from;
@@ -172,4 +334,42 @@ public class AnalyticsService {
     }
 
     private record Window(LocalDateTime start, LocalDateTime end) {}
+
+    /**
+     * Groups line items by the menu item they were ordered from. Items that carry no catalogue id —
+     * legacy or hand-added rows — fall back to grouping by the name they were sold under, so they
+     * still aggregate instead of collapsing into one nameless bucket.
+     */
+    private record ProductKey(Long itemId, String name) {
+        static ProductKey of(OrderItem item) {
+            return item.getItemId() != null
+                    ? new ProductKey(item.getItemId(), null)
+                    : new ProductKey(null, item.getName());
+        }
+    }
+
+    /** Mutable running total for one product or category while the two stores are joined up. */
+    private static final class Tally {
+
+        private final String name;
+        private long quantity;
+        private BigDecimal revenue = BigDecimal.ZERO;
+
+        private Tally(String name) {
+            this.name = name;
+        }
+
+        /** One line item is one unit — {@code OrderItem} carries no quantity of its own. */
+        private void add(BigDecimal price) {
+            quantity++;
+            if (price != null) {
+                revenue = revenue.add(price);
+            }
+        }
+
+        private void merge(Tally other) {
+            quantity += other.quantity;
+            revenue = revenue.add(other.revenue);
+        }
+    }
 }

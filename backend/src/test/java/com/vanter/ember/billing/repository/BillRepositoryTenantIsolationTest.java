@@ -199,6 +199,36 @@ class BillRepositoryTenantIsolationTest extends AbstractTenantIsolationTest {
     }
 
     @Test
+    void findPaidSessionIds_returnsOnlyTheBoundTenantsSettledSessions() {
+        LocalDateTime when = LocalDateTime.of(2026, 8, 10, 20, 0);
+        billSavedFor(TENANT_A, "sess-noise", BillStatus.PAID, "999.00", when);
+        billSavedFor(TENANT_B, "sess-1", BillStatus.PAID, "30.00", when);
+        billSavedFor(TENANT_B, "sess-2", BillStatus.PAID, "20.00", when.plusHours(2));
+
+        List<String> sessionIdsForB = readAs(
+                TENANT_B,
+                () -> billRepository.findPaidSessionIds(
+                        TENANT_B, when.minusDays(1), when.plusDays(1)));
+
+        assertThat(sessionIdsForB).containsExactlyInAnyOrder("sess-1", "sess-2");
+    }
+
+    @Test
+    void findPaidSessionIds_ignoresOpenBillsAndBillsOutsideTheWindow() {
+        LocalDateTime inWindow = LocalDateTime.of(2026, 8, 10, 20, 0);
+        billSavedFor(TENANT_A, "sess-paid", BillStatus.PAID, "40.00", inWindow);
+        billSavedFor(TENANT_A, "sess-open", BillStatus.OPEN, "999.00", inWindow);
+        billSavedFor(TENANT_A, "sess-old", BillStatus.PAID, "999.00", inWindow.minusMonths(2));
+
+        List<String> sessionIds = readAs(
+                TENANT_A,
+                () -> billRepository.findPaidSessionIds(
+                        TENANT_A, inWindow.minusDays(1), inWindow.plusDays(1)));
+
+        assertThat(sessionIds).containsExactly("sess-paid");
+    }
+
+    @Test
     void delete_cannotReachAnotherTenantsBill() {
         billSavedFor(TENANT_A, "sess-1");
 

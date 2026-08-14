@@ -1,8 +1,11 @@
 package com.vanter.ember.analytics.controller;
 
+import com.vanter.ember.analytics.dto.AnalyticsProductsResponse;
 import com.vanter.ember.analytics.dto.AnalyticsRangeResponse;
 import com.vanter.ember.analytics.dto.AnalyticsSalesResponse;
 import com.vanter.ember.analytics.dto.AnalyticsSummaryResponse;
+import com.vanter.ember.analytics.dto.CategoryPerformance;
+import com.vanter.ember.analytics.dto.ProductPerformance;
 import com.vanter.ember.analytics.dto.SalesBucket;
 import com.vanter.ember.analytics.dto.SalesGranularity;
 import com.vanter.ember.analytics.service.AnalyticsService;
@@ -284,5 +287,113 @@ class AnalyticsControllerTest {
         mockMvc.perform(get("/admin/analytics/sales")).andExpect(status().isUnauthorized());
 
         verify(analyticsService, never()).getSales(any(), any(), any(), any());
+    }
+
+    private static AnalyticsProductsResponse productsFixture() {
+        return new AnalyticsProductsResponse(
+                LocalDateTime.of(2026, 8, 1, 0, 0),
+                LocalDateTime.of(2026, 8, 14, 23, 59, 59),
+                new BigDecimal("150.00"),
+                7L,
+                2,
+                List.of(
+                        new ProductPerformance(
+                                4L,
+                                "Lomo saltado",
+                                2L,
+                                "Fondos",
+                                5L,
+                                new BigDecimal("100.00"),
+                                new BigDecimal("66.67"),
+                                new BigDecimal("66.67")),
+                        new ProductPerformance(
+                                9L,
+                                "Chicha morada",
+                                3L,
+                                "Bebidas",
+                                2L,
+                                new BigDecimal("50.00"),
+                                new BigDecimal("33.33"),
+                                new BigDecimal("100.00"))),
+                List.of(
+                        new CategoryPerformance(
+                                2L, "Fondos", 5L, new BigDecimal("100.00"), new BigDecimal("66.67"))));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void products_passesTheParsedWindowAndLimitFromTheRequest() throws Exception {
+        TenantContextHolder.setTenantId(TENANT_ID);
+        LocalDateTime from = LocalDateTime.of(2026, 8, 1, 0, 0);
+        LocalDateTime to = LocalDateTime.of(2026, 8, 14, 23, 59, 59);
+        when(analyticsService.getProducts(TENANT_ID, from, to, 10)).thenReturn(productsFixture());
+
+        mockMvc.perform(get("/admin/analytics/products")
+                        .param("from", "2026-08-01T00:00:00")
+                        .param("to", "2026-08-14T23:59:59")
+                        .param("limit", "10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalRevenue").value(150.00))
+                .andExpect(jsonPath("$.totalQuantity").value(7))
+                .andExpect(jsonPath("$.productCount").value(2))
+                .andExpect(jsonPath("$.products.length()").value(2))
+                .andExpect(jsonPath("$.products[0].name").value("Lomo saltado"))
+                .andExpect(jsonPath("$.products[0].categoryName").value("Fondos"))
+                .andExpect(jsonPath("$.products[0].quantitySold").value(5))
+                .andExpect(jsonPath("$.products[0].revenueShare").value(66.67))
+                .andExpect(jsonPath("$.products[1].cumulativeShare").value(100.00))
+                .andExpect(jsonPath("$.categories[0].name").value("Fondos"));
+
+        verify(analyticsService).getProducts(TENANT_ID, from, to, 10);
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void products_withoutParams_leavesTheDefaultingToTheService() throws Exception {
+        TenantContextHolder.setTenantId(TENANT_ID);
+        when(analyticsService.getProducts(TENANT_ID, null, null, null)).thenReturn(productsFixture());
+
+        mockMvc.perform(get("/admin/analytics/products")).andExpect(status().isOk());
+
+        verify(analyticsService).getProducts(TENANT_ID, null, null, null);
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void products_ignoresClientSuppliedRestaurantId() throws Exception {
+        TenantContextHolder.setTenantId(TENANT_ID);
+        when(analyticsService.getProducts(TENANT_ID, null, null, null)).thenReturn(productsFixture());
+
+        mockMvc.perform(get("/admin/analytics/products")
+                        .param("restaurantId", OTHER_TENANT_ID.toString()))
+                .andExpect(status().isOk());
+
+        verify(analyticsService).getProducts(TENANT_ID, null, null, null);
+        verify(analyticsService, never()).getProducts(eq(OTHER_TENANT_ID), any(), any(), any());
+    }
+
+    @Test
+    @WithMockUser(roles = "WAITER")
+    void products_forbiddenForNonAdmin() throws Exception {
+        TenantContextHolder.setTenantId(TENANT_ID);
+
+        mockMvc.perform(get("/admin/analytics/products")).andExpect(status().isForbidden());
+
+        verify(analyticsService, never()).getProducts(any(), any(), any(), any());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void products_withoutTenantBound_isRejected() throws Exception {
+        mockMvc.perform(get("/admin/analytics/products")).andExpect(status().isConflict());
+
+        verify(analyticsService, never()).getProducts(any(), any(), any(), any());
+    }
+
+    @Test
+    void products_unauthenticatedReturns401() throws Exception {
+        mockMvc.perform(get("/admin/analytics/products")).andExpect(status().isUnauthorized());
+
+        verify(analyticsService, never()).getProducts(any(), any(), any(), any());
     }
 }

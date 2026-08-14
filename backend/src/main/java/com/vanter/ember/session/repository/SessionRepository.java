@@ -2,6 +2,7 @@ package com.vanter.ember.session.repository;
 
 import com.vanter.ember.session.model.Session;
 import com.vanter.ember.session.model.SessionStatus;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -31,4 +32,10 @@ public interface SessionRepository extends MongoRepository<Session, String> {
 
     /** How many sessions the tenant currently has in the given status — the analytics live count. */
     long countByTenantIdAndStatus(UUID tenantId, SessionStatus status);
+
+    /**
+     * Bulk tenant-first fetch used by product analytics to pull the line items of the sessions whose
+     * bills settled inside the reporting window.
+     */
+    List<Session> findByTenantIdAndIdIn(UUID tenantId, Collection<String> ids);
 }

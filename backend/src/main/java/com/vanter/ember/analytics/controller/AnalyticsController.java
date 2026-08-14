@@ -1,5 +1,6 @@
 package com.vanter.ember.analytics.controller;
 
+import com.vanter.ember.analytics.dto.AnalyticsProductsResponse;
 import com.vanter.ember.analytics.dto.AnalyticsRangeResponse;
 import com.vanter.ember.analytics.dto.AnalyticsSalesResponse;
 import com.vanter.ember.analytics.dto.AnalyticsSummaryResponse;
@@ -61,5 +62,22 @@ public class AnalyticsController {
                     LocalDateTime to) {
         return analyticsService.getSales(
                 TenantContextHolder.requireTenantId(), granularity, from, to);
+    }
+
+    @Operation(
+            summary = "Product performance: each menu item's and category's share of settled sales",
+            description =
+                    "'from'/'to' are the same optional inclusive window the summary uses. Products "
+                            + "and categories come back ordered by revenue, with a running "
+                            + "cumulative share for Pareto charts. 'limit' trims the product list to "
+                            + "the top N; the totals and every share still cover the whole window.")
+    @GetMapping("/products")
+    public AnalyticsProductsResponse getProducts(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+                    LocalDateTime from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+                    LocalDateTime to,
+            @RequestParam(required = false) Integer limit) {
+        return analyticsService.getProducts(TenantContextHolder.requireTenantId(), from, to, limit);
     }
 }
