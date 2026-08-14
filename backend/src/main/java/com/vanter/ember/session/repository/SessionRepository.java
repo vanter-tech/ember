@@ -28,4 +28,7 @@ public interface SessionRepository extends MongoRepository<Session, String> {
      * join codes are only random, not globally unique — see SessionService#joinSessionCode.
      */
     List<Session> findByJoinCodeAndStatus(String joinCode, SessionStatus status);
+
+    /** How many sessions the tenant currently has in the given status — the analytics live count. */
+    long countByTenantIdAndStatus(UUID tenantId, SessionStatus status);
 }

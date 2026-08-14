@@ -1,6 +1,7 @@
 package com.vanter.ember.analytics.controller;
 
 import com.vanter.ember.analytics.dto.AnalyticsRangeResponse;
+import com.vanter.ember.analytics.dto.AnalyticsSummaryResponse;
 import com.vanter.ember.analytics.service.AnalyticsService;
 import com.vanter.ember.config.CorsConfig;
 import com.vanter.ember.config.SecurityConfig;
@@ -17,10 +18,12 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -101,5 +104,85 @@ class AnalyticsControllerTest {
                 .andExpect(status().isUnauthorized());
 
         verify(analyticsService, never()).getRange(any());
+    }
+
+    private static AnalyticsSummaryResponse summaryFixture() {
+        return new AnalyticsSummaryResponse(
+                new BigDecimal("1520.50"),
+                3L,
+                new BigDecimal("42.25"),
+                36L,
+                LocalDateTime.of(2026, 8, 1, 0, 0),
+                LocalDateTime.of(2026, 8, 14, 23, 59, 59));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void summary_passesTheParsedWindowAndTenantFromContext() throws Exception {
+        TenantContextHolder.setTenantId(TENANT_ID);
+        LocalDateTime from = LocalDateTime.of(2026, 8, 1, 0, 0);
+        LocalDateTime to = LocalDateTime.of(2026, 8, 14, 23, 59, 59);
+        when(analyticsService.getSummary(TENANT_ID, from, to)).thenReturn(summaryFixture());
+
+        mockMvc.perform(get("/admin/analytics/summary")
+                        .param("from", "2026-08-01T00:00:00")
+                        .param("to", "2026-08-14T23:59:59"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalRevenue").value(1520.50))
+                .andExpect(jsonPath("$.activeSessions").value(3))
+                .andExpect(jsonPath("$.averageOrderValue").value(42.25))
+                .andExpect(jsonPath("$.paidBillCount").value(36));
+
+        verify(analyticsService).getSummary(TENANT_ID, from, to);
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void summary_withoutWindowParams_leavesTheDefaultingToTheService() throws Exception {
+        TenantContextHolder.setTenantId(TENANT_ID);
+        when(analyticsService.getSummary(TENANT_ID, null, null)).thenReturn(summaryFixture());
+
+        mockMvc.perform(get("/admin/analytics/summary")).andExpect(status().isOk());
+
+        verify(analyticsService).getSummary(TENANT_ID, null, null);
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void summary_ignoresClientSuppliedRestaurantId() throws Exception {
+        TenantContextHolder.setTenantId(TENANT_ID);
+        when(analyticsService.getSummary(TENANT_ID, null, null)).thenReturn(summaryFixture());
+
+        mockMvc.perform(get("/admin/analytics/summary")
+                        .param("restaurantId", OTHER_TENANT_ID.toString()))
+                .andExpect(status().isOk());
+
+        verify(analyticsService).getSummary(TENANT_ID, null, null);
+        verify(analyticsService, never()).getSummary(eq(OTHER_TENANT_ID), any(), any());
+    }
+
+    @Test
+    @WithMockUser(roles = "WAITER")
+    void summary_forbiddenForNonAdmin() throws Exception {
+        TenantContextHolder.setTenantId(TENANT_ID);
+
+        mockMvc.perform(get("/admin/analytics/summary")).andExpect(status().isForbidden());
+
+        verify(analyticsService, never()).getSummary(any(), any(), any());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void summary_withoutTenantBound_isRejected() throws Exception {
+        mockMvc.perform(get("/admin/analytics/summary")).andExpect(status().isConflict());
+
+        verify(analyticsService, never()).getSummary(any(), any(), any());
+    }
+
+    @Test
+    void summary_unauthenticatedReturns401() throws Exception {
+        mockMvc.perform(get("/admin/analytics/summary")).andExpect(status().isUnauthorized());
+
+        verify(analyticsService, never()).getSummary(any(), any(), any());
     }
 }

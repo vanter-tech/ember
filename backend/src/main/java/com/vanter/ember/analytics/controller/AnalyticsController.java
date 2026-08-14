@@ -1,14 +1,18 @@
 package com.vanter.ember.analytics.controller;
 
 import com.vanter.ember.analytics.dto.AnalyticsRangeResponse;
+import com.vanter.ember.analytics.dto.AnalyticsSummaryResponse;
 import com.vanter.ember.analytics.service.AnalyticsService;
 import com.vanter.ember.config.TenantContextHolder;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @Tag(name = "Analytics", description = "Business analytics for the current tenant (ADMIN only)")
@@ -24,5 +28,20 @@ public class AnalyticsController {
     @GetMapping("/range")
     public AnalyticsRangeResponse getRange() {
         return analyticsService.getRange(TenantContextHolder.requireTenantId());
+    }
+
+    @Operation(
+            summary = "Summary cards: total revenue, live active sessions and average order value",
+            description =
+                    "'from'/'to' are optional inclusive ISO date-times bounding the revenue and "
+                            + "average-order-value figures; they default to the tenant's whole history "
+                            + "up to now. The active-session count is always live and ignores them.")
+    @GetMapping("/summary")
+    public AnalyticsSummaryResponse getSummary(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+                    LocalDateTime from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+                    LocalDateTime to) {
+        return analyticsService.getSummary(TenantContextHolder.requireTenantId(), from, to);
     }
 }
