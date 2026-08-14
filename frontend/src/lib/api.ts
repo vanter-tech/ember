@@ -131,7 +131,7 @@ export const authService = {
 }
 
 export const categoryService = {
-  getAll: async (page = 0, size = 9): Promise<Page<CategoryResponse>> => {
+  getAll: async (page = 0, size = 6): Promise<Page<CategoryResponse>> => {
     const { data } = await api.get<Page<CategoryResponse>>(
       '/catalog/categories',
       { params: { page, size } }

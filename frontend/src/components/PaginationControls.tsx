@@ -1,5 +1,4 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 
 interface PaginationControlsProps {
   page: number
@@ -16,29 +15,40 @@ export const PaginationControls = ({
     return null
   }
 
+  const navItemClass = (enabled: boolean) => `
+    flex items-center justify-center w-12 h-12 rounded-full transition-all duration-300
+    ${
+      enabled
+        ? 'text-zinc-500 hover:bg-zinc-100 hover:text-zinc-800 cursor-pointer'
+        : 'text-zinc-300 pointer-events-none'
+    }`
+
   return (
-    <div className="flex items-center justify-center gap-4 mt-6">
-      <Button
-        variant="outline"
-        size="sm"
+    <div
+      className="fixed bottom-8 right-8 bg-white dark:bg-zinc-900 shadow-2xl rounded-full
+        px-4 py-2 flex items-center gap-2 border border-zinc-200 dark:border-zinc-800 z-50"
+    >
+      <button
+        type="button"
         disabled={page === 0}
         onClick={() => onPageChange(page - 1)}
+        className={navItemClass(page > 0)}
+        title="Anterior"
       >
-        <ChevronLeft className="h-4 w-4" />
-        Anterior
-      </Button>
-      <span className="text-sm text-zinc-500">
-        Página {page + 1} de {totalPages}
+        <ChevronLeft strokeWidth={1.5} size={24} />
+      </button>
+      <span className="text-sm text-zinc-500 px-1 whitespace-nowrap">
+        {page + 1} / {totalPages}
       </span>
-      <Button
-        variant="outline"
-        size="sm"
+      <button
+        type="button"
         disabled={page + 1 >= totalPages}
         onClick={() => onPageChange(page + 1)}
+        className={navItemClass(page + 1 < totalPages)}
+        title="Siguiente"
       >
-        Siguiente
-        <ChevronRight className="h-4 w-4" />
-      </Button>
+        <ChevronRight strokeWidth={1.5} size={24} />
+      </button>
     </div>
   )
 }
