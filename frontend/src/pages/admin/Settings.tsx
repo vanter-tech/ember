@@ -6,6 +6,7 @@ import { MenuSettings } from "./components/settings/MenuSettings";
 import { BillingSettings } from "./components/settings/BillingSettings";
 import { PaymentGatewaySettings } from "./components/settings/PaymentGatewaySettings";
 import { BusinessHoursSettings } from "./components/settings/BusinessHoursSettings";
+import { HardwareSettings } from "./components/settings/HardwareSettings";
 
 export const Settings = () => {
     const { activeSettings } = useSettingsStore();
@@ -24,7 +25,7 @@ export const Settings = () => {
                     </div>
                 );
             case 'HARDWARE':
-                return <div>Hardware Settings</div>;
+                return <HardwareSettings />;
             case 'SPACE':
                 return <SpacesSettings />;
             case 'HORARIO':
