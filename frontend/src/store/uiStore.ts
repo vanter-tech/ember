@@ -5,7 +5,7 @@ export type ModalType = 'CREATE_CATEGORY' | 'EDIT_CATEGORY' | 'DELETE_CATEGORY' 
                          'PARTICIPANTS_QR' | 'JOIN_TABLE' | 'TENANT_SUSPENDED' |null;
 
 export type SettingsType = 'BRANDING' | 'MENU' | 'BILLING' | 'HARDWARE'|
-                            'SPACE'| null;
+                            'SPACE'| 'HORARIO'| null;
 
 interface UIState {
   activeModal: ModalType
