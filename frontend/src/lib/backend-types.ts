@@ -810,8 +810,7 @@ export interface components {
             name: string;
             email: string;
             password: string;
-            restaurantName?: string;
-            restaurantSlug?: string;
+            restaurantSlug: string;
         };
         AuthResponse: {
             token?: string;
@@ -824,6 +823,7 @@ export interface components {
         LoginRequest: {
             email: string;
             password: string;
+            restaurantSlug?: string;
         };
         ExpandCapacityRequest: {
             /** Format: int32 */
@@ -852,6 +852,7 @@ export interface components {
             /** Format: date-time */
             createdAt?: string;
             items?: components["schemas"]["KitchenItem"][];
+            active?: boolean;
         };
         UpdateUserRoleRequest: {
             /** @enum {string} */
@@ -944,10 +945,10 @@ export interface components {
             sort?: string[];
         };
         PageKitchenOrder: {
-            /** Format: int64 */
-            totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
+            /** Format: int64 */
+            totalElements?: number;
             first?: boolean;
             last?: boolean;
             /** Format: int32 */
@@ -956,20 +957,20 @@ export interface components {
             /** Format: int32 */
             number?: number;
             sort?: components["schemas"]["SortObject"];
+            pageable?: components["schemas"]["PageableObject"];
             /** Format: int32 */
             numberOfElements?: number;
-            pageable?: components["schemas"]["PageableObject"];
             empty?: boolean;
         };
         PageableObject: {
             /** Format: int64 */
             offset?: number;
             sort?: components["schemas"]["SortObject"];
-            /** Format: int32 */
-            pageNumber?: number;
             paged?: boolean;
             /** Format: int32 */
             pageSize?: number;
+            /** Format: int32 */
+            pageNumber?: number;
             unpaged?: boolean;
         };
         SortObject: {
@@ -999,10 +1000,10 @@ export interface components {
             currentSession?: components["schemas"]["ActiveSessionSummary"];
         };
         PageMenuItemResponse: {
-            /** Format: int64 */
-            totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
+            /** Format: int64 */
+            totalElements?: number;
             first?: boolean;
             last?: boolean;
             /** Format: int32 */
@@ -1011,9 +1012,9 @@ export interface components {
             /** Format: int32 */
             number?: number;
             sort?: components["schemas"]["SortObject"];
+            pageable?: components["schemas"]["PageableObject"];
             /** Format: int32 */
             numberOfElements?: number;
-            pageable?: components["schemas"]["PageableObject"];
             empty?: boolean;
         };
     };

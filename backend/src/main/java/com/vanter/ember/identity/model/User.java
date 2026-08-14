@@ -23,8 +23,9 @@ public class User {
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
+    /** Null for CUSTOMER — customers aren't bound to one restaurant, see AuthService#resolveLoginRestaurant. */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "restaurant_id", nullable = false)
+    @JoinColumn(name = "restaurant_id", nullable = true)
     private Restaurant restaurantId;
 
     @Column(nullable = false)

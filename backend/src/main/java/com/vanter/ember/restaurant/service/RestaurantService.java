@@ -45,6 +45,17 @@ public class RestaurantService {
     }
 
     /**
+     * Resolves the restaurant a customer is currently visiting (QR/table-code landing page,
+     * carried through login/register as {@code restaurantSlug}) — customers are not bound to a
+     * single restaurant, so this is looked up fresh on every login/register instead of read off
+     * {@code User.restaurantId}.
+     */
+    public Restaurant getBySlug(String slug) {
+        return restaurantRepository.findBySlug(slugify(slug))
+                .orElseThrow(() -> new ResourceNotFoundException("No restaurant found for slug: " + slug));
+    }
+
+    /**
      * Self-service plan change (upgrade/downgrade) — safe for the tenant's own ADMIN to trigger.
      */
     public Restaurant updatePlan(UUID restaurantId, RestaurantPlan plan) {

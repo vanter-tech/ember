@@ -24,9 +24,7 @@ public class RegisterRequest {
     )
     private String password;
 
-    /** Name for a new restaurant to create; ignored when restaurantSlug is set. */
-    private String restaurantName;
-
-    /** Slug of an existing restaurant to join; if blank, a new restaurant is created. */
+    /** Slug of the restaurant being visited (from the QR/table-code landing page). */
+    @NotBlank(message = "Restaurant slug is required")
     private String restaurantSlug;
 }
