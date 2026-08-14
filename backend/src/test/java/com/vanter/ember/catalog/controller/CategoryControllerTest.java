@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -43,13 +44,13 @@ class CategoryControllerTest {
 
     @Test
     @WithMockUser
-    void getAll_returns200WithList() throws Exception {
-        when(categoryService.findAll()).thenReturn(
-                List.of(CategoryResponse.builder().id(1L).name("Burgers").build()));
+    void getAll_returns200WithPageOfCategories() throws Exception {
+        when(categoryService.findAll(any())).thenReturn(
+                new PageImpl<>(List.of(CategoryResponse.builder().id(1L).name("Burgers").build())));
 
         mockMvc.perform(get("/catalog/categories"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].name").value("Burgers"));
+                .andExpect(jsonPath("$.content[0].name").value("Burgers"));
     }
 
     @Test

@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { menuItemService } from '@/lib/api'
@@ -12,6 +13,7 @@ import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
 import { EditMenuModal } from './components/EditMenuModal'
 import { GlobalDeleteModal } from '@/components/GlobalDeleteModal'
+import { PaginationControls } from '@/components/PaginationControls'
 
 export const ListMenuItem = () => {
   const queryClient = useQueryClient()
@@ -25,13 +27,14 @@ export const ListMenuItem = () => {
 
   const { id } = useParams()
   const { openModal } = useUIStore()
+  const [page, setPage] = useState(0)
   const {
     data: menuItemsPage,
     isLoading,
     isError,
   } = useQuery({
-    queryKey: ['menuItems', id],
-    queryFn: () => menuItemService.getAll(Number(id)),
+    queryKey: ['menuItems', id, page],
+    queryFn: () => menuItemService.getAll(Number(id), page),
   })
   const menuItems = menuItemsPage?.content ?? []
 
@@ -121,6 +124,12 @@ export const ListMenuItem = () => {
           </Card>
         ))}
       </div>
+
+      <PaginationControls
+        page={page}
+        totalPages={menuItemsPage?.totalPages ?? 0}
+        onPageChange={setPage}
+      />
 
       <NewMenuModal />
       <EditMenuModal/>
