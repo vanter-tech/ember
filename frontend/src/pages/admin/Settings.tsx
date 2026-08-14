@@ -2,7 +2,6 @@ import {useSettingsStore} from "@/store/uiStore";
 import {SettingsBar} from "@/components/SettingsBar";
 import { BrandingSettings } from "./components/settings/BrandingSettings";
 import { SpacesSettings } from "./components/settings/SpaceSettings";
-import { PlanSettings } from "./components/settings/PlanSettings";
 
 export const Settings = () => {
     const { activeSettings } = useSettingsStore();
@@ -19,8 +18,6 @@ export const Settings = () => {
                 return <div>Hardware Settings</div>;
             case 'SPACE':
                 return <SpacesSettings />;
-            case 'PLAN':
-                return <PlanSettings />;
         }
     };
 
