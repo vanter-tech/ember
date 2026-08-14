@@ -4,6 +4,7 @@ import { BrandingSettings } from "./components/settings/BrandingSettings";
 import { SpacesSettings } from "./components/settings/SpaceSettings";
 import { MenuSettings } from "./components/settings/MenuSettings";
 import { BillingSettings } from "./components/settings/BillingSettings";
+import { PaymentGatewaySettings } from "./components/settings/PaymentGatewaySettings";
 
 export const Settings = () => {
     const { activeSettings } = useSettingsStore();
@@ -15,7 +16,12 @@ export const Settings = () => {
             case 'MENU':
                 return <MenuSettings />;
             case 'BILLING':
-                return <BillingSettings />;
+                return (
+                    <div className="flex flex-col gap-6">
+                        <BillingSettings />
+                        <PaymentGatewaySettings />
+                    </div>
+                );
             case 'HARDWARE':
                 return <div>Hardware Settings</div>;
             case 'SPACE':
