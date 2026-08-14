@@ -131,8 +131,11 @@ export const authService = {
 }
 
 export const categoryService = {
-  getAll: async (): Promise<CategoryResponse[]> => {
-    const { data } = await api.get<CategoryResponse[]>('/catalog/categories')
+  getAll: async (page = 0, size = 9): Promise<Page<CategoryResponse>> => {
+    const { data } = await api.get<Page<CategoryResponse>>(
+      '/catalog/categories',
+      { params: { page, size } }
+    )
     return data
   },
   create: async (details: FormData): Promise<CategoryResponse> => {
@@ -166,10 +169,14 @@ export const categoryService = {
 }
 
 export const menuItemService = {
-  getAll: async (id: number): Promise<Page<MenuItemResponse>> => {
-    const { data } = await api.get<Page<MenuItemResponse>>(
-      `/catalog/items?id=${id}`
-    )
+  getAll: async (
+    id: number,
+    page = 0,
+    size = 10
+  ): Promise<Page<MenuItemResponse>> => {
+    const { data } = await api.get<Page<MenuItemResponse>>('/catalog/items', {
+      params: { id, page, size },
+    })
     return data
   },
   create: async (details: FormData): Promise<MenuItemResponse> => {
