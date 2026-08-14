@@ -1,6 +1,7 @@
 import { SummaryCards } from './components/SummaryCards'
 import { SalesChart } from './components/SalesChart'
 import { ProductPerformance } from './components/ProductPerformance'
+import { TableAnalytics } from './components/TableAnalytics'
 
 export const Analytics = () => {
   return (
@@ -15,6 +16,7 @@ export const Analytics = () => {
       <SummaryCards />
       <SalesChart />
       <ProductPerformance />
+      <TableAnalytics />
     </div>
   )
 }
