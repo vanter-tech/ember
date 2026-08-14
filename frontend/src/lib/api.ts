@@ -1,6 +1,7 @@
 import type { components } from '@/lib/backend-types'
 import axios from 'axios'
 import { useAuthStore } from '@/store/authStore'
+import { useUIStore } from '@/store/uiStore'
 export type LoginRequest = components['schemas']['LoginRequest']
 export type LoginResponse = components['schemas']['AuthResponse']
 export type CategoryResponse = components['schemas']['CategoryResponse']
@@ -21,6 +22,24 @@ export type tableStatus = components['schemas']['SessionStatusDto']
 export type kitchenOrdersDisplayByTables = components['schemas']['KitchenDisplayEntry']
 export type kitchenOrders = components['schemas']['KitchenOrder']
 
+export interface Page<T> {
+  content: T[]
+  totalElements: number
+  totalPages: number
+  size: number
+  number: number
+}
+
+export type RestaurantResponse = components['schemas']['Restaurant']
+export type UpdateRestaurantPlanRequest = components['schemas']['UpdateRestaurantPlanRequest']
+
+export interface PublicBranding {
+  slug: string
+  businessName: string
+  primaryThemeColor: string
+  openingTime: string
+  closingTime: string
+}
 
 declare global {
   interface Window {
@@ -55,6 +74,13 @@ api.interceptors.request.use(
   }
 )
 
+// Matches the exact ProblemDetail.detail strings written by SecurityConfig.jwtAuthFilter's
+// writeSuspendedTenantResponse (backend). @PreAuthorize role denials also return a 403, but with
+// detail "Access denied" (GlobalExceptionHandler.handleAccessDenied) — that path is left alone.
+const isTenantSuspendedDetail = (detail: unknown): detail is string =>
+  typeof detail === 'string' &&
+  (detail.startsWith('This tenant account is') || detail === 'Tenant account not found.')
+
 api.interceptors.response.use(
   (response) => {
     return response
@@ -62,6 +88,12 @@ api.interceptors.response.use(
   (error) => {
     if (error.response && error.response.status === 401) {
       useAuthStore.getState().logout()
+    }
+    if (error.response && error.response.status === 403) {
+      const detail = error.response.data?.detail
+      if (isTenantSuspendedDetail(detail)) {
+        useUIStore.getState().openModal('TENANT_SUSPENDED', { detail })
+      }
     }
     return Promise.reject(error)
   }
@@ -117,8 +149,8 @@ export const categoryService = {
 }
 
 export const menuItemService = {
-  getAll: async (id: number): Promise<MenuItemResponse[]> => {
-    const { data } = await api.get<MenuItemResponse[]>(
+  getAll: async (id: number): Promise<Page<MenuItemResponse>> => {
+    const { data } = await api.get<Page<MenuItemResponse>>(
       `/catalog/items?id=${id}`
     )
     return data
@@ -170,14 +202,8 @@ export const SettingsService = {
 }
 
 export const DashboardService = {
-  getDashboardData: async (
-    resturantid: string
-  ): Promise<DashboardResponse[]> => {
-    const { data } = await api.get<DashboardResponse[]>('/dashboard/status', {
-      params: {
-        restaurantId: resturantid,
-      },
-    })
+  getDashboardData: async (): Promise<DashboardResponse[]> => {
+    const { data } = await api.get<DashboardResponse[]>('/dashboard/status')
     return data
   },
 }
@@ -262,9 +288,29 @@ export const kitchenServices = {
     const { data } = await api.get<kitchenOrdersDisplayByTables[]>('/kitchen/display')
     return data
   },
-  getOrders: async(): Promise<kitchenOrders[]> => {
-    const { data } = await api.get<kitchenOrders[]>('/kitchen/orders')
+  getOrders: async(): Promise<Page<kitchenOrders>> => {
+    const { data } = await api.get<Page<kitchenOrders>>('/kitchen/orders')
     return data
   }
 
+}
+
+export const restaurantAdminService = {
+  getPlan: async (): Promise<RestaurantResponse> => {
+    const { data } = await api.get<RestaurantResponse>('/admin/restaurant')
+    return data
+  },
+  updatePlan: async (plan: UpdateRestaurantPlanRequest['plan']): Promise<RestaurantResponse> => {
+    const { data } = await api.patch<RestaurantResponse>('/admin/restaurant/plan', { plan })
+    return data
+  },
+}
+
+export const publicService = {
+  getBranding: async (slug: string): Promise<PublicBranding> => {
+    const { data } = await api.get<PublicBranding>(
+      `/public/restaurants/${slug}/branding`
+    )
+    return data
+  },
 }

@@ -1,15 +1,16 @@
 package com.vanter.ember.session.service;
 
-import com.vanter.ember.catalog.model.TableStatus;
 import com.vanter.ember.catalog.model.dto.MenuItemResponse;
-import com.vanter.ember.catalog.model.dto.RestaurantTableResponse;
 import com.vanter.ember.catalog.service.MenuItemService;
-import com.vanter.ember.catalog.service.RestaurantTableService;
 import com.vanter.ember.config.ResourceNotFoundException;
+import com.vanter.ember.config.TenantContextHolder;
+import com.vanter.ember.identity.model.User;
+import com.vanter.ember.identity.repository.UserRepository;
 import com.vanter.ember.kitchen.event.KitchenItemUpdated;
+import com.vanter.ember.restaurant.model.Restaurant;
 import com.vanter.ember.session.event.ItemAdded;
 import com.vanter.ember.session.event.ItemStatusUpdated;
-import com.vanter.ember.session.event.OrderItemAdded;
+import com.vanter.ember.session.event.KitchenItemsConfirmed;
 import com.vanter.ember.session.event.ParticipantJoined;
 import com.vanter.ember.session.event.SessionOpened;
 import com.vanter.ember.session.exception.TooManyParticipantsException;
@@ -19,7 +20,11 @@ import com.vanter.ember.session.model.Participant;
 import com.vanter.ember.session.model.Session;
 import com.vanter.ember.session.model.SessionStatus;
 import com.vanter.ember.session.repository.SessionRepository;
+import com.vanter.ember.settings.model.DiningTables;
+import com.vanter.ember.settings.repository.DiningTableRepository;
 import io.jsonwebtoken.ExpiredJwtException;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -27,87 +32,123 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class SessionServiceTest {
 
+    private static final UUID TABLE_ID = UUID.randomUUID();
+    private static final UUID RESTAURANT_ID = UUID.randomUUID();
+
     @Mock SessionRepository sessionRepository;
-    @Mock RestaurantTableService tableService;
+    @Mock DiningTableRepository diningTableRepository;
     @Mock MenuItemService menuItemService;
     @Mock ApplicationEventPublisher eventPublisher;
     @Mock QrTokenService qrTokenService;
+    @Mock UserRepository userRepository;
     @InjectMocks SessionService sessionService;
 
-    private RestaurantTableResponse availableTable() {
-        return RestaurantTableResponse.builder()
-                .id(1L).number(5).capacity(4).status(TableStatus.AVAILABLE).build();
+    private DiningTables diningTable() {
+        return DiningTables.builder().id(TABLE_ID).tableNumber(5).isActive(true).build();
+    }
+
+    private User user(String id) {
+        return User.builder().id(id).email(id).name("Alice").build();
     }
 
     @Test
     void createSession_savesSessionWithOpenStatus() {
-        when(tableService.findById(1L)).thenReturn(availableTable());
+        when(diningTableRepository.findById(TABLE_ID)).thenReturn(Optional.of(diningTable()));
+        when(sessionRepository.findByTenantIdAndTableIdAndStatus(RESTAURANT_ID, TABLE_ID, SessionStatus.OPEN)).thenReturn(List.of());
         when(sessionRepository.save(any())).thenAnswer(inv -> {
             Session s = inv.getArgument(0);
             s.setId("sess-1");
             return s;
         });
 
-        Session result = sessionService.createSession(1L, "waiter@test.com", 4);
+        Session result = sessionService.createSession(TABLE_ID, "waiter@test.com", 4);
 
         assertThat(result.getId()).isEqualTo("sess-1");
         assertThat(result.getStatus()).isEqualTo(SessionStatus.OPEN);
-        assertThat(result.getTableId()).isEqualTo(1L);
+        assertThat(result.getTableId()).isEqualTo(TABLE_ID);
         assertThat(result.getWaiterId()).isEqualTo("waiter@test.com");
         assertThat(result.getMaxParticipants()).isEqualTo(4);
     }
 
     @Test
-    void createSession_setsCreatedAt() {
-        when(tableService.findById(1L)).thenReturn(availableTable());
+    void createSession_stampsTenantFromContext() {
+        when(diningTableRepository.findById(TABLE_ID)).thenReturn(Optional.of(diningTable()));
+        when(sessionRepository.findByTenantIdAndTableIdAndStatus(RESTAURANT_ID, TABLE_ID, SessionStatus.OPEN))
+                .thenReturn(List.of());
         when(sessionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        Session result = sessionService.createSession(1L, "waiter@test.com", 4);
+        Session result = sessionService.createSession(TABLE_ID, "waiter@test.com", 4);
+
+        assertThat(result.getTenantId()).isEqualTo(RESTAURANT_ID);
+    }
+
+    @Test
+    void findById_throwsWhenSessionBelongsToAnotherTenant() {
+        when(sessionRepository.findByIdAndTenantId("sess-1", RESTAURANT_ID))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> sessionService.findById("sess-1"))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void createSession_setsCreatedAt() {
+        when(diningTableRepository.findById(TABLE_ID)).thenReturn(Optional.of(diningTable()));
+        when(sessionRepository.findByTenantIdAndTableIdAndStatus(RESTAURANT_ID, TABLE_ID, SessionStatus.OPEN)).thenReturn(List.of());
+        when(sessionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        Session result = sessionService.createSession(TABLE_ID, "waiter@test.com", 4);
 
         assertThat(result.getCreatedAt()).isNotNull();
     }
 
     @Test
     void createSession_publishesSessionOpenedEvent() {
-        when(tableService.findById(1L)).thenReturn(availableTable());
+        when(diningTableRepository.findById(TABLE_ID)).thenReturn(Optional.of(diningTable()));
+        when(sessionRepository.findByTenantIdAndTableIdAndStatus(RESTAURANT_ID, TABLE_ID, SessionStatus.OPEN)).thenReturn(List.of());
         when(sessionRepository.save(any())).thenAnswer(inv -> {
             Session s = inv.getArgument(0);
             s.setId("sess-1");
             return s;
         });
 
-        sessionService.createSession(1L, "waiter@test.com", 4);
+        sessionService.createSession(TABLE_ID, "waiter@test.com", 4);
 
         ArgumentCaptor<SessionOpened> captor = ArgumentCaptor.forClass(SessionOpened.class);
         verify(eventPublisher).publishEvent(captor.capture());
         assertThat(captor.getValue().sessionId()).isEqualTo("sess-1");
-        assertThat(captor.getValue().tableId()).isEqualTo(1L);
+        assertThat(captor.getValue().tableId()).isEqualTo(TABLE_ID);
         assertThat(captor.getValue().tableNumber()).isEqualTo(5);
     }
 
     @Test
     void createSession_throwsWhenTableOccupied() {
-        RestaurantTableResponse occupied = RestaurantTableResponse.builder()
-                .id(1L).number(5).capacity(4).status(TableStatus.OCCUPIED).build();
-        when(tableService.findById(1L)).thenReturn(occupied);
+        when(diningTableRepository.findById(TABLE_ID)).thenReturn(Optional.of(diningTable()));
+        Session existingOpenSession = Session.builder()
+                .id("sess-0").tableId(TABLE_ID).status(SessionStatus.OPEN).build();
+        when(sessionRepository.findByTenantIdAndTableIdAndStatus(RESTAURANT_ID, TABLE_ID, SessionStatus.OPEN))
+                .thenReturn(List.of(existingOpenSession));
 
-        assertThatThrownBy(() -> sessionService.createSession(1L, "waiter@test.com", 4))
+        assertThatThrownBy(() -> sessionService.createSession(TABLE_ID, "waiter@test.com", 4))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("occupied");
     }
@@ -116,7 +157,7 @@ class SessionServiceTest {
 
     private Session openSessionWithCapacity(int maxParticipants, List<Participant> participants) {
         return Session.builder()
-                .id("sess-1").tableId(1L).waiterId("waiter@test.com")
+                .id("sess-1").tenantId(RESTAURANT_ID).tableId(TABLE_ID).waiterId("waiter@test.com")
                 .status(SessionStatus.OPEN)
                 .maxParticipants(maxParticipants)
                 .participants(new ArrayList<>(participants))
@@ -124,11 +165,21 @@ class SessionServiceTest {
                 .build();
     }
 
+    @BeforeEach
+    void bindTenant() {
+        TenantContextHolder.setTenantId(RESTAURANT_ID);
+    }
+
+    @AfterEach
+    void clearTenant() {
+        TenantContextHolder.clear();
+    }
+
     @Test
     void join_addsParticipantWhenTokenValidAndCapacityAvailable() {
         when(qrTokenService.validateQrToken("qr-token")).thenReturn("sess-1");
-        when(qrTokenService.extractMaxParticipants("qr-token")).thenReturn(4);
-        when(sessionRepository.findById("sess-1"))
+        when(userRepository.findByEmail("user-1")).thenReturn(Optional.of(user("user-1")));
+        when(sessionRepository.findByIdAndTenantId("sess-1", RESTAURANT_ID))
                 .thenReturn(Optional.of(openSessionWithCapacity(4, List.of())));
         when(sessionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
@@ -145,12 +196,42 @@ class SessionServiceTest {
                 Participant.builder().userId("u1").name("A").build(),
                 Participant.builder().userId("u2").name("B").build());
         when(qrTokenService.validateQrToken("qr-token")).thenReturn("sess-1");
-        when(qrTokenService.extractMaxParticipants("qr-token")).thenReturn(2);
-        when(sessionRepository.findById("sess-1"))
+        when(userRepository.findByEmail("u3")).thenReturn(Optional.of(user("u3")));
+        when(sessionRepository.findByIdAndTenantId("sess-1", RESTAURANT_ID))
                 .thenReturn(Optional.of(openSessionWithCapacity(2, full)));
 
         assertThatThrownBy(() -> sessionService.joinSession("qr-token", "u3", "C"))
                 .isInstanceOf(TooManyParticipantsException.class);
+    }
+
+    @Test
+    void join_readsCapacityFromLiveSessionNotFromToken() {
+        List<Participant> twoJoined = List.of(
+                Participant.builder().userId("u1").name("A").build(),
+                Participant.builder().userId("u2").name("B").build());
+        when(qrTokenService.validateQrToken("qr-token")).thenReturn("sess-1");
+        when(userRepository.findByEmail("u3")).thenReturn(Optional.of(user("u3")));
+        // capacity was expanded to 4 after the QR token was minted for a 2-seat session
+        when(sessionRepository.findByIdAndTenantId("sess-1", RESTAURANT_ID))
+                .thenReturn(Optional.of(openSessionWithCapacity(4, twoJoined)));
+        when(sessionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        Session result = sessionService.joinSession("qr-token", "u3", "C");
+
+        assertThat(result.getParticipants()).hasSize(3);
+    }
+
+    @Test
+    void join_throwsWhenSessionBelongsToAnotherTenant() {
+        when(qrTokenService.validateQrToken("qr-token")).thenReturn("sess-1");
+        when(userRepository.findByEmail("user-1")).thenReturn(Optional.of(user("user-1")));
+        // the session exists, but under another tenant, so the scoped lookup returns nothing
+        when(sessionRepository.findByIdAndTenantId("sess-1", RESTAURANT_ID))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> sessionService.joinSession("qr-token", "user-1", "Alice"))
+                .isInstanceOf(ResourceNotFoundException.class);
+        verify(sessionRepository, never()).save(any());
     }
 
     @Test
@@ -167,8 +248,8 @@ class SessionServiceTest {
         List<Participant> existing = List.of(
                 Participant.builder().userId("user-1").name("Alice").build());
         when(qrTokenService.validateQrToken("qr-token")).thenReturn("sess-1");
-        when(qrTokenService.extractMaxParticipants("qr-token")).thenReturn(4);
-        when(sessionRepository.findById("sess-1"))
+        when(userRepository.findByEmail("user-1")).thenReturn(Optional.of(user("user-1")));
+        when(sessionRepository.findByIdAndTenantId("sess-1", RESTAURANT_ID))
                 .thenReturn(Optional.of(openSessionWithCapacity(4, existing)));
 
         assertThatThrownBy(() -> sessionService.joinSession("qr-token", "user-1", "Alice"))
@@ -179,8 +260,8 @@ class SessionServiceTest {
     @Test
     void join_publishesParticipantJoinedEvent() {
         when(qrTokenService.validateQrToken("qr-token")).thenReturn("sess-1");
-        when(qrTokenService.extractMaxParticipants("qr-token")).thenReturn(4);
-        when(sessionRepository.findById("sess-1"))
+        when(userRepository.findByEmail("user-1")).thenReturn(Optional.of(user("user-1")));
+        when(sessionRepository.findByIdAndTenantId("sess-1", RESTAURANT_ID))
                 .thenReturn(Optional.of(openSessionWithCapacity(4, List.of())));
         when(sessionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
@@ -193,12 +274,40 @@ class SessionServiceTest {
         assertThat(captor.getValue().userName()).isEqualTo("Alice");
     }
 
+    // --- joinSessionCode tests ---
+
+    @Test
+    void joinCode_scopesLookupToCurrentTenant() {
+        when(userRepository.findByEmail("user-1")).thenReturn(Optional.of(user("user-1")));
+        when(sessionRepository.findByTenantIdAndJoinCodeAndStatus(
+                RESTAURANT_ID, "AB3CD", SessionStatus.OPEN))
+                .thenReturn(Optional.of(openSessionWithCapacity(4, List.of())));
+        when(sessionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        Session result = sessionService.joinSessionCode("AB3CD", "user-1");
+
+        assertThat(result.getParticipants()).hasSize(1);
+        assertThat(result.getParticipants().get(0).getUserId()).isEqualTo("user-1");
+    }
+
+    @Test
+    void joinCode_throwsNotFoundWhenCodeBelongsToAnotherTenant() {
+        when(userRepository.findByEmail("user-1")).thenReturn(Optional.of(user("user-1")));
+        when(sessionRepository.findByTenantIdAndJoinCodeAndStatus(
+                RESTAURANT_ID, "AB3CD", SessionStatus.OPEN))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> sessionService.joinSessionCode("AB3CD", "user-1"))
+                .isInstanceOf(ResponseStatusException.class);
+        verify(sessionRepository, never()).save(any());
+    }
+
     // --- expandCapacity tests ---
 
     @Test
     void expandCapacity_increasesByGivenAmount() {
         Session session = openSessionWithCapacity(4, List.of());
-        when(sessionRepository.findById("sess-1")).thenReturn(Optional.of(session));
+        when(sessionRepository.findByIdAndTenantId("sess-1", RESTAURANT_ID)).thenReturn(Optional.of(session));
         when(sessionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         Session result = sessionService.expandCapacity("sess-1", "waiter@test.com", 2);
@@ -209,7 +318,7 @@ class SessionServiceTest {
     @Test
     void expandCapacity_throwsWhenNotAssignedWaiter() {
         Session session = openSessionWithCapacity(4, List.of());
-        when(sessionRepository.findById("sess-1")).thenReturn(Optional.of(session));
+        when(sessionRepository.findByIdAndTenantId("sess-1", RESTAURANT_ID)).thenReturn(Optional.of(session));
 
         assertThatThrownBy(() -> sessionService.expandCapacity("sess-1", "other@test.com", 2))
                 .isInstanceOf(IllegalStateException.class)
@@ -226,7 +335,7 @@ class SessionServiceTest {
 
     private Session openSessionWithParticipant(String participantId) {
         return Session.builder()
-                .id("sess-1").tableId(1L).waiterId("waiter@test.com")
+                .id("sess-1").tenantId(RESTAURANT_ID).tableId(TABLE_ID).waiterId("waiter@test.com")
                 .status(SessionStatus.OPEN).maxParticipants(4)
                 .participants(new ArrayList<>(List.of(
                         Participant.builder().userId(participantId).name("Alice").build())))
@@ -236,11 +345,11 @@ class SessionServiceTest {
     }
 
     @Test
-    void addItem_addsOrderItemWithPendingStatus() {
+    void addItem_addsOrderItemWithDraftStatus() {
         Session session = openSessionWithParticipant("user-1");
-        when(sessionRepository.findById("sess-1")).thenReturn(Optional.of(session));
+        when(sessionRepository.findByIdAndTenantId("sess-1", RESTAURANT_ID)).thenReturn(Optional.of(session));
+        when(userRepository.findByEmail("user-1")).thenReturn(Optional.of(user("user-1")));
         when(menuItemService.findById(10L)).thenReturn(availableMenuItem());
-        when(tableService.findById(1L)).thenReturn(availableTable());
         when(sessionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         Session result = sessionService.addItem("sess-1", "user-1", 10L);
@@ -252,14 +361,15 @@ class SessionServiceTest {
         assertThat(item.getPrice()).isEqualByComparingTo("12.50");
         assertThat(item.getParticipantId()).isEqualTo("user-1");
         assertThat(item.getParticipantName()).isEqualTo("Alice");
-        assertThat(item.getStatus()).isEqualTo(OrderItemStatus.PENDING);
+        assertThat(item.getStatus()).isEqualTo(OrderItemStatus.DRAFT);
         assertThat(item.getAddedAt()).isNotNull();
     }
 
     @Test
     void addItem_throwsWhenParticipantNotInSession() {
         Session session = openSessionWithParticipant("user-1");
-        when(sessionRepository.findById("sess-1")).thenReturn(Optional.of(session));
+        when(sessionRepository.findByIdAndTenantId("sess-1", RESTAURANT_ID)).thenReturn(Optional.of(session));
+        when(userRepository.findByEmail("user-99")).thenReturn(Optional.of(user("user-99")));
 
         assertThatThrownBy(() -> sessionService.addItem("sess-1", "user-99", 10L))
                 .isInstanceOf(IllegalStateException.class)
@@ -270,7 +380,7 @@ class SessionServiceTest {
     void addItem_throwsWhenSessionClosed() {
         Session session = openSessionWithParticipant("user-1");
         session.setStatus(SessionStatus.CLOSED);
-        when(sessionRepository.findById("sess-1")).thenReturn(Optional.of(session));
+        when(sessionRepository.findByIdAndTenantId("sess-1", RESTAURANT_ID)).thenReturn(Optional.of(session));
 
         assertThatThrownBy(() -> sessionService.addItem("sess-1", "user-1", 10L))
                 .isInstanceOf(IllegalStateException.class)
@@ -282,7 +392,8 @@ class SessionServiceTest {
         Session session = openSessionWithParticipant("user-1");
         MenuItemResponse unavailable = availableMenuItem();
         unavailable.setAvailable(false);
-        when(sessionRepository.findById("sess-1")).thenReturn(Optional.of(session));
+        when(sessionRepository.findByIdAndTenantId("sess-1", RESTAURANT_ID)).thenReturn(Optional.of(session));
+        when(userRepository.findByEmail("user-1")).thenReturn(Optional.of(user("user-1")));
         when(menuItemService.findById(10L)).thenReturn(unavailable);
 
         assertThatThrownBy(() -> sessionService.addItem("sess-1", "user-1", 10L))
@@ -293,60 +404,32 @@ class SessionServiceTest {
     @Test
     void addItem_publishesItemAddedEvent() {
         Session session = openSessionWithParticipant("user-1");
-        when(sessionRepository.findById("sess-1")).thenReturn(Optional.of(session));
+        when(sessionRepository.findByIdAndTenantId("sess-1", RESTAURANT_ID)).thenReturn(Optional.of(session));
+        when(userRepository.findByEmail("user-1")).thenReturn(Optional.of(user("user-1")));
         when(menuItemService.findById(10L)).thenReturn(availableMenuItem());
-        when(tableService.findById(1L)).thenReturn(availableTable());
         when(sessionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         sessionService.addItem("sess-1", "user-1", 10L);
 
-        ArgumentCaptor<Object> captor = ArgumentCaptor.forClass(Object.class);
-        verify(eventPublisher, times(2)).publishEvent(captor.capture());
-        ItemAdded event = captor.getAllValues().stream()
-                .filter(e -> e instanceof ItemAdded)
-                .map(e -> (ItemAdded) e)
-                .findFirst().orElseThrow();
-        assertThat(event.sessionId()).isEqualTo("sess-1");
-        assertThat(event.itemName()).isEqualTo("Tacos");
-        assertThat(event.participantName()).isEqualTo("Alice");
-        assertThat(event.status()).isEqualTo(OrderItemStatus.PENDING);
-        assertThat(event.sessionItems()).hasSize(1);
+        ArgumentCaptor<ItemAdded> captor = ArgumentCaptor.forClass(ItemAdded.class);
+        verify(eventPublisher).publishEvent(captor.capture());
+        assertThat(captor.getValue().sessionId()).isEqualTo("sess-1");
+        assertThat(captor.getValue().itemName()).isEqualTo("Tacos");
+        assertThat(captor.getValue().participantName()).isEqualTo("Alice");
+        assertThat(captor.getValue().status()).isEqualTo(OrderItemStatus.DRAFT);
+        assertThat(captor.getValue().sessionItems()).hasSize(1);
     }
 
     @Test
     void addItem_throwsWhenMenuItemNotFound() {
         Session session = openSessionWithParticipant("user-1");
-        when(sessionRepository.findById("sess-1")).thenReturn(Optional.of(session));
+        when(sessionRepository.findByIdAndTenantId("sess-1", RESTAURANT_ID)).thenReturn(Optional.of(session));
+        when(userRepository.findByEmail("user-1")).thenReturn(Optional.of(user("user-1")));
         when(menuItemService.findById(99L))
                 .thenThrow(new ResourceNotFoundException("Menu item not found: 99"));
 
         assertThatThrownBy(() -> sessionService.addItem("sess-1", "user-1", 99L))
                 .isInstanceOf(ResourceNotFoundException.class);
-    }
-
-    @Test
-    void addItem_publishesOrderItemAddedEventToKitchen() {
-        Session session = openSessionWithParticipant("user-1");
-        when(sessionRepository.findById("sess-1")).thenReturn(Optional.of(session));
-        when(menuItemService.findById(10L)).thenReturn(availableMenuItem());
-        when(tableService.findById(1L)).thenReturn(availableTable());
-        when(sessionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-
-        sessionService.addItem("sess-1", "user-1", 10L);
-
-        ArgumentCaptor<Object> captor = ArgumentCaptor.forClass(Object.class);
-        verify(eventPublisher, times(2)).publishEvent(captor.capture());
-        OrderItemAdded event = captor.getAllValues().stream()
-                .filter(e -> e instanceof OrderItemAdded)
-                .map(e -> (OrderItemAdded) e)
-                .findFirst().orElseThrow();
-        assertThat(event.sessionId()).isEqualTo("sess-1");
-        assertThat(event.orderItemId()).isNotNull();
-        assertThat(event.tableNumber()).isEqualTo(5);
-        assertThat(event.itemId()).isEqualTo(10L);
-        assertThat(event.itemName()).isEqualTo("Tacos");
-        assertThat(event.price()).isEqualByComparingTo("12.50");
-        assertThat(event.participantName()).isEqualTo("Alice");
     }
 
     // --- removeItem tests ---
@@ -359,7 +442,7 @@ class SessionServiceTest {
                 .status(status).addedAt(LocalDateTime.now())
                 .build();
         return Session.builder()
-                .id("sess-1").tableId(1L).waiterId("waiter@test.com")
+                .id("sess-1").tenantId(RESTAURANT_ID).tableId(TABLE_ID).waiterId("waiter@test.com")
                 .status(SessionStatus.OPEN).maxParticipants(4)
                 .participants(new ArrayList<>(List.of(
                         Participant.builder().userId(participantId).name("Alice").build())))
@@ -371,7 +454,8 @@ class SessionServiceTest {
     @Test
     void removeItem_removesItemWhenParticipantOwnsPendingItem() {
         Session session = openSessionWithItem(OrderItemStatus.PENDING, "user-1");
-        when(sessionRepository.findById("sess-1")).thenReturn(Optional.of(session));
+        when(sessionRepository.findByIdAndTenantId("sess-1", RESTAURANT_ID)).thenReturn(Optional.of(session));
+        when(userRepository.findByEmail("user-1")).thenReturn(Optional.of(user("user-1")));
         when(sessionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         Session result = sessionService.removeItem("sess-1", "order-item-1", "user-1");
@@ -382,7 +466,8 @@ class SessionServiceTest {
     @Test
     void removeItem_removesItemWhenWaiterRequests() {
         Session session = openSessionWithItem(OrderItemStatus.PENDING, "user-1");
-        when(sessionRepository.findById("sess-1")).thenReturn(Optional.of(session));
+        when(sessionRepository.findByIdAndTenantId("sess-1", RESTAURANT_ID)).thenReturn(Optional.of(session));
+        when(userRepository.findByEmail("waiter@test.com")).thenReturn(Optional.of(user("waiter@test.com")));
         when(sessionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         Session result = sessionService.removeItem("sess-1", "order-item-1", "waiter@test.com");
@@ -393,7 +478,7 @@ class SessionServiceTest {
     @Test
     void removeItem_throwsWhenItemIsPreparing() {
         Session session = openSessionWithItem(OrderItemStatus.PREPARING, "user-1");
-        when(sessionRepository.findById("sess-1")).thenReturn(Optional.of(session));
+        when(sessionRepository.findByIdAndTenantId("sess-1", RESTAURANT_ID)).thenReturn(Optional.of(session));
 
         assertThatThrownBy(() -> sessionService.removeItem("sess-1", "order-item-1", "user-1"))
                 .isInstanceOf(IllegalStateException.class)
@@ -404,7 +489,8 @@ class SessionServiceTest {
     void removeItem_throwsWhenParticipantRemovesOthersItem() {
         Session session = openSessionWithItem(OrderItemStatus.PENDING, "user-1");
         session.getParticipants().add(Participant.builder().userId("user-2").name("Bob").build());
-        when(sessionRepository.findById("sess-1")).thenReturn(Optional.of(session));
+        when(sessionRepository.findByIdAndTenantId("sess-1", RESTAURANT_ID)).thenReturn(Optional.of(session));
+        when(userRepository.findByEmail("user-2")).thenReturn(Optional.of(user("user-2")));
 
         assertThatThrownBy(() -> sessionService.removeItem("sess-1", "order-item-1", "user-2"))
                 .isInstanceOf(IllegalStateException.class)
@@ -414,7 +500,7 @@ class SessionServiceTest {
     @Test
     void removeItem_throwsWhenItemNotFound() {
         Session session = openSessionWithItem(OrderItemStatus.PENDING, "user-1");
-        when(sessionRepository.findById("sess-1")).thenReturn(Optional.of(session));
+        when(sessionRepository.findByIdAndTenantId("sess-1", RESTAURANT_ID)).thenReturn(Optional.of(session));
 
         assertThatThrownBy(() -> sessionService.removeItem("sess-1", "nonexistent-id", "user-1"))
                 .isInstanceOf(ResourceNotFoundException.class);
@@ -425,7 +511,7 @@ class SessionServiceTest {
     @Test
     void handleKitchenItemUpdated_updatesOrderItemStatus() {
         Session session = openSessionWithItem(OrderItemStatus.PENDING, "user-1");
-        when(sessionRepository.findById("sess-1")).thenReturn(Optional.of(session));
+        when(sessionRepository.findByIdAndTenantId("sess-1", RESTAURANT_ID)).thenReturn(Optional.of(session));
         when(sessionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         sessionService.handleKitchenItemUpdated(
@@ -438,7 +524,7 @@ class SessionServiceTest {
 
     @Test
     void handleKitchenItemUpdated_throwsWhenSessionNotFound() {
-        when(sessionRepository.findById("sess-999")).thenReturn(Optional.empty());
+        when(sessionRepository.findByIdAndTenantId("sess-999", RESTAURANT_ID)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> sessionService.handleKitchenItemUpdated(
                 new KitchenItemUpdated("sess-999", "order-item-1", OrderItemStatus.PREPARING)))
@@ -448,7 +534,7 @@ class SessionServiceTest {
     @Test
     void handleKitchenItemUpdated_throwsWhenItemNotFound() {
         Session session = openSessionWithItem(OrderItemStatus.PENDING, "user-1");
-        when(sessionRepository.findById("sess-1")).thenReturn(Optional.of(session));
+        when(sessionRepository.findByIdAndTenantId("sess-1", RESTAURANT_ID)).thenReturn(Optional.of(session));
 
         assertThatThrownBy(() -> sessionService.handleKitchenItemUpdated(
                 new KitchenItemUpdated("sess-1", "nonexistent-id", OrderItemStatus.PREPARING)))
@@ -458,7 +544,7 @@ class SessionServiceTest {
     @Test
     void handleKitchenItemUpdated_publishesItemStatusUpdatedEvent() {
         Session session = openSessionWithItem(OrderItemStatus.PENDING, "user-1");
-        when(sessionRepository.findById("sess-1")).thenReturn(Optional.of(session));
+        when(sessionRepository.findByIdAndTenantId("sess-1", RESTAURANT_ID)).thenReturn(Optional.of(session));
         when(sessionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         sessionService.handleKitchenItemUpdated(
@@ -480,10 +566,10 @@ class SessionServiceTest {
     @Test
     void closeSession_setsStatusToClosed() {
         Session session = Session.builder()
-                .id("sess-1").tableId(1L).waiterId("waiter@test.com")
+                .id("sess-1").tenantId(RESTAURANT_ID).tableId(TABLE_ID).waiterId("waiter@test.com")
                 .status(SessionStatus.OPEN).maxParticipants(4)
                 .createdAt(LocalDateTime.now()).build();
-        when(sessionRepository.findById("sess-1")).thenReturn(Optional.of(session));
+        when(sessionRepository.findByIdAndTenantId("sess-1", RESTAURANT_ID)).thenReturn(Optional.of(session));
         when(sessionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         sessionService.closeSession("sess-1");
@@ -495,9 +581,89 @@ class SessionServiceTest {
 
     @Test
     void closeSession_throwsWhenSessionNotFound() {
-        when(sessionRepository.findById("sess-999")).thenReturn(Optional.empty());
+        when(sessionRepository.findByIdAndTenantId("sess-999", RESTAURANT_ID)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> sessionService.closeSession("sess-999"))
                 .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    // --- confirmDraftsForUser tests ---
+
+    private User userWithRestaurant(String id, UUID restaurantId) {
+        Restaurant restaurant = restaurantId == null ? null : Restaurant.builder().id(restaurantId).build();
+        return User.builder().id(id).email(id + "@test.com").name("Alice")
+                .restaurantId(restaurant).build();
+    }
+
+    private DiningTables diningTableForRestaurant(UUID restaurantId) {
+        return DiningTables.builder().id(TABLE_ID).tableNumber(5).isActive(true)
+                .restaurantId(restaurantId).build();
+    }
+
+    @Test
+    void confirmDraftsForUser_throwsWhenPathUserIdDoesNotMatchRequester() {
+        Session session = openSessionWithParticipant("user-1");
+        when(sessionRepository.findByIdAndTenantId("sess-1", RESTAURANT_ID)).thenReturn(Optional.of(session));
+        when(userRepository.findByEmail("user-2@test.com"))
+                .thenReturn(Optional.of(userWithRestaurant("user-2", RESTAURANT_ID)));
+
+        assertThatThrownBy(() -> sessionService.confirmDraftsForUser("sess-1", "user-1", "user-2@test.com"))
+                .isInstanceOf(AccessDeniedException.class);
+    }
+
+    @Test
+    void confirmDraftsForUser_throwsWhenTenantMismatch() {
+        Session session = openSessionWithParticipant("user-1");
+        when(sessionRepository.findByIdAndTenantId("sess-1", RESTAURANT_ID)).thenReturn(Optional.of(session));
+        when(userRepository.findByEmail("user-1@test.com"))
+                .thenReturn(Optional.of(userWithRestaurant("user-1", UUID.randomUUID())));
+        when(diningTableRepository.findById(TABLE_ID))
+                .thenReturn(Optional.of(diningTableForRestaurant(RESTAURANT_ID)));
+
+        assertThatThrownBy(() -> sessionService.confirmDraftsForUser("sess-1", "user-1", "user-1@test.com"))
+                .isInstanceOf(AccessDeniedException.class);
+    }
+
+    @Test
+    void confirmDraftsForUser_throwsWhenRequesterHasNoRestaurant() {
+        Session session = openSessionWithParticipant("user-1");
+        when(sessionRepository.findByIdAndTenantId("sess-1", RESTAURANT_ID)).thenReturn(Optional.of(session));
+        when(userRepository.findByEmail("user-1@test.com"))
+                .thenReturn(Optional.of(userWithRestaurant("user-1", null)));
+        when(diningTableRepository.findById(TABLE_ID))
+                .thenReturn(Optional.of(diningTableForRestaurant(RESTAURANT_ID)));
+
+        assertThatThrownBy(() -> sessionService.confirmDraftsForUser("sess-1", "user-1", "user-1@test.com"))
+                .isInstanceOf(AccessDeniedException.class);
+    }
+
+    @Test
+    void confirmDraftsForUser_confirmsDraftsWhenUserIdAndTenantMatch() {
+        Session session = openSessionWithParticipant("user-1");
+        session.getItems().add(OrderItem.builder()
+                .id("item-1").itemId(10L).name("Tacos").price(new java.math.BigDecimal("12.50"))
+                .participantId("user-1").participantName("Alice")
+                .status(OrderItemStatus.DRAFT).addedAt(LocalDateTime.now())
+                .build());
+        when(sessionRepository.findByIdAndTenantId("sess-1", RESTAURANT_ID)).thenReturn(Optional.of(session));
+        when(userRepository.findByEmail("user-1@test.com"))
+                .thenReturn(Optional.of(userWithRestaurant("user-1", RESTAURANT_ID)));
+        when(diningTableRepository.findById(TABLE_ID))
+                .thenReturn(Optional.of(diningTableForRestaurant(RESTAURANT_ID)));
+        when(sessionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        sessionService.confirmDraftsForUser("sess-1", "user-1", "user-1@test.com");
+
+        assertThat(session.getItems().get(0).getStatus()).isEqualTo(OrderItemStatus.PENDING);
+        ArgumentCaptor<Object> captor = ArgumentCaptor.forClass(Object.class);
+        verify(eventPublisher, org.mockito.Mockito.times(2)).publishEvent(captor.capture());
+        assertThat(captor.getAllValues())
+                .filteredOn(KitchenItemsConfirmed.class::isInstance)
+                .extracting(e -> ((KitchenItemsConfirmed) e).tableNumber())
+                .containsExactly(5);
+        assertThat(captor.getAllValues())
+                .filteredOn(KitchenItemsConfirmed.class::isInstance)
+                .extracting(e -> ((KitchenItemsConfirmed) e).tenantId())
+                .containsExactly(RESTAURANT_ID);
     }
 }

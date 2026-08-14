@@ -35,6 +35,7 @@ public class SessionController {
 
     private final SessionService sessionService;
     private final QrTokenService qrTokenService;
+    private final UserRepository userRepository;
 
     @Operation(summary = "Create a session (WAITER)")
     @PostMapping
@@ -55,8 +56,11 @@ public class SessionController {
         boolean isCustomer = authentication.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ROLE_CUSTOMER"));
         if (isCustomer) {
+            String requesterId = userRepository.findByEmail(authentication.getName())
+                    .map(u -> u.getId())
+                    .orElse(null);
             boolean isParticipant = session.participants().stream()
-                    .anyMatch(p -> p.userId().equals(authentication.getName()));
+                    .anyMatch(p -> p.userId().equals(requesterId));
             if (!isParticipant) {
                 throw new AccessDeniedException("Not authorized to view this session");
             }
@@ -79,7 +83,7 @@ public class SessionController {
         if (!session.getWaiterId().equals(authentication.getName())) {
             throw new AccessDeniedException("Only the assigned waiter can generate QR codes");
         }
-        String token = qrTokenService.generateQrToken(session.getId(), session.getMaxParticipants());
+        String token = qrTokenService.generateQrToken(session.getId());
         return Map.of("qrToken", token);
     }
 
@@ -119,8 +123,9 @@ public class SessionController {
     @Operation(summary = "Send item to KITCHEN")
     @PostMapping("/{sessionId}/participants/{userId}/confirm")
     @PreAuthorize("hasRole('CUSTOMER')")
-    public ResponseEntity<?> confirmMyOrder(@PathVariable String sessionId, @PathVariable String userId ){
-        sessionService.confirmDraftsForUser(sessionId,userId);
+    public ResponseEntity<?> confirmMyOrder(@PathVariable String sessionId, @PathVariable String userId,
+                                             Authentication authentication){
+        sessionService.confirmDraftsForUser(sessionId, userId, authentication.getName());
         return ResponseEntity.ok().build();
     }
 

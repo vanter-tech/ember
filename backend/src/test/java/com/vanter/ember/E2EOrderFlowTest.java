@@ -12,15 +12,17 @@ import com.vanter.ember.catalog.model.dto.MenuItemRequest;
 import com.vanter.ember.catalog.repository.CategoryRepository;
 import com.vanter.ember.catalog.repository.MenuItemRepository;
 import com.vanter.ember.catalog.service.MenuItemService;
-import com.vanter.ember.catalog.service.RestaurantTableService;
-import com.vanter.ember.catalog.model.dto.RestaurantTableRequest;
-import com.vanter.ember.catalog.model.TableStatus;
+import com.vanter.ember.config.TenantContextHolder;
+import com.vanter.ember.settings.model.DiningTables;
+import com.vanter.ember.settings.repository.DiningTableRepository;
 import com.vanter.ember.identity.model.Role;
 import com.vanter.ember.identity.model.User;
 import com.vanter.ember.identity.model.dto.LoginRequest;
 import com.vanter.ember.identity.repository.UserRepository;
 import com.vanter.ember.kitchen.model.KitchenOrder;
 import com.vanter.ember.kitchen.repository.KitchenOrderRepository;
+import com.vanter.ember.restaurant.model.Restaurant;
+import com.vanter.ember.restaurant.repository.RestaurantRepository;
 import com.vanter.ember.session.dto.AddItemRequest;
 import com.vanter.ember.session.dto.CreateSessionRequest;
 import com.vanter.ember.session.dto.JoinSessionRequest;
@@ -28,6 +30,8 @@ import com.vanter.ember.session.model.OrderItemStatus;
 import com.vanter.ember.session.model.SessionStatus;
 import com.vanter.ember.session.repository.SessionRepository;
 import java.math.BigDecimal;
+import java.util.UUID;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,11 +55,12 @@ class E2EOrderFlowTest {
     @Autowired MockMvc mockMvc;
     @Autowired ObjectMapper objectMapper;
     @Autowired UserRepository userRepository;
+    @Autowired RestaurantRepository restaurantRepository;
     @Autowired PasswordEncoder passwordEncoder;
     @Autowired CategoryRepository categoryRepository;
     @Autowired MenuItemService menuItemService;
     @Autowired MenuItemRepository menuItemRepository;
-    @Autowired RestaurantTableService tableService;
+    @Autowired DiningTableRepository diningTableRepository;
     @Autowired SessionRepository sessionRepository;
     @Autowired KitchenOrderRepository kitchenOrderRepository;
     @Autowired BillRepository billRepository;
@@ -64,7 +69,9 @@ class E2EOrderFlowTest {
     private String waiterToken;
     private String customerToken;
     private String kitchenToken;
-    private Long tableId;
+    private String customerId;
+    private UUID restaurantId;
+    private UUID tableId;
     private Long menuItemId;
 
     @BeforeEach
@@ -76,27 +83,41 @@ class E2EOrderFlowTest {
         menuItemRepository.deleteAll();
         categoryRepository.deleteAll();
         userRepository.deleteAll();
+        restaurantRepository.deleteAll();
 
         String password = "password123";
 
-        User waiter = userRepository.save(User.builder()
-                .name("Waiter").email("waiter@e2e.com")
+        Restaurant restaurant = restaurantRepository.save(Restaurant.builder()
+                .name("E2E Restaurant").slug("e2e-restaurant-" + UUID.randomUUID())
+                .build());
+        restaurantId = restaurant.getId();
+
+        // Seeding below writes @TenantId entities directly through repositories/services, which
+        // Hibernate stamps from the resolved tenant — without this the rows would land on the
+        // no-tenant sentinel and be invisible to the JWT-scoped requests under test.
+        TenantContextHolder.setTenantId(restaurant.getId());
+
+        userRepository.save(User.builder()
+                .name("Waiter").email("waiter@e2e.com").restaurantId(restaurant)
                 .passwordHash(passwordEncoder.encode(password)).role(Role.WAITER).build());
         User customer = userRepository.save(User.builder()
-                .name("Alice").email("customer@e2e.com")
+                .name("Alice").email("customer@e2e.com").restaurantId(restaurant)
                 .passwordHash(passwordEncoder.encode(password)).role(Role.CUSTOMER).build());
         userRepository.save(User.builder()
-                .name("Kitchen").email("kitchen@e2e.com")
+                .name("Kitchen").email("kitchen@e2e.com").restaurantId(restaurant)
                 .passwordHash(passwordEncoder.encode(password)).role(Role.KITCHEN).build());
+        customerId = customer.getId();
 
         waiterToken = login("waiter@e2e.com", password);
         customerToken = login("customer@e2e.com", password);
         kitchenToken = login("kitchen@e2e.com", password);
 
-        RestaurantTableRequest tableReq = new RestaurantTableRequest();
-        tableReq.setNumber(7);
-        tableReq.setCapacity(4);
-        tableId = tableService.create(tableReq).getId();
+        DiningTables table = diningTableRepository.save(DiningTables.builder()
+                .restaurantId(restaurant.getId())
+                .tableNumber(7)
+                .isActive(true)
+                .build());
+        tableId = table.getId();
 
         Category category = categoryRepository.save(
                 Category.builder().name("E2E-Food").build());
@@ -104,7 +125,13 @@ class E2EOrderFlowTest {
         itemReq.setName("E2E Burger");
         itemReq.setPrice(new BigDecimal("12.00"));
         itemReq.setCategoryId(category.getId());
+        itemReq.setAvailable(true);
         menuItemId = menuItemService.create(itemReq, null).getId();
+    }
+
+    @AfterEach
+    void tearDown() {
+        TenantContextHolder.clear();
     }
 
     private String login(String email, String password) throws Exception {
@@ -135,7 +162,7 @@ class E2EOrderFlowTest {
                 .andExpect(status().isCreated())
                 .andReturn();
         String sessionId = objectMapper.readTree(
-                sessionResult.getResponse().getContentAsString()).get("id").asText();
+                sessionResult.getResponse().getContentAsString()).get("sessionId").asText();
 
         // 2 — Waiter gets QR token
         MvcResult qrResult = mockMvc.perform(get("/sessions/" + sessionId + "/qr")
@@ -164,8 +191,15 @@ class E2EOrderFlowTest {
                 addItemResult.getResponse().getContentAsString())
                 .get("items").get(0).get("id").asText();
 
+        // 4b — Customer confirms their draft items, sending them to the kitchen
+        mockMvc.perform(post("/sessions/" + sessionId + "/participants/" + customerId + "/confirm")
+                        .header("Authorization", bearer(customerToken)))
+                .andExpect(status().isOk());
+
         // 5 — Kitchen finds the order and drives item to DELIVERED
-        KitchenOrder kitchenOrder = kitchenOrderRepository.findBySessionId(sessionId).orElseThrow();
+        KitchenOrder kitchenOrder = kitchenOrderRepository
+                .findByTenantIdAndSessionId(restaurantId, sessionId)
+                .orElseThrow();
         String kitchenOrderId = kitchenOrder.getId();
 
         mockMvc.perform(patch("/kitchen/orders/" + kitchenOrderId + "/items/" + orderItemId + "/status")
@@ -218,11 +252,9 @@ class E2EOrderFlowTest {
                         .content(objectMapper.writeValueAsString(payReq)))
                 .andExpect(status().isCreated());
 
-        // 9 — Verify session is CLOSED and table is AVAILABLE
+        // 9 — Verify session is CLOSED
         assertThat(sessionRepository.findById(sessionId))
                 .isPresent()
                 .hasValueSatisfying(s -> assertThat(s.getStatus()).isEqualTo(SessionStatus.CLOSED));
-
-        assertThat(tableService.findById(tableId).getStatus()).isEqualTo(TableStatus.AVAILABLE);
     }
 }

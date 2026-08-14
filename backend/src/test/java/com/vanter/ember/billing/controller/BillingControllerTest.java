@@ -17,6 +17,7 @@ import com.vanter.ember.billing.service.PaymentService;
 import com.vanter.ember.config.CorsConfig;
 import com.vanter.ember.config.SecurityConfig;
 import com.vanter.ember.identity.service.JwtService;
+import com.vanter.ember.restaurant.repository.RestaurantRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -51,6 +52,7 @@ class BillingControllerTest {
     @MockBean PaymentService paymentService;
     @MockBean JwtService jwtService;
     @MockBean UserDetailsService userDetailsService;
+    @MockBean RestaurantRepository restaurantRepository;
 
     private Bill sampleBill() {
         return Bill.builder()

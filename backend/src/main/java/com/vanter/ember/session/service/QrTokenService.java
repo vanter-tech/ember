@@ -1,5 +1,6 @@
 package com.vanter.ember.session.service;
 
+import com.vanter.ember.config.TenantContextHolder;
 import com.vanter.ember.identity.service.JwtService;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -13,10 +14,10 @@ public class QrTokenService {
 
     private final JwtService jwtService;
 
-    public String generateQrToken(String sessionId, int maxParticipants) {
+    public String generateQrToken(String sessionId) {
         return jwtService.generateToken(
                 sessionId,
-                Map.of("maxParticipants", maxParticipants),
+                Map.of("rid", TenantContextHolder.requireTenantId().toString()),
                 QR_EXPIRY_MS);
     }
 
@@ -24,11 +25,9 @@ public class QrTokenService {
         if (!jwtService.isTokenValid(token)) {
             throw new IllegalArgumentException("Invalid or expired QR token");
         }
+        if (!TenantContextHolder.requireTenantId().equals(jwtService.extractTenantId(token))) {
+            throw new IllegalArgumentException("QR token does not belong to this restaurant");
+        }
         return jwtService.extractSubject(token);
-    }
-
-    public int extractMaxParticipants(String token) {
-        return jwtService.extractClaim(token,
-                claims -> claims.get("maxParticipants", Integer.class));
     }
 }

@@ -13,6 +13,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.mock.web.MockMultipartFile;
 
 import java.math.BigDecimal;
@@ -90,11 +92,22 @@ class MenuItemServiceTest {
     }
 
     @Test
-    void findAll_returnsAllItems() {
-        when(menuItemRepository.findAll()).thenReturn(
-                List.of(MenuItem.builder().id(1L).name("Burger").build()));
+    void findAll_returnsAllItemsWhenNoCategoryGiven() {
+        PageRequest pageable = PageRequest.of(0, 20);
+        when(menuItemRepository.findAll(pageable)).thenReturn(
+                new PageImpl<>(List.of(MenuItem.builder().id(1L).name("Burger").build())));
 
-        assertThat(menuItemService.findAll(null)).hasSize(1);
+        assertThat(menuItemService.findAll(null, pageable).getContent()).hasSize(1);
+    }
+
+    @Test
+    void findAll_scopesToCategoryWhenIdGiven() {
+        PageRequest pageable = PageRequest.of(0, 20);
+        when(menuItemRepository.findByCategoryId(1L, pageable)).thenReturn(
+                new PageImpl<>(List.of(MenuItem.builder().id(1L).name("Burger").build())));
+
+        assertThat(menuItemService.findAll(1L, pageable).getContent()).hasSize(1);
+        verify(menuItemRepository, never()).findAll(any(PageRequest.class));
     }
 
     @Test

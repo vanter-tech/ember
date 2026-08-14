@@ -29,7 +29,7 @@ class SessionWebSocketListenerTest {
         listener.onParticipantJoined(event);
 
         verify(messagingTemplate).convertAndSend(
-                "/topic/sessions/sess-1",
+                "/topic/session/sess-1",
                 event);
     }
 
@@ -39,7 +39,7 @@ class SessionWebSocketListenerTest {
 
         listener.onParticipantJoined(event);
 
-        verify(messagingTemplate).convertAndSend("/topic/sessions/sess-42", event);
+        verify(messagingTemplate).convertAndSend("/topic/session/sess-42", event);
     }
 
     @Test

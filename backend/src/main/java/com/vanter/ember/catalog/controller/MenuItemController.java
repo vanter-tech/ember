@@ -6,8 +6,9 @@ import com.vanter.ember.catalog.service.MenuItemService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -35,8 +36,8 @@ public class MenuItemController {
 
     @Operation(summary = "List all menu items by category")
     @GetMapping
-    public List<MenuItemResponse> getAll(@RequestParam(required = false) Long id) {
-        return menuItemService.findAll(id);
+    public Page<MenuItemResponse> getAll(@RequestParam(required = false) Long id, Pageable pageable) {
+        return menuItemService.findAll(id, pageable);
     }
 
     @Operation(summary = "Get menu item by ID")

@@ -8,6 +8,7 @@ import com.vanter.ember.identity.model.dto.LoginRequest;
 import com.vanter.ember.identity.model.dto.RegisterRequest;
 import com.vanter.ember.identity.service.AuthService;
 import com.vanter.ember.identity.service.JwtService;
+import com.vanter.ember.restaurant.repository.RestaurantRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -36,13 +37,14 @@ class AuthControllerTest {
     @MockBean AuthService authService;
     @MockBean JwtService jwtService;
     @MockBean UserDetailsService userDetailsService;
+    @MockBean RestaurantRepository restaurantRepository;
 
     @Test
     void register_returns200WithTokenAndName() throws Exception {
         RegisterRequest req = new RegisterRequest();
         req.setName("Ana");
         req.setEmail("ana@test.com");
-        req.setPassword("secret");
+        req.setPassword("Secret123!");
 
         when(authService.register(any())).thenReturn(
                 AuthResponse.builder().token("jwt-token").userId("u-1").name("Ana").role("CUSTOMER").build()
@@ -62,7 +64,7 @@ class AuthControllerTest {
         RegisterRequest req = new RegisterRequest();
         req.setName("Ana");
         req.setEmail("ana@test.com");
-        req.setPassword("secret");
+        req.setPassword("Secret123!");
 
         when(authService.register(any()))
                 .thenThrow(new IllegalArgumentException("Email already in use"));
@@ -79,6 +81,19 @@ class AuthControllerTest {
         req.setName("");
         req.setEmail("not-an-email");
         req.setPassword("x");
+
+        mockMvc.perform(post("/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void register_returns400ForWeakPassword() throws Exception {
+        RegisterRequest req = new RegisterRequest();
+        req.setName("Ana");
+        req.setEmail("ana@test.com");
+        req.setPassword("alllowercase1!");
 
         mockMvc.perform(post("/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)

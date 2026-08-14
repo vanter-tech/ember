@@ -1,6 +1,10 @@
 package com.vanter.ember.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vanter.ember.identity.service.JwtService;
+import com.vanter.ember.restaurant.model.Restaurant;
+import com.vanter.ember.restaurant.model.RestaurantStatus;
+import com.vanter.ember.restaurant.repository.RestaurantRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -8,6 +12,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ProblemDetail;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.Customizer;
@@ -28,6 +34,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.net.URI;
+import java.util.UUID;
 
 @Configuration
 @EnableWebSecurity
@@ -37,6 +45,8 @@ public class SecurityConfig {
 
     private final JwtService jwtService;
     private final UserDetailsService userDetailsService;
+    private final RestaurantRepository restaurantRepository;
+    private final ObjectMapper objectMapper;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -46,6 +56,7 @@ public class SecurityConfig {
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/**").permitAll()
+                        .requestMatchers("/public/**").permitAll()
                         .requestMatchers("/sessions/*/status").permitAll()
                         .requestMatchers("/error").permitAll()
                         .requestMatchers("/ws/**").permitAll()
@@ -98,7 +109,35 @@ public class SecurityConfig {
                                     userDetails, null, userDetails.getAuthorities());
                     SecurityContextHolder.getContext().setAuthentication(authToken);
                 }
-                chain.doFilter(request, response);
+                UUID tenantId = jwtService.extractTenantId(token);
+                TenantContextHolder.setTenantId(tenantId);
+                try {
+                    Restaurant restaurant = tenantId != null
+                            ? restaurantRepository.findById(tenantId).orElse(null)
+                            : null;
+                    if (restaurant == null || restaurant.getStatus() != RestaurantStatus.ACTIVE) {
+                        writeSuspendedTenantResponse(request, response, restaurant);
+                        return;
+                    }
+                    chain.doFilter(request, response);
+                } finally {
+                    TenantContextHolder.clear();
+                }
+            }
+
+            private void writeSuspendedTenantResponse(HttpServletRequest request,
+                                                       HttpServletResponse response,
+                                                       Restaurant restaurant) throws IOException {
+                String detail = restaurant == null
+                        ? "Tenant account not found."
+                        : "This tenant account is " + restaurant.getStatus().name().toLowerCase()
+                                + "; access is blocked pending resolution.";
+                ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, detail);
+                problem.setTitle(HttpStatus.FORBIDDEN.getReasonPhrase());
+                problem.setInstance(URI.create(request.getRequestURI()));
+                response.setStatus(HttpStatus.FORBIDDEN.value());
+                response.setContentType("application/problem+json");
+                objectMapper.writeValue(response.getWriter(), problem);
             }
         };
     }

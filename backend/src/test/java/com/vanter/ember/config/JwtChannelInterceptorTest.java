@@ -1,6 +1,7 @@
 package com.vanter.ember.config;
 
 import com.vanter.ember.identity.service.JwtService;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -17,7 +18,10 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 import org.springframework.messaging.MessageDeliveryException;
 
@@ -41,18 +45,37 @@ class JwtChannelInterceptorTest {
     }
 
     private Message<byte[]> connectMessage(String authHeader) {
+        return connectMessage(authHeader, null);
+    }
+
+    private Message<byte[]> connectMessage(String authHeader, Map<String, Object> sessionAttributes) {
         StompHeaderAccessor accessor = StompHeaderAccessor.create(StompCommand.CONNECT);
         if (authHeader != null) {
             accessor.addNativeHeader("Authorization", authHeader);
+        }
+        if (sessionAttributes != null) {
+            accessor.setSessionAttributes(sessionAttributes);
         }
         accessor.setLeaveMutable(true);
         return MessageBuilder.createMessage(new byte[0], accessor.getMessageHeaders());
     }
 
     private Message<byte[]> subscribeMessage() {
+        return subscribeMessage(null);
+    }
+
+    private Message<byte[]> subscribeMessage(Map<String, Object> sessionAttributes) {
         StompHeaderAccessor accessor = StompHeaderAccessor.create(StompCommand.SUBSCRIBE);
+        if (sessionAttributes != null) {
+            accessor.setSessionAttributes(sessionAttributes);
+        }
         accessor.setLeaveMutable(true);
         return MessageBuilder.createMessage(new byte[0], accessor.getMessageHeaders());
+    }
+
+    @AfterEach
+    void clearTenant() {
+        TenantContextHolder.clear();
     }
 
     @Test
@@ -89,5 +112,41 @@ class JwtChannelInterceptorTest {
 
         assertThat(result).isNotNull();
         verify(jwtService, never()).isTokenValid(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void connect_withValidJwt_bindsTenantFromRidClaim() {
+        UUID tenantId = UUID.randomUUID();
+        when(jwtService.isTokenValid("valid-token")).thenReturn(true);
+        when(jwtService.extractSubject("valid-token")).thenReturn("waiter@test.com");
+        when(jwtService.extractTenantId("valid-token")).thenReturn(tenantId);
+        when(userDetailsService.loadUserByUsername("waiter@test.com")).thenReturn(waiter());
+
+        Map<String, Object> sessionAttributes = new HashMap<>();
+        interceptor.preSend(connectMessage("Bearer valid-token", sessionAttributes), channel);
+
+        assertThat(TenantContextHolder.getTenantId()).isEqualTo(tenantId);
+        assertThat(sessionAttributes)
+                .containsEntry(JwtChannelInterceptor.TENANT_SESSION_ATTRIBUTE, tenantId);
+    }
+
+    @Test
+    void nonConnectFrame_bindsTenantFromSessionAttributes() {
+        UUID tenantId = UUID.randomUUID();
+        Map<String, Object> sessionAttributes = new HashMap<>();
+        sessionAttributes.put(JwtChannelInterceptor.TENANT_SESSION_ATTRIBUTE, tenantId);
+
+        interceptor.preSend(subscribeMessage(sessionAttributes), channel);
+
+        assertThat(TenantContextHolder.getTenantId()).isEqualTo(tenantId);
+    }
+
+    @Test
+    void afterSendCompletion_clearsTenant() {
+        TenantContextHolder.setTenantId(UUID.randomUUID());
+
+        interceptor.afterSendCompletion(subscribeMessage(), channel, true, null);
+
+        assertThat(TenantContextHolder.getTenantId()).isNull();
     }
 }

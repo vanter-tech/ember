@@ -26,7 +26,8 @@ public class DashboardService {
         var tables = diningTableRepository.findByRestaurantIdAndIsActiveTrueOrderByTableNumberAsc(restaurantId);
 
         var tablesId = tables.stream().map(DiningTables::getId).toList();
-        var activeSession = sessionRepository.findByTableIdInAndStatus(tablesId, SessionStatus.OPEN);
+        var activeSession = sessionRepository.findByTenantIdAndTableIdInAndStatus(
+                restaurantId, tablesId, SessionStatus.OPEN);
 
         var sessionMap = activeSession.stream().collect(
                 Collectors.toMap(

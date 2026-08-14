@@ -1,11 +1,11 @@
 import { useSettingsStore } from '@/store/uiStore'
 import { Button } from './ui/button'
-import { 
-  Store, 
-  Utensils, 
-  ConciergeBell, 
-  Receipt, 
-  Printer, 
+import {
+  Store,
+  Utensils,
+  ConciergeBell,
+  Receipt,
+  Printer,
 } from 'lucide-react';
 
 export const SettingsBar = () => {

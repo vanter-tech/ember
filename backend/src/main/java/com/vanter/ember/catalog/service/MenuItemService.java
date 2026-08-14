@@ -7,10 +7,11 @@ import com.vanter.ember.catalog.repository.CategoryRepository;
 import com.vanter.ember.catalog.repository.MenuItemRepository;
 import com.vanter.ember.config.MinioProperties;
 import com.vanter.ember.config.ResourceNotFoundException;
-import java.util.List;
 
 import io.minio.messages.Item;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -44,14 +45,11 @@ public class MenuItemService {
         return MenuItemResponse.from(menuItemRepository.save(item));
     }
 
-    public List<MenuItemResponse> findAll(Long id) {
-        List<MenuItem> Items;
-        if(id != null) {
-            Items = menuItemRepository.findByCategoryId(id);
-        }else{
-            Items = menuItemRepository.findAll();
-        }
-        return Items.stream().map(MenuItemResponse::from).toList();
+    public Page<MenuItemResponse> findAll(Long id, Pageable pageable) {
+        Page<MenuItem> items = id != null
+                ? menuItemRepository.findByCategoryId(id, pageable)
+                : menuItemRepository.findAll(pageable);
+        return items.map(MenuItemResponse::from);
     }
 
     public MenuItemResponse findById(Long id) {

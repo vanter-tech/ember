@@ -9,6 +9,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -28,8 +30,8 @@ public class KitchenController {
     @Operation(summary = "List all kitchen orders (KITCHEN/ADMIN)")
     @GetMapping("/orders")
     @PreAuthorize("hasAnyRole('KITCHEN', 'ADMIN')")
-    public List<KitchenOrder> getAllOrders() {
-        return kitchenService.findAll();
+    public Page<KitchenOrder> getAllOrders(Pageable pageable) {
+        return kitchenService.findAll(pageable);
     }
 
     @Operation(summary = "Kitchen display grouped by table (KITCHEN/ADMIN)")

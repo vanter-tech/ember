@@ -1,4 +1,14 @@
 spring:
+  # Secrets live in the gitignored root `.env` (see `.env.example` for the key list), never here.
+  # Both paths are optional so the jar/container (which gets real env vars) boots without the file.
+  config:
+    import:
+      - optional:file:./.env[.properties]
+      - optional:file:../.env[.properties]
+      # Per-developer overrides (also gitignored) — last import wins, so this beats `.env`.
+      # Useful when `.env` holds the docker-compose hostnames but you run the app on the host.
+      - optional:file:./.env.local[.properties]
+      - optional:file:../.env.local[.properties]
   output:
     ansi:
       enabled: ALWAYS
@@ -11,20 +21,33 @@ spring:
       max-request-size: 5MB
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/ember
-    username: ember
-    password: ember
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/ember}
+    username: ${SPRING_DATASOURCE_USERNAME:ember}
+    # No fallback: booting on a shipped default password is worse than failing to boot.
+    password: ${SPRING_DATASOURCE_PASSWORD}
     driver-class-name: org.postgresql.Driver
+  flyway:
+    # The schema predates Flyway (it was built by ddl-auto), so the existing state is adopted as V1
+    # and versioned migrations start at V2.
+    baseline-on-migrate: true
+    baseline-version: 1
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: ${DDL_AUTO:update}
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
     open-in-view: false
   data:
     mongodb:
-      uri: mongodb://ember:ember@localhost:27017/ember?authSource=admin
+      # No fallback: the URI embeds the Mongo credentials.
+      uri: ${SPRING_DATA_MONGODB_URI}
+    web:
+      pageable:
+        default-page-size: 20
+        # Hard ceiling on ?size=, so a paginated endpoint can't be asked to return everything at once.
+        max-page-size: 100
+        one-indexed-parameters: false
 
 management:
   endpoints:
@@ -38,15 +61,37 @@ management:
     tags:
       application: ember-saas
 
+ember:
+  cors:
+    # Fixed origins (comma-separated). Defaults cover local Vite/Next dev servers.
+    allowed-origins: ${EMBER_CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:3000}
+    # Wildcard patterns for the per-tenant subdomains (`<businessName>.ember.vanter.com`),
+    # which cannot be enumerated up front. Empty by default so dev/self-hosted stays closed.
+    allowed-origin-patterns: ${EMBER_CORS_ALLOWED_ORIGIN_PATTERNS:}
+  ratelimit:
+    # Throttle on /auth/login and /auth/register. Buckets are keyed by (tenant + client IP), so a
+    # tenant behind a shared office/NAT egress cannot eat another tenant's allowance.
+    enabled: ${EMBER_RATELIMIT_ENABLED:true}
+    max-requests: ${EMBER_RATELIMIT_MAX_REQUESTS:10}
+    # Ceiling per IP across every tenant: the tenant comes from the client-controlled Host, so
+    # without this a forged Host would mint an unlimited number of fresh buckets.
+    ip-max-requests: ${EMBER_RATELIMIT_IP_MAX_REQUESTS:30}
+    window: ${EMBER_RATELIMIT_WINDOW:60s}
+    # Peers whose X-Forwarded-For/X-Forwarded-Host are believed (literal IPs or CIDR blocks).
+    # Empty by default: with no proxy in front, forwarded headers are attacker-supplied.
+    trusted-proxies: ${EMBER_RATELIMIT_TRUSTED_PROXIES:}
+    # Host suffixes whose leading label names the tenant (acme.ember.vanter.com -> `acme`).
+    tenant-host-suffixes: ${EMBER_RATELIMIT_TENANT_HOST_SUFFIXES:}
+
 jwt:
-  secret: 33Zx/bcWITide07xKgSHzBXpfMEKICi01oPmHr+jKEiBpBDXH6U6PVjEMc4Iu9yq
-  expiration-ms: 86400000
+  secret: ${JWT_SECRET}
+  expiration-ms: ${JWT_EXPIRATION_MS:86400000}
 
 minio:
-  url: http://localhost:9000
-  access-key: minioadmin
-  secret-key: minioadmin
-  bucket: ember-media
+  url: ${MINIO_URL:http://localhost:9000}
+  access-key: ${MINIO_ACCESS_KEY}
+  secret-key: ${MINIO_SECRET_KEY}
+  bucket: ${MINIO_BUCKET:ember-media}
 
 server:
   servlet:

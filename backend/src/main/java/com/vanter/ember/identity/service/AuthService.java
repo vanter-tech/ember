@@ -6,6 +6,8 @@ import com.vanter.ember.identity.model.dto.AuthResponse;
 import com.vanter.ember.identity.model.dto.LoginRequest;
 import com.vanter.ember.identity.model.dto.RegisterRequest;
 import com.vanter.ember.identity.repository.UserRepository;
+import com.vanter.ember.restaurant.model.Restaurant;
+import com.vanter.ember.restaurant.service.RestaurantService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -20,24 +22,29 @@ public class AuthService {
     private final UserRepository userRepository;
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
+    private final RestaurantService restaurantService;
 
     public AuthResponse register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new IllegalArgumentException("Email already in use");
         }
 
+        Restaurant restaurant = restaurantService.createOrJoin(
+                request.getRestaurantName(), request.getRestaurantSlug(), request.getName());
+
         User user = User.builder()
                 .name(request.getName())
                 .email(request.getEmail())
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
                 .role(Role.CUSTOMER)
+                .restaurantId(restaurant)
                 .build();
 
         userRepository.save(user);
 
         String token = jwtService.generateToken(
                 user.getEmail(),
-                Map.of("role", user.getRole().name(), "userId", user.getId())
+                Map.of("role", user.getRole().name(), "userId", user.getId(), "rid", restaurant.getId())
         );
 
         return AuthResponse.builder()
@@ -59,7 +66,8 @@ public class AuthService {
 
         String token = jwtService.generateToken(
                 user.getEmail(),
-                Map.of("role", user.getRole().name(), "userId", user.getId())
+                Map.of("role", user.getRole().name(), "userId", user.getId(),
+                        "rid", user.getRestaurantId().getId())
         );
 
         return AuthResponse.builder()

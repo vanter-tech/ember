@@ -11,6 +11,7 @@ import javax.crypto.SecretKey;
 import java.time.Instant;
 import java.util.Date;
 import java.util.Map;
+import java.util.UUID;
 
 @Service
 public class JwtService {
@@ -51,6 +52,22 @@ public class JwtService {
 
     public <T> T extractClaim(String token, Function<Claims, T> resolver) {
         return resolver.apply(extractAllClaims(token));
+    }
+
+    /**
+     * Reads the tenant (restaurant) id from the `rid` claim. Returns {@code null} for tokens
+     * that carry no tenant (e.g. QR session tokens) or hold an unparsable value.
+     */
+    public UUID extractTenantId(String token) {
+        String rid = extractClaim(token, claims -> claims.get("rid", String.class));
+        if (rid == null || rid.isBlank()) {
+            return null;
+        }
+        try {
+            return UUID.fromString(rid);
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
     }
 
     public boolean isTokenValid(String token) {

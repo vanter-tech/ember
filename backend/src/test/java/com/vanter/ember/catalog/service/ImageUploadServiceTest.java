@@ -11,6 +11,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
 
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
+import javax.imageio.ImageIO;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -27,8 +31,11 @@ class ImageUploadServiceTest {
     @Test
     void uploadImage_returnsPublicUrl() throws Exception {
         when(minioProperties.getUrl()).thenReturn("http://localhost:9000");
+        BufferedImage image = new BufferedImage(10, 10, BufferedImage.TYPE_INT_RGB);
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        ImageIO.write(image, "jpg", buffer);
         MockMultipartFile file = new MockMultipartFile(
-                "image", "photo.jpg", "image/jpeg", new byte[100]);
+                "image", "photo.jpg", "image/jpeg", buffer.toByteArray());
 
         String url = imageUploadService.uploadImage(file, "ember-media");
 

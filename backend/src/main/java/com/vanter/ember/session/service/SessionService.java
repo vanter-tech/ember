@@ -5,8 +5,11 @@ import com.vanter.ember.catalog.model.dto.MenuItemResponse;
 import com.vanter.ember.catalog.repository.MenuItemRepository;
 import com.vanter.ember.catalog.service.MenuItemService;
 import com.vanter.ember.config.ResourceNotFoundException;
+import com.vanter.ember.config.TenantContextHolder;
+import com.vanter.ember.identity.model.User;
 import com.vanter.ember.identity.repository.UserRepository;
 import com.vanter.ember.kitchen.event.KitchenItemUpdated;
+import com.vanter.ember.restaurant.model.Restaurant;
 import com.vanter.ember.session.dto.OrderItemDto;
 import com.vanter.ember.session.dto.ParticipantDto;
 import com.vanter.ember.session.dto.SessionDetailResponseDto;
@@ -24,11 +27,13 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
+import com.vanter.ember.settings.model.DiningTables;
 import com.vanter.ember.settings.repository.DiningTableRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.event.EventListener;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -44,8 +49,12 @@ public class SessionService {
     private final UserRepository userRepository;
     private final MenuItemRepository menuItemRepository;
 
+    /**
+     * Loads a session scoped to the tenant bound to the current request: a session owned by another
+     * restaurant is indistinguishable from a nonexistent one.
+     */
     public Session findById(String sessionId) {
-        return sessionRepository.findById(sessionId)
+        return sessionRepository.findByIdAndTenantId(sessionId, TenantContextHolder.requireTenantId())
                 .orElseThrow(() -> new ResourceNotFoundException("Session not found: " + sessionId));
     }
 
@@ -89,10 +98,13 @@ public class SessionService {
     }
 
     public Session createSession(UUID tableId, String waiterId, int maxParticipants) {
+        UUID tenantId = TenantContextHolder.requireTenantId();
+
         var table = diningTableRepository.findById(tableId)
                 .orElseThrow(() -> new ResourceNotFoundException("Session not found: " + tableId));
 
-        var OpenSession = sessionRepository.findByTableIdAndStatus(tableId, SessionStatus.OPEN);
+        var OpenSession = sessionRepository.findByTenantIdAndTableIdAndStatus(
+                tenantId, tableId, SessionStatus.OPEN);
 
         if (!OpenSession.isEmpty()) {
             throw new IllegalStateException(
@@ -100,6 +112,7 @@ public class SessionService {
         }
 
         Session session = sessionRepository.save(Session.builder()
+                .tenantId(tenantId)
                 .tableId(tableId)
                 .waiterId(waiterId)
                 .status(SessionStatus.OPEN)
@@ -114,29 +127,31 @@ public class SessionService {
         return session;
     }
 
-    public Session joinSession(String qrToken, String userId, String userName) {
+    public Session joinSession(String qrToken, String requesterEmail, String userName) {
         String sessionId = qrTokenService.validateQrToken(qrToken);
-        int maxParticipants = qrTokenService.extractMaxParticipants(qrToken);
 
-        Session session = sessionRepository.findById(sessionId)
-                .orElseThrow(() -> new ResourceNotFoundException("Session not found: " + sessionId));
+        var user = userRepository.findByEmail(requesterEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + requesterEmail));
 
+        Session session = findById(sessionId);
+
+        int maxParticipants = session.getMaxParticipants();
         if (session.getParticipants().size() >= maxParticipants) {
             throw new TooManyParticipantsException(
                     "Session " + sessionId + " is at full capacity (" + maxParticipants + ")");
         }
 
         boolean alreadyJoined = session.getParticipants().stream()
-                .anyMatch(p -> p.getUserId().equals(userId));
+                .anyMatch(p -> p.getUserId().equals(user.getId()));
         if (alreadyJoined) {
             throw new IllegalStateException(
-                    "User " + userId + " has already joined this session");
+                    "User " + user.getId() + " has already joined this session");
         }
 
-        session.getParticipants().add(Participant.builder().userId(userId).name(userName).build());
+        session.getParticipants().add(Participant.builder().userId(user.getId()).name(userName).build());
         Session saved = sessionRepository.save(session);
 
-        eventPublisher.publishEvent(new ParticipantJoined(saved.getId(), userId, userName));
+        eventPublisher.publishEvent(new ParticipantJoined(saved.getId(), user.getId(), userName));
         return saved;
     }
 
@@ -145,7 +160,9 @@ public class SessionService {
         var user = userRepository.findByEmail(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found: " + userId));
 
-        Session session = sessionRepository.findByJoinCodeAndStatus(joinCode, SessionStatus.OPEN)
+        Session session = sessionRepository
+                .findByTenantIdAndJoinCodeAndStatus(
+                        TenantContextHolder.requireTenantId(), joinCode, SessionStatus.OPEN)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,  "Code not found" + joinCode));
 
 
@@ -174,8 +191,7 @@ public class SessionService {
     }
 
     public Session expandCapacity(String sessionId, String requestingWaiter, int additional) {
-        Session session = sessionRepository.findById(sessionId)
-                .orElseThrow(() -> new ResourceNotFoundException("Session not found: " + sessionId));
+        Session session = findById(sessionId);
 
         if (!session.getWaiterId().equals(requestingWaiter)) {
             throw new IllegalStateException(
@@ -260,8 +276,7 @@ public class SessionService {
     }
 
     public void closeSession(String sessionId) {
-        Session session = sessionRepository.findById(sessionId)
-                .orElseThrow(() -> new ResourceNotFoundException("Session not found: " + sessionId));
+        Session session = findById(sessionId);
         session.setStatus(SessionStatus.CLOSED);
         sessionRepository.save(session);
 
@@ -271,8 +286,7 @@ public class SessionService {
     }
 
     public void closeEmptySession(String sessionId){
-        Session session = sessionRepository.findById(sessionId)
-                .orElseThrow(() -> new ResourceNotFoundException("Session not found: " + sessionId));
+        Session session = findById(sessionId);
 
 
         boolean orderConfirmed = session.getItems().stream().anyMatch((item) -> item.getStatus() != OrderItemStatus.DRAFT);
@@ -320,9 +334,23 @@ public class SessionService {
 
     }
 
-    public void confirmDraftsForUser(String sessionId, String userId) {
-        Session session = sessionRepository.findById(sessionId)
-                .orElseThrow(() -> new ResourceNotFoundException("Session not found: " + sessionId));
+    public void confirmDraftsForUser(String sessionId, String userId, String requesterEmail) {
+        Session session = findById(sessionId);
+
+        User requester = userRepository.findByEmail(requesterEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + requesterEmail));
+
+        if (!requester.getId().equals(userId)) {
+            throw new AccessDeniedException("Not authorized to confirm this user's order");
+        }
+
+        DiningTables table = diningTableRepository.findById(session.getTableId())
+                .orElseThrow(() -> new ResourceNotFoundException("Table not found"));
+
+        Restaurant requesterRestaurant = requester.getRestaurantId();
+        if (requesterRestaurant == null || !requesterRestaurant.getId().equals(table.getRestaurantId())) {
+            throw new AccessDeniedException("Not authorized to confirm orders for this restaurant");
+        }
 
         List<OrderItem> drafts = session.getItems().stream()
                 .filter(item  -> item.getParticipantId().equals(userId))
@@ -338,13 +366,10 @@ public class SessionService {
             Session savedSession = sessionRepository.save(session);
             eventPublisher.publishEvent(new ItemSent(savedSession));
 
-            int tableNumber = diningTableRepository.findById(savedSession.getTableId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Table not found"))
-                    .getTableNumber();
-
             eventPublisher.publishEvent(new KitchenItemsConfirmed(
+                    savedSession.getTenantId(),
                     savedSession.getId(),
-                    tableNumber,
+                    table.getTableNumber(),
                     drafts
             ));
         }
@@ -352,9 +377,7 @@ public class SessionService {
 
     public SessionStatus getSessionStatus(String id) {
 
-        Session session = sessionRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Session not found: " + id));
-        return session.getStatus();
+        return findById(id).getStatus();
 
     }
 }

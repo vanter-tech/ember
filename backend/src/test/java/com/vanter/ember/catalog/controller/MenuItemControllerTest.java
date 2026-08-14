@@ -8,10 +8,12 @@ import com.vanter.ember.config.CorsConfig;
 import com.vanter.ember.config.ResourceNotFoundException;
 import com.vanter.ember.config.SecurityConfig;
 import com.vanter.ember.identity.service.JwtService;
+import com.vanter.ember.restaurant.repository.RestaurantRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -44,6 +46,7 @@ class MenuItemControllerTest {
     @MockitoBean  MenuItemService menuItemService;
     @MockitoBean JwtService jwtService;
     @MockitoBean UserDetailsService userDetailsService;
+    @MockitoBean RestaurantRepository restaurantRepository;
 
     private MenuItemResponse burger() {
         return MenuItemResponse.builder()
@@ -55,14 +58,15 @@ class MenuItemControllerTest {
 
     @Test
     @WithMockUser
-    void getAll_returns200WithList() throws Exception {
-        when(menuItemService.findAll(1L)).thenReturn(List.of(burger()));
+    void getAll_returns200WithPageOfItems() throws Exception {
+        when(menuItemService.findAll(eq(1L), any())).thenReturn(new PageImpl<>(List.of(burger())));
 
         mockMvc.perform(get("/catalog/items")
                         .param("id", "1")
                 )
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].name").value("Classic Burger"));
+                .andExpect(jsonPath("$.content[0].name").value("Classic Burger"))
+                .andExpect(jsonPath("$.totalElements").value(1));
     }
 
     @Test

@@ -1,40 +1,71 @@
 # PROGRESS.md — Active Execution State
 
 ## Current Execution State
-- **Last Completed Task:** task-1.7 (Remove leftover console.log/console.error statements from production frontend code) — report 07
-- **Current Active Task:** task-2.1 (Add @Version optimistic locking to MongoDB Session.java model)
-- **Predecessor Task:** task-1.7
-- **System Health:**
-    - Frontend (`pnpm run build`): PASSING (0 TS errors)
-    - Frontend (`pnpm run lint`): RUNS (19 pre-existing errors/6 warnings unrelated to config, tracked in later tasks)
-    - Backend (`./mvnw test`): PASSING (39 tests passing)
+- **Last Completed Task:** ad-hoc — reverted task-5.3's Plan settings tab, paused pending a separate customer/billing portal design (predecessor task-5.3) — report 44
+- **Current Active Task:** none — task-5.4 next in the frontend/backend gap-analysis backlog (task-5.4–5.21 remain; EMB-PC-01–14 Platform/Super-Admin Console and EMB-LP-01–18 Landing Page also queued), awaiting task selection/approval
+- **System Health:** Frontend `pnpm run build` PASSING (0 TS errors). Backend boots and serves locally (`ember-postgres-1`/`ember-mongodb-1`/`ember-minio-1` via Docker, app itself runs on host, `.env` points at `localhost` per report 41); `./mvnw test` last confirmed 423/423 passing (report 41), not rerun this task (no backend files touched).
 
 ## Active Context & Recent Decisions
-- Monolith root confirmed at `ember/`.
-- Stack: Java 17 + Spring Boot 3.5.14 (Backend) / React 19 + TypeScript + pnpm (Frontend).
-- Product: Multi-tenant restaurant platform (collaborative cart, KDS, floor/waiter management, admin analytics).
-- Kafka dependency in `pom.xml` ignored; Spring `ApplicationEventPublisher` used for internal synchronous events.
+- Monolith root at `ember/`; Java 17 + Spring Boot 3.5.14 / React 19 + TS + pnpm. Product: multi-tenant restaurant platform (collaborative cart, KDS, floor/waiter management, admin analytics). task-3.2 deleted `spring-kafka` — Spring `ApplicationEventPublisher` is the only event bus, do not reintroduce a broker.
+- task-3.3: `GlobalExceptionHandler` extends `ResponseEntityExceptionHandler` (mandatory — a bare `Exception.class` catch-all in a `@RestControllerAdvice` would outrank `DefaultHandlerExceptionResolver` and degrade 400s to 500). All handlers emit RFC 7807 via `problem(status, detail, path)`; the 500 path logs at ERROR with a `traceId` and NEVER echoes `ex.getMessage()`. Don't re-declare `@ExceptionHandler(MethodArgumentNotValidException.class)` — it's an override, so a duplicate is an ambiguous-mapping startup failure.
+- task-2.15 introduced **Flyway** (`baseline-on-migrate`, existing schema = V1, migrations start at V2; disabled in tests, where H2 `create-drop` builds from entities). Every future schema change goes in `backend/src/main/resources/db/migration/` AND the entity mapping, so H2 tests and prod `ddl-auto=validate` agree. `V3` (report 41) backfilled `restaurants`' 7 columns that task-2.10/4.4 added to the entity but no migration ever added physically — `ddl-auto: update` silently can't add `NOT NULL` columns without a default to a non-empty table, so check boot logs for `CommandAcceptanceException` after adding any new required column to an existing-data table, don't just trust a clean boot.
+- Mongo has no replica set/`MongoTransactionManager`, so `@Transactional` isn't viable there — use fail-fast validation-before-mutation ordering instead. `Session`/`KitchenOrder` carry `tenantId` (task-2.17, no `@TenantId` equivalent in Mongo — every finder is tenant-first); route session reads through `SessionService.findById`, never the bare repository. `config/MongoTenantBackfill` (task-2.18, idempotent `ApplicationRunner`) backfilled existing docs; Mongo isolation tests do NOT extend `AbstractTenantIsolationTest` (no ambient filter to defeat).
+- task-3.4: `config/CorsProperties` (`ember.cors.*`) is the ONE origin policy — `CorsConfig` and `WebSocketConfig`'s `/ws` endpoint both read it. Tenant subdomains go in `allowed-origin-patterns`, never `allowed-origins` (`allowCredentials=true` makes `*` illegal). task-3.5's `AuthRateLimiterFilter` buckets on `(tenant, clientIp)`, tenant from the `Host` header's leading label; `X-Forwarded-For/-Host` only trusted when the peer matches `trusted-proxies` (empty by default). It's a plain `@Component` filter, NOT wired via `SecurityConfig`'s `addFilterBefore` — Spring Boot registers it at the servlet level, so it already applies to every `SecurityFilterChain`, present or future, just by adding a path to `RateLimitProperties.paths`.
+- Hibernate `DISCRIMINATOR` multi-tenancy (task-2.14): `config/TenantIdentifierResolver` reads `config/TenantContextHolder` (ThreadLocal, bound/cleared in `jwtAuthFilter` + `JwtChannelInterceptor` from the JWT `rid` claim — task-2.11/2.12, never trust client-supplied tenant ids). `@TenantId` is on `Category`/`MenuItem`/`Bill`/`BillSplit`/`Payment`/`DiningTables`/`RestaurantSettings`; `User` is deliberately excluded (looked up by email pre-tenant-bind, see report 22). Tenant-isolation repo tests MUST extend `config/AbstractTenantIsolationTest` (task-2.16).
+- task-3.1: `application.yml`/`application-dev.properties` hold NO credentials — they read `${VAR}` from the gitignored root `.env` (`spring.config.import`, `optional:`, `.env.local` wins last). Core secrets have NO fallback (fail-fast boot); add any new secret to `.env.example` too. Old secrets remain in git history — rotation still pending.
+- task-3.6/3.7/3.8/4.1/4.2: `GET /kitchen/orders`/`GET /catalog/items` return `Page<T>` (hand-written type in `api.ts`, not regenerated); password complexity validation added; `SettingsPayload` extended with `paymentGateway`/`businessHours`/`billing.taxRules` (additive, but frontend never wired to these — see task-5.x). Vitest lives inside `vite.config.ts`'s `test` block. task-5.x backlog (gap analysis, 2026-08-13): `api.ts`'s interceptor only special-cases 401 (not the task-4.4 403); `backend-types.ts` predates task-3.8/4.3/4.4 (missing `Restaurant`/`RestaurantPlan`/`RestaurantStatus`/`UpdateRestaurantPlanRequest`/`PublicBrandingResponse`/extended `SettingsPayload`); `Settings.tsx`'s `MENU`/`BILLING`/`HARDWARE` tabs are placeholders; KDS has no WS subscription and no working status-transition controls; `FloatingNav.tsx` links to a nonexistent `/admin/reports`. No analytics backend exists beyond `/dashboard/status`.
+- Restaurant tenant-facing surfaces: task-4.3 added `GET /public/restaurants/{slug}/branding` (permitAll, `PublicRestaurantController`) which resolves slug→id via `RestaurantRepository` then binds/clears `TenantContextHolder` around `SettingService.getSettings` — the ONLY other place besides the JWT filters allowed to touch `TenantContextHolder`, don't add a second one; frontend `/t/:slug` → `TenantLanding.tsx` (path-based, not real subdomains). task-4.4 made `Restaurant.plan`/`status` load-bearing: `SecurityConfig.jwtAuthFilter` now 403s every authenticated request when the resolved tenant's `status != ACTIVE` (RFC 7807 `ProblemDetail`); `RestaurantAdminController` (`GET`/`PATCH /admin/restaurant/plan`, ADMIN-gated) lets a tenant self-serve plan changes. `RestaurantService.updateStatus` exists but is intentionally NOT wired to any tenant-reachable controller — see EMB-PC-07. Plan/subscription self-service is real on the backend but has NO frontend home right now — task-5.3 built it as a Settings tab, then reverted (report 44): it belongs on a separate customer/billing portal (location TBD, paused, not the operational admin app). `api.ts`'s `restaurantAdminService` is kept, unused, for whenever that portal exists — don't re-add a Plan settings tab.
+- EMB-PC backlog (Platform/Super-Admin Console, brainstormed 2026-08-13): `PlatformOperator` is a separate entity/table with NO FK to `Restaurant`/`User`, signed with its own `platform.jwt.secret` (never the tenant `jwt.secret`), authenticated through a second `SecurityFilterChain` matched to `/platform/**` that never sets `TenantContextHolder` — mutual exclusion from the tenant JWT chain comes from the two different signing keys, not just a claim check, so a tenant token fails signature verification before any claim is read. `Restaurant` has no owner/contact fields; tenant "owner info" is the `User` row(s) where `restaurantId` matches and `role = ADMIN`, looked up untenanted (deliberately, same caution as `PublicRestaurantController`). `PlatformAuditLog` has no `@TenantId` either — it's cross-tenant by design.
 
 ## Task Queue Status
-- [x] **task-1.1:** Fix `tsc -b` compilation errors (`TS6133`/`TS6192`) in frontend (`pages/kitchen/`, `ComandaView.tsx`, `Menu.tsx`, `ItemsFloatingIsland.tsx`, `Tables.tsx`).
-- [x] **task-1.2:** Repair `eslint.config.js` by installing `eslint-plugin-prettier` or removing broken import.
-- [x] **task-1.3:** Replace hardcoded WebSocket `localhost` URL in `store/websocket.ts` with environment variable resolution.
-- [x] **task-1.4:** Deduplicate WebSocket subscriptions in `FloatingNav.tsx` and centralize `SESSION_CLOSED` handling in `store/websocket.ts`.
-- [x] **task-1.5:** Fix WebSocket state handling by adding `onDisconnect`/`onStompError` handlers to reset `isConnected`.
-- [x] **task-1.6:** Add Global Error Boundary to React app and fix missing `key` props and loading states in `OrdersDisplay.tsx`.
-- [x] **task-1.7:** Remove leftover `console.log` and `console.error` statements from production frontend code.
-- [ ] **task-2.1:** Add `@Version` optimistic locking to MongoDB `Session.java` model to prevent collaborative cart race conditions.
-- [ ] **task-2.2:** Add `@Transactional` boundaries to multi-write operations in `BillingService` and `PaymentService`.
-- [ ] **task-2.3:** Add unique constraint on `Bill.sessionId` to prevent duplicate billing.
-- [ ] **task-2.4:** Ensure atomic execution of `allPaid == true` check in `PaymentService` to reliably trigger `PaymentCompleted`.
-- [ ] **task-2.5:** Validate JWT `userId` against path parameter `userId` in `confirmMyOrder` endpoint.
-- [ ] **task-2.6:** Fix `joinSession` participant limit validation to check live session capacity instead of stale JWT claims.
-- [ ] **task-2.7:** Ensure transactional safety in `confirmDraftsForUser` to prevent orphan items when table lookup fails.
-- [ ] **task-3.1:** Externalize sensitive default credentials (DB, JWT secret, MinIO) from `application.yml` to `.env` variables.
-- [ ] **task-3.2:** Remove unused `spring-kafka` dependency from `backend/pom.xml`.
-- [ ] **task-3.3:** Extend `GlobalExceptionHandler` to catch `Exception.class` using standardized `ProblemDetail` format.
-- [ ] **task-3.4:** Configure dynamic CORS and WebSocket origins for production environments.
-- [ ] **task-3.5:** Fix memory leak and proxy IP resolution in login rate limiter.
-- [ ] **task-3.6:** Implement pagination for `KitchenController` and `MenuItemController` endpoints.
-- [ ] **task-3.7:** Add minimum length and complexity rules to user registration password validation.
-- [ ] **task-4.1:** Setup Vitest and React Testing Library for frontend unit tests.
+- [x] **Completed (Milestones 1–4, task-5.1–5.3):** Frontend/backend stability, WebSocket/error-boundary hardening, backend multi-tenancy & transactional billing, security/config hardening (secrets, Kafka removal, RFC 7807, CORS/rate-limiting), frontend testing & tenant lifecycle, global 403 handling, `backend-types.ts` regen, ADMIN Plan/Estado UI (built then reverted — `restaurantAdminService` kept for a future billing portal, see notes below). Reports 01–44.
+- [ ] **task-5.4:** Wire the `MENU` tab in `Settings.tsx`/`SettingsBar.tsx` (currently `<div>Menu Settings</div>`) to `SettingsPayload.menu` (`showOutOfStockItems`, `enableItemSearch`).
+- [ ] **task-5.5:** Wire the `BILLING` tab to `SettingsPayload.billing` (`currencySymbol`, `taxRate`, `isTaxIncludeInMenuPrice`, `suggestedTipPercentage`) plus a `TaxRules` list editor (task-3.8).
+- [ ] **task-5.6:** Add a `PaymentGatewaySettings` UI section (enabled/provider/publicKey/secretRef — secret-reference pattern, never a raw-secret input) wired to `SettingsPayload.paymentGateway`.
+- [ ] **task-5.7:** Add a new "Horario" `SettingsBar` tab + weekly-schedule editor for `SettingsPayload.businessHours` (`BusinessHoursSettings.schedule`, per-`DayOfWeek`) — distinct from `BrandingSettings`'s single daily opening/closing time.
+- [ ] **task-5.8:** Wire the `HARDWARE` tab (currently placeholder) to `SettingsPayload.hardware` (`autoPrintTickets`, `printCustomerReceipt`).
+- [ ] **task-5.9:** Wire kitchen order status transitions — add `kitchenServices.updateItemStatus` to `api.ts` (`PATCH /kitchen/orders/{orderId}/items/{itemId}/status`, currently unconsumed) and give `QueueCard`/`FocusedCard` real controls for `PENDING → PREPARING → READY → DELIVERED` (their buttons currently have no `onClick`).
+- [ ] **task-5.10:** Add a tenant-scoped kitchen WebSocket topic — backend only broadcasts `ItemAdded`/`ItemStatusUpdated`/etc. to `/topic/session/{sessionId}`; `OrdersDisplays.tsx` never subscribes to anything. Add `/topic/kitchen/{tenantId}` and subscribe from the KDS for live updates.
+- [ ] **task-5.11:** Add a STOMP connection-state indicator to `KitchenLayout`/`OrdersDisplays` — `useWebsocketStore.isConnected` exists but nothing in the KDS reads it, so disconnects are invisible to kitchen staff.
+- [ ] **task-5.12:** Backend — scaffold an `analytics` module (`AnalyticsController`/`AnalyticsService`, `ADMIN`-gated, tenant-scoped via `TenantContextHolder`) under `/admin/analytics`; no analytics backend exists today beyond `DashboardController`'s live `/dashboard/status`.
+- [ ] **task-5.13:** Backend — summary-cards endpoint (`GET /admin/analytics/summary`): Total Revenue, Active Sessions, Average Order Value, aggregated from `Bill`/`Payment`/`Session`.
+- [ ] **task-5.14:** Backend — temporal sales endpoint (`GET /admin/analytics/sales?granularity=day|week|month|year&from&to`), revenue bucketed from `Bill`/`Payment`.
+- [ ] **task-5.15:** Backend — product performance endpoint (`GET /admin/analytics/products`): % of total sales per menu item/category (Pareto/top-selling), derived from order line items joined to `MenuItem`/`Category`.
+- [ ] **task-5.16:** Backend — table analytics endpoint (`GET /admin/analytics/tables`): average session duration, turnover rate, revenue per table, derived from `Session`/`DiningTables`/`Bill`.
+- [ ] **task-5.17:** Frontend — scaffold `pages/admin/analytics/` + `/admin/analytics` route in `App.tsx`, and repoint `FloatingNav.tsx`'s existing but dead `/admin/reports` link (renders `NotFound` today) to the new route.
+- [ ] **task-5.18:** Frontend — Summary Cards widget (Total Revenue/Active Sessions/Average Order Value) consuming task-5.13.
+- [ ] **task-5.19:** Frontend — Daily/Temporal Sales chart (day/week/month/custom range) consuming task-5.14.
+- [ ] **task-5.20:** Frontend — Product Performance / Pareto view (top-selling dishes) consuming task-5.15.
+- [ ] **task-5.21:** Frontend — Table Analytics view (session duration, turnover, revenue per table) consuming task-5.16.
+- [ ] **EMB-PC-01:** `PlatformOperator` JPA entity + repository + Flyway migration (`platform_operators` table, no FK to `Restaurant`/`User`), seeded with the initial operator row (bcrypt hash committed in the migration).
+- [ ] **EMB-PC-02:** `PlatformAuditLog` JPA entity + repository + Flyway migration (`platform_audit_log`: operatorId, operatorEmail snapshot, restaurantId, action, oldValue/newValue, createdAt — deliberately no `@TenantId`).
+- [ ] **EMB-PC-03:** `PlatformJwtService` keyed to a new `platform.jwt.secret` (`.env`/`.env.example`, fail-fast like `jwt.secret`) + `PlatformOperatorDetailsService` (`UserDetailsService` over `PlatformOperatorRepository`).
+- [ ] **EMB-PC-04:** New `SecurityFilterChain` matched to `/platform/**` (`@Order` before the tenant chain) + `PlatformJwtAuthFilter` — never touches `TenantContextHolder`. Add a security test proving a tenant token is rejected on `/platform/**` and a platform token is rejected on tenant routes.
+- [ ] **EMB-PC-05:** `PlatformAuthController` — `POST /platform/auth/login` + `PATCH /platform/auth/password` (self-service only); add `/platform/auth/login` to `RateLimitProperties.paths`.
+- [ ] **EMB-PC-06:** `GET /platform/restaurants` (paginated list: name, slug, plan, status, createdAt) + `GET /platform/restaurants/{id}` (detail, incl. its `ADMIN` user(s) name/email via an untenanted `UserRepository` query).
+- [ ] **EMB-PC-07:** `PATCH /platform/restaurants/{id}/status` — wires `RestaurantService.updateStatus` (previously unreachable), writes a `PlatformAuditLog` entry in the same `@Transactional`.
+- [ ] **EMB-PC-08:** `POST /platform/restaurants` — operator-driven tenant onboarding: creates the `Restaurant` + its initial `ADMIN` `User` in one request, writes an audit entry.
+- [ ] **EMB-PC-09:** `GET /platform/audit-log` — paginated, filterable by `restaurantId`.
+- [ ] **EMB-PC-10:** Frontend — scaffold `/console` route tree in `App.tsx` via `React.lazy`/`Suspense` (code-split, never bundled for tenant users); `usePlatformAuthStore` (separate token slot from `useAuthStore`); `platformApi` Axios instance.
+- [ ] **EMB-PC-11:** Frontend — `PlatformProtectedRoute` guard + `PlatformLayout` shell (own nav, no shared tenant business components) + `/console/login` wired to `POST /platform/auth/login`.
+- [ ] **EMB-PC-12:** Frontend — restaurant list page consuming `GET /platform/restaurants` (paginated table).
+- [ ] **EMB-PC-13:** Frontend — restaurant detail page (info + owner + enable/disable button wired to `PATCH .../status` + per-tenant audit history from `GET /platform/audit-log?restaurantId=`).
+- [ ] **EMB-PC-14:** Frontend — create-restaurant form wired to `POST /platform/restaurants`, and self password-change UI wired to `PATCH /platform/auth/password`.
+- [ ] **EMB-LP-01:** Scaffold standalone `ember/landing/` Astro project (own `package.json`/lockfile, not a `frontend` workspace member) + Tailwind CSS 4 via Astro's Vite integration + `@astrojs/react`; `astro.config.mjs` dev server on port 5174.
+- [ ] **EMB-LP-02:** Add `@astrojs/sitemap` integration + `public/robots.txt` (allow-all, references `sitemap.xml`) — checklist #7/#8.
+- [ ] **EMB-LP-03:** `src/layouts/Layout.astro` + `src/components/SEO.astro` — per-page `<title>`/`<meta description>` props, OG/Twitter tags → `/public/og-image.png`, favicon set (`favicon.ico`/`.svg`, `apple-touch-icon.png`, `site.webmanifest`) — #3/#4/#5/#6.
+- [ ] **EMB-LP-04:** Brutalist Tailwind 4 theme tokens — palette (`#0a0a0a`/`#f5f5f0`/`#8c1717`), 3–4px borders, `6px 6px 0 #000` hard shadows, zero `border-radius`, Inter/Geist + monospace stack.
+- [ ] **EMB-LP-05:** `src/components/Nav.astro` + `MobileNavDrawer.tsx` island — wordmark, anchors, "Iniciar sesión"/"Registrarme" CTAs → `frontend`, hamburger drawer.
+- [ ] **EMB-LP-06:** `src/components/Hero.astro` — headline/subheadline, above-the-fold primary/secondary CTAs, product screenshot via `<Image/>` with explicit width/height + alt text — #2/#9/#20.
+- [ ] **EMB-LP-07:** `src/components/Features.astro` — 3–6 card grid (collaborative cart, KDS, floor/waiter mgmt, admin analytics).
+- [ ] **EMB-LP-08:** `src/components/Pricing.astro` — four static cards matching `RestaurantPlan` (FREE/STARTER/PRO/ENTERPRISE), ENTERPRISE CTA → `mailto:`/contact form → thank-you redirect.
+- [ ] **EMB-LP-09:** `src/components/CTASection.astro` — high-contrast full-width closing band before the footer.
+- [ ] **EMB-LP-10:** `src/components/Footer.astro` — wordmark, copyright, real physical address/business entity, links to privacy/terms/contact — #19.
+- [ ] **EMB-LP-11:** `src/components/StickyMobileCTA.tsx` island — persistent bottom bar (Register/Iniciar Sesión), mobile-only, appears once scrolled past hero — #11.
+- [ ] **EMB-LP-12:** `src/components/CookieBanner.tsx` island — non-intrusive brutalist cookie consent — #17.
+- [ ] **EMB-LP-13:** Assemble `src/pages/index.astro` wiring Nav/Hero/Features/Pricing/CTASection/Footer/StickyMobileCTA/CookieBanner.
+- [ ] **EMB-LP-14:** `src/pages/404.astro` custom error page — #1.
+- [ ] **EMB-LP-15:** `src/pages/privacy.astro` + `src/pages/terms.astro` legal pages — #15/#16.
+- [ ] **EMB-LP-16:** Contact/lead form island + `src/pages/thank-you.astro` confirmation page, with loading spinner/skeleton + form error states — #12/#13/#14.
+- [ ] **EMB-LP-17:** Privacy-first analytics script (Vercel Analytics/Plausible/Cloudflare, zero tracking cookies by default) wired into `SEO.astro`/`Layout.astro` head — #18.
+- [ ] **EMB-LP-18:** A11y/perf pass — WCAG AAA contrast audit, visible focus indicators, alt-text audit on every `<img>`/`<Image/>`, Lighthouse/axe check across all pages, final `astro build` verification.

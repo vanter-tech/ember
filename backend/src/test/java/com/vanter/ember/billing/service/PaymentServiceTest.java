@@ -27,6 +27,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -45,6 +46,8 @@ class PaymentServiceTest {
     @Mock ApplicationEventPublisher eventPublisher;
     @InjectMocks PaymentService paymentService;
 
+    private static final UUID TABLE_ID = UUID.randomUUID();
+
     private Bill sampleBill() {
         return Bill.builder()
                 .id(1L).sessionId("sess-1").total(new BigDecimal("22.50"))
@@ -59,14 +62,14 @@ class PaymentServiceTest {
     }
 
     private Session sampleSession() {
-        return Session.builder().id("sess-1").tableId(5L).build();
+        return Session.builder().id("sess-1").tableId(TABLE_ID).build();
     }
 
     @Test
     void registerPhysicalPayment_createsConfirmedPhysicalPayment() {
         Bill bill = sampleBill();
         BillSplit split = unpaidSplit(bill, "Alice", "12.50");
-        when(billRepository.findById(1L)).thenReturn(Optional.of(bill));
+        when(billRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(bill));
         when(billSplitRepository.findByBillIdAndParticipantName(1L, "Alice"))
                 .thenReturn(Optional.of(split));
         when(billSplitRepository.findByBillId(1L))
@@ -86,7 +89,7 @@ class PaymentServiceTest {
     void registerPhysicalPayment_marksSplitAsPaid() {
         Bill bill = sampleBill();
         BillSplit split = unpaidSplit(bill, "Alice", "12.50");
-        when(billRepository.findById(1L)).thenReturn(Optional.of(bill));
+        when(billRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(bill));
         when(billSplitRepository.findByBillIdAndParticipantName(1L, "Alice"))
                 .thenReturn(Optional.of(split));
         when(billSplitRepository.findByBillId(1L))
@@ -107,7 +110,7 @@ class PaymentServiceTest {
         BillSplit bobSplitPaid = BillSplit.builder()
                 .id(11L).bill(bill).participantName("Bob")
                 .amount(new BigDecimal("10.00")).paid(true).build();
-        when(billRepository.findById(1L)).thenReturn(Optional.of(bill));
+        when(billRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(bill));
         when(billSplitRepository.findByBillIdAndParticipantName(1L, "Alice"))
                 .thenReturn(Optional.of(aliceSplit));
         when(billSplitRepository.findByBillId(1L)).thenReturn(List.of(aliceSplit, bobSplitPaid));
@@ -119,7 +122,7 @@ class PaymentServiceTest {
         ArgumentCaptor<PaymentCompleted> captor = ArgumentCaptor.forClass(PaymentCompleted.class);
         verify(eventPublisher).publishEvent(captor.capture());
         assertThat(captor.getValue().sessionId()).isEqualTo("sess-1");
-        assertThat(captor.getValue().tableId()).isEqualTo(5L);
+        assertThat(captor.getValue().tableId()).isEqualTo(TABLE_ID);
         assertThat(captor.getValue().billId()).isEqualTo(1L);
     }
 
@@ -128,7 +131,7 @@ class PaymentServiceTest {
         Bill bill = sampleBill();
         BillSplit aliceSplit = unpaidSplit(bill, "Alice", "12.50");
         BillSplit bobSplit = unpaidSplit(bill, "Bob", "10.00");
-        when(billRepository.findById(1L)).thenReturn(Optional.of(bill));
+        when(billRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(bill));
         when(billSplitRepository.findByBillIdAndParticipantName(1L, "Alice"))
                 .thenReturn(Optional.of(aliceSplit));
         when(billSplitRepository.findByBillId(1L)).thenReturn(List.of(aliceSplit, bobSplit));
@@ -141,7 +144,7 @@ class PaymentServiceTest {
 
     @Test
     void registerPhysicalPayment_throwsWhenBillNotFound() {
-        when(billRepository.findById(99L)).thenReturn(Optional.empty());
+        when(billRepository.findByIdForUpdate(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() ->
                 paymentService.registerPhysicalPayment(99L, "Alice", new BigDecimal("12.50")))
@@ -150,7 +153,7 @@ class PaymentServiceTest {
 
     @Test
     void registerPhysicalPayment_throwsWhenSplitNotFound() {
-        when(billRepository.findById(1L)).thenReturn(Optional.of(sampleBill()));
+        when(billRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(sampleBill()));
         when(billSplitRepository.findByBillIdAndParticipantName(1L, "Unknown"))
                 .thenReturn(Optional.empty());
 
@@ -163,7 +166,7 @@ class PaymentServiceTest {
     void registerPhysicalPayment_throwsWhenAmountDoesNotMatchSplit() {
         Bill bill = sampleBill();
         BillSplit split = unpaidSplit(bill, "Alice", "12.50");
-        when(billRepository.findById(1L)).thenReturn(Optional.of(bill));
+        when(billRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(bill));
         when(billSplitRepository.findByBillIdAndParticipantName(1L, "Alice"))
                 .thenReturn(Optional.of(split));
 
@@ -254,6 +257,7 @@ class PaymentServiceTest {
         Bill bill = sampleBill();
         Payment payment = pendingDigitalPayment(bill, "Alice");
         when(paymentRepository.findById(20L)).thenReturn(Optional.of(payment));
+        when(billRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(bill));
         when(billSplitRepository.findByBillIdAndParticipantName(1L, "Alice"))
                 .thenReturn(Optional.of(unpaidSplit(bill, "Alice", "12.50")));
         when(billSplitRepository.findByBillId(1L))
@@ -271,6 +275,7 @@ class PaymentServiceTest {
         Payment payment = pendingDigitalPayment(bill, "Alice");
         BillSplit split = unpaidSplit(bill, "Alice", "12.50");
         when(paymentRepository.findById(20L)).thenReturn(Optional.of(payment));
+        when(billRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(bill));
         when(billSplitRepository.findByBillIdAndParticipantName(1L, "Alice"))
                 .thenReturn(Optional.of(split));
         when(billSplitRepository.findByBillId(1L))
@@ -292,6 +297,7 @@ class PaymentServiceTest {
         BillSplit bobPaid = BillSplit.builder().id(11L).bill(bill)
                 .participantName("Bob").amount(new BigDecimal("10.00")).paid(true).build();
         when(paymentRepository.findById(20L)).thenReturn(Optional.of(payment));
+        when(billRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(bill));
         when(billSplitRepository.findByBillIdAndParticipantName(1L, "Alice"))
                 .thenReturn(Optional.of(aliceSplit));
         when(billSplitRepository.findByBillId(1L)).thenReturn(List.of(aliceSplit, bobPaid));

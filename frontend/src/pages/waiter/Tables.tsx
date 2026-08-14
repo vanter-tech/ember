@@ -19,7 +19,7 @@ export const Tables = () => {
 
   const { data: dashboardData, isPending: isLoadingDashboard } = useQuery({
     queryKey: ['dashboardData', restaurantId],
-    queryFn: () => DashboardService.getDashboardData(restaurantId ?? ''),
+    queryFn: () => DashboardService.getDashboardData(),
     enabled: !!restaurantId,
   })
 
