@@ -1,10 +1,27 @@
-import type { kitchenOrders } from '@/lib/api'
+import { kitchenServices, type kitchenOrders, type OrderItemStatus } from '@/lib/api'
 import { Button } from '@/components/ui/button'
-import { Card, CardHeader } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { getColorForTable } from '@/components/AvatarInitials'
 import { Clock, TicketCheck, UserCheck } from 'lucide-react'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import toast from 'react-hot-toast'
+import { NEXT_ACTION_LABEL, NEXT_STATUS, STATUS_LABEL } from '../lib/itemStatus'
 
 export const FocusedCard = ({ order }: { order: kitchenOrders }) => {
+  const queryClient = useQueryClient()
+
+  const updateItemStatusMutation = useMutation({
+    mutationFn: ({ itemId, status }: { itemId: string; status: OrderItemStatus }) =>
+      kitchenServices.updateItemStatus(order.id!, itemId, status),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['kitchenOrders'] })
+    },
+    onError: () => {
+      toast.error('No se pudo actualizar el estado del plato')
+    },
+  })
+
   return (
     <>
       <div className="flex flex-col gap-6 shrink-0">
@@ -37,6 +54,41 @@ export const FocusedCard = ({ order }: { order: kitchenOrders }) => {
               </div>
             </div>
           </CardHeader>
+          <CardContent>
+            <ul className="flex flex-wrap gap-3">
+              {order.items?.map((item) => {
+                const status = item.status ?? 'PENDING'
+                const next = NEXT_STATUS[status]
+                return (
+                  <li
+                    key={item.itemId}
+                    className="flex items-center gap-3 rounded-2xl border border-gray-200 px-4 py-2"
+                  >
+                    <div className="flex flex-col gap-1">
+                      <span className="text-sm font-semibold text-gray-800">
+                        {item.name}
+                      </span>
+                      <Badge variant="outline" className="w-fit">
+                        {STATUS_LABEL[status]}
+                      </Badge>
+                    </div>
+                    {next && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={updateItemStatusMutation.isPending}
+                        onClick={() =>
+                          updateItemStatusMutation.mutate({ itemId: item.itemId!, status: next })
+                        }
+                      >
+                        {NEXT_ACTION_LABEL[status]}
+                      </Button>
+                    )}
+                  </li>
+                )
+              })}
+            </ul>
+          </CardContent>
         </Card>
       </div>
     </>

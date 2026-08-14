@@ -21,6 +21,7 @@ export type participantDTO = components['schemas']['ParticipantDto']
 export type tableStatus = components['schemas']['SessionStatusDto']
 export type kitchenOrdersDisplayByTables = components['schemas']['KitchenDisplayEntry']
 export type kitchenOrders = components['schemas']['KitchenOrder']
+export type OrderItemStatus = components['schemas']['UpdateItemStatusRequest']['status']
 
 export interface Page<T> {
   content: T[]
@@ -290,6 +291,13 @@ export const kitchenServices = {
   },
   getOrders: async(): Promise<Page<kitchenOrders>> => {
     const { data } = await api.get<Page<kitchenOrders>>('/kitchen/orders')
+    return data
+  },
+  updateItemStatus: async (orderId: string, itemId: string, status: OrderItemStatus): Promise<kitchenOrders> => {
+    const { data } = await api.patch<kitchenOrders>(
+      `/kitchen/orders/${orderId}/items/${itemId}/status`,
+      { status }
+    )
     return data
   }
 
