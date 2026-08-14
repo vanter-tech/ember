@@ -74,9 +74,9 @@ export const FloatingNav = () => {
             <Package strokeWidth={1.5} size={24} />
           </Link>
           <Link
-            to="/admin/reports"
-            className={navItemClass('/admin/reports')}
-            title="Reportes"
+            to="/admin/analytics"
+            className={navItemClass('/admin/analytics')}
+            title="Analíticas"
           >
             <BarChart3 strokeWidth={1.5} size={24} />
           </Link>
