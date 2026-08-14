@@ -98,4 +98,24 @@ public interface BillRepository extends JpaRepository<Bill, Long> {
             @Param("tenantId") UUID tenantId,
             @Param("from") LocalDateTime from,
             @Param("to") LocalDateTime to);
+
+    /**
+     * The {@code PAID} bills behind {@link #findSalesTotals}, with the session id, total and
+     * settlement instant table analytics needs to attribute revenue and turnovers to a table.
+     * Carries the same deliberate {@code tenantId} predicate as {@link #findActivityWindow}.
+     */
+    @Query(
+            """
+            select new com.vanter.ember.billing.repository.PaidBillActivity(
+                b.sessionId, b.total, b.createdAt)
+            from Bill b
+            where b.tenantId = :tenantId
+              and b.status = com.vanter.ember.billing.model.BillStatus.PAID
+              and b.createdAt >= :from
+              and b.createdAt <= :to
+            """)
+    List<PaidBillActivity> findPaidBillActivity(
+            @Param("tenantId") UUID tenantId,
+            @Param("from") LocalDateTime from,
+            @Param("to") LocalDateTime to);
 }

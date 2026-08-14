@@ -4,14 +4,17 @@ import com.vanter.ember.analytics.dto.AnalyticsProductsResponse;
 import com.vanter.ember.analytics.dto.AnalyticsRangeResponse;
 import com.vanter.ember.analytics.dto.AnalyticsSalesResponse;
 import com.vanter.ember.analytics.dto.AnalyticsSummaryResponse;
+import com.vanter.ember.analytics.dto.AnalyticsTablesResponse;
 import com.vanter.ember.analytics.dto.CategoryPerformance;
 import com.vanter.ember.analytics.dto.ProductPerformance;
 import com.vanter.ember.analytics.dto.SalesBucket;
 import com.vanter.ember.analytics.dto.SalesGranularity;
+import com.vanter.ember.analytics.dto.TablePerformance;
 import com.vanter.ember.billing.repository.BillActivityWindow;
 import com.vanter.ember.billing.repository.BillDailyOrders;
 import com.vanter.ember.billing.repository.BillRepository;
 import com.vanter.ember.billing.repository.BillSalesTotals;
+import com.vanter.ember.billing.repository.PaidBillActivity;
 import com.vanter.ember.billing.repository.PaymentDailyRevenue;
 import com.vanter.ember.billing.repository.PaymentRepository;
 import com.vanter.ember.catalog.model.MenuItem;
@@ -21,8 +24,11 @@ import com.vanter.ember.session.model.OrderItemStatus;
 import com.vanter.ember.session.model.Session;
 import com.vanter.ember.session.model.SessionStatus;
 import com.vanter.ember.session.repository.SessionRepository;
+import com.vanter.ember.settings.model.DiningTables;
+import com.vanter.ember.settings.repository.DiningTableRepository;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -54,6 +60,7 @@ public class AnalyticsService {
     private final PaymentRepository paymentRepository;
     private final SessionRepository sessionRepository;
     private final MenuItemRepository menuItemRepository;
+    private final DiningTableRepository diningTableRepository;
 
     @Transactional(readOnly = true)
     public AnalyticsRangeResponse getRange(UUID restaurantId) {
@@ -270,6 +277,122 @@ public class AnalyticsService {
                 categories);
     }
 
+    /**
+     * Table performance for the dashboard: turnover, revenue and average session duration per
+     * table. {@code Bill} carries no {@code tableId} of its own and a session's open/settle
+     * instants only exist on the Mongo {@code Session}, so — like {@link #getProducts} — the join
+     * happens here rather than in a query: the {@code PAID} bills in the window are matched back
+     * to their session for its {@code tableId} and open time, then rolled up per table.
+     *
+     * <p>Session duration is approximated as {@code bill.createdAt - session.createdAt}: the same
+     * settlement instant every other analytics read anchors "a sale" to, since {@code Session}
+     * carries no closed/settled timestamp of its own. {@code activeTableCount} is a LIVE count,
+     * like the summary's {@code activeSessions} — it deliberately ignores the window.
+     *
+     * @throws IllegalArgumentException on an inverted window.
+     */
+    @Transactional(readOnly = true)
+    public AnalyticsTablesResponse getTables(UUID restaurantId, LocalDateTime from, LocalDateTime to) {
+        Window window = resolveWindow(from, to);
+        long activeTableCount = diningTableRepository.countByRestaurantIdAndIsActiveTrue(restaurantId);
+
+        List<PaidBillActivity> activity =
+                billRepository.findPaidBillActivity(restaurantId, window.start(), window.end());
+        if (activity.isEmpty()) {
+            return emptyTables(window, activeTableCount);
+        }
+
+        List<String> sessionIds = activity.stream().map(PaidBillActivity::sessionId).toList();
+        Map<String, Session> sessionsById = new HashMap<>();
+        for (Session session : sessionRepository.findByTenantIdAndIdIn(restaurantId, sessionIds)) {
+            sessionsById.put(session.getId(), session);
+        }
+
+        Map<UUID, TableTally> tallies = new LinkedHashMap<>();
+        for (PaidBillActivity bill : activity) {
+            Session session = sessionsById.get(bill.sessionId());
+            if (session == null || session.getTableId() == null) {
+                continue;
+            }
+            tallies.computeIfAbsent(session.getTableId(), id -> new TableTally())
+                    .add(bill.total(), session.getCreatedAt(), bill.createdAt());
+        }
+        if (tallies.isEmpty()) {
+            return emptyTables(window, activeTableCount);
+        }
+
+        Map<UUID, DiningTables> tablesById = new HashMap<>();
+        for (DiningTables table :
+                diningTableRepository.findByRestaurantIdAndIdIn(restaurantId, tallies.keySet())) {
+            tablesById.put(table.getId(), table);
+        }
+
+        BigDecimal totalRevenue = BigDecimal.ZERO;
+        long totalTurnovers = 0L;
+        long totalDurationSeconds = 0L;
+        long totalDurationSamples = 0L;
+        for (TableTally tally : tallies.values()) {
+            totalRevenue = totalRevenue.add(tally.revenue);
+            totalTurnovers += tally.turnoverCount;
+            totalDurationSeconds += tally.durationSeconds;
+            totalDurationSamples += tally.durationSamples;
+        }
+
+        List<Map.Entry<UUID, TableTally>> ranked = new ArrayList<>(tallies.entrySet());
+        ranked.sort(Comparator
+                .comparing((Map.Entry<UUID, TableTally> entry) -> entry.getValue().revenue).reversed()
+                .thenComparing(entry -> entry.getValue().turnoverCount, Comparator.reverseOrder()));
+
+        List<TablePerformance> tables = new ArrayList<>(ranked.size());
+        for (Map.Entry<UUID, TableTally> entry : ranked) {
+            TableTally tally = entry.getValue();
+            DiningTables table = tablesById.get(entry.getKey());
+            tables.add(new TablePerformance(
+                    entry.getKey(),
+                    table == null ? null : table.getTableNumber(),
+                    tally.turnoverCount,
+                    scaled(tally.revenue),
+                    percentOf(tally.revenue, totalRevenue),
+                    averageMinutes(tally.durationSeconds, tally.durationSamples)));
+        }
+
+        BigDecimal averageTurnoverRate = activeTableCount == 0
+                ? scaled(BigDecimal.ZERO)
+                : BigDecimal.valueOf(totalTurnovers)
+                        .divide(BigDecimal.valueOf(activeTableCount), 2, RoundingMode.HALF_UP);
+
+        return new AnalyticsTablesResponse(
+                window.start(),
+                window.end(),
+                activeTableCount,
+                totalTurnovers,
+                scaled(totalRevenue),
+                averageTurnoverRate,
+                averageMinutes(totalDurationSeconds, totalDurationSamples),
+                tables);
+    }
+
+    private AnalyticsTablesResponse emptyTables(Window window, long activeTableCount) {
+        return new AnalyticsTablesResponse(
+                window.start(),
+                window.end(),
+                activeTableCount,
+                0L,
+                scaled(BigDecimal.ZERO),
+                scaled(BigDecimal.ZERO),
+                null,
+                List.of());
+    }
+
+    /** Mean minutes between session-open and bill-settle over the given samples, null with none. */
+    private BigDecimal averageMinutes(long totalSeconds, long samples) {
+        if (samples == 0) {
+            return null;
+        }
+        return BigDecimal.valueOf(totalSeconds)
+                .divide(BigDecimal.valueOf(samples * 60), 1, RoundingMode.HALF_UP);
+    }
+
     /** Catalogue rows for the tallied items, skipped entirely when nothing carried a menu-item id. */
     private Map<Long, MenuItem> loadCatalog(UUID restaurantId, Set<ProductKey> keys) {
         Set<Long> itemIds = new LinkedHashSet<>();
@@ -370,6 +493,27 @@ public class AnalyticsService {
         private void merge(Tally other) {
             quantity += other.quantity;
             revenue = revenue.add(other.revenue);
+        }
+    }
+
+    /** Mutable running total for one table while its bills and sessions are joined up. */
+    private static final class TableTally {
+
+        private long turnoverCount;
+        private BigDecimal revenue = BigDecimal.ZERO;
+        private long durationSeconds;
+        private long durationSamples;
+
+        /** {@code sessionOpenedAt} may be missing on legacy data — duration is skipped, not the turnover. */
+        private void add(BigDecimal total, LocalDateTime sessionOpenedAt, LocalDateTime billSettledAt) {
+            turnoverCount++;
+            if (total != null) {
+                revenue = revenue.add(total);
+            }
+            if (sessionOpenedAt != null) {
+                durationSeconds += Duration.between(sessionOpenedAt, billSettledAt).getSeconds();
+                durationSamples++;
+            }
         }
     }
 }

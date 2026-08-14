@@ -11,11 +11,14 @@ import static org.mockito.Mockito.when;
 import com.vanter.ember.analytics.dto.AnalyticsProductsResponse;
 import com.vanter.ember.analytics.dto.AnalyticsSalesResponse;
 import com.vanter.ember.analytics.dto.AnalyticsSummaryResponse;
+import com.vanter.ember.analytics.dto.AnalyticsTablesResponse;
 import com.vanter.ember.analytics.dto.ProductPerformance;
 import com.vanter.ember.analytics.dto.SalesGranularity;
+import com.vanter.ember.analytics.dto.TablePerformance;
 import com.vanter.ember.billing.repository.BillDailyOrders;
 import com.vanter.ember.billing.repository.BillRepository;
 import com.vanter.ember.billing.repository.BillSalesTotals;
+import com.vanter.ember.billing.repository.PaidBillActivity;
 import com.vanter.ember.billing.repository.PaymentDailyRevenue;
 import com.vanter.ember.billing.repository.PaymentRepository;
 import com.vanter.ember.catalog.model.Category;
@@ -26,6 +29,8 @@ import com.vanter.ember.session.model.OrderItemStatus;
 import com.vanter.ember.session.model.Session;
 import com.vanter.ember.session.model.SessionStatus;
 import com.vanter.ember.session.repository.SessionRepository;
+import com.vanter.ember.settings.model.DiningTables;
+import com.vanter.ember.settings.repository.DiningTableRepository;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -51,6 +56,7 @@ class AnalyticsServiceTest {
     @Mock PaymentRepository paymentRepository;
     @Mock SessionRepository sessionRepository;
     @Mock MenuItemRepository menuItemRepository;
+    @Mock DiningTableRepository diningTableRepository;
 
     @InjectMocks AnalyticsService analyticsService;
 
@@ -529,5 +535,147 @@ class AnalyticsServiceTest {
             assertThat(bucket.revenue()).isEqualByComparingTo("0.00");
             assertThat(bucket.paidBillCount()).isZero();
         });
+    }
+
+    private static PaidBillActivity paidBill(String sessionId, String total, LocalDateTime createdAt) {
+        return new PaidBillActivity(sessionId, new BigDecimal(total), createdAt);
+    }
+
+    private static Session sessionAt(String id, UUID tableId, LocalDateTime createdAt) {
+        return Session.builder().id(id).tenantId(TENANT_ID).tableId(tableId).createdAt(createdAt).build();
+    }
+
+    @Test
+    void getTables_attributesRevenueAndTurnoverPerTableOrderedByRevenue() {
+        UUID tableA = UUID.randomUUID();
+        UUID tableB = UUID.randomUUID();
+        when(billRepository.findPaidBillActivity(eq(TENANT_ID), any(), any())).thenReturn(List.of(
+                paidBill("s-1", "100.00", LocalDateTime.of(2026, 8, 2, 20, 30)),
+                paidBill("s-2", "40.00", LocalDateTime.of(2026, 8, 3, 21, 0))));
+        when(sessionRepository.findByTenantIdAndIdIn(eq(TENANT_ID), any())).thenReturn(List.of(
+                sessionAt("s-1", tableA, LocalDateTime.of(2026, 8, 2, 20, 0)),
+                sessionAt("s-2", tableB, LocalDateTime.of(2026, 8, 3, 20, 45))));
+        when(diningTableRepository.findByRestaurantIdAndIdIn(eq(TENANT_ID), any())).thenReturn(List.of(
+                DiningTables.builder().id(tableA).tableNumber(1).build(),
+                DiningTables.builder().id(tableB).tableNumber(2).build()));
+        when(diningTableRepository.countByRestaurantIdAndIsActiveTrue(TENANT_ID)).thenReturn(5L);
+
+        AnalyticsTablesResponse response = analyticsService.getTables(TENANT_ID, FROM, TO);
+
+        assertThat(response.totalRevenue()).isEqualByComparingTo("140.00");
+        assertThat(response.totalTurnovers()).isEqualTo(2L);
+        assertThat(response.activeTableCount()).isEqualTo(5L);
+        assertThat(response.averageTurnoverRate()).isEqualByComparingTo("0.40");
+        assertThat(response.averageSessionDurationMinutes()).isEqualByComparingTo("22.5");
+        assertThat(response.tables()).hasSize(2);
+
+        TablePerformance best = response.tables().get(0);
+        assertThat(best.tableId()).isEqualTo(tableA);
+        assertThat(best.tableNumber()).isEqualTo(1);
+        assertThat(best.turnoverCount()).isEqualTo(1L);
+        assertThat(best.revenue()).isEqualByComparingTo("100.00");
+        assertThat(best.revenueShare()).isEqualByComparingTo("71.43");
+        assertThat(best.averageSessionDurationMinutes()).isEqualByComparingTo("30.0");
+
+        TablePerformance second = response.tables().get(1);
+        assertThat(second.tableId()).isEqualTo(tableB);
+        assertThat(second.revenue()).isEqualByComparingTo("40.00");
+        assertThat(second.averageSessionDurationMinutes()).isEqualByComparingTo("15.0");
+    }
+
+    @Test
+    void getTables_keepsRevenueForATableThatHasSinceBeenDeleted() {
+        UUID deletedTable = UUID.randomUUID();
+        when(billRepository.findPaidBillActivity(eq(TENANT_ID), any(), any()))
+                .thenReturn(List.of(paidBill("s-1", "60.00", LocalDateTime.of(2026, 8, 2, 20, 30))));
+        when(sessionRepository.findByTenantIdAndIdIn(eq(TENANT_ID), any()))
+                .thenReturn(List.of(sessionAt("s-1", deletedTable, LocalDateTime.of(2026, 8, 2, 20, 0))));
+        when(diningTableRepository.findByRestaurantIdAndIdIn(eq(TENANT_ID), any())).thenReturn(List.of());
+
+        AnalyticsTablesResponse response = analyticsService.getTables(TENANT_ID, FROM, TO);
+
+        assertThat(response.tables()).singleElement().satisfies(table -> {
+            assertThat(table.tableId()).isEqualTo(deletedTable);
+            assertThat(table.tableNumber()).isNull();
+            assertThat(table.revenue()).isEqualByComparingTo("60.00");
+        });
+    }
+
+    @Test
+    void getTables_toleratesASessionWithNoCreatedAt() {
+        UUID tableA = UUID.randomUUID();
+        when(billRepository.findPaidBillActivity(eq(TENANT_ID), any(), any()))
+                .thenReturn(List.of(paidBill("s-1", "25.00", LocalDateTime.of(2026, 8, 2, 20, 30))));
+        when(sessionRepository.findByTenantIdAndIdIn(eq(TENANT_ID), any()))
+                .thenReturn(List.of(sessionAt("s-1", tableA, null)));
+        when(diningTableRepository.findByRestaurantIdAndIdIn(eq(TENANT_ID), any()))
+                .thenReturn(List.of(DiningTables.builder().id(tableA).tableNumber(3).build()));
+
+        AnalyticsTablesResponse response = analyticsService.getTables(TENANT_ID, FROM, TO);
+
+        assertThat(response.averageSessionDurationMinutes()).isNull();
+        assertThat(response.tables()).singleElement().satisfies(table -> {
+            assertThat(table.turnoverCount()).isEqualTo(1L);
+            assertThat(table.revenue()).isEqualByComparingTo("25.00");
+            assertThat(table.averageSessionDurationMinutes()).isNull();
+        });
+    }
+
+    @Test
+    void getTables_skipsBillsWhoseSessionOrTableCannotBeResolved() {
+        when(billRepository.findPaidBillActivity(eq(TENANT_ID), any(), any()))
+                .thenReturn(List.of(paidBill("s-missing", "999.00", LocalDateTime.of(2026, 8, 2, 20, 30))));
+        when(sessionRepository.findByTenantIdAndIdIn(eq(TENANT_ID), any())).thenReturn(List.of());
+        when(diningTableRepository.countByRestaurantIdAndIsActiveTrue(TENANT_ID)).thenReturn(2L);
+
+        AnalyticsTablesResponse response = analyticsService.getTables(TENANT_ID, FROM, TO);
+
+        assertThat(response.tables()).isEmpty();
+        assertThat(response.totalRevenue()).isEqualByComparingTo("0.00");
+        assertThat(response.totalTurnovers()).isZero();
+        assertThat(response.activeTableCount()).isEqualTo(2L);
+        assertThat(response.averageTurnoverRate()).isEqualByComparingTo("0.00");
+        assertThat(response.averageSessionDurationMinutes()).isNull();
+        verify(diningTableRepository, never()).findByRestaurantIdAndIdIn(any(), any());
+    }
+
+    @Test
+    void getTables_withoutAnyPaidBillsKeepsTheLiveActiveTableCount() {
+        when(billRepository.findPaidBillActivity(eq(TENANT_ID), any(), any())).thenReturn(List.of());
+        when(diningTableRepository.countByRestaurantIdAndIsActiveTrue(TENANT_ID)).thenReturn(4L);
+
+        AnalyticsTablesResponse response = analyticsService.getTables(TENANT_ID, FROM, TO);
+
+        assertThat(response.tables()).isEmpty();
+        assertThat(response.activeTableCount()).isEqualTo(4L);
+        assertThat(response.averageTurnoverRate()).isEqualByComparingTo("0.00");
+        assertThat(response.averageSessionDurationMinutes()).isNull();
+        verify(sessionRepository, never()).findByTenantIdAndIdIn(any(), any());
+    }
+
+    @Test
+    void getTables_averageTurnoverRateIsZeroWithNoActiveTables() {
+        UUID tableA = UUID.randomUUID();
+        when(billRepository.findPaidBillActivity(eq(TENANT_ID), any(), any()))
+                .thenReturn(List.of(paidBill("s-1", "30.00", LocalDateTime.of(2026, 8, 2, 20, 30))));
+        when(sessionRepository.findByTenantIdAndIdIn(eq(TENANT_ID), any()))
+                .thenReturn(List.of(sessionAt("s-1", tableA, LocalDateTime.of(2026, 8, 2, 20, 0))));
+        when(diningTableRepository.findByRestaurantIdAndIdIn(eq(TENANT_ID), any()))
+                .thenReturn(List.of(DiningTables.builder().id(tableA).tableNumber(1).build()));
+        when(diningTableRepository.countByRestaurantIdAndIsActiveTrue(TENANT_ID)).thenReturn(0L);
+
+        AnalyticsTablesResponse response = analyticsService.getTables(TENANT_ID, FROM, TO);
+
+        assertThat(response.averageTurnoverRate()).isEqualByComparingTo("0.00");
+    }
+
+    @Test
+    void getTables_rejectsAnInvertedWindow() {
+        assertThatThrownBy(() -> analyticsService.getTables(TENANT_ID, TO, FROM))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("must not be after");
+
+        verify(billRepository, never()).findPaidBillActivity(any(), any(), any());
+        verify(diningTableRepository, never()).countByRestaurantIdAndIsActiveTrue(any());
     }
 }

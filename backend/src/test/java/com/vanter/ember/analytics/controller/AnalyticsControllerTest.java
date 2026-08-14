@@ -4,10 +4,12 @@ import com.vanter.ember.analytics.dto.AnalyticsProductsResponse;
 import com.vanter.ember.analytics.dto.AnalyticsRangeResponse;
 import com.vanter.ember.analytics.dto.AnalyticsSalesResponse;
 import com.vanter.ember.analytics.dto.AnalyticsSummaryResponse;
+import com.vanter.ember.analytics.dto.AnalyticsTablesResponse;
 import com.vanter.ember.analytics.dto.CategoryPerformance;
 import com.vanter.ember.analytics.dto.ProductPerformance;
 import com.vanter.ember.analytics.dto.SalesBucket;
 import com.vanter.ember.analytics.dto.SalesGranularity;
+import com.vanter.ember.analytics.dto.TablePerformance;
 import com.vanter.ember.analytics.service.AnalyticsService;
 import com.vanter.ember.config.CorsConfig;
 import com.vanter.ember.config.SecurityConfig;
@@ -395,5 +397,98 @@ class AnalyticsControllerTest {
         mockMvc.perform(get("/admin/analytics/products")).andExpect(status().isUnauthorized());
 
         verify(analyticsService, never()).getProducts(any(), any(), any(), any());
+    }
+
+    private static AnalyticsTablesResponse tablesFixture() {
+        return new AnalyticsTablesResponse(
+                LocalDateTime.of(2026, 8, 1, 0, 0),
+                LocalDateTime.of(2026, 8, 14, 23, 59, 59),
+                5L,
+                2L,
+                new BigDecimal("140.00"),
+                new BigDecimal("0.40"),
+                new BigDecimal("22.5"),
+                List.of(new TablePerformance(
+                        UUID.randomUUID(),
+                        1,
+                        1L,
+                        new BigDecimal("100.00"),
+                        new BigDecimal("71.43"),
+                        new BigDecimal("30.0"))));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void tables_passesTheParsedWindowAndTenantFromContext() throws Exception {
+        TenantContextHolder.setTenantId(TENANT_ID);
+        LocalDateTime from = LocalDateTime.of(2026, 8, 1, 0, 0);
+        LocalDateTime to = LocalDateTime.of(2026, 8, 14, 23, 59, 59);
+        when(analyticsService.getTables(TENANT_ID, from, to)).thenReturn(tablesFixture());
+
+        mockMvc.perform(get("/admin/analytics/tables")
+                        .param("from", "2026-08-01T00:00:00")
+                        .param("to", "2026-08-14T23:59:59"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.activeTableCount").value(5))
+                .andExpect(jsonPath("$.totalTurnovers").value(2))
+                .andExpect(jsonPath("$.totalRevenue").value(140.00))
+                .andExpect(jsonPath("$.averageTurnoverRate").value(0.40))
+                .andExpect(jsonPath("$.averageSessionDurationMinutes").value(22.5))
+                .andExpect(jsonPath("$.tables.length()").value(1))
+                .andExpect(jsonPath("$.tables[0].tableNumber").value(1))
+                .andExpect(jsonPath("$.tables[0].turnoverCount").value(1))
+                .andExpect(jsonPath("$.tables[0].revenue").value(100.00));
+
+        verify(analyticsService).getTables(TENANT_ID, from, to);
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void tables_withoutParams_leavesTheDefaultingToTheService() throws Exception {
+        TenantContextHolder.setTenantId(TENANT_ID);
+        when(analyticsService.getTables(TENANT_ID, null, null)).thenReturn(tablesFixture());
+
+        mockMvc.perform(get("/admin/analytics/tables")).andExpect(status().isOk());
+
+        verify(analyticsService).getTables(TENANT_ID, null, null);
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void tables_ignoresClientSuppliedRestaurantId() throws Exception {
+        TenantContextHolder.setTenantId(TENANT_ID);
+        when(analyticsService.getTables(TENANT_ID, null, null)).thenReturn(tablesFixture());
+
+        mockMvc.perform(get("/admin/analytics/tables")
+                        .param("restaurantId", OTHER_TENANT_ID.toString()))
+                .andExpect(status().isOk());
+
+        verify(analyticsService).getTables(TENANT_ID, null, null);
+        verify(analyticsService, never()).getTables(eq(OTHER_TENANT_ID), any(), any());
+    }
+
+    @Test
+    @WithMockUser(roles = "WAITER")
+    void tables_forbiddenForNonAdmin() throws Exception {
+        TenantContextHolder.setTenantId(TENANT_ID);
+
+        mockMvc.perform(get("/admin/analytics/tables")).andExpect(status().isForbidden());
+
+        verify(analyticsService, never()).getTables(any(), any(), any());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void tables_withoutTenantBound_isRejected() throws Exception {
+        mockMvc.perform(get("/admin/analytics/tables")).andExpect(status().isConflict());
+
+        verify(analyticsService, never()).getTables(any(), any(), any());
+    }
+
+    @Test
+    void tables_unauthenticatedReturns401() throws Exception {
+        mockMvc.perform(get("/admin/analytics/tables")).andExpect(status().isUnauthorized());
+
+        verify(analyticsService, never()).getTables(any(), any(), any());
     }
 }
