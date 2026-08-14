@@ -72,6 +72,35 @@ export interface AnalyticsSalesResponse {
   buckets: SalesBucket[]
 }
 
+export interface ProductPerformance {
+  itemId: number | null
+  name: string
+  categoryId: number | null
+  categoryName: string | null
+  quantitySold: number
+  revenue: number
+  revenueShare: number
+  cumulativeShare: number
+}
+
+export interface CategoryPerformance {
+  categoryId: number | null
+  name: string | null
+  quantitySold: number
+  revenue: number
+  revenueShare: number
+}
+
+export interface AnalyticsProductsResponse {
+  from: string
+  to: string
+  totalRevenue: number
+  totalQuantity: number
+  productCount: number
+  products: ProductPerformance[]
+  categories: CategoryPerformance[]
+}
+
 declare global {
   interface Window {
     ENV: {
@@ -369,6 +398,17 @@ export const analyticsService = {
     const { data } = await api.get<AnalyticsSalesResponse>(
       '/admin/analytics/sales',
       { params: { granularity, from, to } }
+    )
+    return data
+  },
+  getProducts: async (
+    from?: string,
+    to?: string,
+    limit?: number
+  ): Promise<AnalyticsProductsResponse> => {
+    const { data } = await api.get<AnalyticsProductsResponse>(
+      '/admin/analytics/products',
+      { params: { from, to, limit } }
     )
     return data
   },
