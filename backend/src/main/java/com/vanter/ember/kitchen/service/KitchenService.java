@@ -4,6 +4,7 @@ import com.vanter.ember.config.ResourceNotFoundException;
 import com.vanter.ember.config.TenantContextHolder;
 import com.vanter.ember.kitchen.dto.KitchenDisplayEntry;
 import com.vanter.ember.kitchen.event.KitchenItemUpdated;
+import com.vanter.ember.kitchen.event.KitchenOrderRetired;
 import com.vanter.ember.kitchen.model.KitchenItem;
 import com.vanter.ember.kitchen.model.KitchenOrder;
 import com.vanter.ember.kitchen.repository.KitchenOrderRepository;
@@ -108,7 +109,8 @@ public class KitchenService {
         item.setStatus(newStatus);
         item.setUpdatedAt(LocalDateTime.now());
         KitchenOrder saved = kitchenOrderRepository.save(order);
-        eventPublisher.publishEvent(new KitchenItemUpdated(saved.getSessionId(), itemId, newStatus));
+        eventPublisher.publishEvent(new KitchenItemUpdated(
+                TenantContextHolder.requireTenantId(), saved.getSessionId(), itemId, newStatus));
         return saved;
     }
 
@@ -119,7 +121,8 @@ public class KitchenService {
                 .findByTenantIdAndSessionId(TenantContextHolder.requireTenantId(), event.sessionId())
                 .ifPresent(order -> {
                     order.setActive(false);
-                    kitchenOrderRepository.save(order);
+                    KitchenOrder saved = kitchenOrderRepository.save(order);
+                    eventPublisher.publishEvent(new KitchenOrderRetired(saved.getTenantId(), event.sessionId()));
                 });
     }
 
