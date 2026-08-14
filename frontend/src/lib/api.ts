@@ -43,63 +43,18 @@ export interface PublicBranding {
   closingTime: string
 }
 
-// Hand-written like Page<T> above: the analytics DTOs (task-5.13-5.16) predate the last
-// backend-types.ts regen, so they aren't in components['schemas'] yet.
-export interface AnalyticsSummaryResponse {
-  totalRevenue: number
-  activeSessions: number
-  averageOrderValue: number
-  paidBillCount: number
-  from: string
-  to: string
-}
+export type AnalyticsSummaryResponse = components['schemas']['AnalyticsSummaryResponse']
+export type AnalyticsSalesResponse = components['schemas']['AnalyticsSalesResponse']
+export type SalesBucket = components['schemas']['SalesBucket']
+export type AnalyticsProductsResponse = components['schemas']['AnalyticsProductsResponse']
+export type ProductPerformance = components['schemas']['ProductPerformance']
+export type CategoryPerformance = components['schemas']['CategoryPerformance']
 
-export type SalesGranularity = 'day' | 'week' | 'month' | 'year'
-
-export interface SalesBucket {
-  bucketStart: string
-  bucketEnd: string
-  revenue: number
-  paidBillCount: number
-}
-
-export interface AnalyticsSalesResponse {
-  granularity: Uppercase<SalesGranularity>
-  from: string
-  to: string
-  totalRevenue: number
-  paidBillCount: number
-  buckets: SalesBucket[]
-}
-
-export interface ProductPerformance {
-  itemId: number | null
-  name: string
-  categoryId: number | null
-  categoryName: string | null
-  quantitySold: number
-  revenue: number
-  revenueShare: number
-  cumulativeShare: number
-}
-
-export interface CategoryPerformance {
-  categoryId: number | null
-  name: string | null
-  quantitySold: number
-  revenue: number
-  revenueShare: number
-}
-
-export interface AnalyticsProductsResponse {
-  from: string
-  to: string
-  totalRevenue: number
-  totalQuantity: number
-  productCount: number
-  products: ProductPerformance[]
-  categories: CategoryPerformance[]
-}
+// The 'granularity' request param has no dedicated schema (it's a plain string query param
+// server-side), so it's derived from the response enum rather than hand-typed.
+export type SalesGranularity = Lowercase<
+  NonNullable<components['schemas']['AnalyticsSalesResponse']['granularity']>
+>
 
 declare global {
   interface Window {

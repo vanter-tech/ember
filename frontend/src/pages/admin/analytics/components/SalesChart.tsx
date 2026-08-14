@@ -27,9 +27,8 @@ export const SalesChart = () => {
     queryFn: () => analyticsService.getSales(granularity),
   })
 
-  const maxRevenue = data
-    ? Math.max(...data.buckets.map((bucket) => bucket.revenue), 0)
-    : 0
+  const buckets = data?.buckets ?? []
+  const maxRevenue = Math.max(...buckets.map((bucket) => bucket.revenue ?? 0), 0)
 
   return (
     <Card>
@@ -56,28 +55,27 @@ export const SalesChart = () => {
         {isError && (
           <div className="text-red-500">Error al cargar las ventas.</div>
         )}
-        {data && data.buckets.length === 0 && (
+        {data && buckets.length === 0 && (
           <div className="text-zinc-500">Sin ventas registradas.</div>
         )}
-        {data && data.buckets.length > 0 && (
+        {buckets.length > 0 && (
           <div className="flex h-48 items-end gap-1">
-            {data.buckets.map((bucket) => {
-              const heightPct =
-                maxRevenue > 0 ? (bucket.revenue / maxRevenue) * 100 : 0
-              const label = new Date(bucket.bucketStart).toLocaleDateString(
-                'es',
-                BUCKET_LABEL_FORMAT[granularity]
-              )
+            {buckets.map((bucket, index) => {
+              const revenue = bucket.revenue ?? 0
+              const heightPct = maxRevenue > 0 ? (revenue / maxRevenue) * 100 : 0
+              const label = new Date(
+                bucket.bucketStart ?? bucket.bucketEnd ?? ''
+              ).toLocaleDateString('es', BUCKET_LABEL_FORMAT[granularity])
               return (
                 <div
-                  key={bucket.bucketStart}
+                  key={bucket.bucketStart ?? index}
                   className="flex flex-1 flex-col items-center justify-end gap-1"
-                  title={`${label}: $${bucket.revenue.toFixed(2)}`}
+                  title={`${label}: $${revenue.toFixed(2)}`}
                 >
                   <div
                     className={cn(
                       'w-full min-h-[2px] rounded-t bg-primary',
-                      bucket.revenue === 0 && 'bg-zinc-200'
+                      revenue === 0 && 'bg-zinc-200'
                     )}
                     style={{ height: `${heightPct}%` }}
                   />
