@@ -43,6 +43,17 @@ export interface PublicBranding {
   closingTime: string
 }
 
+// Hand-written like Page<T> above: the analytics DTOs (task-5.13-5.16) predate the last
+// backend-types.ts regen, so they aren't in components['schemas'] yet.
+export interface AnalyticsSummaryResponse {
+  totalRevenue: number
+  activeSessions: number
+  averageOrderValue: number
+  paidBillCount: number
+  from: string
+  to: string
+}
+
 declare global {
   interface Window {
     ENV: {
@@ -319,6 +330,16 @@ export const publicService = {
   getBranding: async (slug: string): Promise<PublicBranding> => {
     const { data } = await api.get<PublicBranding>(
       `/public/restaurants/${slug}/branding`
+    )
+    return data
+  },
+}
+
+export const analyticsService = {
+  getSummary: async (from?: string, to?: string): Promise<AnalyticsSummaryResponse> => {
+    const { data } = await api.get<AnalyticsSummaryResponse>(
+      '/admin/analytics/summary',
+      { params: { from, to } }
     )
     return data
   },

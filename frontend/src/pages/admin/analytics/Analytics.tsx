@@ -1,3 +1,5 @@
+import { SummaryCards } from './components/SummaryCards'
+
 export const Analytics = () => {
   return (
     <div className="p-6 flex flex-col gap-6">
@@ -7,6 +9,8 @@ export const Analytics = () => {
           Métricas de ventas, productos y mesas del restaurante.
         </p>
       </div>
+
+      <SummaryCards />
     </div>
   )
 }
