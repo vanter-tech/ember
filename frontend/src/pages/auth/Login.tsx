@@ -1,7 +1,7 @@
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useNavigate, useSearchParams, Link } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import axios from 'axios'
 import toast from 'react-hot-toast'
 import { useAuthStore } from '../../store/authStore'
@@ -33,8 +33,6 @@ type LoginFormInputs = z.infer<typeof loginSchema>
 
 export const Login = () => {
   const navigate = useNavigate()
-  const [searchParams] = useSearchParams()
-  const restaurantSlug = searchParams.get('restaurant') ?? undefined
   const { setAuth } = useAuthStore()
 
   const form = useForm<LoginFormInputs>({
@@ -47,7 +45,7 @@ export const Login = () => {
 
   const onSubmit = async (data: LoginFormInputs) => {
     try {
-      const response = await authService.login({ ...data, restaurantSlug })
+      const response = await authService.login(data)
       setAuth(response)
       toast.success('Login successful!')
       switch (response.role) {
@@ -199,9 +197,7 @@ export const Login = () => {
               </Button>
 
               <Button asChild variant="outline" className="w-full text-center mb-3">
-                <Link to={restaurantSlug ? `/register?restaurant=${restaurantSlug}` : '/register'}>
-                  Register
-                </Link>
+                <Link to="/register">Register</Link>
               </Button>
             </form>
           </Form>

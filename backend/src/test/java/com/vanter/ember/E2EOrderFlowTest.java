@@ -108,9 +108,9 @@ class E2EOrderFlowTest {
                 .passwordHash(passwordEncoder.encode(password)).role(Role.KITCHEN).build());
         customerId = customer.getId();
 
-        waiterToken = login("waiter@e2e.com", password, null);
-        customerToken = login("customer@e2e.com", password, restaurant.getSlug());
-        kitchenToken = login("kitchen@e2e.com", password, null);
+        waiterToken = login("waiter@e2e.com", password);
+        customerToken = login("customer@e2e.com", password);
+        kitchenToken = login("kitchen@e2e.com", password);
 
         DiningTables table = diningTableRepository.save(DiningTables.builder()
                 .restaurantId(restaurant.getId())
@@ -134,11 +134,10 @@ class E2EOrderFlowTest {
         TenantContextHolder.clear();
     }
 
-    private String login(String email, String password, String restaurantSlug) throws Exception {
+    private String login(String email, String password) throws Exception {
         LoginRequest req = new LoginRequest();
         req.setEmail(email);
         req.setPassword(password);
-        req.setRestaurantSlug(restaurantSlug);
         MvcResult result = mockMvc.perform(post("/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
@@ -173,13 +172,17 @@ class E2EOrderFlowTest {
         String qrToken = objectMapper.readTree(
                 qrResult.getResponse().getContentAsString()).get("qrToken").asText();
 
-        // 3 — Customer joins session
-        mockMvc.perform(post("/sessions/" + sessionId + "/join")
+        // 3 — Customer joins session. Their login token carries no restaurant, so joining is what
+        // hands them a tenant-scoped one; every later call has to use it.
+        MvcResult joinResult = mockMvc.perform(post("/sessions/" + sessionId + "/join")
                         .header("Authorization", bearer(customerToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
                                 new JoinSessionRequest(qrToken, "Alice"))))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andReturn();
+        customerToken = objectMapper.readTree(joinResult.getResponse().getContentAsString())
+                .get("token").asText();
 
         // 4 — Customer adds an item
         MvcResult addItemResult = mockMvc.perform(post("/sessions/" + sessionId + "/items")

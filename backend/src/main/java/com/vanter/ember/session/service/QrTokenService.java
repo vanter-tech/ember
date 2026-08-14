@@ -3,6 +3,7 @@ package com.vanter.ember.session.service;
 import com.vanter.ember.config.TenantContextHolder;
 import com.vanter.ember.identity.service.JwtService;
 import java.util.Map;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -21,13 +22,21 @@ public class QrTokenService {
                 QR_EXPIRY_MS);
     }
 
-    public String validateQrToken(String token) {
+    /**
+     * A scanning customer has no restaurant bound to their token yet, so the QR token itself is
+     * the authority on which tenant the session belongs to — it is server-signed at generation
+     * time from the waiter's own tenant context, so its {@code rid} can't be forged.
+     */
+    public QrTokenData validateQrToken(String token) {
         if (!jwtService.isTokenValid(token)) {
             throw new IllegalArgumentException("Invalid or expired QR token");
         }
-        if (!TenantContextHolder.requireTenantId().equals(jwtService.extractTenantId(token))) {
-            throw new IllegalArgumentException("QR token does not belong to this restaurant");
+        UUID tenantId = jwtService.extractTenantId(token);
+        if (tenantId == null) {
+            throw new IllegalArgumentException("QR token carries no restaurant");
         }
-        return jwtService.extractSubject(token);
+        return new QrTokenData(jwtService.extractSubject(token), tenantId);
     }
+
+    public record QrTokenData(String sessionId, UUID tenantId) {}
 }

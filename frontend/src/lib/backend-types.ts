@@ -701,6 +701,10 @@ export interface components {
             qrToken: string;
             userName: string;
         };
+        JoinSessionResponse: {
+            session?: components["schemas"]["Session"];
+            token?: string;
+        };
         OrderItem: {
             id?: string;
             /** Format: int64 */
@@ -810,7 +814,6 @@ export interface components {
             name: string;
             email: string;
             password: string;
-            restaurantSlug: string;
         };
         AuthResponse: {
             token?: string;
@@ -823,7 +826,6 @@ export interface components {
         LoginRequest: {
             email: string;
             password: string;
-            restaurantSlug?: string;
         };
         ExpandCapacityRequest: {
             /** Format: int32 */
@@ -945,10 +947,10 @@ export interface components {
             sort?: string[];
         };
         PageKitchenOrder: {
-            /** Format: int32 */
-            totalPages?: number;
             /** Format: int64 */
             totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
             first?: boolean;
             last?: boolean;
             /** Format: int32 */
@@ -957,9 +959,9 @@ export interface components {
             /** Format: int32 */
             number?: number;
             sort?: components["schemas"]["SortObject"];
-            pageable?: components["schemas"]["PageableObject"];
             /** Format: int32 */
             numberOfElements?: number;
+            pageable?: components["schemas"]["PageableObject"];
             empty?: boolean;
         };
         PageableObject: {
@@ -968,9 +970,9 @@ export interface components {
             sort?: components["schemas"]["SortObject"];
             paged?: boolean;
             /** Format: int32 */
-            pageSize?: number;
-            /** Format: int32 */
             pageNumber?: number;
+            /** Format: int32 */
+            pageSize?: number;
             unpaged?: boolean;
         };
         SortObject: {
@@ -1000,10 +1002,10 @@ export interface components {
             currentSession?: components["schemas"]["ActiveSessionSummary"];
         };
         PageMenuItemResponse: {
-            /** Format: int32 */
-            totalPages?: number;
             /** Format: int64 */
             totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
             first?: boolean;
             last?: boolean;
             /** Format: int32 */
@@ -1012,9 +1014,9 @@ export interface components {
             /** Format: int32 */
             number?: number;
             sort?: components["schemas"]["SortObject"];
-            pageable?: components["schemas"]["PageableObject"];
             /** Format: int32 */
             numberOfElements?: number;
+            pageable?: components["schemas"]["PageableObject"];
             empty?: boolean;
         };
     };
@@ -1272,7 +1274,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["Session"];
+                    "*/*": components["schemas"]["JoinSessionResponse"];
                 };
             };
         };
@@ -1322,7 +1324,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["Session"];
+                    "*/*": components["schemas"]["JoinSessionResponse"];
                 };
             };
         };

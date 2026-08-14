@@ -64,10 +64,10 @@ export const TenantLanding = () => {
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
           <Button asChild className="w-full" style={{ backgroundColor: accentColor }}>
-            <Link to={`/login?restaurant=${slug}`}>Iniciar sesión</Link>
+            <Link to="/login">Iniciar sesión</Link>
           </Button>
           <Button asChild variant="outline" className="w-full">
-            <Link to={`/register?restaurant=${slug}`}>Registrarme</Link>
+            <Link to="/register">Registrarme</Link>
           </Button>
         </CardContent>
       </Card>

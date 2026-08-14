@@ -9,6 +9,8 @@ import com.vanter.ember.config.TenantContextHolder;
 import com.vanter.ember.identity.model.User;
 import com.vanter.ember.identity.repository.UserRepository;
 import com.vanter.ember.kitchen.event.KitchenItemUpdated;
+import com.vanter.ember.restaurant.model.RestaurantStatus;
+import com.vanter.ember.restaurant.repository.RestaurantRepository;
 import com.vanter.ember.session.dto.OrderItemDto;
 import com.vanter.ember.session.dto.ParticipantDto;
 import com.vanter.ember.session.dto.SessionDetailResponseDto;
@@ -47,6 +49,7 @@ public class SessionService {
     private final QrTokenService qrTokenService;
     private final UserRepository userRepository;
     private final MenuItemRepository menuItemRepository;
+    private final RestaurantRepository restaurantRepository;
 
     /**
      * Loads a session scoped to the tenant bound to the current request: a session owned by another
@@ -127,17 +130,18 @@ public class SessionService {
     }
 
     public Session joinSession(String qrToken, String requesterEmail, String userName) {
-        String sessionId = qrTokenService.validateQrToken(qrToken);
+        var qr = qrTokenService.validateQrToken(qrToken);
+        bindResolvedTenant(qr.tenantId());
 
         var user = userRepository.findByEmail(requesterEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found: " + requesterEmail));
 
-        Session session = findById(sessionId);
+        Session session = findById(qr.sessionId());
 
         int maxParticipants = session.getMaxParticipants();
         if (session.getParticipants().size() >= maxParticipants) {
             throw new TooManyParticipantsException(
-                    "Session " + sessionId + " is at full capacity (" + maxParticipants + ")");
+                    "Session " + qr.sessionId() + " is at full capacity (" + maxParticipants + ")");
         }
 
         boolean alreadyJoined = session.getParticipants().stream()
@@ -159,11 +163,21 @@ public class SessionService {
         var user = userRepository.findByEmail(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found: " + userId));
 
-        Session session = sessionRepository
-                .findByTenantIdAndJoinCodeAndStatus(
-                        TenantContextHolder.requireTenantId(), joinCode, SessionStatus.OPEN)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,  "Code not found" + joinCode));
-
+        // Untenanted on purpose: the customer types this code before any restaurant is bound to
+        // their token, so the code itself is what identifies the tenant.
+        List<Session> matches = sessionRepository.findByJoinCodeAndStatus(joinCode, SessionStatus.OPEN);
+        if (matches.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Code not found: " + joinCode);
+        }
+        if (matches.size() > 1) {
+            // Join codes are random, not globally unique, so two restaurants can hold the same
+            // open code. Refuse rather than guess which diner's table was meant.
+            throw new IllegalStateException(
+                    "Join code " + joinCode + " is in use at more than one restaurant right now;"
+                            + " ask staff to reopen the table for a new code");
+        }
+        Session session = matches.get(0);
+        bindResolvedTenant(session.getTenantId());
 
         boolean alreadyJoin = session.getParticipants().stream().anyMatch(p -> p.getUserId().equals(user.getId()));
         if (alreadyJoin) {
@@ -174,6 +188,22 @@ public class SessionService {
         Session saved = sessionRepository.save(session);
         eventPublisher.publishEvent(new ParticipantJoined(saved.getId(), user.getId(), user.getName()));
         return saved;
+    }
+
+    /**
+     * Binds the tenant a join credential resolved to, for the remainder of this request — the one
+     * place outside the JWT filters allowed to touch {@link TenantContextHolder}, because a
+     * customer's token carries no restaurant until they join a table. The id never comes from raw
+     * client input: it is read off a server-signed QR token or off the stored session document,
+     * exactly like PublicRestaurantController resolves a slug through its own lookup first.
+     */
+    private void bindResolvedTenant(UUID tenantId) {
+        var restaurant = restaurantRepository.findById(tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Restaurant not found: " + tenantId));
+        if (restaurant.getStatus() != RestaurantStatus.ACTIVE) {
+            throw new AccessDeniedException("This restaurant is not accepting orders right now");
+        }
+        TenantContextHolder.setTenantId(tenantId);
     }
 
     private String generateJoinCode(){

@@ -1,6 +1,7 @@
 package com.vanter.ember.session.controller;
 
 import com.vanter.ember.identity.repository.UserRepository;
+import com.vanter.ember.identity.service.AuthService;
 import com.vanter.ember.session.dto.*;
 import com.vanter.ember.session.model.Session;
 import com.vanter.ember.session.model.SessionStatus;
@@ -36,6 +37,7 @@ public class SessionController {
     private final SessionService sessionService;
     private final QrTokenService qrTokenService;
     private final UserRepository userRepository;
+    private final AuthService authService;
 
     @Operation(summary = "Create a session (WAITER)")
     @PostMapping
@@ -89,17 +91,35 @@ public class SessionController {
 
     @Operation(summary = "Join a session via QR token (CUSTOMER)")
     @PostMapping("/{id}/join")
-    public Session joinSession(@PathVariable String id,
+    @PreAuthorize("hasRole('CUSTOMER')")
+    public JoinSessionResponse joinSession(@PathVariable String id,
                                @Valid @RequestBody JoinSessionRequest request,
                                Authentication authentication) {
-        return sessionService.joinSession(request.qrToken(), authentication.getName(), request.userName());
+        Session session = sessionService.joinSession(
+                request.qrToken(), authentication.getName(), request.userName());
+        return withRescopedToken(session, authentication);
     }
 
     @Operation(summary = "Join a session via Code (CUSTOMER)")
     @PostMapping("/join")
-    public Session joinSessionCode(@Valid @RequestBody JoinSessionCodeRequest request,
+    @PreAuthorize("hasRole('CUSTOMER')")
+    public JoinSessionResponse joinSessionCode(@Valid @RequestBody JoinSessionCodeRequest request,
                                    Authentication authentication) {
-        return sessionService.joinSessionCode(request.joinCode(),  authentication.getName() );
+        Session session = sessionService.joinSessionCode(
+                request.joinCode(), authentication.getName());
+        return withRescopedToken(session, authentication);
+    }
+
+    /**
+     * Joining a table is the moment a customer's restaurant becomes known, so it is also where
+     * their token stops being tenant-less and starts carrying the {@code rid} every later
+     * tenant-scoped read needs.
+     */
+    private JoinSessionResponse withRescopedToken(Session session, Authentication authentication) {
+        String token = authService
+                .issueTenantScopedToken(authentication.getName(), session.getTenantId())
+                .getToken();
+        return new JoinSessionResponse(session, token);
     }
 
     @Operation(summary = "Expand session capacity (WAITER)")

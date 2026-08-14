@@ -16,6 +16,7 @@ import toast from 'react-hot-toast'
 import { useNavigate } from 'react-router-dom'
 import { isAxiosError } from 'axios'
 import { useSessionStore } from '@/store/sessionStore'
+import { useAuthStore } from '@/store/authStore'
 
 export const JoinTableModal = () => {
   const { activeModal, closeModal } = useUIStore()
@@ -23,6 +24,7 @@ export const JoinTableModal = () => {
   const [joinCode, setJoinCode] = useState('')
   const navigate = useNavigate()
   const {setSession} = useSessionStore()
+  const setAuth = useAuthStore((state) => state.setAuth)
 
   const mutation = useMutation({
     mutationFn: async (joinCode: string) => {
@@ -30,8 +32,15 @@ export const JoinTableModal = () => {
     },
     onSuccess(data) {
       toast.success('Join successfully!.')
+      // Joining is what tells the backend which restaurant this customer is at, so it hands
+      // back a token scoped to it — every later call (menu, items, confirm) needs that one.
+      if (data.token) {
+        setAuth({ token: data.token })
+      }
       navigate('/customer/menu', { replace: true })
-      setSession(data)
+      if (data.session) {
+        setSession(data.session)
+      }
       closeModal()
     },
     onError(error) {

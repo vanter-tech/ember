@@ -45,7 +45,7 @@ class AuthControllerTest {
         req.setName("Ana");
         req.setEmail("ana@test.com");
         req.setPassword("Secret123!");
-        req.setRestaurantSlug("anas-diner");
+
 
         when(authService.register(any())).thenReturn(
                 AuthResponse.builder().token("jwt-token").userId("u-1").name("Ana").role("CUSTOMER").build()
@@ -66,7 +66,7 @@ class AuthControllerTest {
         req.setName("Ana");
         req.setEmail("ana@test.com");
         req.setPassword("Secret123!");
-        req.setRestaurantSlug("anas-diner");
+
 
         when(authService.register(any()))
                 .thenThrow(new IllegalArgumentException("Email already in use"));

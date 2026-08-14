@@ -23,8 +23,4 @@ public class RegisterRequest {
             message = "Password must contain at least one uppercase letter, one lowercase letter, one digit, and one special character"
     )
     private String password;
-
-    /** Slug of the restaurant being visited (from the QR/table-code landing page). */
-    @NotBlank(message = "Restaurant slug is required")
-    private String restaurantSlug;
 }

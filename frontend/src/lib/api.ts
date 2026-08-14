@@ -15,6 +15,7 @@ export type infoSession = components['schemas']['SessionDetailResponseDto']
 export type calculateBill = components['schemas']['CalculateBillRequest']
 export type JoinSessionCode = components['schemas']['JoinSessionCodeRequest']
 export type sessionResponse = components['schemas']['Session']
+export type joinSessionResponse = components['schemas']['JoinSessionResponse']
 export type menuResponse = components['schemas']['MenuDTO']
 export type orderItemDTO = components['schemas']['OrderItemDto']
 export type participantDTO = components['schemas']['ParticipantDto']
@@ -253,8 +254,8 @@ export const SessionTableService = {
     return data
   },
 
-  joinSessionViaCode: async (joinCode: string): Promise<sessionResponse> => {
-    const { data } = await api.post<sessionResponse>(`/sessions/join`, {
+  joinSessionViaCode: async (joinCode: string): Promise<joinSessionResponse> => {
+    const { data } = await api.post<joinSessionResponse>(`/sessions/join`, {
       joinCode,
     })
     return data
