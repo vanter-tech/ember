@@ -80,6 +80,30 @@ class BillRepositoryTenantIsolationTest extends AbstractTenantIsolationTest {
     }
 
     @Test
+    void findActivityWindow_onlyAggregatesTheBoundTenantsBills() {
+        billSavedFor(TENANT_A, "sess-1");
+        billSavedFor(TENANT_B, "sess-2");
+        billSavedFor(TENANT_B, "sess-3");
+
+        var windowForB = readAs(TENANT_B, () -> billRepository.findActivityWindow(TENANT_B));
+
+        assertThat(windowForB.billCount()).isEqualTo(2L);
+        assertThat(windowForB.firstBillAt()).isNotNull();
+        assertThat(windowForB.lastBillAt()).isNotNull();
+    }
+
+    @Test
+    void findActivityWindow_isEmptyForATenantWithNoBills() {
+        billSavedFor(TENANT_A, "sess-1");
+
+        var windowForB = readAs(TENANT_B, () -> billRepository.findActivityWindow(TENANT_B));
+
+        assertThat(windowForB.billCount()).isZero();
+        assertThat(windowForB.firstBillAt()).isNull();
+        assertThat(windowForB.lastBillAt()).isNull();
+    }
+
+    @Test
     void delete_cannotReachAnotherTenantsBill() {
         billSavedFor(TENANT_A, "sess-1");
 
