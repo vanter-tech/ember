@@ -54,6 +54,24 @@ export interface AnalyticsSummaryResponse {
   to: string
 }
 
+export type SalesGranularity = 'day' | 'week' | 'month' | 'year'
+
+export interface SalesBucket {
+  bucketStart: string
+  bucketEnd: string
+  revenue: number
+  paidBillCount: number
+}
+
+export interface AnalyticsSalesResponse {
+  granularity: Uppercase<SalesGranularity>
+  from: string
+  to: string
+  totalRevenue: number
+  paidBillCount: number
+  buckets: SalesBucket[]
+}
+
 declare global {
   interface Window {
     ENV: {
@@ -340,6 +358,17 @@ export const analyticsService = {
     const { data } = await api.get<AnalyticsSummaryResponse>(
       '/admin/analytics/summary',
       { params: { from, to } }
+    )
+    return data
+  },
+  getSales: async (
+    granularity?: SalesGranularity,
+    from?: string,
+    to?: string
+  ): Promise<AnalyticsSalesResponse> => {
+    const { data } = await api.get<AnalyticsSalesResponse>(
+      '/admin/analytics/sales',
+      { params: { granularity, from, to } }
     )
     return data
   },
