@@ -1,8 +1,8 @@
 # PROGRESS.md — Active Execution State
 
 ## Current Execution State
-- **Last Completed Task:** task-5.4 — wired `MENU` settings tab to `SettingsPayload.menu` (predecessor task-5.3) — report 46
-- **Current Active Task:** none — task-5.5 next in the frontend/backend gap-analysis backlog (task-5.5–5.21 remain; EMB-PC-01–14 Platform/Super-Admin Console and EMB-LP-01–18 Landing Page also queued), awaiting task selection/approval
+- **Last Completed Task:** task-5.5 — wired `BILLING` settings tab to `SettingsPayload.billing` + `TaxRule[]` list editor (predecessor task-5.4) — report 47
+- **Current Active Task:** none — task-5.6 next in the frontend/backend gap-analysis backlog (task-5.6–5.21 remain; EMB-PC-01–14 Platform/Super-Admin Console and EMB-LP-01–18 Landing Page also queued), awaiting task selection/approval
 - **System Health:** Frontend `pnpm run build` PASSING (0 TS errors). Backend boots and serves locally (`ember-postgres-1`/`ember-mongodb-1`/`ember-minio-1` via Docker, app itself runs on host, `.env` points at `localhost` per report 41); `./mvnw test` last confirmed 423/423 passing (report 41), not rerun this task (no backend files touched).
 
 ## Active Context & Recent Decisions
@@ -18,8 +18,7 @@
 - EMB-PC backlog (Platform/Super-Admin Console, brainstormed 2026-08-13): `PlatformOperator` is a separate entity/table with NO FK to `Restaurant`/`User`, signed with its own `platform.jwt.secret` (never the tenant `jwt.secret`), authenticated through a second `SecurityFilterChain` matched to `/platform/**` that never sets `TenantContextHolder` — mutual exclusion from the tenant JWT chain comes from the two different signing keys, not just a claim check, so a tenant token fails signature verification before any claim is read. `Restaurant` has no owner/contact fields; tenant "owner info" is the `User` row(s) where `restaurantId` matches and `role = ADMIN`, looked up untenanted (deliberately, same caution as `PublicRestaurantController`). `PlatformAuditLog` has no `@TenantId` either — it's cross-tenant by design.
 
 ## Task Queue Status
-- [x] **Completed (Milestones 1–4, task-5.1–5.4):** Frontend/backend stability, WebSocket/error-boundary hardening, backend multi-tenancy & transactional billing, security/config hardening (secrets, Kafka removal, RFC 7807, CORS/rate-limiting), frontend testing & tenant lifecycle, global 403 handling, `backend-types.ts` regen, ADMIN Plan/Estado UI (built then reverted — `restaurantAdminService` kept for a future billing portal, see notes below), `MENU` settings tab wired to `SettingsPayload.menu`. Reports 01–46.
-- [ ] **task-5.5:** Wire the `BILLING` tab to `SettingsPayload.billing` (`currencySymbol`, `taxRate`, `isTaxIncludeInMenuPrice`, `suggestedTipPercentage`) plus a `TaxRules` list editor (task-3.8).
+- [x] **Completed (Milestones 1–4, task-5.1–5.5):** Frontend/backend stability, WebSocket/error-boundary hardening, backend multi-tenancy & transactional billing, security/config hardening (secrets, Kafka removal, RFC 7807, CORS/rate-limiting), frontend testing & tenant lifecycle, global 403 handling, `backend-types.ts` regen, ADMIN Plan/Estado UI (built then reverted — `restaurantAdminService` kept for a future billing portal, see notes below), `MENU` settings tab wired to `SettingsPayload.menu`, `BILLING` settings tab wired to `SettingsPayload.billing` + `TaxRule[]` editor. Reports 01–47.
 - [ ] **task-5.6:** Add a `PaymentGatewaySettings` UI section (enabled/provider/publicKey/secretRef — secret-reference pattern, never a raw-secret input) wired to `SettingsPayload.paymentGateway`.
 - [ ] **task-5.7:** Add a new "Horario" `SettingsBar` tab + weekly-schedule editor for `SettingsPayload.businessHours` (`BusinessHoursSettings.schedule`, per-`DayOfWeek`) — distinct from `BrandingSettings`'s single daily opening/closing time.
 - [ ] **task-5.8:** Wire the `HARDWARE` tab (currently placeholder) to `SettingsPayload.hardware` (`autoPrintTickets`, `printCustomerReceipt`).
