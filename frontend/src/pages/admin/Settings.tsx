@@ -2,6 +2,7 @@ import {useSettingsStore} from "@/store/uiStore";
 import {SettingsBar} from "@/components/SettingsBar";
 import { BrandingSettings } from "./components/settings/BrandingSettings";
 import { SpacesSettings } from "./components/settings/SpaceSettings";
+import { MenuSettings } from "./components/settings/MenuSettings";
 
 export const Settings = () => {
     const { activeSettings } = useSettingsStore();
@@ -11,7 +12,7 @@ export const Settings = () => {
             case 'BRANDING':
                 return <BrandingSettings />;
             case 'MENU':
-                return <div>Menu Settings</div>;
+                return <MenuSettings />;
             case 'BILLING':
                 return <div>Billing Settings</div>;
             case 'HARDWARE':
