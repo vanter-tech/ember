@@ -82,6 +82,50 @@ class PaymentRepositoryTenantIsolationTest extends AbstractTenantIsolationTest {
                 .satisfies(payment -> assertThat(payment.getParticipantName()).isEqualTo("Bob"));
     }
 
+    /** A tenant may only hold one bill per session, so several payments have to share one bill. */
+    private Payment paymentOn(Bill bill, UUID tenantId, String participantName, PaymentStatus status) {
+        return readAs(
+                tenantId,
+                () ->
+                        paymentRepository.save(
+                                Payment.builder()
+                                        .bill(bill)
+                                        .participantName(participantName)
+                                        .amount(new BigDecimal("25.00"))
+                                        .method(PaymentMethod.DIGITAL)
+                                        .status(status)
+                                        .createdAt(LocalDateTime.now())
+                                        .build()));
+    }
+
+    @Test
+    void sumConfirmedRevenue_onlyAggregatesTheBoundTenantsConfirmedPayments() {
+        paymentSavedFor(TENANT_A, "Alice", PaymentStatus.CONFIRMED);
+        Bill billB = billOf(TENANT_B);
+        paymentOn(billB, TENANT_B, "Bob", PaymentStatus.CONFIRMED);
+        paymentOn(billB, TENANT_B, "Carla", PaymentStatus.CONFIRMED);
+        paymentOn(billB, TENANT_B, "Dan", PaymentStatus.PENDING);
+
+        BigDecimal revenueForB = readAs(
+                TENANT_B,
+                () -> paymentRepository.sumConfirmedRevenue(
+                        TENANT_B, LocalDateTime.now().minusDays(1), LocalDateTime.now().plusDays(1)));
+
+        assertThat(revenueForB).isEqualByComparingTo("50.00");
+    }
+
+    @Test
+    void sumConfirmedRevenue_isNullOutsideTheWindow() {
+        paymentSavedFor(TENANT_A, "Alice", PaymentStatus.CONFIRMED);
+
+        BigDecimal revenue = readAs(
+                TENANT_A,
+                () -> paymentRepository.sumConfirmedRevenue(
+                        TENANT_A, LocalDateTime.now().minusDays(3), LocalDateTime.now().minusDays(2)));
+
+        assertThat(revenue).isNull();
+    }
+
     @Test
     void findById_doesNotLeakAnotherTenantsPayment() {
         Long id = paymentSavedFor(TENANT_A, "Alice", PaymentStatus.CONFIRMED).getId();
