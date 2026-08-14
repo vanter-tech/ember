@@ -39,4 +39,26 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
             @Param("tenantId") UUID tenantId,
             @Param("from") LocalDateTime from,
             @Param("to") LocalDateTime to);
+
+    /**
+     * The same confirmed revenue as {@link #sumConfirmedRevenue}, split into one row per calendar
+     * day that actually saw a payment — days with no revenue are simply absent, and the caller
+     * zero-fills them. Ordered oldest-first. Carries the same deliberate {@code tenantId} predicate.
+     */
+    @Query(
+            """
+            select new com.vanter.ember.billing.repository.PaymentDailyRevenue(
+                year(p.createdAt), month(p.createdAt), day(p.createdAt), sum(p.amount))
+            from Payment p
+            where p.tenantId = :tenantId
+              and p.status = com.vanter.ember.billing.model.PaymentStatus.CONFIRMED
+              and p.createdAt >= :from
+              and p.createdAt <= :to
+            group by year(p.createdAt), month(p.createdAt), day(p.createdAt)
+            order by year(p.createdAt), month(p.createdAt), day(p.createdAt)
+            """)
+    List<PaymentDailyRevenue> findConfirmedRevenueByDay(
+            @Param("tenantId") UUID tenantId,
+            @Param("from") LocalDateTime from,
+            @Param("to") LocalDateTime to);
 }

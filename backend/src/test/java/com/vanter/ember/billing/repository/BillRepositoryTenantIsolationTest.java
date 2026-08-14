@@ -7,6 +7,7 @@ import com.vanter.ember.billing.model.BillStatus;
 import com.vanter.ember.billing.model.SplitMethod;
 import com.vanter.ember.config.AbstractTenantIsolationTest;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -162,6 +163,39 @@ class BillRepositoryTenantIsolationTest extends AbstractTenantIsolationTest {
 
         assertThat(totalsForB.billCount()).isZero();
         assertThat(totalsForB.salesTotal()).isNull();
+    }
+
+    @Test
+    void findPaidBillsByDay_groupsTheBoundTenantsPaidBillsPerCalendarDay() {
+        LocalDateTime firstDay = LocalDateTime.of(2026, 8, 10, 20, 0);
+        billSavedFor(TENANT_A, "sess-noise", BillStatus.PAID, "999.00", firstDay);
+        billSavedFor(TENANT_B, "sess-1", BillStatus.PAID, "30.00", firstDay);
+        billSavedFor(TENANT_B, "sess-2", BillStatus.PAID, "20.00", firstDay.plusHours(2));
+        billSavedFor(TENANT_B, "sess-3", BillStatus.PAID, "10.00", firstDay.plusDays(2));
+        billSavedFor(TENANT_B, "sess-open", BillStatus.OPEN, "999.00", firstDay);
+
+        List<BillDailyOrders> daysForB = readAs(
+                TENANT_B,
+                () -> billRepository.findPaidBillsByDay(
+                        TENANT_B, firstDay.minusDays(1), firstDay.plusDays(3)));
+
+        assertThat(daysForB).hasSize(2);
+        assertThat(daysForB.get(0).date()).isEqualTo(LocalDate.of(2026, 8, 10));
+        assertThat(daysForB.get(0).billCount()).isEqualTo(2L);
+        assertThat(daysForB.get(1).date()).isEqualTo(LocalDate.of(2026, 8, 12));
+        assertThat(daysForB.get(1).billCount()).isEqualTo(1L);
+    }
+
+    @Test
+    void findPaidBillsByDay_isEmptyOutsideTheWindow() {
+        LocalDateTime when = LocalDateTime.of(2026, 8, 10, 20, 0);
+        billSavedFor(TENANT_A, "sess-1", BillStatus.PAID, "40.00", when);
+
+        assertThat(readAs(
+                        TENANT_A,
+                        () -> billRepository.findPaidBillsByDay(
+                                TENANT_A, when.minusDays(3), when.minusDays(2))))
+                .isEmpty();
     }
 
     @Test
