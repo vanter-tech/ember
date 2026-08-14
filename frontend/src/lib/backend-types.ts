@@ -552,6 +552,103 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/analytics/tables": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Table performance: turnover, revenue and average session duration per table
+         * @description 'from'/'to' are the same optional inclusive window the summary uses. Tables come back ordered by revenue and only include tables that turned over at least once in the window; 'activeTableCount' and 'averageTurnoverRate' are always live and ignore the window.
+         */
+        get: operations["getTables"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/analytics/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Summary cards: total revenue, live active sessions and average order value
+         * @description 'from'/'to' are optional inclusive ISO date-times bounding the revenue and average-order-value figures; they default to the tenant's whole history up to now. The active-session count is always live and ignores them.
+         */
+        get: operations["getSummary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/analytics/sales": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Temporal sales series: revenue and settled orders bucketed over time
+         * @description 'granularity' is one of day|week|month|year (case-insensitive, defaults to day) and 'from'/'to' are the same optional inclusive window the summary uses. The returned series is gap-free, with quiet buckets reported as zeros.
+         */
+        get: operations["getSales"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/analytics/range": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get the tenant's billing-activity window, to bound dashboard date pickers */
+        get: operations["getRange"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/analytics/products": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Product performance: each menu item's and category's share of settled sales
+         * @description 'from'/'to' are the same optional inclusive window the summary uses. Products and categories come back ordered by revenue, with a running cumulative share for Pareto charts. 'limit' trims the product list to the top N; the totals and every share still cover the whole window.
+         */
+        get: operations["getProducts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/sessions/{sessionId}/cancel": {
         parameters: {
             query?: never;
@@ -1018,6 +1115,107 @@ export interface components {
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
             empty?: boolean;
+        };
+        AnalyticsTablesResponse: {
+            /** Format: date-time */
+            from?: string;
+            /** Format: date-time */
+            to?: string;
+            /** Format: int64 */
+            activeTableCount?: number;
+            /** Format: int64 */
+            totalTurnovers?: number;
+            totalRevenue?: number;
+            averageTurnoverRate?: number;
+            averageSessionDurationMinutes?: number;
+            tables?: components["schemas"]["TablePerformance"][];
+        };
+        TablePerformance: {
+            /** Format: uuid */
+            tableId?: string;
+            /** Format: int32 */
+            tableNumber?: number;
+            /** Format: int64 */
+            turnoverCount?: number;
+            revenue?: number;
+            revenueShare?: number;
+            averageSessionDurationMinutes?: number;
+        };
+        AnalyticsSummaryResponse: {
+            totalRevenue?: number;
+            /** Format: int64 */
+            activeSessions?: number;
+            averageOrderValue?: number;
+            /** Format: int64 */
+            paidBillCount?: number;
+            /** Format: date-time */
+            from?: string;
+            /** Format: date-time */
+            to?: string;
+        };
+        AnalyticsSalesResponse: {
+            /** @enum {string} */
+            granularity?: "DAY" | "WEEK" | "MONTH" | "YEAR";
+            /** Format: date-time */
+            from?: string;
+            /** Format: date-time */
+            to?: string;
+            totalRevenue?: number;
+            /** Format: int64 */
+            paidBillCount?: number;
+            buckets?: components["schemas"]["SalesBucket"][];
+        };
+        SalesBucket: {
+            /** Format: date */
+            bucketStart?: string;
+            /** Format: date */
+            bucketEnd?: string;
+            revenue?: number;
+            /** Format: int64 */
+            paidBillCount?: number;
+        };
+        AnalyticsRangeResponse: {
+            /** Format: date-time */
+            firstBillAt?: string;
+            /** Format: date-time */
+            lastBillAt?: string;
+            /** Format: int64 */
+            billCount?: number;
+        };
+        AnalyticsProductsResponse: {
+            /** Format: date-time */
+            from?: string;
+            /** Format: date-time */
+            to?: string;
+            totalRevenue?: number;
+            /** Format: int64 */
+            totalQuantity?: number;
+            /** Format: int32 */
+            productCount?: number;
+            products?: components["schemas"]["ProductPerformance"][];
+            categories?: components["schemas"]["CategoryPerformance"][];
+        };
+        CategoryPerformance: {
+            /** Format: int64 */
+            categoryId?: number;
+            name?: string;
+            /** Format: int64 */
+            quantitySold?: number;
+            revenue?: number;
+            revenueShare?: number;
+        };
+        ProductPerformance: {
+            /** Format: int64 */
+            itemId?: number;
+            name?: string;
+            /** Format: int64 */
+            categoryId?: number;
+            categoryName?: string;
+            /** Format: int64 */
+            quantitySold?: number;
+            revenue?: number;
+            revenueShare?: number;
+            cumulativeShare?: number;
         };
     };
     responses: never;
@@ -1929,6 +2127,120 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["Restaurant"];
+                };
+            };
+        };
+    };
+    getTables: {
+        parameters: {
+            query?: {
+                from?: string;
+                to?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AnalyticsTablesResponse"];
+                };
+            };
+        };
+    };
+    getSummary: {
+        parameters: {
+            query?: {
+                from?: string;
+                to?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AnalyticsSummaryResponse"];
+                };
+            };
+        };
+    };
+    getSales: {
+        parameters: {
+            query?: {
+                granularity?: string;
+                from?: string;
+                to?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AnalyticsSalesResponse"];
+                };
+            };
+        };
+    };
+    getRange: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AnalyticsRangeResponse"];
+                };
+            };
+        };
+    };
+    getProducts: {
+        parameters: {
+            query?: {
+                from?: string;
+                to?: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AnalyticsProductsResponse"];
                 };
             };
         };

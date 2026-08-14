@@ -20,17 +20,17 @@ export const SummaryCards = () => {
   const cards = [
     {
       label: 'Ingresos totales',
-      value: `$${data.totalRevenue.toFixed(2)}`,
+      value: `$${(data.totalRevenue ?? 0).toFixed(2)}`,
       icon: DollarSign,
     },
     {
       label: 'Sesiones activas',
-      value: data.activeSessions,
+      value: data.activeSessions ?? 0,
       icon: Users,
     },
     {
       label: 'Ticket promedio',
-      value: `$${data.averageOrderValue.toFixed(2)}`,
+      value: `$${(data.averageOrderValue ?? 0).toFixed(2)}`,
       icon: Receipt,
     },
   ]
