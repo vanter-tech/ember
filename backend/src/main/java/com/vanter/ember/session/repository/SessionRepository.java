@@ -21,4 +21,11 @@ public interface SessionRepository extends MongoRepository<Session, String> {
 
     Optional<Session> findByTenantIdAndJoinCodeAndStatus(
             UUID tenantId, String joinCode, SessionStatus status);
+
+    /**
+     * Deliberately untenanted: a customer types a table code before any restaurant is bound to
+     * their token, so this is the one lookup that has to span tenants. Returns a list because
+     * join codes are only random, not globally unique — see SessionService#joinSessionCode.
+     */
+    List<Session> findByJoinCodeAndStatus(String joinCode, SessionStatus status);
 }

@@ -13,7 +13,4 @@ public class LoginRequest {
 
     @NotBlank(message = "Password is required")
     private String password;
-
-    /** Slug of the restaurant being visited; required for CUSTOMER logins, ignored otherwise. */
-    private String restaurantSlug;
 }

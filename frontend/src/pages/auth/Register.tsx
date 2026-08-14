@@ -1,7 +1,7 @@
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useNavigate, useSearchParams, Link } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import axios from 'axios'
 import toast from 'react-hot-toast'
 import { useAuthStore } from '../../store/authStore'
@@ -34,8 +34,6 @@ type RegisterFormInputs = z.infer<typeof registerSchema>
 
 export const Register = () => {
   const navigate = useNavigate()
-  const [searchParams] = useSearchParams()
-  const restaurantSlug = searchParams.get('restaurant')
   const { setAuth } = useAuthStore()
 
   const form = useForm<RegisterFormInputs>({
@@ -48,15 +46,11 @@ export const Register = () => {
   })
 
   const onSubmit = async (data: RegisterFormInputs) => {
-    if (!restaurantSlug) {
-      toast.error('Escanea el código QR o el enlace de tu restaurante para registrarte.')
-      return
-    }
     try {
-      const response = await authService.register({ ...data, restaurantSlug })
+      const response = await authService.register(data)
       setAuth(response)
       toast.success('Registration successful!')
-      navigate(`/login?restaurant=${restaurantSlug}`, { replace: true })
+      navigate('/login', { replace: true })
     } catch (error) {
       if (axios.isAxiosError(error) && error.response?.status === 429) {
         toast.error('Too many registration attempts. Please try again later.')
@@ -222,9 +216,7 @@ export const Register = () => {
                 Register
               </Button>
               <Button asChild variant="outline" className="w-full text-center">
-                <Link to={restaurantSlug ? `/login?restaurant=${restaurantSlug}` : '/login'}>
-                  Already have an account? Login
-                </Link>
+                <Link to="/login">Already have an account? Login</Link>
               </Button>
             </form>
           </Form>
