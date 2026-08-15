@@ -57,5 +57,6 @@ public class RateLimitProperties {
     private int maxTrackedKeys = 100_000;
 
     /** Paths the limiter guards, compared after the servlet context path is stripped. */
-    private List<String> paths = new ArrayList<>(List.of("/auth/login", "/auth/register"));
+    private List<String> paths = new ArrayList<>(
+            List.of("/auth/login", "/auth/register", "/platform/auth/login"));
 }
