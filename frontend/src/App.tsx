@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '@/queryClient';
@@ -23,6 +24,10 @@ import { KitchenLayout } from './layouts/KitchenLayout'
 import { TenantLanding } from './pages/public/TenantLanding'
 import { TenantSuspendedModal } from './components/TenantSuspendedModal'
 
+// Code-split: the platform console is a separate audience (operators, not tenant users) and
+// must never land in the tenant app's main bundle.
+const ConsolePlaceholder = lazy(() => import('./pages/console/ConsolePlaceholder'))
+
 const RoleRedirect = () => {
   const { role } = useAuthStore()
 
@@ -46,6 +51,15 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/t/:slug" element={<TenantLanding />} />
+
+        <Route
+          path="/console/*"
+          element={
+            <Suspense fallback={null}>
+              <ConsolePlaceholder />
+            </Suspense>
+          }
+        />
 
         <Route element={<ProtectedRoute allowedRoles={['CUSTOMER']} />}>
           <Route path='/customer' element={<CustomerLayout/>}>
