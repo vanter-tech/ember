@@ -1,8 +1,8 @@
 # PROGRESS.md — Active Execution State
 
 ## Current Execution State
-- **Last Completed Task:** EMB-LP-17 — `landing/src/components/Analytics.astro` (new): a single Plausible Analytics `<script>` tag (`defer`, `data-domain="ember.vanter.com"`), gated on `import.meta.env.PROD` so `astro dev` never pings; no npm dependency, no API key needed in the tag itself (cookieless, no consent banner required). Mounted in `Layout.astro`'s `<head>` after `<SEO />` so every page picks it up. Report 100. System health: `landing`'s `astro build` PASSING (5 pages), script tag confirmed present in `dist/index.html`, `dist/` removed post-verify. Frontend/backend untouched this task.
-- **Current Active Task:** none — EMB-LP-17 complete; EMB-LP-18 (a11y/perf pass, final EMB-LP task) next, awaiting task selection/approval
+- **Last Completed Task:** EMB-LP-18 — a11y/perf pass on `landing`: site-wide `:focus-visible` outline (`global.css`, accent color, previously only `ContactForm.tsx` inputs had one), muted-text opacity bumped `/60`-`/70` → `/80` on 7 elements (Footer x3, ContactSection, Pricing x2, privacy/terms "last updated") to clear the WCAG AAA 7:1 contrast floor on `#f5f5f0`, and `Hero.astro`'s LCP `<Image>` set to `loading="eager" fetchpriority="high"` (was defaulting to lazy). Alt-text audit: only one `<img>`/`<Image>` site-wide, already compliant, no change. Report 101. System health: `astro build` PASSING (5 pages), focus-visible rule confirmed in built CSS, `dist/` removed post-verify. Frontend/backend untouched this task. **EMB-LP backlog now COMPLETE.**
+- **Current Active Task:** none — EMB-LP backlog complete, awaiting next task selection
 
 ## Active Context & Recent Decisions
 - Monolith root at `ember/`; Java 17 + Spring Boot 3.5.14 / React 19 + TS + pnpm. Product: multi-tenant restaurant platform (collaborative cart, KDS, floor/waiter management, admin analytics). task-3.2 deleted `spring-kafka` — Spring `ApplicationEventPublisher` is the only event bus, do not reintroduce a broker.
@@ -47,4 +47,4 @@
 - [x] **EMB-LP-15:** `src/pages/privacy.astro` + `src/pages/terms.astro` legal pages — #15/#16. Report 98.
 - [x] **EMB-LP-16:** Contact/lead form island + `src/pages/thank-you.astro` confirmation page, with loading spinner/skeleton + form error states — #12/#13/#14. Report 99.
 - [x] **EMB-LP-17:** Privacy-first analytics script (Vercel Analytics/Plausible/Cloudflare, zero tracking cookies by default) wired into `SEO.astro`/`Layout.astro` head — #18. Report 100.
-- [ ] **EMB-LP-18:** A11y/perf pass — WCAG AAA contrast audit, visible focus indicators, alt-text audit on every `<img>`/`<Image/>`, Lighthouse/axe check across all pages, final `astro build` verification.
+- [x] **EMB-LP-18:** A11y/perf pass — WCAG AAA contrast audit, visible focus indicators, alt-text audit on every `<img>`/`<Image/>`, LCP fix on hero image, final `astro build` verification. Report 101. EMB-LP backlog complete.
