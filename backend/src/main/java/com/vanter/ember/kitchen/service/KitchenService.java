@@ -3,11 +3,13 @@ package com.vanter.ember.kitchen.service;
 import com.vanter.ember.config.ResourceNotFoundException;
 import com.vanter.ember.config.TenantContextHolder;
 import com.vanter.ember.kitchen.dto.KitchenDisplayEntry;
+import com.vanter.ember.kitchen.event.KitchenItemRemoved;
 import com.vanter.ember.kitchen.event.KitchenItemUpdated;
 import com.vanter.ember.kitchen.event.KitchenOrderRetired;
 import com.vanter.ember.kitchen.model.KitchenItem;
 import com.vanter.ember.kitchen.model.KitchenOrder;
 import com.vanter.ember.kitchen.repository.KitchenOrderRepository;
+import com.vanter.ember.session.event.DeleteItem;
 import com.vanter.ember.session.event.KitchenItemsConfirmed;
 import com.vanter.ember.session.event.SessionClosed;
 import com.vanter.ember.session.model.OrderItemStatus;
@@ -112,6 +114,25 @@ public class KitchenService {
         eventPublisher.publishEvent(new KitchenItemUpdated(
                 TenantContextHolder.requireTenantId(), saved.getSessionId(), itemId, newStatus));
         return saved;
+    }
+
+    /**
+     * Mirrors a waiter/customer item removal into the kitchen's own copy of the order — otherwise
+     * a deleted item disappears from the session view but keeps showing on the live KDS forever.
+     */
+    @EventListener
+    public void handleItemDeleted(DeleteItem event) {
+        kitchenOrderRepository
+                .findByTenantIdAndSessionId(TenantContextHolder.requireTenantId(), event.sessionId())
+                .ifPresent(order -> {
+                    boolean removed = order.getItems().removeIf(
+                            item -> event.orderItemId().equals(item.getItemId()));
+                    if (removed) {
+                        KitchenOrder saved = kitchenOrderRepository.save(order);
+                        eventPublisher.publishEvent(new KitchenItemRemoved(
+                                saved.getTenantId(), event.sessionId(), event.orderItemId()));
+                    }
+                });
     }
 
     /** Retires the order from the live display once its session closes; history is kept, not shown. */
