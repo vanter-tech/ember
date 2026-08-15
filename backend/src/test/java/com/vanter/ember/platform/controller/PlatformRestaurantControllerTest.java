@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -55,6 +56,66 @@ class PlatformRestaurantControllerTest {
                 .roles("PLATFORM_ADMIN")
                 .build();
         when(platformOperatorDetailsService.loadUserByUsername(OPERATOR_EMAIL)).thenReturn(userDetails);
+    }
+
+    private static final String VALID_CREATE_BODY = "{"
+            + "\"name\":\"Tenant Grill\","
+            + "\"slug\":\"tenant-grill\","
+            + "\"adminName\":\"Owner Admin\","
+            + "\"adminEmail\":\"owner@tenant-grill.local\","
+            + "\"adminPassword\":\"Str0ng!Pass\"}";
+
+    @Test
+    void create_returns401WithoutAuthHeader() throws Exception {
+        mockMvc.perform(post("/platform/restaurants")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(VALID_CREATE_BODY))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void create_returns400OnMissingFields() throws Exception {
+        authenticate();
+
+        mockMvc.perform(post("/platform/restaurants")
+                        .header("Authorization", "Bearer " + TOKEN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void create_returns200WithCreatedSummary() throws Exception {
+        authenticate();
+        PlatformRestaurantSummaryResponse summary = PlatformRestaurantSummaryResponse.builder()
+                .id(UUID.randomUUID())
+                .name("Tenant Grill")
+                .slug("tenant-grill")
+                .plan(RestaurantPlan.FREE)
+                .status(RestaurantStatus.ACTIVE)
+                .createdAt(Instant.now())
+                .build();
+        when(platformRestaurantService.create(any(), eq(OPERATOR_EMAIL))).thenReturn(summary);
+
+        mockMvc.perform(post("/platform/restaurants")
+                        .header("Authorization", "Bearer " + TOKEN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(VALID_CREATE_BODY))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.slug").value("tenant-grill"));
+    }
+
+    @Test
+    void create_returns409WhenSlugTaken() throws Exception {
+        authenticate();
+        when(platformRestaurantService.create(any(), eq(OPERATOR_EMAIL)))
+                .thenThrow(new IllegalArgumentException("Slug already in use: tenant-grill"));
+
+        mockMvc.perform(post("/platform/restaurants")
+                        .header("Authorization", "Bearer " + TOKEN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(VALID_CREATE_BODY))
+                .andExpect(status().isConflict());
     }
 
     @Test

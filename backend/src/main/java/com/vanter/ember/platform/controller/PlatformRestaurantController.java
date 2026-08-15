@@ -1,5 +1,6 @@
 package com.vanter.ember.platform.controller;
 
+import com.vanter.ember.platform.model.dto.PlatformRestaurantCreateRequest;
 import com.vanter.ember.platform.model.dto.PlatformRestaurantDetailResponse;
 import com.vanter.ember.platform.model.dto.PlatformRestaurantStatusUpdateRequest;
 import com.vanter.ember.platform.model.dto.PlatformRestaurantSummaryResponse;
@@ -16,6 +17,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -27,6 +29,14 @@ import org.springframework.web.bind.annotation.RestController;
 public class PlatformRestaurantController {
 
     private final PlatformRestaurantService platformRestaurantService;
+
+    @Operation(summary = "Operator-driven tenant onboarding: creates the restaurant and its initial ADMIN user")
+    @PostMapping
+    public ResponseEntity<PlatformRestaurantSummaryResponse> create(
+            @Valid @RequestBody PlatformRestaurantCreateRequest request,
+            Authentication authentication) {
+        return ResponseEntity.ok(platformRestaurantService.create(request, authentication.getName()));
+    }
 
     @Operation(summary = "List all tenants, paginated")
     @GetMapping
