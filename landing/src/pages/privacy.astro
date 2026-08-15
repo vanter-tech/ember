@@ -1,0 +1,66 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Nav from '../components/Nav.astro';
+import Footer from '../components/Footer.astro';
+
+const lastUpdated = '14 de agosto de 2026';
+
+const sections = [
+	{
+		title: '1. Responsable del tratamiento',
+		body: 'Vanter S.A. (RUC 1792999999001), con domicilio en Av. Amazonas N34-451 y Av. Atahualpa, Quito, Pichincha, Ecuador, es la responsable del tratamiento de los datos personales recolectados a través de Ember y este sitio.',
+	},
+	{
+		title: '2. Datos que recolectamos',
+		body: 'Recolectamos los datos que un restaurante y su personal ingresan al usar Ember (nombre, correo electrónico, rol, datos de facturación del negocio) y los datos que un comensal ingresa al unirse a una sesión de mesa (nombre visible, pedidos). También registramos datos técnicos básicos de navegación en este sitio (páginas visitadas, tipo de dispositivo) con fines de mejora del producto.',
+	},
+	{
+		title: '3. Uso de los datos',
+		body: 'Usamos los datos únicamente para prestar el servicio: autenticar usuarios, procesar comandas y pagos, generar analítica para el restaurante que administra su cuenta, y responder consultas comerciales o de soporte. No vendemos datos personales a terceros.',
+	},
+	{
+		title: '4. Cookies',
+		body: 'Este sitio usa cookies estrictamente necesarias para su funcionamiento y, con tu consentimiento, cookies de analítica sin fines publicitarios. Podés gestionar tu preferencia desde el banner de cookies o el navegador en cualquier momento.',
+	},
+	{
+		title: '5. Conservación',
+		body: 'Conservamos los datos mientras la cuenta del restaurante permanezca activa y durante el plazo adicional exigido por obligaciones legales o contractuales. Un comensal que participa en una sesión de mesa no requiere registro previo; sus datos de sesión se conservan según las políticas de retención del restaurante correspondiente.',
+	},
+	{
+		title: '6. Derechos del titular',
+		body: 'Podés solicitar acceso, rectificación o eliminación de tus datos personales escribiendo a ventas@ember.vanter.com. Responderemos dentro de los plazos establecidos por la normativa ecuatoriana de protección de datos personales.',
+	},
+	{
+		title: '7. Contacto',
+		body: 'Para cualquier consulta sobre esta política, escribí a ventas@ember.vanter.com o dirigite a Vanter S.A., Av. Amazonas N34-451 y Av. Atahualpa, Quito, Pichincha, Ecuador.',
+	},
+];
+---
+
+<Layout
+	title="Política de privacidad — Ember"
+	description="Cómo Vanter S.A. recolecta, usa y protege los datos personales de quienes usan Ember."
+>
+	<Nav />
+	<section class="border-b-[3px] border-foreground bg-background">
+		<div class="mx-auto max-w-3xl px-6 py-16 md:py-24">
+			<p class="font-mono text-sm font-bold uppercase tracking-widest text-accent">Legal</p>
+			<h1 class="mt-4 text-4xl font-black uppercase leading-[0.95] tracking-tight md:text-5xl">
+				Política de privacidad
+			</h1>
+			<p class="mt-4 font-mono text-xs uppercase tracking-widest text-foreground/60">
+				Última actualización: {lastUpdated}
+			</p>
+
+			<div class="mt-12 space-y-10">
+				{sections.map((section) => (
+					<div class="border-[3px] border-foreground bg-background p-6 shadow-brutal-sm">
+						<h2 class="text-lg font-black uppercase tracking-tight">{section.title}</h2>
+						<p class="mt-3 text-sm font-medium text-foreground/80">{section.body}</p>
+					</div>
+				))}
+			</div>
+		</div>
+	</section>
+	<Footer />
+</Layout>
