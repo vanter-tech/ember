@@ -87,6 +87,9 @@ export const useWebsocketStore = create<WebSocketState>((set, get) => ({
                 const updateItems = currentState.items?.filter((item) => item.id !== eventData.orderItemId)
                 useSessionStore.getState().updateSession({items: updateItems})
             }
+            if(eventData.type === 'ITEMS_CONFIRMED'){
+                useSessionStore.getState().updateSession({items: eventData.sessionItems})
+            }
             if(eventData.type === 'SESSION_CLOSED'){
                 useSessionStore.getState().clearSession()
                 queryClient.removeQueries({queryKey: ['sessionDetails']})

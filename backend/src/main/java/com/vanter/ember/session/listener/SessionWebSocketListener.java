@@ -37,4 +37,9 @@ public class SessionWebSocketListener {
         messagingTemplate.convertAndSend("/topic/session/" + event.sessionId(), event);
     }
 
+    @EventListener
+    public void onItemSent(ItemSent event) {
+        messagingTemplate.convertAndSend("/topic/session/" + event.sessionId(), event);
+    }
+
 }
