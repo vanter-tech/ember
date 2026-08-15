@@ -1,8 +1,8 @@
 # PROGRESS.md — Active Execution State
 
 ## Current Execution State
-- **Last Completed Task:** EMB-LP-12 — `landing/src/components/CookieBanner.tsx` (new): React island, `MobileNavDrawer.tsx`'s hooks pattern; checks `localStorage['ember-cookie-consent']` on mount, shows a fixed bottom-left brutalist panel (notice + `/privacy` link + "Aceptar") if unset, writes the flag on accept. No preference-center toggles — site has zero tracking cookies by default (EMB-LP-17), so it's an acknowledgment banner only. Component standalone, NOT yet wired into `index.astro` (EMB-LP-13's job, same as Footer/StickyMobileCTA). Report 95. System health: `landing`'s `astro build` PASSING, `dist/` removed post-verify. Frontend/backend untouched this task; frontend `pnpm run build` last verified passing (EMB-PC-14), backend `./mvnw test` last verified passing (580 tests, EMB-PC-09).
-- **Current Active Task:** none — EMB-LP-12 complete; EMB-LP-13 (assemble index.astro) next, awaiting task selection/approval
+- **Last Completed Task:** EMB-LP-13 — `landing/src/pages/index.astro`: wired in `CTASection.astro` (between `Pricing`/`Footer`) and React islands `StickyMobileCTA.tsx`/`CookieBanner.tsx` (`client:load`, after `Footer`, matching `Nav.astro`'s island pattern). Final order: Nav→Hero→Features→Pricing→CTASection→Footer→StickyMobileCTA→CookieBanner. Report 96. System health: `landing`'s `astro build` PASSING, `dist/` removed post-verify. Frontend/backend untouched this task; frontend `pnpm run build` last verified passing (EMB-PC-14), backend `./mvnw test` last verified passing (580 tests, EMB-PC-09).
+- **Current Active Task:** none — EMB-LP-13 complete; EMB-LP-14 (404.astro) next, awaiting task selection/approval
 
 ## Active Context & Recent Decisions
 - Monolith root at `ember/`; Java 17 + Spring Boot 3.5.14 / React 19 + TS + pnpm. Product: multi-tenant restaurant platform (collaborative cart, KDS, floor/waiter management, admin analytics). task-3.2 deleted `spring-kafka` — Spring `ApplicationEventPublisher` is the only event bus, do not reintroduce a broker.
@@ -42,7 +42,7 @@
 - [x] **EMB-LP-10:** `src/components/Footer.astro` — wordmark, copyright, real physical address/business entity, links to privacy/terms/contact — #19. Report 93.
 - [x] **EMB-LP-11:** `src/components/StickyMobileCTA.tsx` island — persistent bottom bar (Register/Iniciar Sesión), mobile-only, appears once scrolled past hero — #11. Report 94.
 - [x] **EMB-LP-12:** `src/components/CookieBanner.tsx` island — non-intrusive brutalist cookie consent — #17. Report 95.
-- [ ] **EMB-LP-13:** Assemble `src/pages/index.astro` wiring Nav/Hero/Features/Pricing/CTASection/Footer/StickyMobileCTA/CookieBanner.
+- [x] **EMB-LP-13:** Assemble `src/pages/index.astro` wiring Nav/Hero/Features/Pricing/CTASection/Footer/StickyMobileCTA/CookieBanner. Report 96.
 - [ ] **EMB-LP-14:** `src/pages/404.astro` custom error page — #1.
 - [ ] **EMB-LP-15:** `src/pages/privacy.astro` + `src/pages/terms.astro` legal pages — #15/#16.
 - [ ] **EMB-LP-16:** Contact/lead form island + `src/pages/thank-you.astro` confirmation page, with loading spinner/skeleton + form error states — #12/#13/#14.
