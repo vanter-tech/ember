@@ -1,4 +1,5 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { Button } from './ui/button'
 
 interface PaginationControlsProps {
   page: number
@@ -16,19 +17,19 @@ export const PaginationControls = ({
   }
 
   const navItemClass = (enabled: boolean) => `
-    flex items-center justify-center w-12 h-12 rounded-full transition-all duration-300
+    flex items-center justify-center w-12 h-12 rounded-full transition-all duration-300 
     ${
       enabled
-        ? 'text-zinc-500 hover:bg-zinc-100 hover:text-zinc-800 cursor-pointer'
+        ? 'text-zinc-500 hover:bg-zinc-100 hover:text-zinc-800 cursor-pointer text-white'
         : 'text-zinc-300 pointer-events-none'
     }`
 
   return (
     <div
-      className="fixed bottom-8 right-8 bg-white dark:bg-zinc-900 shadow-2xl rounded-full
+      className="fixed bottom-24 right-4 sm:bottom-8 sm:right-8 bg-white dark:bg-zinc-900 shadow-2xl rounded-full
         px-4 py-2 flex items-center gap-2 border border-zinc-200 dark:border-zinc-800 z-50"
     >
-      <button
+      <Button
         type="button"
         disabled={page === 0}
         onClick={() => onPageChange(page - 1)}
@@ -36,11 +37,11 @@ export const PaginationControls = ({
         title="Anterior"
       >
         <ChevronLeft strokeWidth={1.5} size={24} />
-      </button>
+      </Button>
       <span className="text-sm text-zinc-500 px-1 whitespace-nowrap">
         {page + 1} / {totalPages}
       </span>
-      <button
+      <Button
         type="button"
         disabled={page + 1 >= totalPages}
         onClick={() => onPageChange(page + 1)}
@@ -48,7 +49,7 @@ export const PaginationControls = ({
         title="Siguiente"
       >
         <ChevronRight strokeWidth={1.5} size={24} />
-      </button>
+      </Button>
     </div>
   )
 }

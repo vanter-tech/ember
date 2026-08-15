@@ -10,8 +10,11 @@ import {
   Home,
   Menu,
   ChefHat,
+  Moon,
+  Sun,
 } from 'lucide-react'
 import { useSessionStore } from '@/store/sessionStore'
+import { useThemeStore } from '@/store/themeStore'
 
 export const FloatingNav = () => {
   const role = useAuthStore((state) => state.role)
@@ -20,6 +23,7 @@ export const FloatingNav = () => {
   const location = useLocation()
   const { userId } = useAuthStore()
   const { participants } = useSessionStore()
+  const { theme, toggleTheme } = useThemeStore()
 
   const amiIn = participants?.find((data) => data.userId === userId)
 
@@ -41,8 +45,9 @@ export const FloatingNav = () => {
 
   return (
     <nav
-      className=" fixed bottom-8 inset-x-0 mx-auto w-max bg-white dark:bg-zinc-900 shadow-2xl rounded-full
-        px-4 py-2 flex items-center gap-2 border border-zinc-200 dark:border-zinc-800 z-50"
+      className="fixed bottom-4 sm:bottom-8 inset-x-0 mx-auto w-max max-w-[92vw] bg-white dark:bg-zinc-900 shadow-2xl rounded-full
+        px-2 sm:px-4 py-2 flex items-center gap-1 sm:gap-2 border border-zinc-200 dark:border-zinc-800 z-50
+        overflow-x-auto no-scrollbar"
     >
       {(role === 'WAITER' || role === 'ADMIN') && (
         <Link
@@ -123,6 +128,17 @@ export const FloatingNav = () => {
         >
           <User strokeWidth={1.5} size={18} className="text-zinc-500" />
         </div>
+        <button
+          onClick={toggleTheme}
+          className="text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-100 transition-colors cursor-pointer"
+          title={theme === 'dark' ? 'Modo claro' : 'Modo nocturno'}
+        >
+          {theme === 'dark' ? (
+            <Sun strokeWidth={1.5} size={22} />
+          ) : (
+            <Moon strokeWidth={1.5} size={22} />
+          )}
+        </button>
         <button
           onClick={handleLogout}
           className="text-[#920703]
