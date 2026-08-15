@@ -23,11 +23,6 @@ public class SessionWebSocketListener {
     }
 
     @EventListener
-    public void onItemStatusUpdated(ItemStatusUpdated event) {
-        messagingTemplate.convertAndSend("/topic/session/" + event.sessionId(), event);
-    }
-
-    @EventListener
     public void onSessionCLose(SessionClosed event) {
         messagingTemplate.convertAndSend("/topic/session/" + event.sessionId(), event);
     }
