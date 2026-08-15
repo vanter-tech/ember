@@ -1,8 +1,8 @@
 # PROGRESS.md — Active Execution State
 
 ## Current Execution State
-- **Last Completed Task:** bugfix-kitchen-orphan-item — waiter item deletion (`DeleteItem`) now propagates into the Mongo `KitchenOrder` + broadcasts `KitchenItemRemoved` to `/topic/kitchen/{tenantId}`. Report 107.
-- **Current Active Task:** none — awaiting next task selection. Pending follow-ups from user (unrelated, deferred): (1) `/landing` mobile `MobileNavDrawer`/`StickyMobileCTA` z-index overlap on open — root cause identified, fix not applied. (2) Hero.astro mobile overlap report — no defect found, awaiting screenshot. (3) New `/landing` dark-mode toggle using `#8c1717` accent — not started.
+- **Last Completed Task:** bugfix-kitchen-empty-order — a kitchen order with zero items now retires (`active=false`, `KitchenOrderRetired`) instead of showing a blank card; `handleOrderItemAdded` reactivates a retired order on reuse. Report 108.
+- **Current Active Task:** brainstorming a "historial" sidebar feature for `ComandaView` (customer order review) — sent/confirmed items should move out of the active cart into a right-side history list, leaving the current-order area empty for a new round; design not yet approved. Pending follow-ups from user (unrelated, deferred): (1) `/landing` mobile `MobileNavDrawer`/`StickyMobileCTA` z-index overlap on open — root cause identified, fix not applied. (2) Hero.astro mobile overlap report — no defect found, awaiting screenshot. (3) New `/landing` dark-mode toggle using `#8c1717` accent — not started.
 
 ## Active Context & Recent Decisions
 - Monolith root at `ember/`; Java 17 + Spring Boot 3.5.14 / React 19 + TS + pnpm. Product: multi-tenant restaurant platform (collaborative cart, KDS, floor/waiter management, admin analytics). task-3.2 deleted `spring-kafka` — Spring `ApplicationEventPublisher` is the only event bus, do not reintroduce a broker.
@@ -52,4 +52,5 @@
 - [x] **docs-architecture-word:** `docs/ARCHITECTURE.docx` — full class-by-class backend/frontend inventory, tech stack, E2E workflow; supersedes/replaces `ARCHITECTURE.md`. Report 105.
 - [x] **bugfix-comanda-resend:** `ItemSent` gained `type`/`sessionItems`, broadcast via `SessionWebSocketListener`; `websocket.ts` handles `ITEMS_CONFIRMED` to sync item status, disabling re-send. Report 106.
 - [x] **bugfix-kitchen-orphan-item:** new `KitchenItemRemoved` event; `KitchenService.handleItemDeleted` strips the item from `KitchenOrder` on `DeleteItem`, broadcasts on `/topic/kitchen/{tenantId}`. Report 107.
+- [x] **bugfix-kitchen-empty-order:** empty-after-delete `KitchenOrder` retires instead of showing a blank card; reused order on a later confirm reactivates. Report 108.
 
