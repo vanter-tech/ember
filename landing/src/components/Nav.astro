@@ -1,0 +1,37 @@
+---
+import MobileNavDrawer from './MobileNavDrawer';
+import { FRONTEND_URL, NAV_LINKS } from '../lib/constants';
+---
+
+<header class="sticky top-0 z-40 border-b-[3px] border-foreground bg-background">
+	<div class="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+		<a href="/" class="font-mono text-xl font-black uppercase tracking-tight">EMBER</a>
+
+		<nav class="hidden items-center gap-8 md:flex">
+			{NAV_LINKS.map((link) => (
+				<a href={link.href} class="font-mono text-sm uppercase tracking-wide">
+					{link.label}
+				</a>
+			))}
+		</nav>
+
+		<div class="hidden items-center gap-4 md:flex">
+			<a
+				href={`${FRONTEND_URL}/login`}
+				class="border-[3px] border-foreground bg-background px-4 py-2 text-sm font-black uppercase"
+			>
+				Iniciar sesión
+			</a>
+			<a
+				href={`${FRONTEND_URL}/register`}
+				class="border-[3px] border-foreground bg-accent px-4 py-2 text-sm font-black uppercase text-background shadow-brutal-sm"
+			>
+				Registrarme
+			</a>
+		</div>
+
+		<div class="md:hidden">
+			<MobileNavDrawer client:load />
+		</div>
+	</div>
+</header>
