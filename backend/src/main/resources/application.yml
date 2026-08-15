@@ -87,6 +87,11 @@ jwt:
   secret: ${JWT_SECRET}
   expiration-ms: ${JWT_EXPIRATION_MS:86400000}
 
+platform:
+  jwt:
+    secret: ${PLATFORM_JWT_SECRET}
+    expiration-ms: ${PLATFORM_JWT_EXPIRATION_MS:86400000}
+
 minio:
   url: ${MINIO_URL:http://localhost:9000}
   access-key: ${MINIO_ACCESS_KEY}
