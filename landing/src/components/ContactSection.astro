@@ -1,0 +1,19 @@
+---
+import ContactForm from './ContactForm.tsx';
+---
+
+<section id="contact" class="border-b-[3px] border-foreground bg-background">
+	<div class="mx-auto max-w-2xl px-6 py-16 md:py-24">
+		<p class="font-mono text-sm font-bold uppercase tracking-widest text-accent">Hablemos</p>
+		<h2 class="mt-4 text-4xl font-black uppercase leading-[0.95] tracking-tight md:text-5xl">
+			Contanos sobre tu restaurante
+		</h2>
+		<p class="mt-4 text-lg font-medium text-foreground/70">
+			Escribinos y te contactamos para armar un plan a medida.
+		</p>
+
+		<div class="mt-10">
+			<ContactForm client:visible />
+		</div>
+	</div>
+</section>
