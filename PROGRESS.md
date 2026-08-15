@@ -1,7 +1,7 @@
 # PROGRESS.md — Active Execution State
 
 ## Current Execution State
-- **Last Completed Task:** docs-architecture-diagram — added root `ARCHITECTURE.md` (flowchart connection diagram + order-lifecycle sequence diagram, both traced from real code, not inferred). Report 104. System health: docs-only change, no build/test impact; frontend/backend/landing untouched.
+- **Last Completed Task:** docs-architecture-word — generated `docs/ARCHITECTURE.docx`, a full class-by-class architecture reference (every backend entity/repository/service/controller/event/listener across all 9 modules + config, every frontend page/component/store/API file, tech stack, E2E order-lifecycle table), built via a scratch Node+`docx` script since this machine has no Python/pandoc. Root `ARCHITECTURE.md` (report 104) is removed, superseded by this fuller doc — was already staged deleted by the user before this task, left as-is per their explicit choice. Report 105. System health: docs-only change, no build/test impact; frontend/backend/landing untouched.
 - **Current Active Task:** none — awaiting next task selection. Pending follow-ups from user: (1) `/landing` mobile bug — `MobileNavDrawer` and `StickyMobileCTA` both use `z-50` with no shared open state, so `StickyMobileCTA`'s fixed bottom CTA bar (mounted after `Nav` in `index.astro`) paints on top of the drawer overlay when opened, duplicating/overlapping CTAs — confirmed via static analysis, root cause identified, fix not yet applied. (2) Hero.astro mobile "square overlapping text" report — investigated, no defect found in code (mobile grid stacks single-column by default, no overlap-causing CSS); awaiting user screenshot to confirm repro before touching. (3) Build a NEW dark-mode toggle from scratch on `/landing` (it currently has zero dark-mode support — fixed light-only palette in `global.css`), using the site's accent color (`#8c1717`) as the dark-mode primary — this is the correctly-scoped version of what report 102 mistakenly added to `frontend`.
 
 ## Active Context & Recent Decisions
@@ -49,3 +49,5 @@
 - [x] **EMB-LP-17:** Privacy-first analytics script (Vercel Analytics/Plausible/Cloudflare, zero tracking cookies by default) wired into `SEO.astro`/`Layout.astro` head — #18. Report 100.
 - [x] **EMB-LP-18:** A11y/perf pass — WCAG AAA contrast audit, visible focus indicators, alt-text audit on every `<img>`/`<Image/>`, LCP fix on hero image, final `astro build` verification. Report 101. EMB-LP backlog complete.
 - [x] **docs-architecture-diagram:** Root `ARCHITECTURE.md` — system connection diagram + order-lifecycle sequence diagram (Mermaid), brainstormed with user. Report 104.
+- [x] **docs-architecture-word:** `docs/ARCHITECTURE.docx` — full class-by-class backend/frontend inventory, tech stack, E2E workflow; supersedes/replaces `ARCHITECTURE.md`. Report 105.
+
