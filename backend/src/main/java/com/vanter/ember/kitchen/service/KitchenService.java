@@ -79,6 +79,7 @@ public class KitchenService {
                         .active(true)
                         .build());
 
+        order.setActive(true);
         event.confirmedItems().forEach(item -> {
             order.getItems().add(KitchenItem.builder()
                     .itemId(item.getId())
@@ -127,7 +128,15 @@ public class KitchenService {
                 .ifPresent(order -> {
                     boolean removed = order.getItems().removeIf(
                             item -> event.orderItemId().equals(item.getItemId()));
-                    if (removed) {
+                    if (!removed) {
+                        return;
+                    }
+                    if (order.getItems().isEmpty()) {
+                        order.setActive(false);
+                        KitchenOrder saved = kitchenOrderRepository.save(order);
+                        eventPublisher.publishEvent(
+                                new KitchenOrderRetired(saved.getTenantId(), event.sessionId()));
+                    } else {
                         KitchenOrder saved = kitchenOrderRepository.save(order);
                         eventPublisher.publishEvent(new KitchenItemRemoved(
                                 saved.getTenantId(), event.sessionId(), event.orderItemId()));
