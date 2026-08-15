@@ -11,7 +11,6 @@ import com.vanter.ember.restaurant.model.Restaurant;
 import com.vanter.ember.restaurant.model.RestaurantStatus;
 import com.vanter.ember.restaurant.repository.RestaurantRepository;
 import com.vanter.ember.session.event.ItemAdded;
-import com.vanter.ember.session.event.ItemStatusUpdated;
 import com.vanter.ember.session.event.KitchenItemsConfirmed;
 import com.vanter.ember.session.event.ParticipantJoined;
 import com.vanter.ember.session.event.SessionOpened;
@@ -48,6 +47,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -590,7 +590,7 @@ class SessionServiceTest {
     }
 
     @Test
-    void handleKitchenItemUpdated_publishesItemStatusUpdatedEvent() {
+    void handleKitchenItemUpdated_doesNotExposeStatusToTheCustomer() {
         Session session = openSessionWithItem(OrderItemStatus.PENDING, "user-1");
         when(sessionRepository.findByIdAndTenantId("sess-1", RESTAURANT_ID)).thenReturn(Optional.of(session));
         when(sessionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -598,15 +598,7 @@ class SessionServiceTest {
         sessionService.handleKitchenItemUpdated(
                 new KitchenItemUpdated(RESTAURANT_ID, "sess-1", "order-item-1", OrderItemStatus.PREPARING));
 
-        ArgumentCaptor<Object> captor = ArgumentCaptor.forClass(Object.class);
-        verify(eventPublisher).publishEvent(captor.capture());
-        assertThat(captor.getValue()).isInstanceOf(ItemStatusUpdated.class);
-        ItemStatusUpdated event = (ItemStatusUpdated) captor.getValue();
-        assertThat(event.sessionId()).isEqualTo("sess-1");
-        assertThat(event.itemId()).isEqualTo("order-item-1");
-        assertThat(event.itemName()).isEqualTo("Tacos");
-        assertThat(event.participantName()).isEqualTo("Alice");
-        assertThat(event.newStatus()).isEqualTo(OrderItemStatus.PREPARING);
+        verifyNoInteractions(eventPublisher);
     }
 
     // --- closeSession tests ---

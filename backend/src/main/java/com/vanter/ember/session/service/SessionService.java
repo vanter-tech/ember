@@ -296,12 +296,6 @@ public class SessionService {
 
         item.setStatus(event.newStatus());
         sessionRepository.save(session);
-        eventPublisher.publishEvent(new ItemStatusUpdated(
-                event.sessionId(),
-                item.getId(),
-                item.getName(),
-                item.getParticipantName(),
-                event.newStatus()));
     }
 
     public void closeSession(String sessionId) {

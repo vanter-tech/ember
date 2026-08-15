@@ -1,8 +1,8 @@
 # PROGRESS.md — Active Execution State
 
 ## Current Execution State
-- **Last Completed Task:** bugfix-kitchen-empty-order — a kitchen order with zero items now retires (`active=false`, `KitchenOrderRetired`) instead of showing a blank card; `handleOrderItemAdded` reactivates a retired order on reuse. Report 108.
-- **Current Active Task:** brainstorming a "historial" sidebar feature for `ComandaView` (customer order review) — sent/confirmed items should move out of the active cart into a right-side history list, leaving the current-order area empty for a new round; design not yet approved. Pending follow-ups from user (unrelated, deferred): (1) `/landing` mobile `MobileNavDrawer`/`StickyMobileCTA` z-index overlap on open — root cause identified, fix not applied. (2) Hero.astro mobile overlap report — no defect found, awaiting screenshot. (3) New `/landing` dark-mode toggle using `#8c1717` accent — not started.
+- **Last Completed Task:** feature-comanda-historial — `ComandaView` splits into current-order (DRAFT only) + a right-side "Historial" sidebar (sent items, static "Enviado" badge); bottom total sums the whole table. Deleted the dead `ItemStatusUpdated` customer-status-sync mechanism per user decision (kept the internal Session status mutation the PREPARING-delete guard needs). Report 109.
+- **Current Active Task:** none — awaiting next task selection. Repo-wide `pnpm run lint` still fails on ~17 PRE-EXISTING errors in files untouched by any recent task (`NewCategoryModal.tsx`/`NewMenuModal.tsx`/`Menu.tsx`/`ParticipantsPopUp.tsx`/`OrdersDisplay.tsx`/`TableInformation.tsx`/`sessionStore.tsx`/`settingStore.ts`/`uiStore.ts`/`websocket.ts`) — not caused by reports 106–109, flagged here for future cleanup. Pending follow-ups from user (unrelated, deferred): (1) `/landing` mobile `MobileNavDrawer`/`StickyMobileCTA` z-index overlap on open — root cause identified, fix not applied. (2) Hero.astro mobile overlap report — no defect found, awaiting screenshot. (3) New `/landing` dark-mode toggle using `#8c1717` accent — not started.
 
 ## Active Context & Recent Decisions
 - Monolith root at `ember/`; Java 17 + Spring Boot 3.5.14 / React 19 + TS + pnpm. Product: multi-tenant restaurant platform (collaborative cart, KDS, floor/waiter management, admin analytics). task-3.2 deleted `spring-kafka` — Spring `ApplicationEventPublisher` is the only event bus, do not reintroduce a broker.
@@ -53,4 +53,5 @@
 - [x] **bugfix-comanda-resend:** `ItemSent` gained `type`/`sessionItems`, broadcast via `SessionWebSocketListener`; `websocket.ts` handles `ITEMS_CONFIRMED` to sync item status, disabling re-send. Report 106.
 - [x] **bugfix-kitchen-orphan-item:** new `KitchenItemRemoved` event; `KitchenService.handleItemDeleted` strips the item from `KitchenOrder` on `DeleteItem`, broadcasts on `/topic/kitchen/{tenantId}`. Report 107.
 - [x] **bugfix-kitchen-empty-order:** empty-after-delete `KitchenOrder` retires instead of showing a blank card; reused order on a later confirm reactivates. Report 108.
+- [x] **feature-comanda-historial:** `ComandaView` current-order/Historial split, whole-table running total; deleted dead `ItemStatusUpdated` customer status sync. Report 109.
 

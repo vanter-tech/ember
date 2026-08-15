@@ -19,6 +19,51 @@ import toast from 'react-hot-toast'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/authStore'
 
+type SessionItem = NonNullable<
+  ReturnType<typeof useSessionStore.getState>['items']
+>[number]
+
+const groupByParticipant = (itemsToGroup: SessionItem[]) => {
+  const dicc = itemsToGroup.reduce(
+    (acum, item) => {
+      const pId = item.participantId || ''
+
+      if (!acum[pId]) {
+        acum[pId] = {
+          name: item.participantName,
+
+          subtotal: 0,
+
+          platillos: [],
+        }
+      }
+
+      const platillosExistentes = acum[pId].platillos.find(
+        (itemSave: typeof item) => itemSave.itemId === item.itemId
+      )
+
+      if (platillosExistentes) {
+        platillosExistentes.cantidad += 1
+
+        acum[pId].subtotal += item.price ?? 0
+      } else {
+        acum[pId].platillos.push({
+          ...item,
+
+          cantidad: 1,
+        })
+
+        acum[pId].subtotal += item.price ?? 0
+      }
+
+      return acum
+    },
+    {} as Record<string, { name?: string; subtotal: number; platillos: (SessionItem & { cantidad: number })[] }>
+  )
+
+  return Object.values(dicc)
+}
+
 export const ComandaView = () => {
   const items = useSessionStore((state) => state.items || [])
   const currentId = useAuthStore((state) => state.userId)
@@ -26,46 +71,15 @@ export const ComandaView = () => {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
 
-  const Participants = useMemo(() => {
-    const dicc = items.reduce(
-      (acum, item) => {
-        const pId = item.participantId || ''
+  const Participants = useMemo(
+    () => groupByParticipant(items.filter((item) => item.status === 'DRAFT')),
+    [items]
+  )
 
-        if (!acum[pId]) {
-          acum[pId] = {
-            name: item.participantName,
-
-            subtotal: 0,
-
-            platillos: [],
-          }
-        }
-
-        const platillosExistentes = acum[pId].platillos.find(
-          (itemSave: typeof item) => itemSave.itemId === item.itemId
-        )
-
-        if (platillosExistentes) {
-          platillosExistentes.cantidad += 1
-
-          acum[pId].subtotal += item.price
-        } else {
-          acum[pId].platillos.push({
-            ...item,
-
-            cantidad: 1,
-          })
-
-          acum[pId].subtotal += item.price
-        }
-
-        return acum
-      },
-      {} as Record<string, any>
-    )
-
-    return Object.values(dicc)
-  }, [items])
+  const Historial = useMemo(
+    () => groupByParticipant(items.filter((item) => item.status !== 'DRAFT')),
+    [items]
+  )
 
   const mutation = useMutation({
     mutationFn: ({
@@ -110,11 +124,7 @@ export const ComandaView = () => {
     }
   }, [items.length, navigate])
 
-  const tableSubTotal = Participants.reduce(
-    (acum, item) => (acum += item.subtotal),
-
-    0
-  )
+  const tableSubTotal = items.reduce((acum, item) => acum + (item.price ?? 0), 0)
 
   const services = tableSubTotal * 0.1
 
@@ -145,7 +155,14 @@ export const ComandaView = () => {
           </div>
         </header>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 pt-6">
+          <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-6">
+          {Participants.length === 0 && (
+            <div className="md:col-span-2 text-center py-12 text-gray-400">
+              No tienes platillos nuevos. Agrega algo desde el menú para armar tu
+              próximo pedido.
+            </div>
+          )}
           {Participants.map((person, index) => (
             <Card className="relative overflow-hidden" key={index}>
               <CardHeader>
@@ -154,7 +171,7 @@ export const ComandaView = () => {
                     <div
                       className={`w-11 h-11 p-4 rounded-full flex items-center justify-center text-xs font-bold border-2 ${AvatarColors[index % AvatarColors.length]}`}
                     >
-                      {AvatarInitials(person.name)}
+                      {AvatarInitials(person.name ?? '')}
                     </div>
 
                     <div className="flex flex-col gap-1 items-start">
@@ -232,6 +249,44 @@ export const ComandaView = () => {
               </CardContent>
             </Card>
           ))}
+        </div>
+
+        <div className="lg:col-span-1 flex flex-col gap-4">
+          <h3 className="text-lg font-bold text-gray-700">Historial</h3>
+
+          {Historial.length === 0 ? (
+            <p className="text-sm text-gray-400">
+              Aún no has enviado ningún pedido.
+            </p>
+          ) : (
+            Historial.map((person, index) => (
+              <Card className="overflow-hidden" key={index}>
+                <CardHeader className="p-4 pb-2">
+                  <CardTitle className="flex items-center justify-between text-base">
+                    <span className="font-bold">{person.name}</span>
+                    <Badge variant="outline">Enviado</Badge>
+                  </CardTitle>
+                </CardHeader>
+
+                <CardContent className="p-4 pt-0 flex flex-col gap-2">
+                  {person.platillos.map(
+                    (item: (typeof items)[0] & { cantidad: number }) => (
+                      <div
+                        key={item.id}
+                        className="flex justify-between text-sm text-gray-600"
+                      >
+                        <span>
+                          {item.cantidad}x {item.name}
+                        </span>
+                        <span>${item.price?.toFixed(2)}</span>
+                      </div>
+                    )
+                  )}
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </div>
         </div>
 
         <Card className=" p-6 mt-8 flex flex-col md:flex-row justify-between items-center gap-6">
