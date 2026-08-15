@@ -27,7 +27,7 @@ import { TenantSuspendedModal } from './components/TenantSuspendedModal'
 
 // Code-split: the platform console is a separate audience (operators, not tenant users) and
 // must never land in the tenant app's main bundle.
-const ConsolePlaceholder = lazy(() => import('./pages/console/ConsolePlaceholder'))
+const ConsoleApp = lazy(() => import('./pages/console/ConsoleApp'))
 
 const RoleRedirect = () => {
   const { role } = useAuthStore()
@@ -57,7 +57,7 @@ export default function App() {
           path="/console/*"
           element={
             <Suspense fallback={null}>
-              <ConsolePlaceholder />
+              <ConsoleApp />
             </Suspense>
           }
         />
