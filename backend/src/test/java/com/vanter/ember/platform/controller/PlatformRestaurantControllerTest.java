@@ -1,8 +1,10 @@
 package com.vanter.ember.platform.controller;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -26,6 +28,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.http.MediaType;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.test.web.servlet.MockMvc;
@@ -110,6 +113,64 @@ class PlatformRestaurantControllerTest {
                 .thenThrow(new ResourceNotFoundException("Restaurant not found: " + id));
 
         mockMvc.perform(get("/platform/restaurants/" + id).header("Authorization", "Bearer " + TOKEN))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void updateStatus_returns401WithoutAuthHeader() throws Exception {
+        UUID id = UUID.randomUUID();
+        mockMvc.perform(patch("/platform/restaurants/" + id + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"SUSPENDED\"}"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void updateStatus_returns400OnMissingStatus() throws Exception {
+        authenticate();
+        UUID id = UUID.randomUUID();
+
+        mockMvc.perform(patch("/platform/restaurants/" + id + "/status")
+                        .header("Authorization", "Bearer " + TOKEN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void updateStatus_returns200WithUpdatedSummary() throws Exception {
+        authenticate();
+        UUID id = UUID.randomUUID();
+        PlatformRestaurantSummaryResponse summary = PlatformRestaurantSummaryResponse.builder()
+                .id(id)
+                .name("Tenant Grill")
+                .slug("tenant-grill")
+                .plan(RestaurantPlan.PRO)
+                .status(RestaurantStatus.SUSPENDED)
+                .createdAt(Instant.now())
+                .build();
+        when(platformRestaurantService.updateStatus(eq(id), eq(RestaurantStatus.SUSPENDED), eq(OPERATOR_EMAIL)))
+                .thenReturn(summary);
+
+        mockMvc.perform(patch("/platform/restaurants/" + id + "/status")
+                        .header("Authorization", "Bearer " + TOKEN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"SUSPENDED\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("SUSPENDED"));
+    }
+
+    @Test
+    void updateStatus_returns404WhenRestaurantNotFound() throws Exception {
+        authenticate();
+        UUID id = UUID.randomUUID();
+        when(platformRestaurantService.updateStatus(eq(id), eq(RestaurantStatus.SUSPENDED), eq(OPERATOR_EMAIL)))
+                .thenThrow(new ResourceNotFoundException("Restaurant not found: " + id));
+
+        mockMvc.perform(patch("/platform/restaurants/" + id + "/status")
+                        .header("Authorization", "Bearer " + TOKEN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"SUSPENDED\"}"))
                 .andExpect(status().isNotFound());
     }
 }
