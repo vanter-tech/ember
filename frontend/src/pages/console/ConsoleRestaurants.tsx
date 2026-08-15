@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { platformRestaurantService } from '@/lib/platformApi'
 import { PaginationControls } from '@/components/PaginationControls'
@@ -53,7 +54,14 @@ export default function ConsoleRestaurants() {
           <tbody className="divide-y divide-zinc-100">
             {restaurants.map((restaurant) => (
               <tr key={restaurant.id}>
-                <td className="px-4 py-2 font-medium text-zinc-800">{restaurant.name}</td>
+                <td className="px-4 py-2 font-medium text-zinc-800">
+                  <Link
+                    to={`/console/restaurants/${restaurant.id}`}
+                    className="hover:underline"
+                  >
+                    {restaurant.name}
+                  </Link>
+                </td>
                 <td className="px-4 py-2 text-zinc-500">{restaurant.slug}</td>
                 <td className="px-4 py-2 text-zinc-500">{restaurant.plan}</td>
                 <td className="px-4 py-2">

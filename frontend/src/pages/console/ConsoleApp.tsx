@@ -4,6 +4,7 @@ import { PlatformLayout } from '@/layouts/PlatformLayout'
 import ConsoleLogin from './ConsoleLogin'
 import ConsoleDashboard from './ConsoleDashboard'
 import ConsoleRestaurants from './ConsoleRestaurants'
+import ConsoleRestaurantDetail from './ConsoleRestaurantDetail'
 
 export default function ConsoleApp() {
   return (
@@ -13,6 +14,7 @@ export default function ConsoleApp() {
         <Route element={<PlatformLayout />}>
           <Route index element={<ConsoleDashboard />} />
           <Route path="restaurants" element={<ConsoleRestaurants />} />
+          <Route path="restaurants/:id" element={<ConsoleRestaurantDetail />} />
         </Route>
       </Route>
     </Routes>

@@ -40,6 +40,36 @@ export interface Page<T> {
   number: number
 }
 
+// Mirrors PlatformRestaurantAdminResponse (platform/model/dto).
+export interface PlatformRestaurantAdmin {
+  id: string
+  name: string
+  email: string
+}
+
+// Mirrors PlatformRestaurantDetailResponse (platform/model/dto).
+export interface PlatformRestaurantDetail {
+  id: string
+  name: string
+  slug: string
+  plan: 'FREE' | 'STARTER' | 'PRO' | 'ENTERPRISE'
+  status: 'ACTIVE' | 'SUSPENDED' | 'INACTIVE'
+  createdAt: string
+  admins: PlatformRestaurantAdmin[]
+}
+
+// Mirrors PlatformAuditLogResponse (platform/model/dto).
+export interface PlatformAuditLogEntry {
+  id: string
+  operatorId: string
+  operatorEmail: string
+  restaurantId: string | null
+  action: string
+  oldValue: string | null
+  newValue: string | null
+  createdAt: string
+}
+
 export const platformApi = axios.create({
   baseURL:
     window.ENV?.EMBW_API_URL ||
@@ -93,6 +123,38 @@ export const platformRestaurantService = {
     const { data } = await platformApi.get<Page<PlatformRestaurantSummary>>(
       '/platform/restaurants',
       { params: { page, size } }
+    )
+    return data
+  },
+
+  getById: async (id: string): Promise<PlatformRestaurantDetail> => {
+    const { data } = await platformApi.get<PlatformRestaurantDetail>(
+      `/platform/restaurants/${id}`
+    )
+    return data
+  },
+
+  updateStatus: async (
+    id: string,
+    status: PlatformRestaurantDetail['status']
+  ): Promise<PlatformRestaurantSummary> => {
+    const { data } = await platformApi.patch<PlatformRestaurantSummary>(
+      `/platform/restaurants/${id}/status`,
+      { status }
+    )
+    return data
+  },
+}
+
+export const platformAuditLogService = {
+  getByRestaurant: async (
+    restaurantId: string,
+    page = 0,
+    size = 10
+  ): Promise<Page<PlatformAuditLogEntry>> => {
+    const { data } = await platformApi.get<Page<PlatformAuditLogEntry>>(
+      '/platform/audit-log',
+      { params: { restaurantId, page, size } }
     )
     return data
   },
