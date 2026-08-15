@@ -58,6 +58,15 @@ export interface PlatformRestaurantDetail {
   admins: PlatformRestaurantAdmin[]
 }
 
+// Mirrors PlatformRestaurantCreateRequest (platform/model/dto).
+export interface PlatformRestaurantCreateRequest {
+  name: string
+  slug: string
+  adminName: string
+  adminEmail: string
+  adminPassword: string
+}
+
 // Mirrors PlatformAuditLogResponse (platform/model/dto).
 export interface PlatformAuditLogEntry {
   id: string
@@ -119,6 +128,16 @@ export const platformAuthService = {
 }
 
 export const platformRestaurantService = {
+  create: async (
+    request: PlatformRestaurantCreateRequest
+  ): Promise<PlatformRestaurantSummary> => {
+    const { data } = await platformApi.post<PlatformRestaurantSummary>(
+      '/platform/restaurants',
+      request
+    )
+    return data
+  },
+
   getAll: async (page = 0, size = 10): Promise<Page<PlatformRestaurantSummary>> => {
     const { data } = await platformApi.get<Page<PlatformRestaurantSummary>>(
       '/platform/restaurants',

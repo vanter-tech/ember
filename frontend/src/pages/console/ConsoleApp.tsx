@@ -5,6 +5,8 @@ import ConsoleLogin from './ConsoleLogin'
 import ConsoleDashboard from './ConsoleDashboard'
 import ConsoleRestaurants from './ConsoleRestaurants'
 import ConsoleRestaurantDetail from './ConsoleRestaurantDetail'
+import ConsoleRestaurantCreate from './ConsoleRestaurantCreate'
+import ConsolePasswordChange from './ConsolePasswordChange'
 
 export default function ConsoleApp() {
   return (
@@ -14,7 +16,9 @@ export default function ConsoleApp() {
         <Route element={<PlatformLayout />}>
           <Route index element={<ConsoleDashboard />} />
           <Route path="restaurants" element={<ConsoleRestaurants />} />
+          <Route path="restaurants/new" element={<ConsoleRestaurantCreate />} />
           <Route path="restaurants/:id" element={<ConsoleRestaurantDetail />} />
+          <Route path="password" element={<ConsolePasswordChange />} />
         </Route>
       </Route>
     </Routes>
