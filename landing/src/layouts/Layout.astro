@@ -1,6 +1,7 @@
 ---
 import '../styles/global.css';
 import SEO from '../components/SEO.astro';
+import Analytics from '../components/Analytics.astro';
 
 interface Props {
   title: string;
@@ -23,6 +24,7 @@ const { title, description, image } = Astro.props;
 		<link rel="manifest" href="/site.webmanifest" />
 
 		<SEO title={title} description={description} image={image} />
+		<Analytics />
 	</head>
 	<body>
 		<slot />

@@ -1,8 +1,8 @@
 # PROGRESS.md — Active Execution State
 
 ## Current Execution State
-- **Last Completed Task:** EMB-LP-16 — `landing/src/components/ContactForm.tsx` (new, `client:visible` island): name/email/message fields, client-side validation with inline per-field error states, spinner+disabled-button loading state on submit, redirects to `/thank-you` on success (no real backend call — `landing/` stays zero-coupled per spec, simulated async only). `ContactSection.astro` (new) wraps it, mounted in `index.astro` between `Pricing`/`CTASection`. `thank-you.astro` (new) reuses the `404.astro` Nav/Footer/centered-copy shell. Report 99. System health: `landing`'s `astro build` PASSING (5 pages: index, 404, privacy, terms, thank-you), `dist/` removed post-verify. Frontend/backend untouched this task.
-- **Current Active Task:** none — EMB-LP-16 complete; EMB-LP-17 (privacy-first analytics script) next, awaiting task selection/approval
+- **Last Completed Task:** EMB-LP-17 — `landing/src/components/Analytics.astro` (new): a single Plausible Analytics `<script>` tag (`defer`, `data-domain="ember.vanter.com"`), gated on `import.meta.env.PROD` so `astro dev` never pings; no npm dependency, no API key needed in the tag itself (cookieless, no consent banner required). Mounted in `Layout.astro`'s `<head>` after `<SEO />` so every page picks it up. Report 100. System health: `landing`'s `astro build` PASSING (5 pages), script tag confirmed present in `dist/index.html`, `dist/` removed post-verify. Frontend/backend untouched this task.
+- **Current Active Task:** none — EMB-LP-17 complete; EMB-LP-18 (a11y/perf pass, final EMB-LP task) next, awaiting task selection/approval
 
 ## Active Context & Recent Decisions
 - Monolith root at `ember/`; Java 17 + Spring Boot 3.5.14 / React 19 + TS + pnpm. Product: multi-tenant restaurant platform (collaborative cart, KDS, floor/waiter management, admin analytics). task-3.2 deleted `spring-kafka` — Spring `ApplicationEventPublisher` is the only event bus, do not reintroduce a broker.
@@ -46,5 +46,5 @@
 - [x] **EMB-LP-14:** `src/pages/404.astro` custom error page — #1. Report 97.
 - [x] **EMB-LP-15:** `src/pages/privacy.astro` + `src/pages/terms.astro` legal pages — #15/#16. Report 98.
 - [x] **EMB-LP-16:** Contact/lead form island + `src/pages/thank-you.astro` confirmation page, with loading spinner/skeleton + form error states — #12/#13/#14. Report 99.
-- [ ] **EMB-LP-17:** Privacy-first analytics script (Vercel Analytics/Plausible/Cloudflare, zero tracking cookies by default) wired into `SEO.astro`/`Layout.astro` head — #18.
+- [x] **EMB-LP-17:** Privacy-first analytics script (Vercel Analytics/Plausible/Cloudflare, zero tracking cookies by default) wired into `SEO.astro`/`Layout.astro` head — #18. Report 100.
 - [ ] **EMB-LP-18:** A11y/perf pass — WCAG AAA contrast audit, visible focus indicators, alt-text audit on every `<img>`/`<Image/>`, Lighthouse/axe check across all pages, final `astro build` verification.
