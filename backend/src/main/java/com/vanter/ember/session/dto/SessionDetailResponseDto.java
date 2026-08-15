@@ -16,6 +16,7 @@ public record SessionDetailResponseDto(
         int maxParticipants,
         List<ParticipantDto> participants,
         List<OrderItemDto> items,
+        List<SessionActivityDto> activityLog,
         LocalDateTime createdAt
 ) {
 }

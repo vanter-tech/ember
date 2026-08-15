@@ -41,6 +41,9 @@ public class Session {
     @Builder.Default
     private List<OrderItem> items = new ArrayList<>();
 
+    @Builder.Default
+    private List<SessionActivity> activityLog = new ArrayList<>();
+
     private String joinCode;
 
     private LocalDateTime createdAt;
