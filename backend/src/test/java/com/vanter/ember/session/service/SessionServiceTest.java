@@ -19,6 +19,7 @@ import com.vanter.ember.session.model.OrderItem;
 import com.vanter.ember.session.model.OrderItemStatus;
 import com.vanter.ember.session.model.Participant;
 import com.vanter.ember.session.model.Session;
+import com.vanter.ember.session.model.SessionActivity;
 import com.vanter.ember.session.model.SessionStatus;
 import com.vanter.ember.session.repository.SessionRepository;
 import com.vanter.ember.settings.model.DiningTables;
@@ -554,6 +555,27 @@ class SessionServiceTest {
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
+    @Test
+    void removeItem_appendsDeletedActivityWithoutErasingPriorEntries() {
+        Session session = openSessionWithItem(OrderItemStatus.PENDING, "user-1");
+        session.getActivityLog().add(SessionActivity.builder()
+                .type(SessionActivity.Type.ITEM_SENT)
+                .itemName("Tacos").participantName("Alice").timestamp(LocalDateTime.now())
+                .build());
+        when(sessionRepository.findByIdAndTenantId("sess-1", RESTAURANT_ID)).thenReturn(Optional.of(session));
+        when(userRepository.findByEmail("user-1")).thenReturn(Optional.of(user("user-1")));
+        when(sessionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        Session result = sessionService.removeItem("sess-1", "order-item-1", "user-1");
+
+        assertThat(result.getActivityLog()).hasSize(2);
+        assertThat(result.getActivityLog().get(0).getType()).isEqualTo(SessionActivity.Type.ITEM_SENT);
+        SessionActivity deleted = result.getActivityLog().get(1);
+        assertThat(deleted.getType()).isEqualTo(SessionActivity.Type.ITEM_DELETED);
+        assertThat(deleted.getItemName()).isEqualTo("Tacos");
+        assertThat(deleted.getParticipantName()).isEqualTo("Alice");
+    }
+
     // --- handleKitchenItemUpdated tests ---
 
     @Test
@@ -679,5 +701,29 @@ class SessionServiceTest {
                 .filteredOn(KitchenItemsConfirmed.class::isInstance)
                 .extracting(e -> ((KitchenItemsConfirmed) e).tenantId())
                 .containsExactly(RESTAURANT_ID);
+    }
+
+    @Test
+    void confirmDraftsForUser_appendsSentActivityForEachConfirmedItem() {
+        Session session = openSessionWithParticipant("user-1");
+        session.getItems().add(OrderItem.builder()
+                .id("item-1").itemId(10L).name("Tacos").price(new java.math.BigDecimal("12.50"))
+                .participantId("user-1").participantName("Alice")
+                .status(OrderItemStatus.DRAFT).addedAt(LocalDateTime.now())
+                .build());
+        when(sessionRepository.findByIdAndTenantId("sess-1", RESTAURANT_ID)).thenReturn(Optional.of(session));
+        when(userRepository.findByEmail("user-1@test.com"))
+                .thenReturn(Optional.of(userWithRestaurant("user-1", RESTAURANT_ID)));
+        when(diningTableRepository.findById(TABLE_ID))
+                .thenReturn(Optional.of(diningTableForRestaurant(RESTAURANT_ID)));
+        when(sessionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        sessionService.confirmDraftsForUser("sess-1", "user-1", "user-1@test.com");
+
+        assertThat(session.getActivityLog()).hasSize(1);
+        SessionActivity activity = session.getActivityLog().get(0);
+        assertThat(activity.getType()).isEqualTo(SessionActivity.Type.ITEM_SENT);
+        assertThat(activity.getItemName()).isEqualTo("Tacos");
+        assertThat(activity.getParticipantName()).isEqualTo("Alice");
     }
 }

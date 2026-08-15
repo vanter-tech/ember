@@ -13,6 +13,7 @@ import com.vanter.ember.restaurant.model.RestaurantStatus;
 import com.vanter.ember.restaurant.repository.RestaurantRepository;
 import com.vanter.ember.session.dto.OrderItemDto;
 import com.vanter.ember.session.dto.ParticipantDto;
+import com.vanter.ember.session.dto.SessionActivityDto;
 import com.vanter.ember.session.dto.SessionDetailResponseDto;
 import com.vanter.ember.session.event.*;
 import com.vanter.ember.session.exception.TooManyParticipantsException;
@@ -20,6 +21,7 @@ import com.vanter.ember.session.model.OrderItem;
 import com.vanter.ember.session.model.OrderItemStatus;
 import com.vanter.ember.session.model.Participant;
 import com.vanter.ember.session.model.Session;
+import com.vanter.ember.session.model.SessionActivity;
 import com.vanter.ember.session.model.SessionStatus;
 import com.vanter.ember.session.repository.SessionRepository;
 
@@ -85,6 +87,15 @@ public class SessionService {
                 ))
         ).toList();
 
+        var ActivityList = session.getActivityLog().stream().map(
+                (a -> new SessionActivityDto(
+                        a.getType(),
+                        a.getItemName(),
+                        a.getParticipantName(),
+                        a.getTimestamp()
+                ))
+        ).toList();
+
         return new SessionDetailResponseDto(
                 session.getId(),
                 session.getTableId(),
@@ -95,6 +106,7 @@ public class SessionService {
                 session.getMaxParticipants(),
                 ParticipantList,
                 ItemList,
+                ActivityList,
                 session.getCreatedAt()
         );
     }
@@ -348,6 +360,13 @@ public class SessionService {
 
         session.getItems().remove(item);
 
+        session.getActivityLog().add(SessionActivity.builder()
+                .type(SessionActivity.Type.ITEM_DELETED)
+                .itemName(item.getName())
+                .participantName(item.getParticipantName())
+                .timestamp(LocalDateTime.now())
+                .build());
+
         eventPublisher.publishEvent(new DeleteItem(
                 session.getId(), item.getId()
         ));
@@ -379,6 +398,12 @@ public class SessionService {
             drafts.forEach(item -> {
                 item.setStatus(OrderItemStatus.PENDING);
                 item.setAddedAt(LocalDateTime.now());
+                session.getActivityLog().add(SessionActivity.builder()
+                        .type(SessionActivity.Type.ITEM_SENT)
+                        .itemName(item.getName())
+                        .participantName(item.getParticipantName())
+                        .timestamp(item.getAddedAt())
+                        .build());
             });
 
             Session savedSession = sessionRepository.save(session);

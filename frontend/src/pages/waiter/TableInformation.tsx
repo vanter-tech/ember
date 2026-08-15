@@ -212,16 +212,27 @@ export const TableInformation = () => {
             </CardHeader>
             <CardContent>
               <div className="ml-3 border-l-2 border-gray-200 pl-5 flex flex-col gap-6 pt-2 max-h-87.5 overflow-y-auto ">
-                {itemsToWaiter.length > 0
-                  ? itemsToWaiter.map((item) => (
-                      <div key={item.id} className="relative">
-                        <div className="absolute -left-6.25 top-1.5 w-2.5 h-2.5 rounded-full bg-[#8B0000]"></div>
+                {sessionData?.activityLog && sessionData.activityLog.length > 0
+                  ? sessionData.activityLog.map((activity, index) => (
+                      <div key={index} className="relative">
+                        <div
+                          className={`absolute -left-6.25 top-1.5 w-2.5 h-2.5 rounded-full ${
+                            activity.type === 'ITEM_DELETED'
+                              ? 'bg-gray-400'
+                              : 'bg-[#8B0000]'
+                          }`}
+                        ></div>
                         <div className="flex flex-col gap-2">
                           <span className="text-xs text-gray-700 font-medium">
-                            {item.name}
+                            {activity.type === 'ITEM_DELETED'
+                              ? `${activity.itemName} fue eliminado`
+                              : activity.itemName}
                           </span>
                           <span className="text-xs text-gray-400">
-                            Order hecha: {item.addedAt}
+                            {activity.type === 'ITEM_DELETED'
+                              ? 'Eliminado'
+                              : 'Order hecha'}
+                            : {activity.timestamp}
                           </span>
                         </div>
                       </div>

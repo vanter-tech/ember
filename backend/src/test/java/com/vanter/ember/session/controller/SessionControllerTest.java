@@ -228,7 +228,7 @@ class SessionControllerTest {
     private SessionDetailResponseDto sampleSessionDetail(List<ParticipantDto> participants) {
         return new SessionDetailResponseDto(
                 "sess-1", TABLE_ID, 5, true, "waiter@test.com",
-                SessionStatus.OPEN, 4, participants, List.of(), LocalDateTime.now());
+                SessionStatus.OPEN, 4, participants, List.of(), List.of(), LocalDateTime.now());
     }
 
     @Test

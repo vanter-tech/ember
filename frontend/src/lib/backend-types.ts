@@ -1000,6 +1000,14 @@ export interface components {
             userId?: string;
             name?: string;
         };
+        SessionActivityDto: {
+            /** @enum {string} */
+            type?: "ITEM_SENT" | "ITEM_DELETED";
+            itemName?: string;
+            participantName?: string;
+            /** Format: date-time */
+            timestamp?: string;
+        };
         SessionDetailResponseDto: {
             id?: string;
             /** Format: uuid */
@@ -1014,6 +1022,7 @@ export interface components {
             maxParticipants?: number;
             participants?: components["schemas"]["ParticipantDto"][];
             items?: components["schemas"]["OrderItemDto"][];
+            activityLog?: components["schemas"]["SessionActivityDto"][];
             /** Format: date-time */
             createdAt?: string;
         };
@@ -1048,8 +1057,6 @@ export interface components {
             totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
-            first?: boolean;
-            last?: boolean;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["KitchenOrder"][];
@@ -1059,6 +1066,8 @@ export interface components {
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
+            first?: boolean;
+            last?: boolean;
             empty?: boolean;
         };
         PageableObject: {
@@ -1103,8 +1112,6 @@ export interface components {
             totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
-            first?: boolean;
-            last?: boolean;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["MenuItemResponse"][];
@@ -1114,6 +1121,26 @@ export interface components {
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
+            first?: boolean;
+            last?: boolean;
+            empty?: boolean;
+        };
+        PageCategoryResponse: {
+            /** Format: int64 */
+            totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
+            /** Format: int32 */
+            size?: number;
+            content?: components["schemas"]["CategoryResponse"][];
+            /** Format: int32 */
+            number?: number;
+            sort?: components["schemas"]["SortObject"];
+            /** Format: int32 */
+            numberOfElements?: number;
+            pageable?: components["schemas"]["PageableObject"];
+            first?: boolean;
+            last?: boolean;
             empty?: boolean;
         };
         AnalyticsTablesResponse: {
@@ -1580,7 +1607,9 @@ export interface operations {
     };
     getAll_1: {
         parameters: {
-            query?: never;
+            query: {
+                pageable: components["schemas"]["Pageable"];
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -1593,7 +1622,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["CategoryResponse"][];
+                    "*/*": components["schemas"]["PageCategoryResponse"];
                 };
             };
         };
