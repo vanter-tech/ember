@@ -10,11 +10,8 @@ import {
   Home,
   Menu,
   ChefHat,
-  Moon,
-  Sun,
 } from 'lucide-react'
 import { useSessionStore } from '@/store/sessionStore'
-import { useThemeStore } from '@/store/themeStore'
 
 export const FloatingNav = () => {
   const role = useAuthStore((state) => state.role)
@@ -23,7 +20,6 @@ export const FloatingNav = () => {
   const location = useLocation()
   const { userId } = useAuthStore()
   const { participants } = useSessionStore()
-  const { theme, toggleTheme } = useThemeStore()
 
   const amiIn = participants?.find((data) => data.userId === userId)
 
@@ -128,17 +124,6 @@ export const FloatingNav = () => {
         >
           <User strokeWidth={1.5} size={18} className="text-zinc-500" />
         </div>
-        <button
-          onClick={toggleTheme}
-          className="text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-100 transition-colors cursor-pointer"
-          title={theme === 'dark' ? 'Modo claro' : 'Modo nocturno'}
-        >
-          {theme === 'dark' ? (
-            <Sun strokeWidth={1.5} size={22} />
-          ) : (
-            <Moon strokeWidth={1.5} size={22} />
-          )}
-        </button>
         <button
           onClick={handleLogout}
           className="text-[#920703]
