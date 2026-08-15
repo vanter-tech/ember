@@ -22,6 +22,24 @@ export interface PlatformPasswordChangeRequest {
   newPassword: string
 }
 
+// Mirrors PlatformRestaurantSummaryResponse (platform/model/dto).
+export interface PlatformRestaurantSummary {
+  id: string
+  name: string
+  slug: string
+  plan: 'FREE' | 'STARTER' | 'PRO' | 'ENTERPRISE'
+  status: 'ACTIVE' | 'SUSPENDED' | 'INACTIVE'
+  createdAt: string
+}
+
+export interface Page<T> {
+  content: T[]
+  totalElements: number
+  totalPages: number
+  size: number
+  number: number
+}
+
 export const platformApi = axios.create({
   baseURL:
     window.ENV?.EMBW_API_URL ||
@@ -67,5 +85,15 @@ export const platformAuthService = {
 
   changePassword: async (details: PlatformPasswordChangeRequest): Promise<void> => {
     await platformApi.patch<void>('/platform/auth/password', details)
+  },
+}
+
+export const platformRestaurantService = {
+  getAll: async (page = 0, size = 10): Promise<Page<PlatformRestaurantSummary>> => {
+    const { data } = await platformApi.get<Page<PlatformRestaurantSummary>>(
+      '/platform/restaurants',
+      { params: { page, size } }
+    )
+    return data
   },
 }

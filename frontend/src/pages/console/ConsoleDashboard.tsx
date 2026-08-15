@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { usePlatformAuthStore } from '@/store/platformAuthStore'
 
 export default function ConsoleDashboard() {
@@ -6,7 +7,9 @@ export default function ConsoleDashboard() {
   return (
     <div className="flex flex-col gap-2">
       <h1 className="text-2xl font-semibold">Welcome{name ? `, ${name}` : ''}</h1>
-      <p className="text-gray-600">Restaurant management lands in EMB-PC-12+.</p>
+      <Link to="restaurants" className="text-sm text-blue-600 hover:underline">
+        Ver restaurantes
+      </Link>
     </div>
   )
 }
