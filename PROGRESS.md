@@ -1,8 +1,8 @@
 # PROGRESS.md — Active Execution State
 
 ## Current Execution State
-- **Last Completed Task:** EMB-LP-08 — `landing/src/components/Pricing.astro` (new): brutalist `id="pricing"` section (matches the `#pricing` anchor already wired in `Hero.astro`/`Nav.astro`), mono kicker + oversized `<h2>`, 4-card grid (`sm:grid-cols-2 lg:grid-cols-4`) for `RestaurantPlan`'s FREE/STARTER/PRO/ENTERPRISE (name/order sourced from the backend enum), each with price/tagline/mono feature bullets/CTA; PRO is visually inverted (`bg-foreground text-background shadow-brutal` + "Más popular" label) vs. the other three's `shadow-brutal-sm`. FREE/STARTER/PRO CTA → `${FRONTEND_URL}/register`; ENTERPRISE CTA → `mailto:ventas@ember.vanter.com` (no contact form/thank-you page yet — that's EMB-LP-16). Pricing copy/features are marketing placeholders (no price data exists in the backend) — swap before launch. Component standalone, NOT yet wired into `index.astro` (EMB-LP-13's job), same pattern as EMB-LP-07. Report 91. System health: `landing`'s `astro build` PASSING, `dist/` removed post-verify. Frontend/backend untouched this task; frontend `pnpm run build` last verified passing (EMB-PC-14), backend `./mvnw test` last verified passing (580 tests, EMB-PC-09).
-- **Current Active Task:** none — EMB-LP-08 complete; EMB-LP-09 (CTASection.astro) next, awaiting task selection/approval
+- **Last Completed Task:** EMB-LP-09 — `landing/src/components/CTASection.astro` (new): high-contrast, full-width closing band before the footer, inverted brutalist styling (`bg-foreground text-background`, matches `Pricing.astro`'s highlighted-card pattern), mono kicker + oversized `<h2>` + short subcopy, single centered primary CTA ("Registrarme gratis") → `${FRONTEND_URL}/register` (accent bg + `shadow-brutal`, same as `Hero.astro`'s primary CTA). No secondary CTA (closing band, not a nav point). Component standalone, NOT yet wired into `index.astro` (EMB-LP-13's job), same pattern as EMB-LP-07/08. Report 92. System health: `landing`'s `astro build` PASSING, `dist/` removed post-verify. Frontend/backend untouched this task; frontend `pnpm run build` last verified passing (EMB-PC-14), backend `./mvnw test` last verified passing (580 tests, EMB-PC-09).
+- **Current Active Task:** none — EMB-LP-09 complete; EMB-LP-10 (Footer.astro) next, awaiting task selection/approval
 
 ## Active Context & Recent Decisions
 - Monolith root at `ember/`; Java 17 + Spring Boot 3.5.14 / React 19 + TS + pnpm. Product: multi-tenant restaurant platform (collaborative cart, KDS, floor/waiter management, admin analytics). task-3.2 deleted `spring-kafka` — Spring `ApplicationEventPublisher` is the only event bus, do not reintroduce a broker.
@@ -38,7 +38,7 @@
 - [x] **EMB-LP-06:** `src/components/Hero.astro` — headline/subheadline, above-the-fold primary/secondary CTAs, product screenshot via `<Image/>` with explicit width/height + alt text — #2/#9/#20. Report 89.
 - [x] **EMB-LP-07:** `src/components/Features.astro` — 3–6 card grid (collaborative cart, KDS, floor/waiter mgmt, admin analytics). Report 90.
 - [x] **EMB-LP-08:** `src/components/Pricing.astro` — four static cards matching `RestaurantPlan` (FREE/STARTER/PRO/ENTERPRISE), ENTERPRISE CTA → `mailto:`/contact form → thank-you redirect. Report 91.
-- [ ] **EMB-LP-09:** `src/components/CTASection.astro` — high-contrast full-width closing band before the footer.
+- [x] **EMB-LP-09:** `src/components/CTASection.astro` — high-contrast full-width closing band before the footer. Report 92.
 - [ ] **EMB-LP-10:** `src/components/Footer.astro` — wordmark, copyright, real physical address/business entity, links to privacy/terms/contact — #19.
 - [ ] **EMB-LP-11:** `src/components/StickyMobileCTA.tsx` island — persistent bottom bar (Register/Iniciar Sesión), mobile-only, appears once scrolled past hero — #11.
 - [ ] **EMB-LP-12:** `src/components/CookieBanner.tsx` island — non-intrusive brutalist cookie consent — #17.
