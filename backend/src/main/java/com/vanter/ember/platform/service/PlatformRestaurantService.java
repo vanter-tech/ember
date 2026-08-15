@@ -2,10 +2,12 @@ package com.vanter.ember.platform.service;
 
 import com.vanter.ember.config.ResourceNotFoundException;
 import com.vanter.ember.identity.model.Role;
+import com.vanter.ember.identity.model.User;
 import com.vanter.ember.identity.repository.UserRepository;
 import com.vanter.ember.platform.model.PlatformAuditLog;
 import com.vanter.ember.platform.model.PlatformOperator;
 import com.vanter.ember.platform.model.dto.PlatformRestaurantAdminResponse;
+import com.vanter.ember.platform.model.dto.PlatformRestaurantCreateRequest;
 import com.vanter.ember.platform.model.dto.PlatformRestaurantDetailResponse;
 import com.vanter.ember.platform.model.dto.PlatformRestaurantSummaryResponse;
 import com.vanter.ember.platform.repository.PlatformAuditLogRepository;
@@ -19,6 +21,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,6 +40,7 @@ public class PlatformRestaurantService {
     private final RestaurantService restaurantService;
     private final PlatformOperatorRepository platformOperatorRepository;
     private final PlatformAuditLogRepository platformAuditLogRepository;
+    private final PasswordEncoder passwordEncoder;
 
     public Page<PlatformRestaurantSummaryResponse> getAll(Pageable pageable) {
         return restaurantRepository.findAll(pageable).map(PlatformRestaurantSummaryResponse::from);
@@ -80,5 +84,47 @@ public class PlatformRestaurantService {
                 .build());
 
         return PlatformRestaurantSummaryResponse.from(updated);
+    }
+
+    /**
+     * Operator-driven tenant onboarding: creates the {@link Restaurant} and its initial ADMIN
+     * {@link User} in one request, then writes a {@link PlatformAuditLog} row — all in one
+     * transaction, mirroring {@link #updateStatus}'s operator-resolve + audit-log-in-same-transaction
+     * shape.
+     */
+    @Transactional
+    public PlatformRestaurantSummaryResponse create(PlatformRestaurantCreateRequest request, String operatorEmail) {
+        PlatformOperator operator = platformOperatorRepository.findByEmail(operatorEmail)
+                .orElseThrow(() -> new BadCredentialsException("Invalid credentials"));
+
+        if (restaurantRepository.existsBySlug(request.getSlug())) {
+            throw new IllegalArgumentException("Slug already in use: " + request.getSlug());
+        }
+        if (userRepository.existsByEmail(request.getAdminEmail())) {
+            throw new IllegalArgumentException("Email already in use: " + request.getAdminEmail());
+        }
+
+        Restaurant restaurant = restaurantRepository.save(Restaurant.builder()
+                .name(request.getName())
+                .slug(request.getSlug())
+                .build());
+
+        userRepository.save(User.builder()
+                .restaurantId(restaurant)
+                .name(request.getAdminName())
+                .email(request.getAdminEmail())
+                .passwordHash(passwordEncoder.encode(request.getAdminPassword()))
+                .role(Role.ADMIN)
+                .build());
+
+        platformAuditLogRepository.save(PlatformAuditLog.builder()
+                .operatorId(operator.getId())
+                .operatorEmail(operator.getEmail())
+                .restaurantId(restaurant.getId())
+                .action("RESTAURANT_CREATED")
+                .newValue(restaurant.getSlug())
+                .build());
+
+        return PlatformRestaurantSummaryResponse.from(restaurant);
     }
 }

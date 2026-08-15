@@ -9,6 +9,7 @@ import com.vanter.ember.identity.model.Role;
 import com.vanter.ember.identity.model.User;
 import com.vanter.ember.identity.repository.UserRepository;
 import com.vanter.ember.platform.model.PlatformOperator;
+import com.vanter.ember.platform.model.dto.PlatformRestaurantCreateRequest;
 import com.vanter.ember.platform.model.dto.PlatformRestaurantDetailResponse;
 import com.vanter.ember.platform.model.dto.PlatformRestaurantSummaryResponse;
 import com.vanter.ember.platform.repository.PlatformAuditLogRepository;
@@ -32,6 +33,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 @ExtendWith(MockitoExtension.class)
 class PlatformRestaurantServiceTest {
@@ -41,6 +43,7 @@ class PlatformRestaurantServiceTest {
     @Mock RestaurantService restaurantService;
     @Mock PlatformOperatorRepository platformOperatorRepository;
     @Mock PlatformAuditLogRepository platformAuditLogRepository;
+    @Mock PasswordEncoder passwordEncoder;
     @InjectMocks PlatformRestaurantService platformRestaurantService;
 
     private Restaurant restaurant() {
@@ -153,6 +156,86 @@ class PlatformRestaurantServiceTest {
 
         assertThatThrownBy(() -> platformRestaurantService.updateStatus(
                 restaurantId, RestaurantStatus.SUSPENDED, "ghost@ember.local"))
+                .isInstanceOf(BadCredentialsException.class);
+    }
+
+    private PlatformRestaurantCreateRequest createRequest() {
+        PlatformRestaurantCreateRequest request = new PlatformRestaurantCreateRequest();
+        request.setName("Tenant Grill");
+        request.setSlug("tenant-grill");
+        request.setAdminName("Owner Admin");
+        request.setAdminEmail("owner@tenant-grill.local");
+        request.setAdminPassword("Str0ng!Pass");
+        return request;
+    }
+
+    @Test
+    void create_savesRestaurantAndAdminAndWritesAuditLog() {
+        PlatformOperator operator = PlatformOperator.builder()
+                .id(UUID.randomUUID())
+                .email("operator@ember.local")
+                .build();
+        Restaurant saved = restaurant();
+        when(platformOperatorRepository.findByEmail("operator@ember.local")).thenReturn(Optional.of(operator));
+        when(restaurantRepository.existsBySlug("tenant-grill")).thenReturn(false);
+        when(userRepository.existsByEmail("owner@tenant-grill.local")).thenReturn(false);
+        when(restaurantRepository.save(org.mockito.ArgumentMatchers.any(Restaurant.class))).thenReturn(saved);
+        when(passwordEncoder.encode("Str0ng!Pass")).thenReturn("hashed");
+
+        PlatformRestaurantSummaryResponse result = platformRestaurantService.create(
+                createRequest(), "operator@ember.local");
+
+        assertThat(result.getSlug()).isEqualTo("tenant-grill");
+
+        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        org.mockito.Mockito.verify(userRepository).save(userCaptor.capture());
+        User savedUser = userCaptor.getValue();
+        assertThat(savedUser.getEmail()).isEqualTo("owner@tenant-grill.local");
+        assertThat(savedUser.getPasswordHash()).isEqualTo("hashed");
+        assertThat(savedUser.getRole()).isEqualTo(Role.ADMIN);
+        assertThat(savedUser.getRestaurantId()).isEqualTo(saved);
+
+        ArgumentCaptor<com.vanter.ember.platform.model.PlatformAuditLog> auditCaptor =
+                ArgumentCaptor.forClass(com.vanter.ember.platform.model.PlatformAuditLog.class);
+        org.mockito.Mockito.verify(platformAuditLogRepository).save(auditCaptor.capture());
+        com.vanter.ember.platform.model.PlatformAuditLog logged = auditCaptor.getValue();
+        assertThat(logged.getAction()).isEqualTo("RESTAURANT_CREATED");
+        assertThat(logged.getRestaurantId()).isEqualTo(saved.getId());
+        assertThat(logged.getOperatorEmail()).isEqualTo("operator@ember.local");
+    }
+
+    @Test
+    void create_throwsWhenSlugTaken() {
+        PlatformOperator operator = PlatformOperator.builder()
+                .id(UUID.randomUUID())
+                .email("operator@ember.local")
+                .build();
+        when(platformOperatorRepository.findByEmail("operator@ember.local")).thenReturn(Optional.of(operator));
+        when(restaurantRepository.existsBySlug("tenant-grill")).thenReturn(true);
+
+        assertThatThrownBy(() -> platformRestaurantService.create(createRequest(), "operator@ember.local"))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void create_throwsWhenAdminEmailTaken() {
+        PlatformOperator operator = PlatformOperator.builder()
+                .id(UUID.randomUUID())
+                .email("operator@ember.local")
+                .build();
+        when(platformOperatorRepository.findByEmail("operator@ember.local")).thenReturn(Optional.of(operator));
+        when(restaurantRepository.existsBySlug("tenant-grill")).thenReturn(false);
+        when(userRepository.existsByEmail("owner@tenant-grill.local")).thenReturn(true);
+
+        assertThatThrownBy(() -> platformRestaurantService.create(createRequest(), "operator@ember.local"))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void create_throwsWhenOperatorNotFound() {
+        when(platformOperatorRepository.findByEmail("ghost@ember.local")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> platformRestaurantService.create(createRequest(), "ghost@ember.local"))
                 .isInstanceOf(BadCredentialsException.class);
     }
 }
