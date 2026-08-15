@@ -1,4 +1,4 @@
-import { Outlet } from 'react-router-dom'
+import { Link, Outlet } from 'react-router-dom'
 import { usePlatformAuthStore } from '@/store/platformAuthStore'
 import { Button } from '@/components/ui/button'
 
@@ -11,6 +11,9 @@ export const PlatformLayout = () => {
         <span className="text-lg font-semibold text-[#920703]">Ember Platform Console</span>
         <div className="flex items-center gap-4 text-sm text-muted-foreground">
           <span>{name ?? email}</span>
+          <Link to="/console/password" className="hover:underline">
+            Cambiar contraseña
+          </Link>
           <Button variant="outline" size="sm" onClick={logout}>
             Log out
           </Button>

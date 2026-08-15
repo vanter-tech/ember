@@ -38,7 +38,15 @@ export default function ConsoleRestaurants() {
 
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="text-2xl font-semibold">Restaurantes</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold">Restaurantes</h1>
+        <Link
+          to="/console/restaurants/new"
+          className="rounded-md bg-[#920703] px-3 py-2 text-sm font-medium text-white hover:bg-[#7a0602]"
+        >
+          Nuevo restaurante
+        </Link>
+      </div>
 
       <div className="overflow-x-auto rounded-lg border border-zinc-200">
         <table className="min-w-full divide-y divide-zinc-200 text-sm">
