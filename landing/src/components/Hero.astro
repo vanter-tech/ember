@@ -1,0 +1,46 @@
+---
+import { Image } from 'astro:assets';
+import productScreenshot from '../assets/product-screenshot.png';
+import { FRONTEND_URL } from '../lib/constants';
+---
+
+<section class="border-b-[3px] border-foreground bg-background">
+	<div class="mx-auto grid max-w-6xl gap-12 px-6 py-16 md:grid-cols-2 md:items-center md:py-24">
+		<div>
+			<p class="font-mono text-sm font-bold uppercase tracking-widest text-accent">
+				Gestión de restaurantes en tiempo real
+			</p>
+			<h1 class="mt-4 text-5xl font-black uppercase leading-[0.95] tracking-tight md:text-7xl">
+				Tu restaurante,
+				<span class="text-accent">sincronizado</span>
+			</h1>
+			<p class="mt-6 max-w-md text-lg font-medium text-foreground/80">
+				Carrito colaborativo, comandas en cocina, gestión de mesas y analítica en un solo
+				panel. Sin fricción, sin retrasos.
+			</p>
+			<div class="mt-8 flex flex-col gap-4 sm:flex-row">
+				<a
+					href={`${FRONTEND_URL}/register`}
+					class="border-[3px] border-foreground bg-accent px-6 py-3 text-center text-sm font-black uppercase tracking-wide text-background shadow-brutal"
+				>
+					Registrarme
+				</a>
+				<a
+					href="#pricing"
+					class="border-[3px] border-foreground bg-background px-6 py-3 text-center text-sm font-black uppercase tracking-wide"
+				>
+					Ver planes
+				</a>
+			</div>
+		</div>
+
+		<div class="border-[4px] border-foreground shadow-brutal">
+			<Image
+				src={productScreenshot}
+				width={1200}
+				height={800}
+				alt="Panel de control de Ember mostrando el estado de mesas y comandas de cocina en tiempo real"
+			/>
+		</div>
+	</div>
+</section>
