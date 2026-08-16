@@ -1,14 +1,14 @@
 import { Clock, UserCheck, Users } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import type { StaffMember } from '../types'
+import type { StaffMemberResponse } from '@/lib/api'
 
 interface StaffKpisProps {
-  members: StaffMember[]
+  members: StaffMemberResponse[]
 }
 
 export const StaffKpis = ({ members }: StaffKpisProps) => {
   const totalStaff = members.length
-  const activeNow = members.filter((member) => member.status === 'ACTIVE').length
+  const activeNow = members.filter((member) => member.active).length
   const pendingHours = members.reduce((sum, member) => sum + member.pendingHours, 0)
 
   const cards = [
