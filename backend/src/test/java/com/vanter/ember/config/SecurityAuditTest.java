@@ -50,6 +50,8 @@ class SecurityAuditTest {
         "POST, /api/billing/payments/digital",
         "POST, /api/billing/payments/1/confirm",
         "PATCH, /api/admin/users/u-1/role",
+        "GET,  /api/admin/staff",
+        "PATCH, /api/admin/staff/u-1",
         "GET,  /api/admin/analytics/range",
         "GET,  /api/admin/analytics/summary",
         "GET,  /api/admin/analytics/sales",
