@@ -61,4 +61,36 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
             @Param("tenantId") UUID tenantId,
             @Param("from") LocalDateTime from,
             @Param("to") LocalDateTime to);
+
+    /**
+     * Confirmed PHYSICAL payments attributed to one shift — the sales half of that shift's
+     * expected-cash figure at close (see {@code CashShiftService#closeShift}).
+     */
+    @Query("""
+            select coalesce(sum(p.amount), 0) from Payment p
+            where p.tenantId = :tenantId
+              and p.cashShiftId = :cashShiftId
+              and p.method = com.vanter.ember.billing.model.PaymentMethod.PHYSICAL
+              and p.status = com.vanter.ember.billing.model.PaymentStatus.CONFIRMED
+            """)
+    BigDecimal sumConfirmedPhysicalForShift(
+            @Param("tenantId") UUID tenantId, @Param("cashShiftId") Long cashShiftId);
+
+    /**
+     * Confirmed DIGITAL payments in a time window — DIGITAL payments carry no {@code
+     * cashShiftId} (they're not physical cash), so a shift's digital-sales figure is windowed by
+     * {@code openedAt}..{@code closedAt} instead of joined by id.
+     */
+    @Query("""
+            select coalesce(sum(p.amount), 0) from Payment p
+            where p.tenantId = :tenantId
+              and p.method = com.vanter.ember.billing.model.PaymentMethod.DIGITAL
+              and p.status = com.vanter.ember.billing.model.PaymentStatus.CONFIRMED
+              and p.createdAt >= :from
+              and p.createdAt <= :to
+            """)
+    BigDecimal sumConfirmedDigitalInWindow(
+            @Param("tenantId") UUID tenantId,
+            @Param("from") LocalDateTime from,
+            @Param("to") LocalDateTime to);
 }

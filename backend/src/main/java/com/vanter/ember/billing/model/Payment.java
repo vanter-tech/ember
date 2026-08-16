@@ -60,4 +60,12 @@ public class Payment {
 
     @Column(nullable = false)
     private LocalDateTime createdAt;
+
+    /** Set only for {@link PaymentMethod#PHYSICAL} payments — which shared till the cash landed in. */
+    @Column(name = "cash_shift_id")
+    private Long cashShiftId;
+
+    /** {@code users.id} of whoever registered this payment, for both methods. */
+    @Column(name = "processed_by")
+    private String processedBy;
 }
