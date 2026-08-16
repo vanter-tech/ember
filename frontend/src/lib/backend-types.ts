@@ -143,6 +143,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/platform/restaurants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List all tenants, paginated */
+        get: operations["getAll"];
+        put?: never;
+        /** Operator-driven tenant onboarding: creates the restaurant and its initial ADMIN user */
+        post: operations["create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/platform/auth/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Login and obtain a platform-operator JWT */
+        post: operations["login"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/catalog/items": {
         parameters: {
             query?: never;
@@ -151,10 +186,10 @@ export interface paths {
             cookie?: never;
         };
         /** List all menu items by category */
-        get: operations["getAll"];
+        get: operations["getAll_1"];
         put?: never;
         /** Create a menu item (ADMIN) */
-        post: operations["create"];
+        post: operations["create_1"];
         delete?: never;
         options?: never;
         head?: never;
@@ -169,10 +204,10 @@ export interface paths {
             cookie?: never;
         };
         /** List all categories */
-        get: operations["getAll_1"];
+        get: operations["getAll_2"];
         put?: never;
         /** Create a category (ADMIN) */
-        post: operations["create_1"];
+        post: operations["create_2"];
         delete?: never;
         options?: never;
         head?: never;
@@ -291,7 +326,7 @@ export interface paths {
         get?: never;
         put?: never;
         /** Login and obtain JWT */
-        post: operations["login"];
+        post: operations["login_1"];
         delete?: never;
         options?: never;
         head?: never;
@@ -313,6 +348,40 @@ export interface paths {
         head?: never;
         /** Expand session capacity (WAITER) */
         patch: operations["expandCapacity"];
+        trace?: never;
+    };
+    "/platform/restaurants/{id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update a tenant's status (suspend/reactivate), audited */
+        patch: operations["updateStatus"];
+        trace?: never;
+    };
+    "/platform/auth/password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Change the authenticated operator's own password */
+        patch: operations["changePassword"];
         trace?: never;
     };
     "/kitchen/orders/{orderId}/items/{itemId}/status": {
@@ -364,6 +433,23 @@ export interface paths {
         head?: never;
         /** Assign a role to a user (ADMIN) */
         patch: operations["updateRole"];
+        trace?: never;
+    };
+    "/admin/staff/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update a staff member's HR profile fields (ADMIN) */
+        patch: operations["updateStaffProfile"];
         trace?: never;
     };
     "/admin/restaurant/plan": {
@@ -451,6 +537,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/platform/restaurants/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Tenant detail, including its ADMIN user(s) */
+        get: operations["getById_2"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/platform/audit-log": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List operator audit-log entries, paginated and optionally filtered by restaurantId */
+        get: operations["getAll_3"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/menu": {
         parameters: {
             query?: never;
@@ -527,6 +647,23 @@ export interface paths {
         };
         /** Get live status of all tables for the authenticated tenant */
         get: operations["getLiveTableStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/staff": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the current tenant's staff, i.e. every non-CUSTOMER user (ADMIN) */
+        get: operations["getStaff"];
         put?: never;
         post?: never;
         delete?: never;
@@ -834,9 +971,18 @@ export interface components {
             maxParticipants?: number;
             participants?: components["schemas"]["Participant"][];
             items?: components["schemas"]["OrderItem"][];
+            activityLog?: components["schemas"]["SessionActivity"][];
             joinCode?: string;
             /** Format: date-time */
             createdAt?: string;
+        };
+        SessionActivity: {
+            /** @enum {string} */
+            type?: "ITEM_SENT" | "ITEM_DELETED";
+            itemName?: string;
+            participantName?: string;
+            /** Format: date-time */
+            timestamp?: string;
         };
         AddItemRequest: {
             /** Format: int64 */
@@ -844,6 +990,36 @@ export interface components {
         };
         JoinSessionCodeRequest: {
             joinCode: string;
+        };
+        PlatformRestaurantCreateRequest: {
+            name: string;
+            slug: string;
+            adminName: string;
+            adminEmail: string;
+            adminPassword: string;
+        };
+        PlatformRestaurantSummaryResponse: {
+            /** Format: uuid */
+            id?: string;
+            name?: string;
+            slug?: string;
+            /** @enum {string} */
+            plan?: "FREE" | "STARTER" | "PRO" | "ENTERPRISE";
+            /** @enum {string} */
+            status?: "ACTIVE" | "SUSPENDED" | "INACTIVE";
+            /** Format: date-time */
+            createdAt?: string;
+        };
+        PlatformLoginRequest: {
+            email: string;
+            password: string;
+        };
+        PlatformAuthResponse: {
+            token?: string;
+            /** Format: uuid */
+            operatorId?: string;
+            name?: string;
+            email?: string;
         };
         CalculateBillRequest: {
             /** @enum {string} */
@@ -928,6 +1104,14 @@ export interface components {
             /** Format: int32 */
             additional?: number;
         };
+        PlatformRestaurantStatusUpdateRequest: {
+            /** @enum {string} */
+            status: "ACTIVE" | "SUSPENDED" | "INACTIVE";
+        };
+        PlatformPasswordChangeRequest: {
+            currentPassword: string;
+            newPassword: string;
+        };
         UpdateItemStatusRequest: {
             /** @enum {string} */
             status: "DRAFT" | "PENDING" | "PREPARING" | "READY" | "DELIVERED";
@@ -978,8 +1162,40 @@ export interface components {
             email?: string;
             /** @enum {string} */
             role?: "CUSTOMER" | "WAITER" | "KITCHEN" | "ADMIN";
+            active?: boolean;
+            jobTitle?: string;
+            shift?: string;
+            contractType?: string;
+            location?: string;
+            efficiencyPercentage?: number;
+            pendingHours?: number;
             /** Format: date-time */
             createdAt?: string;
+        };
+        UpdateStaffProfileRequest: {
+            active?: boolean;
+            jobTitle?: string;
+            shift?: string;
+            contractType?: string;
+            location?: string;
+            efficiencyPercentage?: number;
+            pendingHours?: number;
+        };
+        StaffMemberResponse: {
+            id?: string;
+            name?: string;
+            email?: string;
+            /** @enum {string} */
+            role?: "CUSTOMER" | "WAITER" | "KITCHEN" | "ADMIN";
+            /** Format: date-time */
+            createdAt?: string;
+            active?: boolean;
+            jobTitle?: string;
+            shift?: string;
+            contractType?: string;
+            location?: string;
+            efficiencyPercentage?: number;
+            pendingHours?: number;
         };
         UpdateRestaurantPlanRequest: {
             /** @enum {string} */
@@ -1037,6 +1253,97 @@ export interface components {
             openingTime?: string;
             closingTime?: string;
         };
+        Pageable: {
+            /** Format: int32 */
+            page?: number;
+            /** Format: int32 */
+            size?: number;
+            sort?: string[];
+        };
+        PagePlatformRestaurantSummaryResponse: {
+            /** Format: int32 */
+            totalPages?: number;
+            /** Format: int64 */
+            totalElements?: number;
+            /** Format: int32 */
+            size?: number;
+            content?: components["schemas"]["PlatformRestaurantSummaryResponse"][];
+            /** Format: int32 */
+            number?: number;
+            sort?: components["schemas"]["SortObject"];
+            first?: boolean;
+            last?: boolean;
+            /** Format: int32 */
+            numberOfElements?: number;
+            pageable?: components["schemas"]["PageableObject"];
+            empty?: boolean;
+        };
+        PageableObject: {
+            /** Format: int64 */
+            offset?: number;
+            sort?: components["schemas"]["SortObject"];
+            /** Format: int32 */
+            pageSize?: number;
+            /** Format: int32 */
+            pageNumber?: number;
+            paged?: boolean;
+            unpaged?: boolean;
+        };
+        SortObject: {
+            empty?: boolean;
+            sorted?: boolean;
+            unsorted?: boolean;
+        };
+        PlatformRestaurantAdminResponse: {
+            id?: string;
+            name?: string;
+            email?: string;
+        };
+        PlatformRestaurantDetailResponse: {
+            /** Format: uuid */
+            id?: string;
+            name?: string;
+            slug?: string;
+            /** @enum {string} */
+            plan?: "FREE" | "STARTER" | "PRO" | "ENTERPRISE";
+            /** @enum {string} */
+            status?: "ACTIVE" | "SUSPENDED" | "INACTIVE";
+            /** Format: date-time */
+            createdAt?: string;
+            admins?: components["schemas"]["PlatformRestaurantAdminResponse"][];
+        };
+        PagePlatformAuditLogResponse: {
+            /** Format: int32 */
+            totalPages?: number;
+            /** Format: int64 */
+            totalElements?: number;
+            /** Format: int32 */
+            size?: number;
+            content?: components["schemas"]["PlatformAuditLogResponse"][];
+            /** Format: int32 */
+            number?: number;
+            sort?: components["schemas"]["SortObject"];
+            first?: boolean;
+            last?: boolean;
+            /** Format: int32 */
+            numberOfElements?: number;
+            pageable?: components["schemas"]["PageableObject"];
+            empty?: boolean;
+        };
+        PlatformAuditLogResponse: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            operatorId?: string;
+            operatorEmail?: string;
+            /** Format: uuid */
+            restaurantId?: string;
+            action?: string;
+            oldValue?: string;
+            newValue?: string;
+            /** Format: date-time */
+            createdAt?: string;
+        };
         MenuDTO: {
             /** Format: int64 */
             id?: number;
@@ -1045,46 +1352,23 @@ export interface components {
             imgUrl?: string;
             items?: components["schemas"]["MenuItemResponse"][];
         };
-        Pageable: {
-            /** Format: int32 */
-            page?: number;
-            /** Format: int32 */
-            size?: number;
-            sort?: string[];
-        };
         PageKitchenOrder: {
-            /** Format: int64 */
-            totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
+            /** Format: int64 */
+            totalElements?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["KitchenOrder"][];
             /** Format: int32 */
             number?: number;
             sort?: components["schemas"]["SortObject"];
+            first?: boolean;
+            last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
-            first?: boolean;
-            last?: boolean;
             empty?: boolean;
-        };
-        PageableObject: {
-            /** Format: int64 */
-            offset?: number;
-            sort?: components["schemas"]["SortObject"];
-            paged?: boolean;
-            /** Format: int32 */
-            pageNumber?: number;
-            /** Format: int32 */
-            pageSize?: number;
-            unpaged?: boolean;
-        };
-        SortObject: {
-            empty?: boolean;
-            sorted?: boolean;
-            unsorted?: boolean;
         };
         KitchenDisplayEntry: {
             /** Format: int32 */
@@ -1108,39 +1392,39 @@ export interface components {
             currentSession?: components["schemas"]["ActiveSessionSummary"];
         };
         PageMenuItemResponse: {
-            /** Format: int64 */
-            totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
+            /** Format: int64 */
+            totalElements?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["MenuItemResponse"][];
             /** Format: int32 */
             number?: number;
             sort?: components["schemas"]["SortObject"];
+            first?: boolean;
+            last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
-            first?: boolean;
-            last?: boolean;
             empty?: boolean;
         };
         PageCategoryResponse: {
-            /** Format: int64 */
-            totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
+            /** Format: int64 */
+            totalElements?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["CategoryResponse"][];
             /** Format: int32 */
             number?: number;
             sort?: components["schemas"]["SortObject"];
+            first?: boolean;
+            last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
-            first?: boolean;
-            last?: boolean;
             empty?: boolean;
         };
         AnalyticsTablesResponse: {
@@ -1557,6 +1841,76 @@ export interface operations {
     getAll: {
         parameters: {
             query: {
+                pageable: components["schemas"]["Pageable"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PagePlatformRestaurantSummaryResponse"];
+                };
+            };
+        };
+    };
+    create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlatformRestaurantCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PlatformRestaurantSummaryResponse"];
+                };
+            };
+        };
+    };
+    login: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlatformLoginRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PlatformAuthResponse"];
+                };
+            };
+        };
+    };
+    getAll_1: {
+        parameters: {
+            query: {
                 id?: number;
                 pageable: components["schemas"]["Pageable"];
             };
@@ -1577,7 +1931,7 @@ export interface operations {
             };
         };
     };
-    create: {
+    create_1: {
         parameters: {
             query?: never;
             header?: never;
@@ -1605,7 +1959,7 @@ export interface operations {
             };
         };
     };
-    getAll_1: {
+    getAll_2: {
         parameters: {
             query: {
                 pageable: components["schemas"]["Pageable"];
@@ -1627,7 +1981,7 @@ export interface operations {
             };
         };
     };
-    create_1: {
+    create_2: {
         parameters: {
             query?: never;
             header?: never;
@@ -1797,7 +2151,7 @@ export interface operations {
             };
         };
     };
-    login: {
+    login_1: {
         parameters: {
             query?: never;
             header?: never;
@@ -1844,6 +2198,54 @@ export interface operations {
                 content: {
                     "*/*": components["schemas"]["Session"];
                 };
+            };
+        };
+    };
+    updateStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlatformRestaurantStatusUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PlatformRestaurantSummaryResponse"];
+                };
+            };
+        };
+    };
+    changePassword: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlatformPasswordChangeRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -1918,6 +2320,32 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["User"];
+                };
+            };
+        };
+    };
+    updateStaffProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateStaffProfileRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["StaffMemberResponse"];
                 };
             };
         };
@@ -2036,6 +2464,51 @@ export interface operations {
             };
         };
     };
+    getById_2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PlatformRestaurantDetailResponse"];
+                };
+            };
+        };
+    };
+    getAll_3: {
+        parameters: {
+            query: {
+                restaurantId?: string;
+                pageable: components["schemas"]["Pageable"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PagePlatformAuditLogResponse"];
+                };
+            };
+        };
+    };
     getMenus: {
         parameters: {
             query?: never;
@@ -2136,6 +2609,26 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["TableStatusResponse"][];
+                };
+            };
+        };
+    };
+    getStaff: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["StaffMemberResponse"][];
                 };
             };
         };
