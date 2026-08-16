@@ -136,7 +136,7 @@ public class SessionService {
                 .build());
 
         eventPublisher.publishEvent(
-                new SessionOpened(session.getId(), tableId, table.getTableNumber()));
+                new SessionOpened(tenantId, session.getId(), tableId, table.getTableNumber()));
 
         return session;
     }
@@ -166,7 +166,8 @@ public class SessionService {
         session.getParticipants().add(Participant.builder().userId(user.getId()).name(userName).build());
         Session saved = sessionRepository.save(session);
 
-        eventPublisher.publishEvent(new ParticipantJoined(saved.getId(), user.getId(), userName));
+        eventPublisher.publishEvent(
+                new ParticipantJoined(saved.getTenantId(), saved.getId(), user.getId(), userName));
         return saved;
     }
 
@@ -198,7 +199,8 @@ public class SessionService {
 
         session.getParticipants().add(Participant.builder().userId(user.getId()).name(user.getName()).build());
         Session saved = sessionRepository.save(session);
-        eventPublisher.publishEvent(new ParticipantJoined(saved.getId(), user.getId(), user.getName()));
+        eventPublisher.publishEvent(
+                new ParticipantJoined(saved.getTenantId(), saved.getId(), user.getId(), user.getName()));
         return saved;
     }
 
@@ -316,7 +318,7 @@ public class SessionService {
         sessionRepository.save(session);
 
         eventPublisher.publishEvent(new SessionClosed(
-                session.getId(), session.getTableId(), session.getStatus()
+                session.getTenantId(), session.getId(), session.getTableId(), session.getStatus()
         ));
     }
 

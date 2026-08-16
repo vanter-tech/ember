@@ -214,7 +214,7 @@ class KitchenServiceTest {
                 .thenReturn(Optional.of(order));
         when(kitchenOrderRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        kitchenService.handleSessionClosed(new SessionClosed("sess-1", UUID.randomUUID(), SessionStatus.CLOSED));
+        kitchenService.handleSessionClosed(new SessionClosed(TENANT_ID, "sess-1", UUID.randomUUID(), SessionStatus.CLOSED));
 
         ArgumentCaptor<KitchenOrder> captor = ArgumentCaptor.forClass(KitchenOrder.class);
         verify(kitchenOrderRepository).save(captor.capture());
@@ -231,7 +231,7 @@ class KitchenServiceTest {
         when(kitchenOrderRepository.findByTenantIdAndSessionId(TENANT_ID, "sess-1"))
                 .thenReturn(Optional.empty());
 
-        kitchenService.handleSessionClosed(new SessionClosed("sess-1", UUID.randomUUID(), SessionStatus.CLOSED));
+        kitchenService.handleSessionClosed(new SessionClosed(TENANT_ID, "sess-1", UUID.randomUUID(), SessionStatus.CLOSED));
 
         verify(kitchenOrderRepository, org.mockito.Mockito.never()).save(any());
         verify(eventPublisher, org.mockito.Mockito.never()).publishEvent(any(KitchenOrderRetired.class));
