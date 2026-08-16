@@ -1,7 +1,7 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useLocation, useMatch } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
-import { Search, Plus } from 'lucide-react'
+import { Search, Plus, Clock } from 'lucide-react'
 import { useUIStore, type ModalType } from '@/store/uiStore'
 import { settingStore } from '@/store/settingStore'
 
@@ -14,10 +14,19 @@ export const TopNav = () => {
 
   const location = useLocation()
   const path = location.pathname
+  const isWaiterRoute = path.includes('/waiter')
 
   useEffect(() => {
     setSearchTerm('')
   }, [path, setSearchTerm])
+
+  const [now, setNow] = useState(() => new Date())
+
+  useEffect(() => {
+    if (!isWaiterRoute) return
+    const interval = setInterval(() => setNow(new Date()), 60_000)
+    return () => clearInterval(interval)
+  }, [isWaiterRoute])
 
   const allowedWaiterPaths = ['/waiter/tables'] // Rutas por agregar ya que no tengo bien definidas las views de los meseros.
 
@@ -43,8 +52,7 @@ export const TopNav = () => {
   } else if (path.includes('/admin/employees')) {
     buttonText = 'Nuevo empleado'
     searchPlaceholder = 'Buscar empleados...'
-  } else if (path.includes('/waiter')) {
-    buttonText = 'Nueva orden'
+  } else if (isWaiterRoute) {
     searchPlaceholder = 'Buscar mesas...'
   }
 
@@ -85,20 +93,30 @@ export const TopNav = () => {
         </div>
       </div>
 
-      <button
-        className="flex items-center gap-2
-            bg-[#8c1717] hover:bg-[#7a1414] text-white
-            px-5 py-2.5 rounded-full text-sm font-medium
-            transition-colors shadows-sm cursor-pointer"
-        onClick={(e) => {
-          e.preventDefault()
-          e.stopPropagation()
-          openModal(actionType, { id: Number(isMenuItemsRouteId) })
-        }}
-      >
-        <Plus size={18} strokeWidth={2} />
-        {buttonText}
-      </button>
+      {isWaiterRoute ? (
+        <div
+          className="flex items-center gap-2 rounded-full bg-zinc-100
+            px-5 py-2.5 text-sm font-medium text-zinc-700"
+        >
+          <Clock size={18} strokeWidth={2} />
+          {now.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' })}
+        </div>
+      ) : (
+        <button
+          className="flex items-center gap-2
+              bg-[#8c1717] hover:bg-[#7a1414] text-white
+              px-5 py-2.5 rounded-full text-sm font-medium
+              transition-colors shadows-sm cursor-pointer"
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            openModal(actionType, { id: Number(isMenuItemsRouteId) })
+          }}
+        >
+          <Plus size={18} strokeWidth={2} />
+          {buttonText}
+        </button>
+      )}
     </header>
   )
 }
