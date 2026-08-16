@@ -402,3 +402,93 @@ export const staffService = {
     return data
   },
 }
+
+// Hand-written (not `components['schemas'][...]` aliases): regenerating `backend-types.ts` needs
+// a live backend via `pnpm run openapi`, unavailable while the backend track lands in parallel.
+// Follow-up: once a live backend is up, regenerate and replace these with schema aliases like
+// every other service in this file.
+export type CashShiftLifecycleStatus = 'OPEN' | 'CLOSED'
+export type CashMovementType = 'CASH_IN' | 'CASH_OUT'
+
+export interface CashShiftResponse {
+  id: number
+  shiftNumber: number
+  status: CashShiftLifecycleStatus
+  openingFloat: number
+  openedByName: string
+  openedAt: string
+  closedByName: string | null
+  closedAt: string | null
+  expectedCash: number | null
+  countedCash: number | null
+  variance: number | null
+  totalCashSales: number | null
+  totalDigitalSales: number | null
+  totalCashIn: number | null
+  totalCashOut: number | null
+}
+
+export interface CashMovementResponse {
+  id: number
+  type: CashMovementType
+  amount: number
+  reason: string
+  createdByName: string
+  createdAt: string
+}
+
+export interface CashShiftDetailResponse {
+  shift: CashShiftResponse
+  movements: CashMovementResponse[]
+}
+
+export interface DailyReportResponse {
+  date: string
+  totalCashSales: number
+  totalDigitalSales: number
+  totalVariance: number
+  totalCashIn: number
+  totalCashOut: number
+  shifts: CashShiftResponse[]
+}
+
+export const cashShiftService = {
+  open: async (openingFloat: number): Promise<CashShiftResponse> => {
+    const { data } = await api.post<CashShiftResponse>('/cash-shifts/open', { openingFloat })
+    return data
+  },
+  current: async (): Promise<CashShiftResponse | null> => {
+    try {
+      const { data } = await api.get<CashShiftResponse>('/cash-shifts/current')
+      return data
+    } catch (error: any) {
+      if (error.response?.status === 404) return null
+      throw error
+    }
+  },
+  history: async (
+    params: { from?: string; to?: string; page?: number; size?: number } = {}
+  ): Promise<Page<CashShiftResponse>> => {
+    const { data } = await api.get<Page<CashShiftResponse>>('/cash-shifts', { params })
+    return data
+  },
+  detail: async (id: number): Promise<CashShiftDetailResponse> => {
+    const { data } = await api.get<CashShiftDetailResponse>(`/cash-shifts/${id}`)
+    return data
+  },
+  recordMovement: async (
+    id: number,
+    movement: { type: CashMovementType; amount: number; reason: string }
+  ): Promise<CashMovementResponse> => {
+    const { data } = await api.post<CashMovementResponse>(`/cash-shifts/${id}/movements`, movement)
+    return data
+  },
+  close: async (id: number, countedCash: number): Promise<CashShiftResponse> => {
+    const { data } = await api.post<CashShiftResponse>(`/cash-shifts/${id}/close`, { countedCash })
+    return data
+  },
+  dailyReport: async (date: string): Promise<DailyReportResponse> => {
+    const { data } = await api.get<DailyReportResponse>('/cash-shifts/daily-report', { params: { date } })
+    return data
+  },
+}
