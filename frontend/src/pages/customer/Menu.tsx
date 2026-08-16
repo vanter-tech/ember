@@ -16,6 +16,7 @@ import { useWebsocketStore } from '@/store/websocket'
 import { useSessionStore } from '@/store/sessionStore'
 import { ParticipantsPopUp } from '@/pages/customer/components/ParticipantsPopUp'
 import { ItemsFloatingIsland } from './components/ItemsFloatingIsland'
+import { MobileActionsIsland } from './components/MobileActionsIsland'
 import { useNavigate } from 'react-router-dom'
 
 export const Menu = () => {
@@ -179,11 +180,14 @@ export const Menu = () => {
             </Card>
           ))}
         </div>
-        <div className="fixed bottom-24 left-11 z-50 sm:bottom-10">
+        <div className="fixed bottom-10 left-11 z-50 hidden sm:block">
           <ParticipantsPopUp />
         </div>
-        <div className="fixed bottom-24 right-11 z-50 sm:bottom-10">
+        <div className="fixed bottom-10 right-11 z-50 hidden sm:block">
           <ItemsFloatingIsland />
+        </div>
+        <div className="fixed bottom-24 right-6 z-50 sm:hidden">
+          <MobileActionsIsland />
         </div>
       </div>
     </>
