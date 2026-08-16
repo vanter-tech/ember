@@ -461,8 +461,8 @@ export const cashShiftService = {
     try {
       const { data } = await api.get<CashShiftResponse>('/cash-shifts/current')
       return data
-    } catch (error: any) {
-      if (error.response?.status === 404) return null
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response?.status === 404) return null
       throw error
     }
   },

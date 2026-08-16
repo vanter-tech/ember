@@ -100,6 +100,13 @@ export const FloatingNav = () => {
           >
             <Users strokeWidth={1.5} size={24} />
           </Link>
+          <Link
+            to="/admin/cash-register"
+            className={navItemClass('/admin/cash-register')}
+            title="Caja"
+          >
+            <Banknote strokeWidth={1.5} size={24} />
+          </Link>
           <div className="w-px h-8 bg-zinc-200 dark:bg-zinc-700 mx-2"></div>
           <Link
             to="/admin/settings"
