@@ -214,6 +214,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/cash-shifts/{id}/movements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Record a manual cash movement on an open shift (WAITER) */
+        post: operations["recordMovement"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cash-shifts/{id}/close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Close a shift with a blind cash count — Arqueo de Turno (WAITER) */
+        post: operations["close"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cash-shifts/open": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Open a new cash shift — Apertura de Caja (WAITER) */
+        post: operations["open"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/billing/sessions/{sessionId}/bill": {
         parameters: {
             query?: never;
@@ -655,6 +706,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/cash-shifts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List cash shift history (WAITER/ADMIN) */
+        get: operations["history"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cash-shifts/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get one shift's detail including its movements (WAITER/ADMIN) */
+        get: operations["detail"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cash-shifts/daily-report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Corte Diario: roll up every shift closed on the given business day (ADMIN) */
+        get: operations["dailyReport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cash-shifts/current": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get the tenant's currently open shift (WAITER/ADMIN) */
+        get: operations["current"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/staff": {
         parameters: {
             query?: never;
@@ -1021,6 +1140,49 @@ export interface components {
             name?: string;
             email?: string;
         };
+        RecordMovementRequest: {
+            /** @enum {string} */
+            type: "CASH_IN" | "CASH_OUT";
+            amount: number;
+            reason: string;
+        };
+        CashMovementResponse: {
+            /** Format: int64 */
+            id?: number;
+            type?: string;
+            amount?: number;
+            reason?: string;
+            createdByName?: string;
+            /** Format: date-time */
+            createdAt?: string;
+        };
+        CloseShiftRequest: {
+            countedCash: number;
+        };
+        CashShiftResponse: {
+            /** Format: int64 */
+            id?: number;
+            /** Format: int32 */
+            shiftNumber?: number;
+            status?: string;
+            openingFloat?: number;
+            openedByName?: string;
+            /** Format: date-time */
+            openedAt?: string;
+            closedByName?: string;
+            /** Format: date-time */
+            closedAt?: string;
+            expectedCash?: number;
+            countedCash?: number;
+            variance?: number;
+            totalCashSales?: number;
+            totalDigitalSales?: number;
+            totalCashIn?: number;
+            totalCashOut?: number;
+        };
+        OpenShiftRequest: {
+            openingFloat: number;
+        };
         CalculateBillRequest: {
             /** @enum {string} */
             splitMethod: "BY_CONSUMPTION" | "EQUAL_PARTS";
@@ -1054,6 +1216,9 @@ export interface components {
             status?: "PENDING" | "CONFIRMED";
             /** Format: date-time */
             createdAt?: string;
+            /** Format: int64 */
+            cashShiftId?: number;
+            processedBy?: string;
         };
         PhysicalPaymentRequest: {
             /** Format: int64 */
@@ -1261,32 +1426,32 @@ export interface components {
             sort?: string[];
         };
         PagePlatformRestaurantSummaryResponse: {
-            /** Format: int32 */
-            totalPages?: number;
             /** Format: int64 */
             totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["PlatformRestaurantSummaryResponse"][];
             /** Format: int32 */
             number?: number;
             sort?: components["schemas"]["SortObject"];
-            first?: boolean;
-            last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
+            first?: boolean;
+            last?: boolean;
             empty?: boolean;
         };
         PageableObject: {
             /** Format: int64 */
             offset?: number;
             sort?: components["schemas"]["SortObject"];
-            /** Format: int32 */
-            pageSize?: number;
+            paged?: boolean;
             /** Format: int32 */
             pageNumber?: number;
-            paged?: boolean;
+            /** Format: int32 */
+            pageSize?: number;
             unpaged?: boolean;
         };
         SortObject: {
@@ -1313,21 +1478,21 @@ export interface components {
             admins?: components["schemas"]["PlatformRestaurantAdminResponse"][];
         };
         PagePlatformAuditLogResponse: {
-            /** Format: int32 */
-            totalPages?: number;
             /** Format: int64 */
             totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["PlatformAuditLogResponse"][];
             /** Format: int32 */
             number?: number;
             sort?: components["schemas"]["SortObject"];
-            first?: boolean;
-            last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
+            first?: boolean;
+            last?: boolean;
             empty?: boolean;
         };
         PlatformAuditLogResponse: {
@@ -1353,21 +1518,21 @@ export interface components {
             items?: components["schemas"]["MenuItemResponse"][];
         };
         PageKitchenOrder: {
-            /** Format: int32 */
-            totalPages?: number;
             /** Format: int64 */
             totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["KitchenOrder"][];
             /** Format: int32 */
             number?: number;
             sort?: components["schemas"]["SortObject"];
-            first?: boolean;
-            last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
+            first?: boolean;
+            last?: boolean;
             empty?: boolean;
         };
         KitchenDisplayEntry: {
@@ -1392,40 +1557,72 @@ export interface components {
             currentSession?: components["schemas"]["ActiveSessionSummary"];
         };
         PageMenuItemResponse: {
-            /** Format: int32 */
-            totalPages?: number;
             /** Format: int64 */
             totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["MenuItemResponse"][];
             /** Format: int32 */
             number?: number;
             sort?: components["schemas"]["SortObject"];
-            first?: boolean;
-            last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
+            first?: boolean;
+            last?: boolean;
             empty?: boolean;
         };
         PageCategoryResponse: {
-            /** Format: int32 */
-            totalPages?: number;
             /** Format: int64 */
             totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["CategoryResponse"][];
             /** Format: int32 */
             number?: number;
             sort?: components["schemas"]["SortObject"];
-            first?: boolean;
-            last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
+            first?: boolean;
+            last?: boolean;
             empty?: boolean;
+        };
+        PageCashShiftResponse: {
+            /** Format: int64 */
+            totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
+            /** Format: int32 */
+            size?: number;
+            content?: components["schemas"]["CashShiftResponse"][];
+            /** Format: int32 */
+            number?: number;
+            sort?: components["schemas"]["SortObject"];
+            /** Format: int32 */
+            numberOfElements?: number;
+            pageable?: components["schemas"]["PageableObject"];
+            first?: boolean;
+            last?: boolean;
+            empty?: boolean;
+        };
+        CashShiftDetailResponse: {
+            shift?: components["schemas"]["CashShiftResponse"];
+            movements?: components["schemas"]["CashMovementResponse"][];
+        };
+        DailyReportResponse: {
+            /** Format: date */
+            date?: string;
+            totalCashSales?: number;
+            totalDigitalSales?: number;
+            totalVariance?: number;
+            totalCashIn?: number;
+            totalCashOut?: number;
+            shifts?: components["schemas"]["CashShiftResponse"][];
         };
         AnalyticsTablesResponse: {
             /** Format: date-time */
@@ -2001,6 +2198,82 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["CategoryResponse"];
+                };
+            };
+        };
+    };
+    recordMovement: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecordMovementRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CashMovementResponse"];
+                };
+            };
+        };
+    };
+    close: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CloseShiftRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CashShiftResponse"];
+                };
+            };
+        };
+    };
+    open: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OpenShiftRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CashShiftResponse"];
                 };
             };
         };
@@ -2609,6 +2882,94 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["TableStatusResponse"][];
+                };
+            };
+        };
+    };
+    history: {
+        parameters: {
+            query: {
+                from?: string;
+                to?: string;
+                pageable: components["schemas"]["Pageable"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PageCashShiftResponse"];
+                };
+            };
+        };
+    };
+    detail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CashShiftDetailResponse"];
+                };
+            };
+        };
+    };
+    dailyReport: {
+        parameters: {
+            query: {
+                date: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["DailyReportResponse"];
+                };
+            };
+        };
+    };
+    current: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CashShiftResponse"];
                 };
             };
         };

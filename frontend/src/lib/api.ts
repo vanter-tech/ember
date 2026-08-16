@@ -403,54 +403,11 @@ export const staffService = {
   },
 }
 
-// Hand-written (not `components['schemas'][...]` aliases): regenerating `backend-types.ts` needs
-// a live backend via `pnpm run openapi`, unavailable while the backend track lands in parallel.
-// Follow-up: once a live backend is up, regenerate and replace these with schema aliases like
-// every other service in this file.
-export type CashShiftLifecycleStatus = 'OPEN' | 'CLOSED'
-export type CashMovementType = 'CASH_IN' | 'CASH_OUT'
-
-export interface CashShiftResponse {
-  id: number
-  shiftNumber: number
-  status: CashShiftLifecycleStatus
-  openingFloat: number
-  openedByName: string
-  openedAt: string
-  closedByName: string | null
-  closedAt: string | null
-  expectedCash: number | null
-  countedCash: number | null
-  variance: number | null
-  totalCashSales: number | null
-  totalDigitalSales: number | null
-  totalCashIn: number | null
-  totalCashOut: number | null
-}
-
-export interface CashMovementResponse {
-  id: number
-  type: CashMovementType
-  amount: number
-  reason: string
-  createdByName: string
-  createdAt: string
-}
-
-export interface CashShiftDetailResponse {
-  shift: CashShiftResponse
-  movements: CashMovementResponse[]
-}
-
-export interface DailyReportResponse {
-  date: string
-  totalCashSales: number
-  totalDigitalSales: number
-  totalVariance: number
-  totalCashIn: number
-  totalCashOut: number
-  shifts: CashShiftResponse[]
-}
+export type CashMovementType = components['schemas']['RecordMovementRequest']['type']
+export type CashShiftResponse = components['schemas']['CashShiftResponse']
+export type CashMovementResponse = components['schemas']['CashMovementResponse']
+export type CashShiftDetailResponse = components['schemas']['CashShiftDetailResponse']
+export type DailyReportResponse = components['schemas']['DailyReportResponse']
 
 export const cashShiftService = {
   open: async (openingFloat: number): Promise<CashShiftResponse> => {
@@ -478,7 +435,7 @@ export const cashShiftService = {
   },
   recordMovement: async (
     id: number,
-    movement: { type: CashMovementType; amount: number; reason: string }
+    movement: components['schemas']['RecordMovementRequest']
   ): Promise<CashMovementResponse> => {
     const { data } = await api.post<CashMovementResponse>(`/cash-shifts/${id}/movements`, movement)
     return data

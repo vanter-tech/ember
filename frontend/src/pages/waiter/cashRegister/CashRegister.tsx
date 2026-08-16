@@ -20,7 +20,7 @@ export const CashRegister = () => {
 
   const { data: detail } = useQuery({
     queryKey: ['cashShiftDetail', shift?.id],
-    queryFn: () => cashShiftService.detail(shift!.id),
+    queryFn: () => cashShiftService.detail(shift!.id!),
     enabled: !!shift?.id,
   })
 
@@ -55,7 +55,7 @@ export const CashRegister = () => {
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
                 <div>
                   <p className="text-xs text-muted-foreground">Fondo inicial</p>
-                  <p className="text-lg font-bold text-primary">{formatCurrency(shift.openingFloat)}</p>
+                  <p className="text-lg font-bold text-primary">{formatCurrency(shift.openingFloat ?? 0)}</p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Abierto por</p>
@@ -97,10 +97,10 @@ export const CashRegister = () => {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    detail!.movements.map((movement) => (
+                    (detail!.movements ?? []).map((movement) => (
                       <TableRow key={movement.id}>
                         <TableCell>{movement.type === 'CASH_IN' ? 'Entrada' : 'Salida'}</TableCell>
-                        <TableCell>{formatCurrency(movement.amount)}</TableCell>
+                        <TableCell>{formatCurrency(movement.amount ?? 0)}</TableCell>
                         <TableCell>{movement.reason}</TableCell>
                         <TableCell>{movement.createdByName}</TableCell>
                       </TableRow>

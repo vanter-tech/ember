@@ -18,11 +18,11 @@ export const DailyZReportPanel = () => {
 
   const cards = data
     ? [
-        { label: 'Ventas en efectivo', value: formatCurrency(data.totalCashSales), icon: DollarSign },
-        { label: 'Ventas digitales', value: formatCurrency(data.totalDigitalSales), icon: CreditCard },
-        { label: 'Diferencia total', value: formatCurrency(data.totalVariance), icon: Scale },
-        { label: 'Entradas manuales', value: formatCurrency(data.totalCashIn), icon: ArrowDownCircle },
-        { label: 'Salidas manuales', value: formatCurrency(data.totalCashOut), icon: ArrowUpCircle },
+        { label: 'Ventas en efectivo', value: formatCurrency(data.totalCashSales ?? 0), icon: DollarSign },
+        { label: 'Ventas digitales', value: formatCurrency(data.totalDigitalSales ?? 0), icon: CreditCard },
+        { label: 'Diferencia total', value: formatCurrency(data.totalVariance ?? 0), icon: Scale },
+        { label: 'Entradas manuales', value: formatCurrency(data.totalCashIn ?? 0), icon: ArrowDownCircle },
+        { label: 'Salidas manuales', value: formatCurrency(data.totalCashOut ?? 0), icon: ArrowUpCircle },
       ]
     : []
 
