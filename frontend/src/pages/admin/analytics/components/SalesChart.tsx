@@ -1,5 +1,13 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+} from 'recharts'
 import { analyticsService, type SalesGranularity } from '@/lib/api'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -28,21 +36,31 @@ export const SalesChart = () => {
   })
 
   const buckets = data?.buckets ?? []
-  const maxRevenue = Math.max(...buckets.map((bucket) => bucket.revenue ?? 0), 0)
+
+  const chartData = buckets.map((bucket) => ({
+    label: new Date(
+      bucket.bucketStart ?? bucket.bucketEnd ?? ''
+    ).toLocaleDateString('es', BUCKET_LABEL_FORMAT[granularity]),
+    revenue: bucket.revenue ?? 0,
+  }))
 
   return (
-    <Card>
+    <Card className="border border-border/40 bg-background shadow-sm">
       <CardHeader className="flex flex-row items-center justify-between gap-4">
-        <CardTitle className="text-sm font-medium text-zinc-500">
+        <CardTitle className="text-base font-semibold tracking-tight text-foreground">
           Ventas en el tiempo
         </CardTitle>
-        <div className="flex gap-1">
+        <div className="flex items-center gap-1 rounded-full bg-muted/60 p-1">
           {GRANULARITY_OPTIONS.map((option) => (
             <Button
               key={option.value}
               type="button"
               size="sm"
-              variant={granularity === option.value ? 'default' : 'outline'}
+              variant={granularity === option.value ? 'default' : 'ghost'}
+              className={cn(
+                'rounded-full',
+                granularity !== option.value && 'text-muted-foreground'
+              )}
               onClick={() => setGranularity(option.value)}
             >
               {option.label}
@@ -51,40 +69,63 @@ export const SalesChart = () => {
         </div>
       </CardHeader>
       <CardContent>
-        {isLoading && <div className="text-zinc-500">Cargando ventas...</div>}
+        {isLoading && (
+          <div className="flex items-center justify-center py-16 text-sm text-muted-foreground">
+            Cargando ventas...
+          </div>
+        )}
         {isError && (
-          <div className="text-red-500">Error al cargar las ventas.</div>
+          <div className="flex items-center justify-center py-16 text-sm text-destructive">
+            Error al cargar las ventas.
+          </div>
         )}
-        {data && buckets.length === 0 && (
-          <div className="text-zinc-500">Sin ventas registradas.</div>
+        {data && chartData.length === 0 && (
+          <div className="flex items-center justify-center py-16 text-sm text-muted-foreground">
+            Sin ventas registradas.
+          </div>
         )}
-        {buckets.length > 0 && (
-          <div className="flex h-48 items-end gap-1">
-            {buckets.map((bucket, index) => {
-              const revenue = bucket.revenue ?? 0
-              const heightPct = maxRevenue > 0 ? (revenue / maxRevenue) * 100 : 0
-              const label = new Date(
-                bucket.bucketStart ?? bucket.bucketEnd ?? ''
-              ).toLocaleDateString('es', BUCKET_LABEL_FORMAT[granularity])
-              return (
-                <div
-                  key={bucket.bucketStart ?? index}
-                  className="flex flex-1 flex-col items-center justify-end gap-1"
-                  title={`${label}: $${revenue.toFixed(2)}`}
-                >
-                  <div
-                    className={cn(
-                      'w-full min-h-[2px] rounded-t bg-primary',
-                      revenue === 0 && 'bg-zinc-200'
-                    )}
-                    style={{ height: `${heightPct}%` }}
-                  />
-                  <span className="text-[10px] text-zinc-400 whitespace-nowrap">
-                    {label}
-                  </span>
-                </div>
-              )
-            })}
+        {chartData.length > 0 && (
+          <div className="h-64 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart
+                data={chartData}
+                margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
+              >
+                <defs>
+                  <linearGradient id="salesRevenueFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.25} />
+                    <stop offset="100%" stopColor="var(--primary)" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid
+                  vertical={false}
+                  stroke="var(--border)"
+                  strokeOpacity={0.5}
+                />
+                <XAxis
+                  dataKey="label"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }}
+                />
+                <Tooltip
+                  cursor={{ stroke: 'var(--border)', strokeWidth: 1 }}
+                  contentStyle={{
+                    borderRadius: 8,
+                    border: '1px solid var(--border)',
+                    fontSize: 12,
+                  }}
+                  formatter={(value) => [`$${Number(value ?? 0).toFixed(2)}`, 'Ingresos']}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="revenue"
+                  stroke="var(--primary)"
+                  strokeWidth={2}
+                  fill="url(#salesRevenueFill)"
+                />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
         )}
       </CardContent>
