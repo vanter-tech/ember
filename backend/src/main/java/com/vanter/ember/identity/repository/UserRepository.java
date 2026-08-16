@@ -1,9 +1,12 @@
 package com.vanter.ember.identity.repository;
 
+import com.vanter.ember.identity.model.Role;
 import com.vanter.ember.identity.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 public interface UserRepository extends JpaRepository<User, String> {
     Optional<User> findByEmail(String email);

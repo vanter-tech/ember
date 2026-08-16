@@ -1,0 +1,40 @@
+---
+const year = new Date().getFullYear();
+---
+
+<footer class="border-t-[3px] border-foreground bg-background">
+	<div class="mx-auto max-w-6xl px-6 py-12">
+		<div class="grid gap-10 md:grid-cols-3">
+			<div>
+				<p class="font-mono text-xl font-black uppercase tracking-tight">EMBER</p>
+				<p class="mt-3 max-w-xs text-sm font-medium text-foreground/80">
+					Gestión de restaurantes en tiempo real: comandas, mesas y analítica en un solo panel.
+				</p>
+			</div>
+
+			<div>
+				<p class="font-mono text-sm font-bold uppercase tracking-widest text-accent">Legal</p>
+				<ul class="mt-3 space-y-2 text-sm font-medium uppercase tracking-wide">
+					<li><a href="/privacy">Política de privacidad</a></li>
+					<li><a href="/terms">Términos de servicio</a></li>
+					<li><a href="mailto:ventas@ember.vanter.com">Contacto</a></li>
+				</ul>
+			</div>
+
+			<div>
+				<p class="font-mono text-sm font-bold uppercase tracking-widest text-accent">Vanter S.A.</p>
+				<address class="mt-3 max-w-xs text-sm font-medium not-italic text-foreground/80">
+					Av. Amazonas N34-451 y Av. Atahualpa<br />
+					Quito, Pichincha, Ecuador<br />
+					RUC 1792999999001
+				</address>
+			</div>
+		</div>
+
+		<div
+			class="mt-10 border-t-[3px] border-foreground pt-6 text-center font-mono text-xs uppercase tracking-widest text-foreground/80"
+		>
+			© {year} Ember — Vanter S.A. Todos los derechos reservados.
+		</div>
+	</div>
+</footer>

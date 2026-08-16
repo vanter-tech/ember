@@ -1,0 +1,19 @@
+{
+  "name": "Ember",
+  "short_name": "Ember",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ],
+  "theme_color": "#8c1717",
+  "background_color": "#0a0a0a",
+  "display": "standalone"
+}
