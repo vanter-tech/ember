@@ -11,9 +11,18 @@ import com.vanter.ember.billing.model.SplitMethod;
 import com.vanter.ember.billing.repository.BillRepository;
 import com.vanter.ember.billing.repository.BillSplitRepository;
 import com.vanter.ember.billing.repository.PaymentRepository;
+import com.vanter.ember.cashregister.model.CashShift;
+import com.vanter.ember.cashregister.model.CashShiftStatus;
+import com.vanter.ember.cashregister.repository.CashShiftRepository;
 import com.vanter.ember.config.ResourceNotFoundException;
+import com.vanter.ember.config.TenantContextHolder;
+import com.vanter.ember.identity.model.Role;
+import com.vanter.ember.identity.model.User;
+import com.vanter.ember.identity.repository.UserRepository;
 import com.vanter.ember.session.model.Session;
 import com.vanter.ember.session.service.SessionService;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -43,16 +52,38 @@ class PaymentServiceTest {
     @Mock BillSplitRepository billSplitRepository;
     @Mock PaymentRepository paymentRepository;
     @Mock SessionService sessionService;
+    @Mock CashShiftRepository cashShiftRepository;
+    @Mock UserRepository userRepository;
     @Mock ApplicationEventPublisher eventPublisher;
     @InjectMocks PaymentService paymentService;
 
     private static final UUID TABLE_ID = UUID.randomUUID();
+    private static final UUID TENANT_ID = UUID.randomUUID();
+
+    @BeforeEach
+    void bindTenant() {
+        TenantContextHolder.setTenantId(TENANT_ID);
+    }
+
+    @AfterEach
+    void clearTenant() {
+        TenantContextHolder.clear();
+    }
 
     private Bill sampleBill() {
         return Bill.builder()
                 .id(1L).sessionId("sess-1").total(new BigDecimal("22.50"))
                 .splitMethod(SplitMethod.BY_CONSUMPTION).status(BillStatus.OPEN)
                 .createdAt(LocalDateTime.now()).build();
+    }
+
+    private CashShift openShift() {
+        return CashShift.builder().id(9L).status(CashShiftStatus.OPEN)
+                .openingFloat(BigDecimal.TEN).openedBy("user-1").build();
+    }
+
+    private User waiterUser() {
+        return User.builder().id("user-1").email("alice@ember.local").role(Role.WAITER).build();
     }
 
     private BillSplit unpaidSplit(Bill bill, String participant, String amount) {
@@ -69,6 +100,8 @@ class PaymentServiceTest {
     void registerPhysicalPayment_createsConfirmedPhysicalPayment() {
         Bill bill = sampleBill();
         BillSplit split = unpaidSplit(bill, "Alice", "12.50");
+        when(cashShiftRepository.findOpenForUpdate(any())).thenReturn(Optional.of(openShift()));
+        when(userRepository.findByEmail("alice@ember.local")).thenReturn(Optional.of(waiterUser()));
         when(billRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(bill));
         when(billSplitRepository.findByBillIdAndParticipantName(1L, "Alice"))
                 .thenReturn(Optional.of(split));
@@ -76,19 +109,33 @@ class PaymentServiceTest {
                 .thenReturn(List.of(unpaidSplit(bill, "Bob", "10.00")));
         when(paymentRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        Payment payment = paymentService.registerPhysicalPayment(1L, "Alice", new BigDecimal("12.50"));
+        Payment payment = paymentService.registerPhysicalPayment(
+                1L, "Alice", new BigDecimal("12.50"), "alice@ember.local");
 
         assertThat(payment.getMethod()).isEqualTo(PaymentMethod.PHYSICAL);
         assertThat(payment.getStatus()).isEqualTo(PaymentStatus.CONFIRMED);
         assertThat(payment.getAmount()).isEqualByComparingTo("12.50");
         assertThat(payment.getBill().getId()).isEqualTo(1L);
+        assertThat(payment.getCashShiftId()).isEqualTo(9L);
+        assertThat(payment.getProcessedBy()).isEqualTo("user-1");
         assertThat(payment.getCreatedAt()).isNotNull();
+    }
+
+    @Test
+    void registerPhysicalPayment_throwsWhenNoOpenShift() {
+        when(cashShiftRepository.findOpenForUpdate(any())).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> paymentService.registerPhysicalPayment(
+                1L, "Alice", new BigDecimal("12.50"), "alice@ember.local"))
+                .isInstanceOf(IllegalStateException.class);
     }
 
     @Test
     void registerPhysicalPayment_marksSplitAsPaid() {
         Bill bill = sampleBill();
         BillSplit split = unpaidSplit(bill, "Alice", "12.50");
+        when(cashShiftRepository.findOpenForUpdate(any())).thenReturn(Optional.of(openShift()));
+        when(userRepository.findByEmail("alice@ember.local")).thenReturn(Optional.of(waiterUser()));
         when(billRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(bill));
         when(billSplitRepository.findByBillIdAndParticipantName(1L, "Alice"))
                 .thenReturn(Optional.of(split));
@@ -96,7 +143,7 @@ class PaymentServiceTest {
                 .thenReturn(List.of(unpaidSplit(bill, "Bob", "10.00")));
         when(paymentRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        paymentService.registerPhysicalPayment(1L, "Alice", new BigDecimal("12.50"));
+        paymentService.registerPhysicalPayment(1L, "Alice", new BigDecimal("12.50"), "alice@ember.local");
 
         ArgumentCaptor<BillSplit> captor = ArgumentCaptor.forClass(BillSplit.class);
         verify(billSplitRepository).save(captor.capture());
@@ -110,6 +157,8 @@ class PaymentServiceTest {
         BillSplit bobSplitPaid = BillSplit.builder()
                 .id(11L).bill(bill).participantName("Bob")
                 .amount(new BigDecimal("10.00")).paid(true).build();
+        when(cashShiftRepository.findOpenForUpdate(any())).thenReturn(Optional.of(openShift()));
+        when(userRepository.findByEmail("alice@ember.local")).thenReturn(Optional.of(waiterUser()));
         when(billRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(bill));
         when(billSplitRepository.findByBillIdAndParticipantName(1L, "Alice"))
                 .thenReturn(Optional.of(aliceSplit));
@@ -117,7 +166,7 @@ class PaymentServiceTest {
         when(paymentRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(sessionService.findById("sess-1")).thenReturn(sampleSession());
 
-        paymentService.registerPhysicalPayment(1L, "Alice", new BigDecimal("12.50"));
+        paymentService.registerPhysicalPayment(1L, "Alice", new BigDecimal("12.50"), "alice@ember.local");
 
         ArgumentCaptor<PaymentCompleted> captor = ArgumentCaptor.forClass(PaymentCompleted.class);
         verify(eventPublisher).publishEvent(captor.capture());
@@ -131,34 +180,38 @@ class PaymentServiceTest {
         Bill bill = sampleBill();
         BillSplit aliceSplit = unpaidSplit(bill, "Alice", "12.50");
         BillSplit bobSplit = unpaidSplit(bill, "Bob", "10.00");
+        when(cashShiftRepository.findOpenForUpdate(any())).thenReturn(Optional.of(openShift()));
+        when(userRepository.findByEmail("alice@ember.local")).thenReturn(Optional.of(waiterUser()));
         when(billRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(bill));
         when(billSplitRepository.findByBillIdAndParticipantName(1L, "Alice"))
                 .thenReturn(Optional.of(aliceSplit));
         when(billSplitRepository.findByBillId(1L)).thenReturn(List.of(aliceSplit, bobSplit));
         when(paymentRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        paymentService.registerPhysicalPayment(1L, "Alice", new BigDecimal("12.50"));
+        paymentService.registerPhysicalPayment(1L, "Alice", new BigDecimal("12.50"), "alice@ember.local");
 
         verify(eventPublisher, never()).publishEvent(any());
     }
 
     @Test
     void registerPhysicalPayment_throwsWhenBillNotFound() {
+        when(cashShiftRepository.findOpenForUpdate(any())).thenReturn(Optional.of(openShift()));
         when(billRepository.findByIdForUpdate(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() ->
-                paymentService.registerPhysicalPayment(99L, "Alice", new BigDecimal("12.50")))
+                paymentService.registerPhysicalPayment(99L, "Alice", new BigDecimal("12.50"), "alice@ember.local"))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
     @Test
     void registerPhysicalPayment_throwsWhenSplitNotFound() {
+        when(cashShiftRepository.findOpenForUpdate(any())).thenReturn(Optional.of(openShift()));
         when(billRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(sampleBill()));
         when(billSplitRepository.findByBillIdAndParticipantName(1L, "Unknown"))
                 .thenReturn(Optional.empty());
 
         assertThatThrownBy(() ->
-                paymentService.registerPhysicalPayment(1L, "Unknown", new BigDecimal("12.50")))
+                paymentService.registerPhysicalPayment(1L, "Unknown", new BigDecimal("12.50"), "alice@ember.local"))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
@@ -166,12 +219,13 @@ class PaymentServiceTest {
     void registerPhysicalPayment_throwsWhenAmountDoesNotMatchSplit() {
         Bill bill = sampleBill();
         BillSplit split = unpaidSplit(bill, "Alice", "12.50");
+        when(cashShiftRepository.findOpenForUpdate(any())).thenReturn(Optional.of(openShift()));
         when(billRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(bill));
         when(billSplitRepository.findByBillIdAndParticipantName(1L, "Alice"))
                 .thenReturn(Optional.of(split));
 
         assertThatThrownBy(() ->
-                paymentService.registerPhysicalPayment(1L, "Alice", new BigDecimal("0.01")))
+                paymentService.registerPhysicalPayment(1L, "Alice", new BigDecimal("0.01"), "alice@ember.local"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("amount");
     }
@@ -181,29 +235,34 @@ class PaymentServiceTest {
     @Test
     void initiateDigitalPayment_createsPendingDigitalPayment() {
         Bill bill = sampleBill();
+        when(userRepository.findByEmail("alice@ember.local")).thenReturn(Optional.of(waiterUser()));
         when(billRepository.findById(1L)).thenReturn(Optional.of(bill));
         when(billSplitRepository.findByBillIdAndParticipantName(1L, "Alice"))
                 .thenReturn(Optional.of(unpaidSplit(bill, "Alice", "12.50")));
         when(paymentRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        Payment payment = paymentService.initiateDigitalPayment(1L, "Alice", new BigDecimal("12.50"));
+        Payment payment = paymentService.initiateDigitalPayment(
+                1L, "Alice", new BigDecimal("12.50"), "alice@ember.local");
 
         assertThat(payment.getMethod()).isEqualTo(PaymentMethod.DIGITAL);
         assertThat(payment.getStatus()).isEqualTo(PaymentStatus.PENDING);
         assertThat(payment.getAmount()).isEqualByComparingTo("12.50");
         assertThat(payment.getParticipantName()).isEqualTo("Alice");
         assertThat(payment.getBill().getId()).isEqualTo(1L);
+        assertThat(payment.getProcessedBy()).isEqualTo("user-1");
     }
 
     @Test
     void initiateDigitalPayment_setsNonNullGatewayRef() {
         Bill bill = sampleBill();
+        when(userRepository.findByEmail("alice@ember.local")).thenReturn(Optional.of(waiterUser()));
         when(billRepository.findById(1L)).thenReturn(Optional.of(bill));
         when(billSplitRepository.findByBillIdAndParticipantName(1L, "Alice"))
                 .thenReturn(Optional.of(unpaidSplit(bill, "Alice", "12.50")));
         when(paymentRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        Payment payment = paymentService.initiateDigitalPayment(1L, "Alice", new BigDecimal("12.50"));
+        Payment payment = paymentService.initiateDigitalPayment(
+                1L, "Alice", new BigDecimal("12.50"), "alice@ember.local");
 
         assertThat(payment.getGatewayRef()).isNotBlank();
     }
@@ -213,7 +272,7 @@ class PaymentServiceTest {
         when(billRepository.findById(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() ->
-                paymentService.initiateDigitalPayment(99L, "Alice", new BigDecimal("12.50")))
+                paymentService.initiateDigitalPayment(99L, "Alice", new BigDecimal("12.50"), "alice@ember.local"))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
@@ -224,7 +283,7 @@ class PaymentServiceTest {
                 .thenReturn(Optional.empty());
 
         assertThatThrownBy(() ->
-                paymentService.initiateDigitalPayment(1L, "Alice", new BigDecimal("12.50")))
+                paymentService.initiateDigitalPayment(1L, "Alice", new BigDecimal("12.50"), "alice@ember.local"))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
@@ -237,7 +296,7 @@ class PaymentServiceTest {
                 .thenReturn(Optional.of(split));
 
         assertThatThrownBy(() ->
-                paymentService.initiateDigitalPayment(1L, "Alice", new BigDecimal("5.00")))
+                paymentService.initiateDigitalPayment(1L, "Alice", new BigDecimal("5.00"), "alice@ember.local"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("amount");
     }

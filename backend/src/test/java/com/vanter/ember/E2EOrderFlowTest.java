@@ -7,6 +7,7 @@ import com.vanter.ember.billing.dto.SplitBillRequest;
 import com.vanter.ember.billing.model.SplitMethod;
 import com.vanter.ember.billing.repository.BillRepository;
 import com.vanter.ember.billing.repository.BillSplitRepository;
+import com.vanter.ember.cashregister.dto.OpenShiftRequest;
 import com.vanter.ember.catalog.model.Category;
 import com.vanter.ember.catalog.model.dto.MenuItemRequest;
 import com.vanter.ember.catalog.repository.CategoryRepository;
@@ -246,6 +247,14 @@ class E2EOrderFlowTest {
                         .content(objectMapper.writeValueAsString(
                                 new SplitBillRequest(SplitMethod.BY_CONSUMPTION, null))))
                 .andExpect(status().isOk());
+
+        // 7b — Waiter opens a cash shift (physical payments now require one open)
+        mockMvc.perform(post("/cash-shifts/open")
+                        .header("Authorization", bearer(waiterToken))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                new OpenShiftRequest(new BigDecimal("100.00")))))
+                .andExpect(status().isCreated());
 
         // 8 — Waiter registers Alice's physical payment
         PhysicalPaymentRequest payReq = new PhysicalPaymentRequest(

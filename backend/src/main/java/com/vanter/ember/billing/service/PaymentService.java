@@ -9,7 +9,12 @@ import com.vanter.ember.billing.model.PaymentStatus;
 import com.vanter.ember.billing.repository.BillRepository;
 import com.vanter.ember.billing.repository.BillSplitRepository;
 import com.vanter.ember.billing.repository.PaymentRepository;
+import com.vanter.ember.cashregister.model.CashShift;
+import com.vanter.ember.cashregister.repository.CashShiftRepository;
 import com.vanter.ember.config.ResourceNotFoundException;
+import com.vanter.ember.config.TenantContextHolder;
+import com.vanter.ember.identity.model.User;
+import com.vanter.ember.identity.repository.UserRepository;
 import com.vanter.ember.session.service.SessionService;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -28,10 +33,17 @@ public class PaymentService {
     private final BillSplitRepository billSplitRepository;
     private final PaymentRepository paymentRepository;
     private final SessionService sessionService;
+    private final CashShiftRepository cashShiftRepository;
+    private final UserRepository userRepository;
     private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
-    public Payment registerPhysicalPayment(Long billId, String participantName, BigDecimal amount) {
+    public Payment registerPhysicalPayment(
+            Long billId, String participantName, BigDecimal amount, String processedByEmail) {
+        CashShift shift = cashShiftRepository.findOpenForUpdate(TenantContextHolder.requireTenantId())
+                .orElseThrow(() -> new IllegalStateException(
+                        "No open cash shift; open one before registering a physical payment"));
+
         Bill bill = billRepository.findByIdForUpdate(billId)
                 .orElseThrow(() -> new ResourceNotFoundException("Bill not found: " + billId));
 
@@ -53,6 +65,8 @@ public class PaymentService {
                 .amount(amount)
                 .method(PaymentMethod.PHYSICAL)
                 .status(PaymentStatus.CONFIRMED)
+                .cashShiftId(shift.getId())
+                .processedBy(resolveUserId(processedByEmail))
                 .createdAt(LocalDateTime.now())
                 .build());
 
@@ -67,7 +81,8 @@ public class PaymentService {
     }
 
     @Transactional
-    public Payment initiateDigitalPayment(Long billId, String participantName, BigDecimal amount) {
+    public Payment initiateDigitalPayment(
+            Long billId, String participantName, BigDecimal amount, String processedByEmail) {
         Bill bill = billRepository.findById(billId)
                 .orElseThrow(() -> new ResourceNotFoundException("Bill not found: " + billId));
 
@@ -87,6 +102,7 @@ public class PaymentService {
                 .method(PaymentMethod.DIGITAL)
                 .status(PaymentStatus.PENDING)
                 .gatewayRef("STUB-" + UUID.randomUUID())
+                .processedBy(resolveUserId(processedByEmail))
                 .createdAt(LocalDateTime.now())
                 .build());
     }
@@ -120,5 +136,11 @@ public class PaymentService {
         }
 
         return saved;
+    }
+
+    private String resolveUserId(String email) {
+        return userRepository.findByEmail(email)
+                .map(User::getId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + email));
     }
 }

@@ -165,10 +165,10 @@ class BillingControllerTest {
     // --- POST /billing/payments/physical ---
 
     @Test
-    @WithMockUser(roles = "WAITER")
+    @WithMockUser(username = "waiter@ember.local", roles = "WAITER")
     void registerPhysicalPayment_returnsCreatedForWaiter() throws Exception {
         Bill bill = sampleBill();
-        when(paymentService.registerPhysicalPayment(anyLong(), anyString(), any(BigDecimal.class)))
+        when(paymentService.registerPhysicalPayment(anyLong(), anyString(), any(BigDecimal.class), anyString()))
                 .thenReturn(samplePayment(bill));
 
         PhysicalPaymentRequest req = new PhysicalPaymentRequest(1L, "Alice", new BigDecimal("25.00"));
@@ -193,7 +193,7 @@ class BillingControllerTest {
     // --- POST /billing/payments/digital ---
 
     @Test
-    @WithMockUser(roles = "CUSTOMER")
+    @WithMockUser(username = "customer@ember.local", roles = "CUSTOMER")
     void initiateDigitalPayment_returnsCreatedForCustomer() throws Exception {
         Bill bill = sampleBill();
         Payment pending = Payment.builder()
@@ -201,7 +201,7 @@ class BillingControllerTest {
                 .amount(new BigDecimal("25.00")).method(PaymentMethod.DIGITAL)
                 .status(PaymentStatus.PENDING).gatewayRef("STUB-abc")
                 .createdAt(LocalDateTime.now()).build();
-        when(paymentService.initiateDigitalPayment(anyLong(), anyString(), any(BigDecimal.class)))
+        when(paymentService.initiateDigitalPayment(anyLong(), anyString(), any(BigDecimal.class), anyString()))
                 .thenReturn(pending);
 
         DigitalPaymentRequest req = new DigitalPaymentRequest(1L, "Alice", new BigDecimal("25.00"));
@@ -215,7 +215,7 @@ class BillingControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = "WAITER")
+    @WithMockUser(username = "waiter@ember.local", roles = "WAITER")
     void initiateDigitalPayment_returnsCreatedForWaiter() throws Exception {
         Bill bill = sampleBill();
         Payment pending = Payment.builder()
@@ -223,7 +223,7 @@ class BillingControllerTest {
                 .amount(new BigDecimal("25.00")).method(PaymentMethod.DIGITAL)
                 .status(PaymentStatus.PENDING).gatewayRef("STUB-abc")
                 .createdAt(LocalDateTime.now()).build();
-        when(paymentService.initiateDigitalPayment(anyLong(), anyString(), any(BigDecimal.class)))
+        when(paymentService.initiateDigitalPayment(anyLong(), anyString(), any(BigDecimal.class), anyString()))
                 .thenReturn(pending);
 
         DigitalPaymentRequest req = new DigitalPaymentRequest(1L, "Alice", new BigDecimal("25.00"));

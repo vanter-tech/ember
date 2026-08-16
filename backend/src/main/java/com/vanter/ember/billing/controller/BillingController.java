@@ -17,6 +17,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -57,18 +58,20 @@ public class BillingController {
     @PostMapping("/payments/physical")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('WAITER')")
-    public Payment registerPhysicalPayment(@Valid @RequestBody PhysicalPaymentRequest request) {
+    public Payment registerPhysicalPayment(
+            @Valid @RequestBody PhysicalPaymentRequest request, Authentication authentication) {
         return paymentService.registerPhysicalPayment(
-                request.billId(), request.participantName(), request.amount());
+                request.billId(), request.participantName(), request.amount(), authentication.getName());
     }
 
     @Operation(summary = "Initiate digital payment (WAITER/CUSTOMER)")
     @PostMapping("/payments/digital")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasAnyRole('WAITER','CUSTOMER')")
-    public Payment initiateDigitalPayment(@Valid @RequestBody DigitalPaymentRequest request) {
+    public Payment initiateDigitalPayment(
+            @Valid @RequestBody DigitalPaymentRequest request, Authentication authentication) {
         return paymentService.initiateDigitalPayment(
-                request.billId(), request.participantName(), request.amount());
+                request.billId(), request.participantName(), request.amount(), authentication.getName());
     }
 
     @Operation(summary = "Confirm digital payment (WAITER)")
