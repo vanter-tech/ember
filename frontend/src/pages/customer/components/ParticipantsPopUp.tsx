@@ -1,6 +1,7 @@
 import { useSessionStore } from '@/store/sessionStore'
 import { useState } from 'react'
 import { AvatarInitials, AvatarColors } from '@/components/AvatarInitials'
+import { ParticipantsList } from './ParticipantsList'
 
 export const ParticipantsPopUp = () => {
   const { id: tableId, participants } = useSessionStore()
@@ -14,28 +15,7 @@ export const ParticipantsPopUp = () => {
 
       {isOpen && (
         <div className="absolute bottom-full left-0 mb-3 w-56 bg-white rounded-2xl shadow-xl border border-zinc-100 p-2 z-50">
-          <div className="px-2 pb-2 mb-2 border-b border-zinc-100 flex justify-between items-center">
-            <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">
-              En la mesa
-            </span>
-            <span className="text-xs font-medium text-zinc-500 bg-zinc-100 px-2 py-0.5 rounded-full">
-              {participants.length}{' '}
-            </span>
-          </div>
-          <div className="flex flex-col gap-1 max-h-48 overflow-y-auto">
-            {participants.map((participant, index) => (
-              <div key={participant.userId || index} 
-              className="flex items-center gap-3 p-2 rounded-xl hover:bg-zinc-50 transition-colors cursor-pointer">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 ${AvatarColors[index % AvatarColors.length]}`}>
-                  {AvatarInitials(participant.name?.toString() || '')}
-                </div>
-                <span className="text-sm font-medium text-zinc-700 truncate">
-                  {participant.name || 'Invitado'}
-                </span>
-              </div>
-            ))}
-          </div>
-
+          <ParticipantsList participants={participants} />
         </div>
       )}
 

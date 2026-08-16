@@ -81,6 +81,28 @@ class SessionRepositoryTenantIsolationTest {
     }
 
     @Test
+    void countByTenantIdAndStatus_countsOnlyTheOwningTenantsOpenSessions() {
+        save(TENANT_B);
+
+        assertThat(sessionRepository.countByTenantIdAndStatus(TENANT_A, SessionStatus.OPEN))
+                .isEqualTo(1L);
+        assertThat(sessionRepository.countByTenantIdAndStatus(TENANT_B, SessionStatus.OPEN))
+                .isEqualTo(2L);
+        assertThat(sessionRepository.countByTenantIdAndStatus(TENANT_A, SessionStatus.CLOSED))
+                .isZero();
+    }
+
+    @Test
+    void findByTenantIdAndIdIn_doesNotResolveAnotherTenantsSessions() {
+        List<String> bothIds = List.of(sessionA.getId(), sessionB.getId());
+
+        assertThat(sessionRepository.findByTenantIdAndIdIn(TENANT_A, bothIds))
+                .extracting(Session::getId)
+                .containsExactly(sessionA.getId());
+        assertThat(sessionRepository.findByTenantIdAndIdIn(UUID.randomUUID(), bothIds)).isEmpty();
+    }
+
+    @Test
     void findByTenantIdAndJoinCodeAndStatus_doesNotResolveAnotherTenantsJoinCode() {
         assertThat(sessionRepository.findByTenantIdAndJoinCodeAndStatus(
                 TENANT_B, "AB3CD", SessionStatus.OPEN))

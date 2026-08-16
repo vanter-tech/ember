@@ -4,11 +4,14 @@ import com.vanter.ember.config.ResourceNotFoundException;
 import com.vanter.ember.config.TenantContextHolder;
 import com.vanter.ember.kitchen.dto.KitchenDisplayEntry;
 import com.vanter.ember.kitchen.event.KitchenItemUpdated;
+import com.vanter.ember.kitchen.event.KitchenOrderRetired;
 import com.vanter.ember.kitchen.model.KitchenItem;
 import com.vanter.ember.kitchen.model.KitchenOrder;
 import com.vanter.ember.kitchen.repository.KitchenOrderRepository;
 import com.vanter.ember.session.event.KitchenItemsConfirmed;
+import com.vanter.ember.session.event.SessionClosed;
 import com.vanter.ember.session.model.OrderItem;
+import com.vanter.ember.session.model.SessionStatus;
 import com.vanter.ember.session.model.OrderItemStatus;
 import org.springframework.context.ApplicationEventPublisher;
 import org.junit.jupiter.api.AfterEach;
@@ -196,9 +199,42 @@ class KitchenServiceTest {
 
         ArgumentCaptor<KitchenItemUpdated> captor = ArgumentCaptor.forClass(KitchenItemUpdated.class);
         verify(eventPublisher).publishEvent(captor.capture());
+        assertThat(captor.getValue().tenantId()).isEqualTo(TENANT_ID);
         assertThat(captor.getValue().sessionId()).isEqualTo("sess-1");
         assertThat(captor.getValue().itemId()).isEqualTo("order-item-1");
         assertThat(captor.getValue().newStatus()).isEqualTo(OrderItemStatus.PREPARING);
+    }
+
+    // --- handleSessionClosed tests ---
+
+    @Test
+    void handleSessionClosed_retiresTheOrderForThatSession() {
+        KitchenOrder order = orderWithItem(OrderItemStatus.DELIVERED);
+        when(kitchenOrderRepository.findByTenantIdAndSessionId(TENANT_ID, "sess-1"))
+                .thenReturn(Optional.of(order));
+        when(kitchenOrderRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        kitchenService.handleSessionClosed(new SessionClosed(TENANT_ID, "sess-1", UUID.randomUUID(), SessionStatus.CLOSED));
+
+        ArgumentCaptor<KitchenOrder> captor = ArgumentCaptor.forClass(KitchenOrder.class);
+        verify(kitchenOrderRepository).save(captor.capture());
+        assertThat(captor.getValue().isActive()).isFalse();
+
+        ArgumentCaptor<KitchenOrderRetired> eventCaptor = ArgumentCaptor.forClass(KitchenOrderRetired.class);
+        verify(eventPublisher).publishEvent(eventCaptor.capture());
+        assertThat(eventCaptor.getValue().tenantId()).isEqualTo(TENANT_ID);
+        assertThat(eventCaptor.getValue().sessionId()).isEqualTo("sess-1");
+    }
+
+    @Test
+    void handleSessionClosed_doesNothingWhenNoOrderExistsForThatSession() {
+        when(kitchenOrderRepository.findByTenantIdAndSessionId(TENANT_ID, "sess-1"))
+                .thenReturn(Optional.empty());
+
+        kitchenService.handleSessionClosed(new SessionClosed(TENANT_ID, "sess-1", UUID.randomUUID(), SessionStatus.CLOSED));
+
+        verify(kitchenOrderRepository, org.mockito.Mockito.never()).save(any());
+        verify(eventPublisher, org.mockito.Mockito.never()).publishEvent(any(KitchenOrderRetired.class));
     }
 
     // --- findAll(Pageable) tests ---
@@ -226,7 +262,7 @@ class KitchenServiceTest {
         KitchenOrder orderTable3b = KitchenOrder.builder()
                 .id("ko-3").sessionId("sess-3").tableNumber(3)
                 .createdAt(now.minusMinutes(2)).items(new ArrayList<>()).build();
-        when(kitchenOrderRepository.findByTenantId(TENANT_ID)).thenReturn(List.of(orderTable3a, orderTable1, orderTable3b));
+        when(kitchenOrderRepository.findByTenantIdAndActiveTrue(TENANT_ID)).thenReturn(List.of(orderTable3a, orderTable1, orderTable3b));
 
         List<KitchenDisplayEntry> display = kitchenService.findDisplay();
 
@@ -246,7 +282,7 @@ class KitchenServiceTest {
         KitchenOrder newer = KitchenOrder.builder()
                 .id("ko-3").sessionId("sess-3").tableNumber(3)
                 .createdAt(now.minusMinutes(2)).items(new ArrayList<>()).build();
-        when(kitchenOrderRepository.findByTenantId(TENANT_ID)).thenReturn(List.of(newer, older));
+        when(kitchenOrderRepository.findByTenantIdAndActiveTrue(TENANT_ID)).thenReturn(List.of(newer, older));
 
         List<KitchenDisplayEntry> display = kitchenService.findDisplay();
 
@@ -264,7 +300,7 @@ class KitchenServiceTest {
         KitchenOrder table2 = KitchenOrder.builder()
                 .id("ko-2").sessionId("sess-2").tableNumber(2)
                 .createdAt(now).items(new ArrayList<>()).build();
-        when(kitchenOrderRepository.findByTenantId(TENANT_ID)).thenReturn(List.of(table5, table2));
+        when(kitchenOrderRepository.findByTenantIdAndActiveTrue(TENANT_ID)).thenReturn(List.of(table5, table2));
 
         List<KitchenDisplayEntry> display = kitchenService.findDisplay();
 

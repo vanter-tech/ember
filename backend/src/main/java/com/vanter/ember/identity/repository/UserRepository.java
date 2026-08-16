@@ -14,4 +14,7 @@ public interface UserRepository extends JpaRepository<User, String> {
 
     /** Untenanted by design, like {@link #findByEmail} — {@code User} carries no {@code @TenantId}. */
     List<User> findByRestaurantId_IdAndRole(UUID restaurantId, Role role);
+
+    /** Non-CUSTOMER users for a tenant — the Staff Management roster. */
+    List<User> findByRestaurantId_IdAndRoleNotOrderByNameAsc(UUID restaurantId, Role role);
 }

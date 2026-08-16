@@ -11,6 +11,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 
 import java.util.List;
 import java.util.Optional;
@@ -62,15 +65,16 @@ class CategoryServiceTest {
 
     @Test
     void findAll_returnsAllCategories() {
-        when(categoryRepository.findAll()).thenReturn(
-                List.of(Category.builder().id(1L).name("Burgers").build(),
-                        Category.builder().id(2L).name("Drinks").build()));
+        PageRequest pageable = PageRequest.of(0, 20);
+        when(categoryRepository.findAll(pageable)).thenReturn(
+                new PageImpl<>(List.of(Category.builder().id(1L).name("Burgers").build(),
+                        Category.builder().id(2L).name("Drinks").build())));
 
         when(menuItemRepository.countByCategoryId(any())).thenReturn(5);
 
-        List<CategoryResponse> result = categoryService.findAll();
+        Page<CategoryResponse> result = categoryService.findAll(pageable);
 
-        assertThat(result).hasSize(2);
+        assertThat(result.getContent()).hasSize(2);
     }
 
     @Test

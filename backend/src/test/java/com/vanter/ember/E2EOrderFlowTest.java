@@ -172,13 +172,17 @@ class E2EOrderFlowTest {
         String qrToken = objectMapper.readTree(
                 qrResult.getResponse().getContentAsString()).get("qrToken").asText();
 
-        // 3 — Customer joins session
-        mockMvc.perform(post("/sessions/" + sessionId + "/join")
+        // 3 — Customer joins session. Their login token carries no restaurant, so joining is what
+        // hands them a tenant-scoped one; every later call has to use it.
+        MvcResult joinResult = mockMvc.perform(post("/sessions/" + sessionId + "/join")
                         .header("Authorization", bearer(customerToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
                                 new JoinSessionRequest(qrToken, "Alice"))))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andReturn();
+        customerToken = objectMapper.readTree(joinResult.getResponse().getContentAsString())
+                .get("token").asText();
 
         // 4 — Customer adds an item
         MvcResult addItemResult = mockMvc.perform(post("/sessions/" + sessionId + "/items")

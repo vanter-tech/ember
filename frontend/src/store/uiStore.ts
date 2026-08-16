@@ -5,32 +5,37 @@ export type ModalType = 'CREATE_CATEGORY' | 'EDIT_CATEGORY' | 'DELETE_CATEGORY' 
                          'PARTICIPANTS_QR' | 'JOIN_TABLE' | 'TENANT_SUSPENDED' |null;
 
 export type SettingsType = 'BRANDING' | 'MENU' | 'BILLING' | 'HARDWARE'|
-                            'SPACE'| null;
+                            'SPACE'| 'HORARIO'| null;
 
 interface UIState {
   activeModal: ModalType
   modalPayload: any
+  searchTerm: string
   openModal: (modal: ModalType, payload?: any) => void
   closeModal: () => void
+  setSearchTerm: (value: string) => void
 }
 
 export const useUIStore = create<UIState>((set) => ({
 
     activeModal: null,
     modalPayload: null,
+    searchTerm: '',
 
 
   openModal: (modal, payload = null) => set({
 
     activeModal: modal,
     modalPayload: payload
-    
+
   }),
 
   closeModal: () => set({
     activeModal: null,
     modalPayload: null
-  })
+  }),
+
+  setSearchTerm: (value) => set({ searchTerm: value })
 
 }));
 

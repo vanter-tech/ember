@@ -9,9 +9,11 @@ import com.vanter.ember.config.TenantContextHolder;
 import com.vanter.ember.identity.model.User;
 import com.vanter.ember.identity.repository.UserRepository;
 import com.vanter.ember.kitchen.event.KitchenItemUpdated;
-import com.vanter.ember.restaurant.model.Restaurant;
+import com.vanter.ember.restaurant.model.RestaurantStatus;
+import com.vanter.ember.restaurant.repository.RestaurantRepository;
 import com.vanter.ember.session.dto.OrderItemDto;
 import com.vanter.ember.session.dto.ParticipantDto;
+import com.vanter.ember.session.dto.SessionActivityDto;
 import com.vanter.ember.session.dto.SessionDetailResponseDto;
 import com.vanter.ember.session.event.*;
 import com.vanter.ember.session.exception.TooManyParticipantsException;
@@ -19,6 +21,7 @@ import com.vanter.ember.session.model.OrderItem;
 import com.vanter.ember.session.model.OrderItemStatus;
 import com.vanter.ember.session.model.Participant;
 import com.vanter.ember.session.model.Session;
+import com.vanter.ember.session.model.SessionActivity;
 import com.vanter.ember.session.model.SessionStatus;
 import com.vanter.ember.session.repository.SessionRepository;
 
@@ -48,6 +51,7 @@ public class SessionService {
     private final QrTokenService qrTokenService;
     private final UserRepository userRepository;
     private final MenuItemRepository menuItemRepository;
+    private final RestaurantRepository restaurantRepository;
 
     /**
      * Loads a session scoped to the tenant bound to the current request: a session owned by another
@@ -83,6 +87,15 @@ public class SessionService {
                 ))
         ).toList();
 
+        var ActivityList = session.getActivityLog().stream().map(
+                (a -> new SessionActivityDto(
+                        a.getType(),
+                        a.getItemName(),
+                        a.getParticipantName(),
+                        a.getTimestamp()
+                ))
+        ).toList();
+
         return new SessionDetailResponseDto(
                 session.getId(),
                 session.getTableId(),
@@ -93,6 +106,7 @@ public class SessionService {
                 session.getMaxParticipants(),
                 ParticipantList,
                 ItemList,
+                ActivityList,
                 session.getCreatedAt()
         );
     }
@@ -122,23 +136,24 @@ public class SessionService {
                 .build());
 
         eventPublisher.publishEvent(
-                new SessionOpened(session.getId(), tableId, table.getTableNumber()));
+                new SessionOpened(tenantId, session.getId(), tableId, table.getTableNumber()));
 
         return session;
     }
 
     public Session joinSession(String qrToken, String requesterEmail, String userName) {
-        String sessionId = qrTokenService.validateQrToken(qrToken);
+        var qr = qrTokenService.validateQrToken(qrToken);
+        bindResolvedTenant(qr.tenantId());
 
         var user = userRepository.findByEmail(requesterEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found: " + requesterEmail));
 
-        Session session = findById(sessionId);
+        Session session = findById(qr.sessionId());
 
         int maxParticipants = session.getMaxParticipants();
         if (session.getParticipants().size() >= maxParticipants) {
             throw new TooManyParticipantsException(
-                    "Session " + sessionId + " is at full capacity (" + maxParticipants + ")");
+                    "Session " + qr.sessionId() + " is at full capacity (" + maxParticipants + ")");
         }
 
         boolean alreadyJoined = session.getParticipants().stream()
@@ -151,7 +166,8 @@ public class SessionService {
         session.getParticipants().add(Participant.builder().userId(user.getId()).name(userName).build());
         Session saved = sessionRepository.save(session);
 
-        eventPublisher.publishEvent(new ParticipantJoined(saved.getId(), user.getId(), userName));
+        eventPublisher.publishEvent(
+                new ParticipantJoined(saved.getTenantId(), saved.getId(), user.getId(), userName));
         return saved;
     }
 
@@ -160,11 +176,21 @@ public class SessionService {
         var user = userRepository.findByEmail(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found: " + userId));
 
-        Session session = sessionRepository
-                .findByTenantIdAndJoinCodeAndStatus(
-                        TenantContextHolder.requireTenantId(), joinCode, SessionStatus.OPEN)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,  "Code not found" + joinCode));
-
+        // Untenanted on purpose: the customer types this code before any restaurant is bound to
+        // their token, so the code itself is what identifies the tenant.
+        List<Session> matches = sessionRepository.findByJoinCodeAndStatus(joinCode, SessionStatus.OPEN);
+        if (matches.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Code not found: " + joinCode);
+        }
+        if (matches.size() > 1) {
+            // Join codes are random, not globally unique, so two restaurants can hold the same
+            // open code. Refuse rather than guess which diner's table was meant.
+            throw new IllegalStateException(
+                    "Join code " + joinCode + " is in use at more than one restaurant right now;"
+                            + " ask staff to reopen the table for a new code");
+        }
+        Session session = matches.get(0);
+        bindResolvedTenant(session.getTenantId());
 
         boolean alreadyJoin = session.getParticipants().stream().anyMatch(p -> p.getUserId().equals(user.getId()));
         if (alreadyJoin) {
@@ -173,8 +199,25 @@ public class SessionService {
 
         session.getParticipants().add(Participant.builder().userId(user.getId()).name(user.getName()).build());
         Session saved = sessionRepository.save(session);
-        eventPublisher.publishEvent(new ParticipantJoined(saved.getId(), user.getId(), user.getName()));
+        eventPublisher.publishEvent(
+                new ParticipantJoined(saved.getTenantId(), saved.getId(), user.getId(), user.getName()));
         return saved;
+    }
+
+    /**
+     * Binds the tenant a join credential resolved to, for the remainder of this request — the one
+     * place outside the JWT filters allowed to touch {@link TenantContextHolder}, because a
+     * customer's token carries no restaurant until they join a table. The id never comes from raw
+     * client input: it is read off a server-signed QR token or off the stored session document,
+     * exactly like PublicRestaurantController resolves a slug through its own lookup first.
+     */
+    private void bindResolvedTenant(UUID tenantId) {
+        var restaurant = restaurantRepository.findById(tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Restaurant not found: " + tenantId));
+        if (restaurant.getStatus() != RestaurantStatus.ACTIVE) {
+            throw new AccessDeniedException("This restaurant is not accepting orders right now");
+        }
+        TenantContextHolder.setTenantId(tenantId);
     }
 
     private String generateJoinCode(){
@@ -267,12 +310,6 @@ public class SessionService {
 
         item.setStatus(event.newStatus());
         sessionRepository.save(session);
-        eventPublisher.publishEvent(new ItemStatusUpdated(
-                event.sessionId(),
-                item.getId(),
-                item.getName(),
-                item.getParticipantName(),
-                event.newStatus()));
     }
 
     public void closeSession(String sessionId) {
@@ -281,7 +318,7 @@ public class SessionService {
         sessionRepository.save(session);
 
         eventPublisher.publishEvent(new SessionClosed(
-                session.getId(), session.getTableId(), session.getStatus()
+                session.getTenantId(), session.getId(), session.getTableId(), session.getStatus()
         ));
     }
 
@@ -325,6 +362,13 @@ public class SessionService {
 
         session.getItems().remove(item);
 
+        session.getActivityLog().add(SessionActivity.builder()
+                .type(SessionActivity.Type.ITEM_DELETED)
+                .itemName(item.getName())
+                .participantName(item.getParticipantName())
+                .timestamp(LocalDateTime.now())
+                .build());
+
         eventPublisher.publishEvent(new DeleteItem(
                 session.getId(), item.getId()
         ));
@@ -347,11 +391,6 @@ public class SessionService {
         DiningTables table = diningTableRepository.findById(session.getTableId())
                 .orElseThrow(() -> new ResourceNotFoundException("Table not found"));
 
-        Restaurant requesterRestaurant = requester.getRestaurantId();
-        if (requesterRestaurant == null || !requesterRestaurant.getId().equals(table.getRestaurantId())) {
-            throw new AccessDeniedException("Not authorized to confirm orders for this restaurant");
-        }
-
         List<OrderItem> drafts = session.getItems().stream()
                 .filter(item  -> item.getParticipantId().equals(userId))
                 .filter(item -> item.getStatus() == OrderItemStatus.DRAFT)
@@ -361,6 +400,12 @@ public class SessionService {
             drafts.forEach(item -> {
                 item.setStatus(OrderItemStatus.PENDING);
                 item.setAddedAt(LocalDateTime.now());
+                session.getActivityLog().add(SessionActivity.builder()
+                        .type(SessionActivity.Type.ITEM_SENT)
+                        .itemName(item.getName())
+                        .participantName(item.getParticipantName())
+                        .timestamp(item.getAddedAt())
+                        .build());
             });
 
             Session savedSession = sessionRepository.save(session);

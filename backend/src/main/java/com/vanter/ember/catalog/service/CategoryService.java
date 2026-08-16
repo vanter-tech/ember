@@ -6,8 +6,9 @@ import com.vanter.ember.catalog.model.dto.CategoryResponse;
 import com.vanter.ember.catalog.repository.CategoryRepository;
 import com.vanter.ember.catalog.repository.MenuItemRepository;
 import com.vanter.ember.config.ResourceNotFoundException;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -34,13 +35,12 @@ public class CategoryService {
         return CategoryResponse.from(savedCategory);
     }
 
-    public List<CategoryResponse> findAll() {
-        return categoryRepository.findAll().stream()
+    public Page<CategoryResponse> findAll(Pageable pageable) {
+        return categoryRepository.findAll(pageable)
                 .map(category -> {
                     Integer totalItems = menuItemRepository.countByCategoryId(category.getId());
                     return CategoryResponse.from(category, totalItems);
-                })
-                .toList();
+                });
     }
 
     public CategoryResponse findById(Long id) {

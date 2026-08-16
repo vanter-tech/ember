@@ -3,11 +3,15 @@ package com.vanter.ember.kitchen.service;
 import com.vanter.ember.config.ResourceNotFoundException;
 import com.vanter.ember.config.TenantContextHolder;
 import com.vanter.ember.kitchen.dto.KitchenDisplayEntry;
+import com.vanter.ember.kitchen.event.KitchenItemRemoved;
 import com.vanter.ember.kitchen.event.KitchenItemUpdated;
+import com.vanter.ember.kitchen.event.KitchenOrderRetired;
 import com.vanter.ember.kitchen.model.KitchenItem;
 import com.vanter.ember.kitchen.model.KitchenOrder;
 import com.vanter.ember.kitchen.repository.KitchenOrderRepository;
+import com.vanter.ember.session.event.DeleteItem;
 import com.vanter.ember.session.event.KitchenItemsConfirmed;
+import com.vanter.ember.session.event.SessionClosed;
 import com.vanter.ember.session.model.OrderItemStatus;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -36,9 +40,14 @@ public class KitchenService {
         return kitchenOrderRepository.findByTenantId(TenantContextHolder.requireTenantId(), pageable);
     }
 
-    /** Unpaginated: the kitchen display groups every open order by table, not a paged list. */
+    /**
+     * Unpaginated: the kitchen display groups every open order by table, not a paged list.
+     * Only {@code active} orders are shown — an order is retired (see
+     * {@link #handleSessionClosed}) once its session closes, so tickets from long-ended
+     * sessions don't linger on the live display.
+     */
     public List<KitchenDisplayEntry> findDisplay() {
-        return findAll().stream()
+        return kitchenOrderRepository.findByTenantIdAndActiveTrue(TenantContextHolder.requireTenantId()).stream()
                 .collect(Collectors.groupingBy(KitchenOrder::getTableNumber))
                 .entrySet().stream()
                 .sorted(Comparator.comparingInt(java.util.Map.Entry::getKey))
@@ -67,8 +76,10 @@ public class KitchenService {
                         .tableNumber(event.tableNumber())
                         .createdAt(LocalDateTime.now())
                         .items(new ArrayList<>())
+                        .active(true)
                         .build());
 
+        order.setActive(true);
         event.confirmedItems().forEach(item -> {
             order.getItems().add(KitchenItem.builder()
                     .itemId(item.getId())
@@ -101,8 +112,48 @@ public class KitchenService {
         item.setStatus(newStatus);
         item.setUpdatedAt(LocalDateTime.now());
         KitchenOrder saved = kitchenOrderRepository.save(order);
-        eventPublisher.publishEvent(new KitchenItemUpdated(saved.getSessionId(), itemId, newStatus));
+        eventPublisher.publishEvent(new KitchenItemUpdated(
+                TenantContextHolder.requireTenantId(), saved.getSessionId(), itemId, newStatus));
         return saved;
+    }
+
+    /**
+     * Mirrors a waiter/customer item removal into the kitchen's own copy of the order — otherwise
+     * a deleted item disappears from the session view but keeps showing on the live KDS forever.
+     */
+    @EventListener
+    public void handleItemDeleted(DeleteItem event) {
+        kitchenOrderRepository
+                .findByTenantIdAndSessionId(TenantContextHolder.requireTenantId(), event.sessionId())
+                .ifPresent(order -> {
+                    boolean removed = order.getItems().removeIf(
+                            item -> event.orderItemId().equals(item.getItemId()));
+                    if (!removed) {
+                        return;
+                    }
+                    if (order.getItems().isEmpty()) {
+                        order.setActive(false);
+                        KitchenOrder saved = kitchenOrderRepository.save(order);
+                        eventPublisher.publishEvent(
+                                new KitchenOrderRetired(saved.getTenantId(), event.sessionId()));
+                    } else {
+                        KitchenOrder saved = kitchenOrderRepository.save(order);
+                        eventPublisher.publishEvent(new KitchenItemRemoved(
+                                saved.getTenantId(), event.sessionId(), event.orderItemId()));
+                    }
+                });
+    }
+
+    /** Retires the order from the live display once its session closes; history is kept, not shown. */
+    @EventListener
+    public void handleSessionClosed(SessionClosed event) {
+        kitchenOrderRepository
+                .findByTenantIdAndSessionId(TenantContextHolder.requireTenantId(), event.sessionId())
+                .ifPresent(order -> {
+                    order.setActive(false);
+                    KitchenOrder saved = kitchenOrderRepository.save(order);
+                    eventPublisher.publishEvent(new KitchenOrderRetired(saved.getTenantId(), event.sessionId()));
+                });
     }
 
     private boolean isValidTransition(OrderItemStatus current, OrderItemStatus next) {

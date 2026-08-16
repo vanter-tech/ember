@@ -10,6 +10,7 @@ import {
   Home,
   Menu,
   ChefHat,
+  Users,
 } from 'lucide-react'
 import { useSessionStore } from '@/store/sessionStore'
 
@@ -41,8 +42,9 @@ export const FloatingNav = () => {
 
   return (
     <nav
-      className=" fixed bottom-8 inset-x-0 mx-auto w-max bg-white dark:bg-zinc-900 shadow-2xl rounded-full
-        px-4 py-2 flex items-center gap-2 border border-zinc-200 dark:border-zinc-800 z-50"
+      className="fixed bottom-4 sm:bottom-8 inset-x-0 mx-auto w-max max-w-[92vw] bg-white dark:bg-zinc-900 shadow-2xl rounded-full
+        px-2 sm:px-4 py-2 flex items-center gap-1 sm:gap-2 border border-zinc-200 dark:border-zinc-800 z-50
+        overflow-x-auto no-scrollbar"
     >
       {(role === 'WAITER' || role === 'ADMIN') && (
         <Link
@@ -74,11 +76,18 @@ export const FloatingNav = () => {
             <Package strokeWidth={1.5} size={24} />
           </Link>
           <Link
-            to="/admin/reports"
-            className={navItemClass('/admin/reports')}
-            title="Reportes"
+            to="/admin/analytics"
+            className={navItemClass('/admin/analytics')}
+            title="Analíticas"
           >
             <BarChart3 strokeWidth={1.5} size={24} />
+          </Link>
+          <Link
+            to="/admin/employees"
+            className={navItemClass('/admin/employees')}
+            title="Personal"
+          >
+            <Users strokeWidth={1.5} size={24} />
           </Link>
           <div className="w-px h-8 bg-zinc-200 dark:bg-zinc-700 mx-2"></div>
           <Link

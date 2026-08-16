@@ -7,6 +7,7 @@ import com.vanter.ember.billing.model.BillStatus;
 import com.vanter.ember.billing.model.SplitMethod;
 import com.vanter.ember.config.AbstractTenantIsolationTest;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -77,6 +78,154 @@ class BillRepositoryTenantIsolationTest extends AbstractTenantIsolationTest {
 
         assertThat(readAs(TENANT_A, () -> billRepository.findAll())).hasSize(1);
         assertThat(readAs(TENANT_B, () -> billRepository.findAll())).hasSize(1);
+    }
+
+    @Test
+    void findActivityWindow_onlyAggregatesTheBoundTenantsBills() {
+        billSavedFor(TENANT_A, "sess-1");
+        billSavedFor(TENANT_B, "sess-2");
+        billSavedFor(TENANT_B, "sess-3");
+
+        var windowForB = readAs(TENANT_B, () -> billRepository.findActivityWindow(TENANT_B));
+
+        assertThat(windowForB.billCount()).isEqualTo(2L);
+        assertThat(windowForB.firstBillAt()).isNotNull();
+        assertThat(windowForB.lastBillAt()).isNotNull();
+    }
+
+    @Test
+    void findActivityWindow_isEmptyForATenantWithNoBills() {
+        billSavedFor(TENANT_A, "sess-1");
+
+        var windowForB = readAs(TENANT_B, () -> billRepository.findActivityWindow(TENANT_B));
+
+        assertThat(windowForB.billCount()).isZero();
+        assertThat(windowForB.firstBillAt()).isNull();
+        assertThat(windowForB.lastBillAt()).isNull();
+    }
+
+    private Bill billSavedFor(
+            UUID tenantId, String sessionId, BillStatus status, String total, LocalDateTime createdAt) {
+        return readAs(
+                tenantId,
+                () ->
+                        billRepository.saveAndFlush(
+                                Bill.builder()
+                                        .sessionId(sessionId)
+                                        .total(new BigDecimal(total))
+                                        .splitMethod(SplitMethod.BY_CONSUMPTION)
+                                        .status(status)
+                                        .createdAt(createdAt)
+                                        .build()));
+    }
+
+    @Test
+    void findSalesTotals_onlyAggregatesTheBoundTenantsBills() {
+        LocalDateTime when = LocalDateTime.of(2026, 8, 10, 20, 0);
+        billSavedFor(TENANT_A, "sess-1", BillStatus.PAID, "100.00", when);
+        billSavedFor(TENANT_B, "sess-2", BillStatus.PAID, "30.00", when);
+        billSavedFor(TENANT_B, "sess-3", BillStatus.PAID, "20.00", when);
+
+        var totalsForB = readAs(
+                TENANT_B,
+                () -> billRepository.findSalesTotals(
+                        TENANT_B, when.minusDays(1), when.plusDays(1)));
+
+        assertThat(totalsForB.billCount()).isEqualTo(2L);
+        assertThat(totalsForB.salesTotal()).isEqualByComparingTo("50.00");
+    }
+
+    @Test
+    void findSalesTotals_ignoresOpenBillsAndBillsOutsideTheWindow() {
+        LocalDateTime inWindow = LocalDateTime.of(2026, 8, 10, 20, 0);
+        billSavedFor(TENANT_A, "sess-paid", BillStatus.PAID, "40.00", inWindow);
+        billSavedFor(TENANT_A, "sess-open", BillStatus.OPEN, "999.00", inWindow);
+        billSavedFor(TENANT_A, "sess-old", BillStatus.PAID, "999.00", inWindow.minusMonths(2));
+
+        var totals = readAs(
+                TENANT_A,
+                () -> billRepository.findSalesTotals(
+                        TENANT_A, inWindow.minusDays(1), inWindow.plusDays(1)));
+
+        assertThat(totals.billCount()).isEqualTo(1L);
+        assertThat(totals.salesTotal()).isEqualByComparingTo("40.00");
+    }
+
+    @Test
+    void findSalesTotals_isEmptyForATenantWithNoPaidBills() {
+        LocalDateTime when = LocalDateTime.of(2026, 8, 10, 20, 0);
+        billSavedFor(TENANT_A, "sess-1", BillStatus.PAID, "40.00", when);
+
+        var totalsForB = readAs(
+                TENANT_B,
+                () -> billRepository.findSalesTotals(
+                        TENANT_B, when.minusDays(1), when.plusDays(1)));
+
+        assertThat(totalsForB.billCount()).isZero();
+        assertThat(totalsForB.salesTotal()).isNull();
+    }
+
+    @Test
+    void findPaidBillsByDay_groupsTheBoundTenantsPaidBillsPerCalendarDay() {
+        LocalDateTime firstDay = LocalDateTime.of(2026, 8, 10, 20, 0);
+        billSavedFor(TENANT_A, "sess-noise", BillStatus.PAID, "999.00", firstDay);
+        billSavedFor(TENANT_B, "sess-1", BillStatus.PAID, "30.00", firstDay);
+        billSavedFor(TENANT_B, "sess-2", BillStatus.PAID, "20.00", firstDay.plusHours(2));
+        billSavedFor(TENANT_B, "sess-3", BillStatus.PAID, "10.00", firstDay.plusDays(2));
+        billSavedFor(TENANT_B, "sess-open", BillStatus.OPEN, "999.00", firstDay);
+
+        List<BillDailyOrders> daysForB = readAs(
+                TENANT_B,
+                () -> billRepository.findPaidBillsByDay(
+                        TENANT_B, firstDay.minusDays(1), firstDay.plusDays(3)));
+
+        assertThat(daysForB).hasSize(2);
+        assertThat(daysForB.get(0).date()).isEqualTo(LocalDate.of(2026, 8, 10));
+        assertThat(daysForB.get(0).billCount()).isEqualTo(2L);
+        assertThat(daysForB.get(1).date()).isEqualTo(LocalDate.of(2026, 8, 12));
+        assertThat(daysForB.get(1).billCount()).isEqualTo(1L);
+    }
+
+    @Test
+    void findPaidBillsByDay_isEmptyOutsideTheWindow() {
+        LocalDateTime when = LocalDateTime.of(2026, 8, 10, 20, 0);
+        billSavedFor(TENANT_A, "sess-1", BillStatus.PAID, "40.00", when);
+
+        assertThat(readAs(
+                        TENANT_A,
+                        () -> billRepository.findPaidBillsByDay(
+                                TENANT_A, when.minusDays(3), when.minusDays(2))))
+                .isEmpty();
+    }
+
+    @Test
+    void findPaidSessionIds_returnsOnlyTheBoundTenantsSettledSessions() {
+        LocalDateTime when = LocalDateTime.of(2026, 8, 10, 20, 0);
+        billSavedFor(TENANT_A, "sess-noise", BillStatus.PAID, "999.00", when);
+        billSavedFor(TENANT_B, "sess-1", BillStatus.PAID, "30.00", when);
+        billSavedFor(TENANT_B, "sess-2", BillStatus.PAID, "20.00", when.plusHours(2));
+
+        List<String> sessionIdsForB = readAs(
+                TENANT_B,
+                () -> billRepository.findPaidSessionIds(
+                        TENANT_B, when.minusDays(1), when.plusDays(1)));
+
+        assertThat(sessionIdsForB).containsExactlyInAnyOrder("sess-1", "sess-2");
+    }
+
+    @Test
+    void findPaidSessionIds_ignoresOpenBillsAndBillsOutsideTheWindow() {
+        LocalDateTime inWindow = LocalDateTime.of(2026, 8, 10, 20, 0);
+        billSavedFor(TENANT_A, "sess-paid", BillStatus.PAID, "40.00", inWindow);
+        billSavedFor(TENANT_A, "sess-open", BillStatus.OPEN, "999.00", inWindow);
+        billSavedFor(TENANT_A, "sess-old", BillStatus.PAID, "999.00", inWindow.minusMonths(2));
+
+        List<String> sessionIds = readAs(
+                TENANT_A,
+                () -> billRepository.findPaidSessionIds(
+                        TENANT_A, inWindow.minusDays(1), inWindow.plusDays(1)));
+
+        assertThat(sessionIds).containsExactly("sess-paid");
     }
 
     @Test

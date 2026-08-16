@@ -6,14 +6,14 @@ import com.vanter.ember.identity.model.dto.AuthResponse;
 import com.vanter.ember.identity.model.dto.LoginRequest;
 import com.vanter.ember.identity.model.dto.RegisterRequest;
 import com.vanter.ember.identity.repository.UserRepository;
-import com.vanter.ember.restaurant.model.Restaurant;
-import com.vanter.ember.restaurant.service.RestaurantService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -22,38 +22,22 @@ public class AuthService {
     private final UserRepository userRepository;
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
-    private final RestaurantService restaurantService;
 
     public AuthResponse register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new IllegalArgumentException("Email already in use");
         }
 
-        Restaurant restaurant = restaurantService.createOrJoin(
-                request.getRestaurantName(), request.getRestaurantSlug(), request.getName());
-
         User user = User.builder()
                 .name(request.getName())
                 .email(request.getEmail())
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
                 .role(Role.CUSTOMER)
-                .restaurantId(restaurant)
                 .build();
 
         userRepository.save(user);
 
-        String token = jwtService.generateToken(
-                user.getEmail(),
-                Map.of("role", user.getRole().name(), "userId", user.getId(), "rid", restaurant.getId())
-        );
-
-        return AuthResponse.builder()
-                .token(token)
-                .userId(user.getId())
-                .name(user.getName())
-                .restaurantId(user.getRestaurantId() != null ? user.getRestaurantId().getId() : null)
-                .role(user.getRole().name())
-                .build();
+        return buildResponse(user, tenantIdOf(user));
     }
 
     public AuthResponse login(LoginRequest request) {
@@ -64,18 +48,50 @@ public class AuthService {
             throw new BadCredentialsException("Invalid credentials");
         }
 
-        String token = jwtService.generateToken(
-                user.getEmail(),
-                Map.of("role", user.getRole().name(), "userId", user.getId(),
-                        "rid", user.getRestaurantId().getId())
-        );
+        return buildResponse(user, tenantIdOf(user));
+    }
+
+    /**
+     * Re-issues a caller's token bound to the restaurant they just joined a table at. CUSTOMER
+     * tokens start with no tenant (see {@link #tenantIdOf}); this is how they acquire one, and the
+     * only caller is the session-join flow, which derives {@code restaurantId} from a server-signed
+     * QR token or from the session document itself — never from raw client input.
+     */
+    public AuthResponse issueTenantScopedToken(String email, UUID restaurantId) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new BadCredentialsException("Invalid credentials"));
+        // Only CUSTOMERs float between restaurants. Staff stay pinned to their own tenant
+        // whatever session they touched, so a stray join can never widen their access.
+        UUID scoped = user.getRole() == Role.CUSTOMER ? restaurantId : tenantIdOf(user);
+        return buildResponse(user, scoped);
+    }
+
+    /**
+     * CUSTOMER accounts aren't bound to a restaurant: they can order at any tenant, and which one
+     * only becomes known when they join a table. ADMIN/WAITER/KITCHEN staff are tenant-bound at
+     * creation, so their tenant comes straight off the stored {@code User.restaurantId}.
+     */
+    private UUID tenantIdOf(User user) {
+        if (user.getRole() == Role.CUSTOMER || user.getRestaurantId() == null) {
+            return null;
+        }
+        return user.getRestaurantId().getId();
+    }
+
+    private AuthResponse buildResponse(User user, UUID restaurantId) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("role", user.getRole().name());
+        claims.put("userId", user.getId());
+        if (restaurantId != null) {
+            claims.put("rid", restaurantId);
+        }
 
         return AuthResponse.builder()
-                .token(token)
+                .token(jwtService.generateToken(user.getEmail(), claims))
                 .userId(user.getId())
                 .name(user.getName())
                 .role(user.getRole().name())
-                .restaurantId(user.getRestaurantId() != null ? user.getRestaurantId().getId() : null)
+                .restaurantId(restaurantId)
                 .build();
     }
 }

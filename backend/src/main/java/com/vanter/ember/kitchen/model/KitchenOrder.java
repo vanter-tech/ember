@@ -29,4 +29,8 @@ public class KitchenOrder {
 
     @Builder.Default
     private List<KitchenItem> items = new ArrayList<>();
+
+    /** Whether this order still belongs to a live session; false once its session closes. */
+    @Builder.Default
+    private boolean active = true;
 }

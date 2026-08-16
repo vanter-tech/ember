@@ -42,10 +42,13 @@ class QrTokenServiceTest {
     }
 
     @Test
-    void validateQrToken_extractsSessionId() {
+    void validateQrToken_extractsSessionIdAndTenant() {
         String token = qrTokenService.generateQrToken("sess-1");
 
-        assertThat(qrTokenService.validateQrToken(token)).isEqualTo("sess-1");
+        var data = qrTokenService.validateQrToken(token);
+
+        assertThat(data.sessionId()).isEqualTo("sess-1");
+        assertThat(data.tenantId()).isEqualTo(TENANT_ID);
     }
 
     @Test
@@ -56,13 +59,13 @@ class QrTokenServiceTest {
     }
 
     @Test
-    void validateQrToken_throwsWhenTokenBelongsToAnotherTenant() {
+    void validateQrToken_reportsTheTokensOwnTenantNotTheRequestContext() {
+        // A scanning customer carries no tenant of their own, so the token — not the caller's
+        // context — decides which restaurant the session belongs to.
         String foreignToken = qrTokenService.generateQrToken("sess-1");
         TenantContextHolder.setTenantId(OTHER_TENANT_ID);
 
-        assertThatThrownBy(() -> qrTokenService.validateQrToken(foreignToken))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("does not belong to this restaurant");
+        assertThat(qrTokenService.validateQrToken(foreignToken).tenantId()).isEqualTo(TENANT_ID);
     }
 
     @Test
@@ -71,7 +74,7 @@ class QrTokenServiceTest {
 
         assertThatThrownBy(() -> qrTokenService.validateQrToken(untenantedToken))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("does not belong to this restaurant");
+                .hasMessageContaining("carries no restaurant");
     }
 
     @Test

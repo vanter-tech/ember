@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { categoryService } from '@/lib/api'
 import { Button } from '../../components/ui/button'
@@ -8,18 +9,21 @@ import { useUIStore } from '@/store/uiStore'
 import { NewCategoryModal } from '@/pages/admin/components/NewCategoryModal'
 import { Link } from 'react-router-dom'
 import { GlobalDeleteModal } from '@/components/GlobalDeleteModal'
+import { PaginationControls } from '@/components/PaginationControls'
 
 export const Category = () => {
   const { openModal } = useUIStore()
+  const [page, setPage] = useState(0)
 
   const {
-    data: categories = [],
+    data: categoriesPage,
     isLoading,
     isError,
   } = useQuery({
-    queryKey: ['categories'],
-    queryFn: categoryService.getAll,
+    queryKey: ['categories', page],
+    queryFn: () => categoryService.getAll(page),
   })
+  const categories = categoriesPage?.content ?? []
 
   if (isLoading) {
     return (
@@ -110,6 +114,12 @@ export const Category = () => {
           </Link>
         ))}
       </div>
+
+      <PaginationControls
+        page={page}
+        totalPages={categoriesPage?.totalPages ?? 0}
+        onPageChange={setPage}
+      />
 
       <NewCategoryModal />
       <GlobalDeleteModal/>

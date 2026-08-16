@@ -13,6 +13,8 @@ public interface KitchenOrderRepository extends MongoRepository<KitchenOrder, St
 
     List<KitchenOrder> findByTenantId(UUID tenantId);
 
+    List<KitchenOrder> findByTenantIdAndActiveTrue(UUID tenantId);
+
     Page<KitchenOrder> findByTenantId(UUID tenantId, Pageable pageable);
 
     Optional<KitchenOrder> findByIdAndTenantId(String id, UUID tenantId);

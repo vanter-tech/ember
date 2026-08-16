@@ -1,7 +1,6 @@
 package com.vanter.ember.session.listener;
 
 import com.vanter.ember.session.event.ItemAdded;
-import com.vanter.ember.session.event.ItemStatusUpdated;
 import com.vanter.ember.session.event.ParticipantJoined;
 import com.vanter.ember.session.model.OrderItemStatus;
 import org.junit.jupiter.api.Test;
@@ -13,18 +12,21 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.UUID;
 
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class SessionWebSocketListenerTest {
 
+    private static final UUID TENANT_ID = UUID.randomUUID();
+
     @Mock SimpMessagingTemplate messagingTemplate;
     @InjectMocks SessionWebSocketListener listener;
 
     @Test
     void onParticipantJoined_sendsToSessionTopic() {
-        ParticipantJoined event = new ParticipantJoined("sess-1", "user-1", "Alice");
+        ParticipantJoined event = new ParticipantJoined(TENANT_ID, "sess-1", "user-1", "Alice");
 
         listener.onParticipantJoined(event);
 
@@ -35,7 +37,7 @@ class SessionWebSocketListenerTest {
 
     @Test
     void onParticipantJoined_topicContainsSessionId() {
-        ParticipantJoined event = new ParticipantJoined("sess-42", "user-2", "Bob");
+        ParticipantJoined event = new ParticipantJoined(TENANT_ID, "sess-42", "user-2", "Bob");
 
         listener.onParticipantJoined(event);
 
@@ -60,26 +62,6 @@ class SessionWebSocketListenerTest {
                 "Bob", OrderItemStatus.PENDING, List.of());
 
         listener.onItemAdded(event);
-
-        verify(messagingTemplate).convertAndSend("/topic/session/sess-99", event);
-    }
-
-    @Test
-    void onItemStatusUpdated_sendsToSessionTopic() {
-        ItemStatusUpdated event = new ItemStatusUpdated(
-                "sess-1", "order-item-1", "Tacos", "Alice", OrderItemStatus.PREPARING);
-
-        listener.onItemStatusUpdated(event);
-
-        verify(messagingTemplate).convertAndSend("/topic/session/sess-1", event);
-    }
-
-    @Test
-    void onItemStatusUpdated_topicContainsSessionId() {
-        ItemStatusUpdated event = new ItemStatusUpdated(
-                "sess-99", "order-item-5", "Burger", "Bob", OrderItemStatus.READY);
-
-        listener.onItemStatusUpdated(event);
 
         verify(messagingTemplate).convertAndSend("/topic/session/sess-99", event);
     }

@@ -23,10 +23,4 @@ public class RegisterRequest {
             message = "Password must contain at least one uppercase letter, one lowercase letter, one digit, and one special character"
     )
     private String password;
-
-    /** Name for a new restaurant to create; ignored when restaurantSlug is set. */
-    private String restaurantName;
-
-    /** Slug of an existing restaurant to join; if blank, a new restaurant is created. */
-    private String restaurantSlug;
 }

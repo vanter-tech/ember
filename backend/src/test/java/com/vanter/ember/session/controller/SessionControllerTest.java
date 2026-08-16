@@ -5,6 +5,8 @@ import com.vanter.ember.config.CorsConfig;
 import com.vanter.ember.config.SecurityConfig;
 import com.vanter.ember.identity.model.User;
 import com.vanter.ember.identity.repository.UserRepository;
+import com.vanter.ember.identity.model.dto.AuthResponse;
+import com.vanter.ember.identity.service.AuthService;
 import com.vanter.ember.identity.service.JwtService;
 import com.vanter.ember.session.dto.AddItemRequest;
 import com.vanter.ember.session.dto.CreateSessionRequest;
@@ -57,6 +59,7 @@ class SessionControllerTest {
     @MockBean UserDetailsService userDetailsService;
     @MockBean UserRepository userRepository;
     @MockBean RestaurantRepository restaurantRepository;
+    @MockBean AuthService authService;
 
     private static final UUID TABLE_ID = UUID.randomUUID();
 
@@ -140,18 +143,30 @@ class SessionControllerTest {
 
     @Test
     @WithMockUser(username = "customer@test.com", roles = "CUSTOMER")
-    void joinSession_addsParticipant() throws Exception {
+    void joinSession_addsParticipantAndReturnsRescopedToken() throws Exception {
         Session withParticipant = sampleSession();
         withParticipant.getParticipants().add(
                 Participant.builder().userId("customer@test.com").name("Alice").build());
         when(sessionService.joinSession("qr-token", "customer@test.com", "Alice"))
                 .thenReturn(withParticipant);
+        when(authService.issueTenantScopedToken(eq("customer@test.com"), any()))
+                .thenReturn(AuthResponse.builder().token("scoped-token").build());
 
         mockMvc.perform(post("/sessions/sess-1/join")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new JoinSessionRequest("qr-token", "Alice"))))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.participants[0].userId").value("customer@test.com"));
+                .andExpect(jsonPath("$.session.participants[0].userId").value("customer@test.com"))
+                .andExpect(jsonPath("$.token").value("scoped-token"));
+    }
+
+    @Test
+    @WithMockUser(username = "waiter@test.com", roles = "WAITER")
+    void joinSession_forbiddenForStaff() throws Exception {
+        mockMvc.perform(post("/sessions/sess-1/join")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new JoinSessionRequest("qr-token", "Alice"))))
+                .andExpect(status().isForbidden());
     }
 
     @Test
@@ -213,7 +228,7 @@ class SessionControllerTest {
     private SessionDetailResponseDto sampleSessionDetail(List<ParticipantDto> participants) {
         return new SessionDetailResponseDto(
                 "sess-1", TABLE_ID, 5, true, "waiter@test.com",
-                SessionStatus.OPEN, 4, participants, List.of(), LocalDateTime.now());
+                SessionStatus.OPEN, 4, participants, List.of(), List.of(), LocalDateTime.now());
     }
 
     @Test

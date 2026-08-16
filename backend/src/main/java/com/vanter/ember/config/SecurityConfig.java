@@ -114,6 +114,15 @@ public class SecurityConfig {
                 UUID tenantId = jwtService.extractTenantId(token);
                 TenantContextHolder.setTenantId(tenantId);
                 try {
+                    // A CUSTOMER who hasn't joined a table yet has no restaurant on their token
+                    // (see AuthService#tenantIdOf) — they can't be gated on a tenant they haven't
+                    // chosen. Letting them through is safe because every tenant-scoped read still
+                    // fails closed on the absent TenantContextHolder; the session-join flow is the
+                    // one path that resolves a restaurant, and it re-checks status itself.
+                    if (tenantId == null && isCustomer()) {
+                        chain.doFilter(request, response);
+                        return;
+                    }
                     Restaurant restaurant = tenantId != null
                             ? restaurantRepository.findById(tenantId).orElse(null)
                             : null;
@@ -125,6 +134,12 @@ public class SecurityConfig {
                 } finally {
                     TenantContextHolder.clear();
                 }
+            }
+
+            private boolean isCustomer() {
+                var authentication = SecurityContextHolder.getContext().getAuthentication();
+                return authentication != null && authentication.getAuthorities().stream()
+                        .anyMatch(granted -> "ROLE_CUSTOMER".equals(granted.getAuthority()));
             }
 
             private void writeSuspendedTenantResponse(HttpServletRequest request,

@@ -12,15 +12,18 @@ export type SettingsResponse = components['schemas']['SettingsPayload']
 export type DashboardResponse = components['schemas']['TableStatusResponse']
 export type CreateSession = components['schemas']['SessionCreatedResponse']
 export type infoSession = components['schemas']['SessionDetailResponseDto']
+export type sessionActivity = components['schemas']['SessionActivityDto']
 export type calculateBill = components['schemas']['CalculateBillRequest']
 export type JoinSessionCode = components['schemas']['JoinSessionCodeRequest']
 export type sessionResponse = components['schemas']['Session']
+export type joinSessionResponse = components['schemas']['JoinSessionResponse']
 export type menuResponse = components['schemas']['MenuDTO']
 export type orderItemDTO = components['schemas']['OrderItemDto']
 export type participantDTO = components['schemas']['ParticipantDto']
 export type tableStatus = components['schemas']['SessionStatusDto']
 export type kitchenOrdersDisplayByTables = components['schemas']['KitchenDisplayEntry']
 export type kitchenOrders = components['schemas']['KitchenOrder']
+export type OrderItemStatus = components['schemas']['UpdateItemStatusRequest']['status']
 
 export interface Page<T> {
   content: T[]
@@ -40,6 +43,21 @@ export interface PublicBranding {
   openingTime: string
   closingTime: string
 }
+
+export type AnalyticsSummaryResponse = components['schemas']['AnalyticsSummaryResponse']
+export type AnalyticsSalesResponse = components['schemas']['AnalyticsSalesResponse']
+export type SalesBucket = components['schemas']['SalesBucket']
+export type AnalyticsProductsResponse = components['schemas']['AnalyticsProductsResponse']
+export type ProductPerformance = components['schemas']['ProductPerformance']
+export type CategoryPerformance = components['schemas']['CategoryPerformance']
+export type AnalyticsTablesResponse = components['schemas']['AnalyticsTablesResponse']
+export type TablePerformance = components['schemas']['TablePerformance']
+
+// The 'granularity' request param has no dedicated schema (it's a plain string query param
+// server-side), so it's derived from the response enum rather than hand-typed.
+export type SalesGranularity = Lowercase<
+  NonNullable<components['schemas']['AnalyticsSalesResponse']['granularity']>
+>
 
 declare global {
   interface Window {
@@ -114,8 +132,11 @@ export const authService = {
 }
 
 export const categoryService = {
-  getAll: async (): Promise<CategoryResponse[]> => {
-    const { data } = await api.get<CategoryResponse[]>('/catalog/categories')
+  getAll: async (page = 0, size = 6): Promise<Page<CategoryResponse>> => {
+    const { data } = await api.get<Page<CategoryResponse>>(
+      '/catalog/categories',
+      { params: { page, size } }
+    )
     return data
   },
   create: async (details: FormData): Promise<CategoryResponse> => {
@@ -149,10 +170,14 @@ export const categoryService = {
 }
 
 export const menuItemService = {
-  getAll: async (id: number): Promise<Page<MenuItemResponse>> => {
-    const { data } = await api.get<Page<MenuItemResponse>>(
-      `/catalog/items?id=${id}`
-    )
+  getAll: async (
+    id: number,
+    page = 0,
+    size = 10
+  ): Promise<Page<MenuItemResponse>> => {
+    const { data } = await api.get<Page<MenuItemResponse>>('/catalog/items', {
+      params: { id, page, size },
+    })
     return data
   },
   create: async (details: FormData): Promise<MenuItemResponse> => {
@@ -252,8 +277,8 @@ export const SessionTableService = {
     return data
   },
 
-  joinSessionViaCode: async (joinCode: string): Promise<sessionResponse> => {
-    const { data } = await api.post<sessionResponse>(`/sessions/join`, {
+  joinSessionViaCode: async (joinCode: string): Promise<joinSessionResponse> => {
+    const { data } = await api.post<joinSessionResponse>(`/sessions/join`, {
       joinCode,
     })
     return data
@@ -291,6 +316,13 @@ export const kitchenServices = {
   getOrders: async(): Promise<Page<kitchenOrders>> => {
     const { data } = await api.get<Page<kitchenOrders>>('/kitchen/orders')
     return data
+  },
+  updateItemStatus: async (orderId: string, itemId: string, status: OrderItemStatus): Promise<kitchenOrders> => {
+    const { data } = await api.patch<kitchenOrders>(
+      `/kitchen/orders/${orderId}/items/${itemId}/status`,
+      { status }
+    )
+    return data
   }
 
 }
@@ -311,6 +343,62 @@ export const publicService = {
     const { data } = await api.get<PublicBranding>(
       `/public/restaurants/${slug}/branding`
     )
+    return data
+  },
+}
+
+export const analyticsService = {
+  getSummary: async (from?: string, to?: string): Promise<AnalyticsSummaryResponse> => {
+    const { data } = await api.get<AnalyticsSummaryResponse>(
+      '/admin/analytics/summary',
+      { params: { from, to } }
+    )
+    return data
+  },
+  getSales: async (
+    granularity?: SalesGranularity,
+    from?: string,
+    to?: string
+  ): Promise<AnalyticsSalesResponse> => {
+    const { data } = await api.get<AnalyticsSalesResponse>(
+      '/admin/analytics/sales',
+      { params: { granularity, from, to } }
+    )
+    return data
+  },
+  getProducts: async (
+    from?: string,
+    to?: string,
+    limit?: number
+  ): Promise<AnalyticsProductsResponse> => {
+    const { data } = await api.get<AnalyticsProductsResponse>(
+      '/admin/analytics/products',
+      { params: { from, to, limit } }
+    )
+    return data
+  },
+  getTables: async (from?: string, to?: string): Promise<AnalyticsTablesResponse> => {
+    const { data } = await api.get<AnalyticsTablesResponse>(
+      '/admin/analytics/tables',
+      { params: { from, to } }
+    )
+    return data
+  },
+}
+
+export type StaffMemberResponse = components['schemas']['StaffMemberResponse']
+export type UpdateStaffProfileRequest = components['schemas']['UpdateStaffProfileRequest']
+
+export const staffService = {
+  getAll: async (): Promise<StaffMemberResponse[]> => {
+    const { data } = await api.get<StaffMemberResponse[]>('/admin/staff')
+    return data
+  },
+  updateProfile: async (
+    userId: string,
+    request: UpdateStaffProfileRequest
+  ): Promise<StaffMemberResponse> => {
+    const { data } = await api.patch<StaffMemberResponse>(`/admin/staff/${userId}`, request)
     return data
   },
 }

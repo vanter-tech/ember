@@ -6,6 +6,7 @@ import {
   ConciergeBell,
   Receipt,
   Printer,
+  Clock,
 } from 'lucide-react';
 
 export const SettingsBar = () => {
@@ -56,6 +57,15 @@ export const SettingsBar = () => {
             >
                 <ConciergeBell className="mr-2 h-4 w-4" />
                 Espacio
+            </Button>
+            <Button
+                variant={activeSettings === 'HORARIO' ?
+                    'default' : 'ghost'}
+                onClick={() => openSettings('HORARIO')}
+                className="justify-start"
+            >
+                <Clock className="mr-2 h-4 w-4" />
+                Horario
             </Button>
         </nav>
     )
