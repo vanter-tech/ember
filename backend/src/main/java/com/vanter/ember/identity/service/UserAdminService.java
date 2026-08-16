@@ -25,7 +25,7 @@ public class UserAdminService {
     }
 
     public List<StaffMemberResponse> getStaff(UUID tenantId) {
-        return userRepository.findByRestaurantId_IdAndRoleNot(tenantId, Role.CUSTOMER).stream()
+        return userRepository.findByRestaurantId_IdAndRoleNotOrderByNameAsc(tenantId, Role.CUSTOMER).stream()
                 .map(UserAdminService::toStaffResponse)
                 .toList();
     }

@@ -16,5 +16,5 @@ public interface UserRepository extends JpaRepository<User, String> {
     List<User> findByRestaurantId_IdAndRole(UUID restaurantId, Role role);
 
     /** Non-CUSTOMER users for a tenant — the Staff Management roster. */
-    List<User> findByRestaurantId_IdAndRoleNot(UUID restaurantId, Role role);
+    List<User> findByRestaurantId_IdAndRoleNotOrderByNameAsc(UUID restaurantId, Role role);
 }

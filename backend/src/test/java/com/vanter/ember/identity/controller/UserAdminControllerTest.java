@@ -162,4 +162,15 @@ class UserAdminControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.active").value(false));
     }
+
+    @Test
+    @WithMockUser(roles = "WAITER")
+    void updateStaffProfile_forbiddenForWaiter() throws Exception {
+        TenantContextHolder.setTenantId(TENANT_ID);
+
+        mockMvc.perform(patch("/admin/staff/u-1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"active\": false}"))
+                .andExpect(status().isForbidden());
+    }
 }
