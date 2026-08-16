@@ -1,5 +1,5 @@
 import { ParticipantQrModal } from './components/ParticipantsQrModal'
-import { DashboardService } from '@/lib/api'
+import { DashboardService, SessionTableService } from '@/lib/api'
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/store/authStore'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
@@ -26,6 +26,18 @@ export const Tables = () => {
   const tableDetails = dashboardData?.find(
     (data) => data.tableId === selectedTable
   )
+
+  const sessionId = tableDetails?.currentSession?.sessionId
+
+  const { data: sessionData } = useQuery({
+    queryKey: ['sessionDetails', sessionId],
+    queryFn: () => SessionTableService.sessionInformation(sessionId!),
+    enabled: !!sessionId,
+  })
+
+  const itemsToWaiter = sessionData?.items
+    ? sessionData.items.filter((item) => item.status != 'DRAFT')
+    : []
 
   if (isLoadingDashboard) {
     return <div className="p-6 text-zinc-500">Cargando datos del panel...</div>
@@ -110,7 +122,30 @@ export const Tables = () => {
                 )}
               </div>
               <div className="my-6 border-y border-zinc-100 py-4">
-                <span>No hay pedido actualmente</span>
+                {itemsToWaiter.length > 0 ? (
+                  <div className="flex flex-col gap-3 max-h-50 overflow-y-auto pr-1">
+                    {itemsToWaiter.map((item) => (
+                      <div
+                        key={item.id}
+                        className="flex items-center justify-between"
+                      >
+                        <div className="flex flex-col">
+                          <span className="text-sm font-semibold">
+                            {item.name}
+                          </span>
+                          <span className="text-xs text-zinc-500">
+                            {item.participantName}
+                          </span>
+                        </div>
+                        <span className="text-sm font-bold text-[#8c1717]">
+                          ${item.price?.toFixed(2)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <span>No hay pedido actualmente</span>
+                )}
               </div>
               <div className="flex flex-col gap-4 mt-6">
                 <Button className="w-full text-md">
