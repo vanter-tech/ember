@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { Tag, Trophy } from 'lucide-react'
 import { analyticsService } from '@/lib/api'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table'
@@ -16,11 +17,16 @@ export const ProductPerformance = () => {
 
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-      <Card className="border border-border/40 bg-background shadow-sm lg:col-span-2">
+      <Card className="border border-border/40 bg-background py-6 shadow-sm lg:col-span-2">
         <CardHeader>
-          <CardTitle className="text-base font-semibold tracking-tight text-foreground">
-            Productos más vendidos
-          </CardTitle>
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+              <Trophy className="h-4 w-4 text-primary" strokeWidth={2} />
+            </div>
+            <CardTitle className="text-base font-semibold tracking-tight text-foreground">
+              Productos más vendidos
+            </CardTitle>
+          </div>
         </CardHeader>
         <CardContent>
           {isLoading && (
@@ -72,11 +78,16 @@ export const ProductPerformance = () => {
         </CardContent>
       </Card>
 
-      <Card className="border border-border/40 bg-background shadow-sm">
+      <Card className="border border-border/40 bg-background py-6 shadow-sm">
         <CardHeader>
-          <CardTitle className="text-base font-semibold tracking-tight text-foreground">
-            Por categoría
-          </CardTitle>
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+              <Tag className="h-4 w-4 text-primary" strokeWidth={2} />
+            </div>
+            <CardTitle className="text-base font-semibold tracking-tight text-foreground">
+              Por categoría
+            </CardTitle>
+          </div>
         </CardHeader>
         <CardContent>
           {data && categories.length === 0 && (
