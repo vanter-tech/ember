@@ -62,7 +62,7 @@ class UserRepositoryStaffQueryTest extends AbstractTenantIsolationTest {
                 .passwordHash("hash").role(Role.WAITER).build()));
 
         List<User> staffForA = readAs(TENANT_A, () ->
-                userRepository.findByRestaurantId_IdAndRoleNot(restaurantA.getId(), Role.CUSTOMER));
+                userRepository.findByRestaurantId_IdAndRoleNotOrderByNameAsc(restaurantA.getId(), Role.CUSTOMER));
 
         assertThat(staffForA).extracting(User::getId).containsExactly(waiterA.getId());
     }

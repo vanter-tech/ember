@@ -41,13 +41,15 @@ class UserAdminServiceTest {
 
     @Test
     void getStaff_mapsUserFieldsIntoResponse() {
-        when(userRepository.findByRestaurantId_IdAndRoleNot(TENANT_A, Role.CUSTOMER))
+        when(userRepository.findByRestaurantId_IdAndRoleNotOrderByNameAsc(TENANT_A, Role.CUSTOMER))
                 .thenReturn(List.of(waiterFor(TENANT_A)));
 
         List<com.vanter.ember.identity.dto.StaffMemberResponse> result = userAdminService.getStaff(TENANT_A);
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).id()).isEqualTo("u-1");
+        assertThat(result.get(0).name()).isEqualTo("Ana");
+        assertThat(result.get(0).email()).isEqualTo("ana@test.com");
         assertThat(result.get(0).role()).isEqualTo(Role.WAITER);
         assertThat(result.get(0).active()).isTrue();
     }
@@ -64,6 +66,29 @@ class UserAdminServiceTest {
 
         assertThat(result.active()).isFalse();
         assertThat(result.shift()).isEqualTo("Mañana");
+    }
+
+    @Test
+    void updateProfile_withAllNullRequest_changesNothing() {
+        User existing = waiterFor(TENANT_A);
+        existing.setShift("Mañana");
+        when(userRepository.findById("u-1")).thenReturn(Optional.of(existing));
+        when(userRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        var result = userAdminService.updateProfile(
+                "u-1", TENANT_A, new UpdateStaffProfileRequest(null, null, null, null, null, null, null));
+
+        assertThat(result.id()).isEqualTo(existing.getId());
+        assertThat(result.name()).isEqualTo(existing.getName());
+        assertThat(result.email()).isEqualTo(existing.getEmail());
+        assertThat(result.role()).isEqualTo(existing.getRole());
+        assertThat(result.active()).isEqualTo(existing.getActive());
+        assertThat(result.jobTitle()).isEqualTo(existing.getJobTitle());
+        assertThat(result.shift()).isEqualTo(existing.getShift());
+        assertThat(result.contractType()).isEqualTo(existing.getContractType());
+        assertThat(result.location()).isEqualTo(existing.getLocation());
+        assertThat(result.efficiencyPercentage()).isEqualTo(existing.getEfficiencyPercentage());
+        assertThat(result.pendingHours()).isEqualTo(existing.getPendingHours());
     }
 
     @Test

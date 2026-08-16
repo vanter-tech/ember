@@ -47,7 +47,7 @@ public class UserAdminController {
     @PreAuthorize("hasRole('ADMIN')")
     public StaffMemberResponse updateStaffProfile(
             @PathVariable String userId,
-            @RequestBody UpdateStaffProfileRequest request) {
+            @Valid @RequestBody UpdateStaffProfileRequest request) {
         return userAdminService.updateProfile(
                 userId, TenantContextHolder.requireTenantId(), request);
     }
