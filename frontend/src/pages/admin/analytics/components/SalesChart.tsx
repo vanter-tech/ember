@@ -8,6 +8,7 @@ import {
   Tooltip,
   XAxis,
 } from 'recharts'
+import { TrendingUp } from 'lucide-react'
 import { analyticsService, type SalesGranularity } from '@/lib/api'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -45,11 +46,16 @@ export const SalesChart = () => {
   }))
 
   return (
-    <Card className="border border-border/40 bg-background shadow-sm">
+    <Card className="border border-border/40 bg-background py-6 shadow-sm">
       <CardHeader className="flex flex-row items-center justify-between gap-4">
-        <CardTitle className="text-base font-semibold tracking-tight text-foreground">
-          Ventas en el tiempo
-        </CardTitle>
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+            <TrendingUp className="h-4 w-4 text-primary" strokeWidth={2} />
+          </div>
+          <CardTitle className="text-base font-semibold tracking-tight text-foreground">
+            Ventas en el tiempo
+          </CardTitle>
+        </div>
         <div className="flex items-center gap-1 rounded-full bg-muted/60 p-1">
           {GRANULARITY_OPTIONS.map((option) => (
             <Button

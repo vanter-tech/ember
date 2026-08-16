@@ -48,7 +48,7 @@ export const SummaryCards = () => {
       {cards.map(({ label, value, icon: Icon }) => (
         <Card
           key={label}
-          className="border border-border/40 bg-background shadow-sm"
+          className="border border-border/40 bg-background py-6 shadow-sm"
         >
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
