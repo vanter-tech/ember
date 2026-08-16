@@ -386,35 +386,8 @@ export const analyticsService = {
   },
 }
 
-// Hand-typed: backend-types.ts has no components['schemas'] for the /admin/staff endpoints
-// yet (no live backend to regenerate against). Mirrors StaffMemberResponse/
-// UpdateStaffProfileRequest (backend/src/main/java/com/vanter/ember/identity/dto).
-export type StaffRole = 'WAITER' | 'KITCHEN' | 'ADMIN'
-
-export interface StaffMemberResponse {
-  id: string
-  name: string
-  email: string
-  role: StaffRole
-  createdAt: string
-  active: boolean
-  jobTitle: string | null
-  shift: string | null
-  contractType: string | null
-  location: string | null
-  efficiencyPercentage: number | null
-  pendingHours: number
-}
-
-export interface UpdateStaffProfileRequest {
-  active?: boolean
-  jobTitle?: string
-  shift?: string
-  contractType?: string
-  location?: string
-  efficiencyPercentage?: number
-  pendingHours?: number
-}
+export type StaffMemberResponse = components['schemas']['StaffMemberResponse']
+export type UpdateStaffProfileRequest = components['schemas']['UpdateStaffProfileRequest']
 
 export const staffService = {
   getAll: async (): Promise<StaffMemberResponse[]> => {

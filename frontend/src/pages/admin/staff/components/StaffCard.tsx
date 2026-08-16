@@ -22,6 +22,9 @@ interface StaffCardProps {
 }
 
 export const StaffCard = ({ member, onViewProfile, onOpenActions }: StaffCardProps) => {
+  const name = member.name ?? ''
+  const roleKey = member.role ?? ''
+
   const metadata = [
     member.shift ? { label: 'Turno', value: member.shift } : null,
     member.contractType ? { label: 'Contrato', value: member.contractType } : null,
@@ -37,23 +40,23 @@ export const StaffCard = ({ member, onViewProfile, onOpenActions }: StaffCardPro
         <div className="flex items-start justify-between gap-2">
           <div className="relative">
             <Avatar className="h-12 w-12">
-              <AvatarFallback>{getInitials(member.name)}</AvatarFallback>
+              <AvatarFallback>{getInitials(name)}</AvatarFallback>
             </Avatar>
             <span
               className={cn(
                 'absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-background',
-                member.active ? 'bg-emerald-500' : 'bg-zinc-300'
+                member.active ?? false ? 'bg-emerald-500' : 'bg-zinc-300'
               )}
-              title={member.active ? 'Activo' : 'Inactivo'}
+              title={member.active ?? false ? 'Activo' : 'Inactivo'}
             />
           </div>
-          <Badge className={cn('border-transparent', ROLE_BADGE_CLASSNAMES[member.role])}>
-            {ROLE_LABELS[member.role]}
+          <Badge className={cn('border-transparent', ROLE_BADGE_CLASSNAMES[roleKey] ?? 'bg-zinc-100 text-zinc-700')}>
+            {ROLE_LABELS[roleKey] ?? member.role ?? '—'}
           </Badge>
         </div>
 
         <div className="flex flex-col gap-0.5">
-          <p className="text-base font-semibold text-foreground">{member.name}</p>
+          <p className="text-base font-semibold text-foreground">{name}</p>
           <p className="text-sm text-muted-foreground">{member.jobTitle || member.email}</p>
         </div>
 

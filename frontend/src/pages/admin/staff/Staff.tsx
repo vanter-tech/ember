@@ -23,7 +23,7 @@ export const Staff = () => {
     const query = searchTerm.trim().toLowerCase()
     return staff.filter((member) => {
       const matchesDepartment = roleFilter === 'ALL' || member.role === roleFilter
-      const matchesSearch = query === '' || member.name.toLowerCase().includes(query)
+      const matchesSearch = query === '' || (member.name ?? '').toLowerCase().includes(query)
       return matchesDepartment && matchesSearch
     })
   }, [staff, searchTerm, roleFilter])

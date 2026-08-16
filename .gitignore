@@ -2,3 +2,6 @@
 .env
 .env.local
 .env.*.local
+
+# Scratch workspace for superpowers:subagent-driven-development plan execution
+.superpowers/

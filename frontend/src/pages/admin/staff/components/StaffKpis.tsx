@@ -9,7 +9,7 @@ interface StaffKpisProps {
 export const StaffKpis = ({ members }: StaffKpisProps) => {
   const totalStaff = members.length
   const activeNow = members.filter((member) => member.active).length
-  const pendingHours = Math.round(members.reduce((sum, member) => sum + member.pendingHours, 0) * 100) / 100
+  const pendingHours = Math.round(members.reduce((sum, member) => sum + (member.pendingHours ?? 0), 0) * 100) / 100
 
   const cards = [
     { label: 'Personal total', value: totalStaff, icon: Users },
