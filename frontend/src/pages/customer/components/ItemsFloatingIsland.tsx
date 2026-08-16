@@ -34,10 +34,10 @@ export const ItemsFloatingIsland = () => {
                     </div>
                 )}
             </div>
-            <span className="text-sm font-medium text-gray-600">
+            <span className="hidden text-sm font-medium text-gray-600 md:inline">
                 {myFilterItems.length} platos seleccionados
             </span>
-            
+
             <Button className="px-5 rounded-full text-sm font-semibold flex items-center gap-2"
             onClick={()=> {
                 navigate(`${tableId}/comanda`)
