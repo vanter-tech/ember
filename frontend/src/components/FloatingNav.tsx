@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
 import {
@@ -12,11 +11,8 @@ import {
   Menu,
   ChefHat,
   Users,
-  ArrowRight,
-  CircleQuestionMarkIcon,
 } from 'lucide-react'
 import { useSessionStore } from '@/store/sessionStore'
-import { ParticipantsList } from '@/components/ParticipantsList'
 
 export const FloatingNav = () => {
   const role = useAuthStore((state) => state.role)
@@ -24,18 +20,11 @@ export const FloatingNav = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const { userId } = useAuthStore()
-  const { participants, id: tableId } = useSessionStore()
-  const [tableOptionsOpen, setTableOptionsOpen] = useState(false)
-  const [showParticipants, setShowParticipants] = useState(false)
+  const { participants } = useSessionStore()
 
   const amiIn = participants?.find((data) => data.userId === userId)
 
   if (!role) return null
-
-  const closeTableOptions = () => {
-    setTableOptionsOpen(false)
-    setShowParticipants(false)
-  }
 
   const handleLogout = () => {
     logout()
@@ -52,7 +41,6 @@ export const FloatingNav = () => {
     }`
 
   return (
-    <>
     <nav
       className="fixed bottom-4 sm:bottom-8 inset-x-0 mx-auto w-max max-w-[92vw] bg-white dark:bg-zinc-900 shadow-2xl rounded-full
         px-2 sm:px-4 py-2 flex items-center gap-1 sm:gap-2 border border-zinc-200 dark:border-zinc-800 z-50
@@ -124,18 +112,6 @@ export const FloatingNav = () => {
         ) : (
           ''
         ))}
-      {role === 'CUSTOMER' && amiIn && tableId && (
-        <button
-          type="button"
-          className="flex h-12 w-12 items-center justify-center rounded-full text-zinc-500 transition-all duration-300 hover:bg-zinc-100 hover:text-zinc-800 lg:hidden"
-          title="Opciones de mesa"
-          onClick={() =>
-            tableOptionsOpen ? closeTableOptions() : setTableOptionsOpen(true)
-          }
-        >
-          <CircleQuestionMarkIcon strokeWidth={1.5} size={24} />
-        </button>
-      )}
       {role === 'CUSTOMER' && (
         <Link
           to="/customer/home"
@@ -166,40 +142,5 @@ export const FloatingNav = () => {
         </button>
       </div>
     </nav>
-
-    {tableOptionsOpen && tableId && (
-      <div className="fixed bottom-24 right-4 z-50 w-56 rounded-2xl border border-zinc-100 bg-white p-2 shadow-xl sm:bottom-28 lg:hidden">
-        {showParticipants ? (
-          <ParticipantsList participants={participants ?? []} />
-        ) : (
-          <div className="flex flex-col gap-1">
-            <button
-              type="button"
-              className="flex items-center gap-3 rounded-xl p-2 text-left transition-colors hover:bg-zinc-50"
-              onClick={() => setShowParticipants(true)}
-            >
-              <Users className="h-4 w-4 text-zinc-500" />
-              <span className="text-sm font-medium text-zinc-700">
-                Ver participantes
-              </span>
-            </button>
-            <button
-              type="button"
-              className="flex items-center gap-3 rounded-xl p-2 text-left transition-colors hover:bg-zinc-50"
-              onClick={() => {
-                closeTableOptions()
-                navigate(`/customer/menu/${tableId}/comanda`)
-              }}
-            >
-              <ArrowRight className="h-4 w-4 text-zinc-500" />
-              <span className="text-sm font-medium text-zinc-700">
-                Ver comanda
-              </span>
-            </button>
-          </div>
-        )}
-      </div>
-    )}
-    </>
   )
 }
