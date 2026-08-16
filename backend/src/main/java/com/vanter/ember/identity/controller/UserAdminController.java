@@ -1,13 +1,18 @@
 package com.vanter.ember.identity.controller;
 
+import com.vanter.ember.config.TenantContextHolder;
+import com.vanter.ember.identity.dto.StaffMemberResponse;
+import com.vanter.ember.identity.dto.UpdateStaffProfileRequest;
 import com.vanter.ember.identity.dto.UpdateUserRoleRequest;
 import com.vanter.ember.identity.model.User;
 import com.vanter.ember.identity.service.UserAdminService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -28,5 +33,22 @@ public class UserAdminController {
     public User updateRole(@PathVariable String userId,
                            @Valid @RequestBody UpdateUserRoleRequest request) {
         return userAdminService.updateRole(userId, request.role());
+    }
+
+    @Operation(summary = "List the current tenant's staff, i.e. every non-CUSTOMER user (ADMIN)")
+    @GetMapping("/staff")
+    @PreAuthorize("hasRole('ADMIN')")
+    public List<StaffMemberResponse> getStaff() {
+        return userAdminService.getStaff(TenantContextHolder.requireTenantId());
+    }
+
+    @Operation(summary = "Update a staff member's HR profile fields (ADMIN)")
+    @PatchMapping("/staff/{userId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public StaffMemberResponse updateStaffProfile(
+            @PathVariable String userId,
+            @RequestBody UpdateStaffProfileRequest request) {
+        return userAdminService.updateProfile(
+                userId, TenantContextHolder.requireTenantId(), request);
     }
 }
