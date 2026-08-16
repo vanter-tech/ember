@@ -1,7 +1,7 @@
 # PROGRESS.md — Active Execution State
 
 ## Current Execution State
-- **Last Completed Task:** redesign-analytics-enterprise-ui — `/admin/analytics` restyled with Shadcn (`border-border/40`/`shadow-sm` Cards, new `ui/table.tsx`) and a Recharts `AreaChart` replacing the plain-CSS bars in `SalesChart.tsx`; zero hook/query/state changes. Report 111.
+- **Last Completed Task:** summarycards-kpi-accent-refinement — the 3 KPI `Card`s in `SummaryCards.tsx` now use `text-primary` (brand dark red) for the big value and a `bg-primary/10` icon chip, uppercase tracking-wide titles; follow-up to report 111's redesign after user feedback that the cards still looked plain. Report 112.
 - **Current Active Task:** none — awaiting next task selection. `recharts` (`^3.10.1`) is now a frontend dependency — first charting library in this repo, only used by `SalesChart.tsx` so far. `backend-types.ts` was hand-patched for `SessionActivityDto` (no live backend to run `pnpm run openapi`) — regenerate for real next time the backend is up. Repo-wide `pnpm run lint` still fails on ~17 PRE-EXISTING errors in files untouched by any recent task (`NewCategoryModal.tsx`/`NewMenuModal.tsx`/`Menu.tsx`/`ParticipantsPopUp.tsx`/`OrdersDisplay.tsx`/`TableInformation.tsx`/`sessionStore.tsx`/`settingStore.ts`/`uiStore.ts`/`websocket.ts`) — not caused by reports 106–111, flagged for future cleanup. Pending follow-ups from user (unrelated, deferred): (1) `/landing` mobile `MobileNavDrawer`/`StickyMobileCTA` z-index overlap on open — root cause identified, fix not applied. (2) Hero.astro mobile overlap report — no defect found, awaiting screenshot. (3) New `/landing` dark-mode toggle using `#8c1717` accent — not started.
 
 ## Active Context & Recent Decisions
@@ -56,4 +56,4 @@
 - [x] **feature-comanda-historial:** `ComandaView` current-order/Historial split, whole-table running total; deleted dead `ItemStatusUpdated` customer status sync. Report 109.
 - [x] **feature-session-activity-log:** persisted `Session.activityLog` (`ITEM_SENT`/`ITEM_DELETED`); waiter Actividad card reads it, no longer derived from live items. Report 110.
 - [x] **redesign-analytics-enterprise-ui:** Shadcn Card/Table polish + Recharts `AreaChart` for `/admin/analytics`; zero hook/query changes. Report 111.
-
+- [x] **summarycards-kpi-accent-refinement:** KPI card values/icons now use the brand accent (`text-primary`/`bg-primary/10`); uppercase titles. Report 112.
