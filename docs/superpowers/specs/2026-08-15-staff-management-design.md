@@ -41,38 +41,40 @@ New nullable columns added directly to `users` (not a separate `StaffProfile` en
 | Column                  | Type      | Default | Notes                                          |
 |--------------------------|-----------|---------|-------------------------------------------------|
 | `active`                 | boolean   | `true`  | Drives the status dot + "Activos ahora" KPI     |
+| `job_title`              | varchar   | `null`  | Free text: "Chef ejecutiva" — the mockup's "Role Label", distinct from the department badge (which stays derived from `role`) |
 | `shift`                  | varchar   | `null`  | Free text: "Mañana" / "Tarde" / "Noche"         |
 | `contract_type`          | varchar   | `null`  | Free text: "Tiempo completo" / "Medio tiempo"   |
 | `location`               | varchar   | `null`  | Free text, e.g. "Piso principal"                |
 | `efficiency_percentage`  | numeric   | `null`  |                                                  |
 | `pending_hours`          | numeric   | `0`     | Summed for the "Horas pendientes" KPI           |
 
-Migration: `V6__staff_profile_fields.sql`, `ALTER TABLE users ADD COLUMN ...` for all six columns.
+Migration: `V6__staff_profile_fields.sql`, `ALTER TABLE users ADD COLUMN ...` for all seven columns. `active`/`pending_hours` carry a literal `DEFAULT`, so Postgres backfills every pre-existing row in the same DDL statement — no separate runtime backfill job needed (unlike the Mongo `KitchenOrderActiveBackfill` precedent, which exists only because MongoDB has no `ALTER ... DEFAULT` equivalent).
 
 ### Backfill
 
-New idempotent boot-time `ApplicationRunner` (same pattern as `config/MongoTenantBackfill` and `config/KitchenOrderActiveBackfill`): sets `active = true` for every `User` with `role != CUSTOMER` and `active IS NULL`. Needed because the migration adds the column with no default backfill of its own for pre-existing rows on some DB configs, and because it's the established pattern in this codebase for exactly this situation.
+Handled entirely by the migration's column `DEFAULT` (see above) — no `ApplicationRunner` needed. `User.builder()` gets `@Builder.Default private Boolean active = true;` and `@Builder.Default private BigDecimal pendingHours = BigDecimal.ZERO;` so every existing code path that builds a `User` without setting these (registration, tenant onboarding, test fixtures) still sends a non-null value — without `@Builder.Default`, Lombok's builder would send an explicit `NULL`, which fails the `NOT NULL` constraint despite the column's DDL default (a default only applies when the column is omitted from the `INSERT`, not when `NULL` is sent explicitly).
 
 ### Endpoints
 
 Both live in `identity/controller/UserAdminController.java` (or a new `StaffController` in the same package if the file is getting crowded — implementer's call), gated the same way as `updateRole`: `@PreAuthorize("hasRole('ADMIN')")`, tenant always via `TenantContextHolder.requireTenantId()`.
 
 - **`GET /admin/staff`**
-  Returns all `User` rows where `restaurantId = current tenant` and `role != CUSTOMER`. No pagination (small roster per tenant; matches how `ProductPerformance`/`TableAnalytics` keep filtering client-side rather than server-side). Response is a flat list of staff DTOs: `id`, `name`, `email`, `role`, `createdAt`, `active`, `shift`, `contractType`, `location`, `efficiencyPercentage`, `pendingHours`.
+  Returns all `User` rows where `restaurantId = current tenant` and `role != CUSTOMER`. No pagination (small roster per tenant; matches how `ProductPerformance`/`TableAnalytics` keep filtering client-side rather than server-side). Response is a flat list of staff DTOs: `id`, `name`, `email`, `role`, `createdAt`, `active`, `jobTitle`, `shift`, `contractType`, `location`, `efficiencyPercentage`, `pendingHours`.
 
 - **`PATCH /admin/staff/{userId}`**
-  Body carries any subset of the six new fields (all optional). Same shape/spirit as `UpdateUserRoleRequest` + `UserAdminController.updateRole`. Add the route to `SecurityAuditTest`'s 401 matrix, per the existing convention for every new analytics/admin route.
+  Body carries any subset of the seven new fields (all optional). Same shape/spirit as `UpdateUserRoleRequest` + `UserAdminController.updateRole`, but ALSO verifies the target user belongs to the caller's tenant (404 if not, same as "doesn't exist" — `updateRole` itself doesn't do this today, a pre-existing gap this endpoint won't repeat but also won't fix). Add the route to `SecurityAuditTest`'s 401 matrix, per the existing convention for every new analytics/admin route.
 
 ---
 
 ## Frontend
 
-- **`api.ts`**: new `staffService` — `getAll(): Promise<StaffMember[]>` (`GET /admin/staff`), `updateProfile(userId, payload): Promise<StaffMember>` (`PATCH /admin/staff/{userId}`). Request/response types hand-written (no live backend to regenerate `backend-types.ts` from right now).
-- **`pages/admin/staff/types.ts`**: drop `StaffDepartment`/`DEPARTMENT_CONFIG`'s made-up mapping; filter becomes `'ALL' | 'WAITER' | 'KITCHEN' | 'ADMIN'` directly over the real `Role` values. `StaffMember.status: 'ACTIVE'|'OFFLINE'` becomes `active: boolean`. `metadata` pills are read directly from the optional `shift`/`contractType`/`location`/`efficiencyPercentage` fields (hidden when `null`) instead of a hardcoded tuple.
+- **`api.ts`**: new `StaffMemberResponse` type (mirrors the backend DTO exactly, becomes THE staff shape used everywhere in the frontend — no separate local `StaffMember` type) + `staffService.getAll(): Promise<StaffMemberResponse[]>` (`GET /admin/staff`) and `staffService.updateProfile(userId, payload): Promise<StaffMemberResponse>` (`PATCH /admin/staff/{userId}`). Hand-written (no live backend to regenerate `backend-types.ts` from right now).
+- **`pages/admin/staff/types.ts`**: drop `StaffDepartment`/`DEPARTMENT_CONFIG`/`StaffMember`/`StaffMetadataItem` entirely. Filter becomes `'ALL' | StaffRole` directly over the real role values. `ROLE_LABELS`/`ROLE_BADGE_CLASSNAMES` replace the old made-up department mapping.
+- **`StaffCard.tsx`**: metadata pills are built from whichever of `shift`/`contractType`/`location`/`efficiencyPercentage` are non-null (0-4 pills, not a fixed tuple); subtitle under the name is `jobTitle` (falls back to `email` when unset, so the line is never blank); status dot reads `active` instead of the old invented `status` field; drops `AvatarImage`/`avatarUrl` (no such field exists — initials-only fallback).
 - **`pages/admin/staff/mock-data.ts`**: deleted.
 - **`pages/admin/staff/Staff.tsx`**: `useQuery(['staff'], staffService.getAll)` replaces `MOCK_STAFF`; loading/error states styled like the rest of the admin app (centered, `text-muted-foreground`/`text-destructive`).
 - **`StaffHeader.tsx`**: strips the search `Input` and "Nuevo empleado" `Button` — keeps only the title/subtitle, matching `Analytics.tsx`'s header.
-- **`useUIStore.ts`**: add `searchTerm: string` + `setSearchTerm(value: string)`. `TopNav.tsx`'s existing (currently unwired) search `<input>` becomes controlled from this store; `Staff.tsx` reads `searchTerm` instead of local state for its name filter. Every other admin page keeps ignoring it — zero behavior change elsewhere.
+- **`useUIStore.ts`**: add `searchTerm: string` + `setSearchTerm(value: string)`. `TopNav.tsx`'s existing (currently unwired) search `<input>` becomes controlled from this store, and clears `searchTerm` on every route change (`useEffect` keyed on the current path) so leftover text doesn't linger when navigating to a page that doesn't use it. `Staff.tsx` reads `searchTerm` instead of local state for its name filter. Every other admin page keeps ignoring the value — zero behavior change elsewhere.
 - **Route rename**: `/admin/staff` → `/admin/employees` in `App.tsx` and the `FloatingNav.tsx` link, to match `TopNav.tsx`'s pre-existing (previously unused) `path.includes('/admin/employees')` branch (`buttonText = 'Nuevo empleado'`, `searchPlaceholder = 'Buscar empleados...'`). The `pages/admin/staff/` folder name is unaffected — only the URL and nav link change.
 
 ---
