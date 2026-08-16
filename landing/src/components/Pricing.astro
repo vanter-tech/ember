@@ -1,0 +1,131 @@
+---
+import { FRONTEND_URL } from '../lib/constants';
+
+const plans = [
+	{
+		id: 'FREE',
+		name: 'Free',
+		price: '$0',
+		period: '/mes',
+		tagline: 'Para probar Ember sin compromiso.',
+		features: [
+			'1 mesa activa',
+			'Carrito colaborativo',
+			'Comandas en cocina (KDS)',
+			'Soporte por comunidad',
+		],
+		cta: 'Empezar gratis',
+		href: `${FRONTEND_URL}/register`,
+		highlighted: false,
+	},
+	{
+		id: 'STARTER',
+		name: 'Starter',
+		price: '$29',
+		period: '/mes',
+		tagline: 'Para restaurantes pequeños.',
+		features: [
+			'Hasta 10 mesas',
+			'KDS y gestión de piso',
+			'División de cuentas',
+			'Soporte por correo',
+		],
+		cta: 'Registrarme',
+		href: `${FRONTEND_URL}/register`,
+		highlighted: false,
+	},
+	{
+		id: 'PRO',
+		name: 'Pro',
+		price: '$79',
+		period: '/mes',
+		tagline: 'Para operaciones en crecimiento.',
+		features: [
+			'Mesas ilimitadas',
+			'Analítica avanzada',
+			'Múltiples meseros y roles',
+			'Soporte prioritario',
+		],
+		cta: 'Registrarme',
+		href: `${FRONTEND_URL}/register`,
+		highlighted: true,
+	},
+	{
+		id: 'ENTERPRISE',
+		name: 'Enterprise',
+		price: 'A medida',
+		period: '',
+		tagline: 'Para cadenas y franquicias.',
+		features: [
+			'Multi-sucursal',
+			'SLA dedicado',
+			'Integraciones a medida',
+			'Gerente de cuenta',
+		],
+		cta: 'Hablar con ventas',
+		href: 'mailto:ventas@ember.vanter.com',
+		highlighted: false,
+	},
+];
+---
+
+<section id="pricing" class="border-b-[3px] border-foreground bg-background">
+	<div class="mx-auto max-w-6xl px-6 py-16 md:py-24">
+		<p class="font-mono text-sm font-bold uppercase tracking-widest text-accent">
+			Planes simples
+		</p>
+		<h2 class="mt-4 max-w-xl text-4xl font-black uppercase leading-[0.95] tracking-tight md:text-5xl">
+			Crece sin cambiar de sistema
+		</h2>
+
+		<div class="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+			{plans.map((plan) => (
+				<div
+					class:list={[
+						'flex flex-col border-[3px] border-foreground p-6',
+						plan.highlighted
+							? 'bg-foreground text-background shadow-brutal'
+							: 'bg-background shadow-brutal-sm',
+					]}
+				>
+					{plan.highlighted && (
+						<span class="font-mono text-xs font-black uppercase tracking-widest text-accent">
+							Más popular
+						</span>
+					)}
+					<h3 class="mt-3 text-lg font-black uppercase tracking-tight">{plan.name}</h3>
+					<p class:list={['mt-1 text-sm font-medium', plan.highlighted ? 'text-background/70' : 'text-foreground/80']}>
+						{plan.tagline}
+					</p>
+
+					<p class="mt-6 flex items-baseline gap-1">
+						<span class="text-4xl font-black tracking-tight">{plan.price}</span>
+						{plan.period && (
+							<span class="font-mono text-xs uppercase tracking-widest opacity-80">
+								{plan.period}
+							</span>
+						)}
+					</p>
+
+					<ul class="mt-6 flex-1 space-y-2">
+						{plan.features.map((feature) => (
+							<li class="font-mono text-xs uppercase tracking-wide">— {feature}</li>
+						))}
+					</ul>
+
+					<a
+						href={plan.href}
+						class:list={[
+							'mt-8 border-[3px] px-4 py-3 text-center text-sm font-black uppercase tracking-wide',
+							plan.highlighted
+								? 'border-background bg-accent text-background'
+								: 'border-foreground bg-accent text-background',
+						]}
+					>
+						{plan.cta}
+					</a>
+				</div>
+			))}
+		</div>
+	</div>
+</section>
