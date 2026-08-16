@@ -83,8 +83,8 @@ export const FloatingNav = () => {
             <BarChart3 strokeWidth={1.5} size={24} />
           </Link>
           <Link
-            to="/admin/staff"
-            className={navItemClass('/admin/staff')}
+            to="/admin/employees"
+            className={navItemClass('/admin/employees')}
             title="Personal"
           >
             <Users strokeWidth={1.5} size={24} />

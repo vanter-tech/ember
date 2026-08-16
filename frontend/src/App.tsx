@@ -77,7 +77,7 @@ export default function App() {
             <Route path="categories/:id/items" element={<ListMenuItem />} />
             <Route path="settings" element={<Settings />} />
             <Route path="analytics" element={<Analytics />} />
-            <Route path="staff" element={<Staff />} />
+            <Route path="employees" element={<Staff />} />
           </Route>
         </Route>
 

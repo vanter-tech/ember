@@ -10,27 +10,32 @@ export type SettingsType = 'BRANDING' | 'MENU' | 'BILLING' | 'HARDWARE'|
 interface UIState {
   activeModal: ModalType
   modalPayload: any
+  searchTerm: string
   openModal: (modal: ModalType, payload?: any) => void
   closeModal: () => void
+  setSearchTerm: (value: string) => void
 }
 
 export const useUIStore = create<UIState>((set) => ({
 
     activeModal: null,
     modalPayload: null,
+    searchTerm: '',
 
 
   openModal: (modal, payload = null) => set({
 
     activeModal: modal,
     modalPayload: payload
-    
+
   }),
 
   closeModal: () => set({
     activeModal: null,
     modalPayload: null
-  })
+  }),
+
+  setSearchTerm: (value) => set({ searchTerm: value })
 
 }));
 

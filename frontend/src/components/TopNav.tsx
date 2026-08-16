@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { useLocation, useMatch } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
 import { Search, Plus } from 'lucide-react'
@@ -9,10 +10,15 @@ export const TopNav = () => {
 
   const role = useAuthStore((state) => state.role)
   const { settings } = settingStore()
-  const { openModal } = useUIStore()
+  const { openModal, searchTerm, setSearchTerm } = useUIStore()
 
   const location = useLocation()
   const path = location.pathname
+
+  useEffect(() => {
+    setSearchTerm('')
+  }, [path, setSearchTerm])
+
   const allowedWaiterPaths = ['/waiter/tables'] // Rutas por agregar ya que no tengo bien definidas las views de los meseros.
 
   const isMenuItemRoute = useMatch('/admin/categories/:id/items')
@@ -73,6 +79,8 @@ export const TopNav = () => {
                     text-sm text-zinc-700 bg-transparent pr-2"
             type="text"
             placeholder={searchPlaceholder}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
       </div>
