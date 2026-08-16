@@ -15,6 +15,7 @@ import { Tables } from '@/pages/waiter/Tables'
 import { WaiterLayout } from '@/layouts/WaiterLayout'
 import { Settings } from './pages/admin/Settings'
 import { Analytics } from './pages/admin/analytics/Analytics'
+import { Staff } from './pages/admin/staff/Staff'
 import { TableInformation } from './pages/waiter/TableInformation'
 import { CustomerLayout } from './layouts/CustomerLayout'
 import { Home } from './pages/customer/Home'
@@ -76,6 +77,7 @@ export default function App() {
             <Route path="categories/:id/items" element={<ListMenuItem />} />
             <Route path="settings" element={<Settings />} />
             <Route path="analytics" element={<Analytics />} />
+            <Route path="staff" element={<Staff />} />
           </Route>
         </Route>
 

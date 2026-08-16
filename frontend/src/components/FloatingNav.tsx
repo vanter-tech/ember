@@ -10,6 +10,7 @@ import {
   Home,
   Menu,
   ChefHat,
+  Users,
 } from 'lucide-react'
 import { useSessionStore } from '@/store/sessionStore'
 
@@ -80,6 +81,13 @@ export const FloatingNav = () => {
             title="Analíticas"
           >
             <BarChart3 strokeWidth={1.5} size={24} />
+          </Link>
+          <Link
+            to="/admin/staff"
+            className={navItemClass('/admin/staff')}
+            title="Personal"
+          >
+            <Users strokeWidth={1.5} size={24} />
           </Link>
           <div className="w-px h-8 bg-zinc-200 dark:bg-zinc-700 mx-2"></div>
           <Link
