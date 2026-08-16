@@ -12,6 +12,7 @@ import { AdminLayout } from './layouts/AdminLayout'
 import { Category } from './pages/admin/Category'
 import { ListMenuItem } from './pages/admin/ListMenuItem'
 import { Tables } from '@/pages/waiter/Tables'
+import { CashRegister as WaiterCashRegister } from '@/pages/waiter/cashRegister/CashRegister'
 import { WaiterLayout } from '@/layouts/WaiterLayout'
 import { Settings } from './pages/admin/Settings'
 import { Analytics } from './pages/admin/analytics/Analytics'
@@ -85,6 +86,7 @@ export default function App() {
           <Route path="/waiter" element={<WaiterLayout />}>
             <Route path="tables" element={<Tables />} />
             <Route path="tables/:id" element={<TableInformation />} />
+            <Route path="cash-register" element={<WaiterCashRegister />} />
           </Route>
         </Route>
 

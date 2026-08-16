@@ -11,6 +11,7 @@ import {
   Menu,
   ChefHat,
   Users,
+  Banknote,
 } from 'lucide-react'
 import { useSessionStore } from '@/store/sessionStore'
 
@@ -63,6 +64,16 @@ export const FloatingNav = () => {
           title="kitchen"
         >
           <ChefHat strokeWidth={1.5} size={24} />
+        </Link>
+      )}
+
+      {role === 'WAITER' && (
+        <Link
+          to="/waiter/cash-register"
+          className={navItemClass('/waiter/cash-register')}
+          title="Caja"
+        >
+          <Banknote strokeWidth={1.5} size={24} />
         </Link>
       )}
 
