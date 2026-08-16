@@ -51,13 +51,15 @@ export const SummaryCards = () => {
           className="border border-border/40 bg-background shadow-sm"
         >
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
+            <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               {label}
             </CardTitle>
-            <Icon className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10">
+              <Icon className="h-4 w-4 text-primary" strokeWidth={2} />
+            </div>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-semibold tracking-tight tabular-nums text-foreground">
+            <p className="text-3xl font-bold tracking-tight tabular-nums text-primary">
               {value}
             </p>
           </CardContent>
