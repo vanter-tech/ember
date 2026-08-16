@@ -5,10 +5,12 @@ import { TableAnalytics } from './components/TableAnalytics'
 
 export const Analytics = () => {
   return (
-    <div className="p-6 flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-bold text-zinc-800">Analíticas</h1>
-        <p className="text-sm text-zinc-500">
+    <div className="flex flex-col gap-8">
+      <div className="flex flex-col gap-1">
+        <h1 className="text-3xl font-bold tracking-tight text-foreground">
+          Analíticas
+        </h1>
+        <p className="text-sm text-muted-foreground">
           Métricas de ventas, productos y mesas del restaurante.
         </p>
       </div>
