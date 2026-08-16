@@ -12,18 +12,21 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.UUID;
 
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class SessionWebSocketListenerTest {
 
+    private static final UUID TENANT_ID = UUID.randomUUID();
+
     @Mock SimpMessagingTemplate messagingTemplate;
     @InjectMocks SessionWebSocketListener listener;
 
     @Test
     void onParticipantJoined_sendsToSessionTopic() {
-        ParticipantJoined event = new ParticipantJoined("sess-1", "user-1", "Alice");
+        ParticipantJoined event = new ParticipantJoined(TENANT_ID, "sess-1", "user-1", "Alice");
 
         listener.onParticipantJoined(event);
 
@@ -34,7 +37,7 @@ class SessionWebSocketListenerTest {
 
     @Test
     void onParticipantJoined_topicContainsSessionId() {
-        ParticipantJoined event = new ParticipantJoined("sess-42", "user-2", "Bob");
+        ParticipantJoined event = new ParticipantJoined(TENANT_ID, "sess-42", "user-2", "Bob");
 
         listener.onParticipantJoined(event);
 
