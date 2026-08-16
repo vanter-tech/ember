@@ -179,10 +179,10 @@ export const Menu = () => {
             </Card>
           ))}
         </div>
-        <div className="fixed bottom-10 left-11 z-50">
+        <div className="fixed bottom-24 left-11 z-50 sm:bottom-10">
           <ParticipantsPopUp />
         </div>
-        <div className="fixed bottom-10 right-11 z-50">
+        <div className="fixed bottom-24 right-11 z-50 sm:bottom-10">
           <ItemsFloatingIsland />
         </div>
       </div>
