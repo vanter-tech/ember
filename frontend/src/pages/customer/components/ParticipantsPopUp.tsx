@@ -1,7 +1,7 @@
 import { useSessionStore } from '@/store/sessionStore'
 import { useState } from 'react'
 import { AvatarInitials, AvatarColors } from '@/components/AvatarInitials'
-import { ParticipantsList } from './ParticipantsList'
+import { ParticipantsList } from '@/components/ParticipantsList'
 
 export const ParticipantsPopUp = () => {
   const { id: tableId, participants } = useSessionStore()
