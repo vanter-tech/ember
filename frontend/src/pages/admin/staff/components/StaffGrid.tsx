@@ -1,11 +1,11 @@
 import { AddStaffCard, StaffCard } from './StaffCard'
-import type { StaffMember } from '../types'
+import type { StaffMemberResponse } from '@/lib/api'
 
 interface StaffGridProps {
-  members: StaffMember[]
+  members: StaffMemberResponse[]
   onAddRole?: () => void
-  onViewProfile?: (member: StaffMember) => void
-  onOpenActions?: (member: StaffMember) => void
+  onViewProfile?: (member: StaffMemberResponse) => void
+  onOpenActions?: (member: StaffMemberResponse) => void
 }
 
 export const StaffGrid = ({ members, onAddRole, onViewProfile, onOpenActions }: StaffGridProps) => {
