@@ -407,16 +407,21 @@ export const analyticsService = {
 }
 
 export type StaffMemberResponse = components['schemas']['StaffMemberResponse']
-export type UpdateStaffProfileRequest = components['schemas']['UpdateStaffProfileRequest']
+export type CreateStaffRequest = components['schemas']['CreateStaffRequest']
 
-// Hand-typed: no generated schema exists yet for POST /admin/staff (same temporary gap
-// RequestBillingRequest had before its endpoint's first `pnpm run openapi` regen) — swap for
-// `components['schemas']['CreateStaffRequest']` next time backend-types.ts is regenerated.
-export interface CreateStaffRequest {
-  name: string
-  email: string
-  password: string
-  role: 'WAITER' | 'KITCHEN' | 'ADMIN'
+// Hand-typed: the generated UpdateStaffProfileRequest predates the name/email fields staff
+// editing needs (same temporary gap CreateStaffRequest itself had until this backend-types.ts
+// regen) — swap for `components['schemas']['UpdateStaffProfileRequest']` next regen.
+export interface UpdateStaffProfileRequest {
+  name?: string
+  email?: string
+  active?: boolean
+  jobTitle?: string
+  shift?: string
+  contractType?: string
+  location?: string
+  efficiencyPercentage?: number
+  pendingHours?: number
 }
 
 export const staffService = {

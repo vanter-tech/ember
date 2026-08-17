@@ -1,8 +1,10 @@
 import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { staffService } from '@/lib/api'
+import { staffService, type StaffMemberResponse } from '@/lib/api'
 import { useUIStore } from '@/store/uiStore'
+import { GlobalDeleteModal } from '@/components/GlobalDeleteModal'
 import { CreateStaffModal } from './components/CreateStaffModal'
+import { EditStaffModal } from './components/EditStaffModal'
 import { StaffFilters } from './components/StaffFilters'
 import { StaffGrid } from './components/StaffGrid'
 import { StaffHeader } from './components/StaffHeader'
@@ -49,11 +51,15 @@ export const Staff = () => {
           <StaffGrid
             members={filteredStaff}
             onAddRole={() => openModal('CREATE_STAFF')}
+            onViewProfile={(member: StaffMemberResponse) => openModal('EDIT_STAFF', member)}
+            onOpenActions={(member: StaffMemberResponse) => openModal('DELETE_STAFF', member)}
           />
           <StaffKpis members={staff} />
         </>
       )}
       <CreateStaffModal />
+      <EditStaffModal />
+      <GlobalDeleteModal />
     </div>
   )
 }

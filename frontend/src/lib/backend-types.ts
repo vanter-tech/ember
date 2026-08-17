@@ -401,6 +401,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/staff": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the current tenant's staff, i.e. every non-CUSTOMER user (ADMIN) */
+        get: operations["getStaff"];
+        put?: never;
+        /** Create a new staff member for the current tenant (ADMIN) */
+        post: operations["createStaff"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/sessions/{id}/capacity": {
         parameters: {
             query?: never;
@@ -783,23 +801,6 @@ export interface paths {
         };
         /** Get the tenant's currently open shift (WAITER/ADMIN) */
         get: operations["current"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/admin/staff": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List the current tenant's staff, i.e. every non-CUSTOMER user (ADMIN) */
-        get: operations["getStaff"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1288,6 +1289,29 @@ export interface components {
             email: string;
             password: string;
         };
+        CreateStaffRequest: {
+            name: string;
+            email: string;
+            password: string;
+            /** @enum {string} */
+            role: "CUSTOMER" | "WAITER" | "KITCHEN" | "ADMIN";
+        };
+        StaffMemberResponse: {
+            id?: string;
+            name?: string;
+            email?: string;
+            /** @enum {string} */
+            role?: "CUSTOMER" | "WAITER" | "KITCHEN" | "ADMIN";
+            /** Format: date-time */
+            createdAt?: string;
+            active?: boolean;
+            jobTitle?: string;
+            shift?: string;
+            contractType?: string;
+            location?: string;
+            efficiencyPercentage?: number;
+            pendingHours?: number;
+        };
         ExpandCapacityRequest: {
             /** Format: int32 */
             additional?: number;
@@ -1369,22 +1393,6 @@ export interface components {
             efficiencyPercentage?: number;
             pendingHours?: number;
         };
-        StaffMemberResponse: {
-            id?: string;
-            name?: string;
-            email?: string;
-            /** @enum {string} */
-            role?: "CUSTOMER" | "WAITER" | "KITCHEN" | "ADMIN";
-            /** Format: date-time */
-            createdAt?: string;
-            active?: boolean;
-            jobTitle?: string;
-            shift?: string;
-            contractType?: string;
-            location?: string;
-            efficiencyPercentage?: number;
-            pendingHours?: number;
-        };
         UpdateRestaurantPlanRequest: {
             /** @enum {string} */
             plan: "FREE" | "STARTER" | "PRO" | "ENTERPRISE";
@@ -1453,8 +1461,6 @@ export interface components {
             totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
-            first?: boolean;
-            last?: boolean;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["PlatformRestaurantSummaryResponse"][];
@@ -1464,6 +1470,8 @@ export interface components {
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
+            first?: boolean;
+            last?: boolean;
             empty?: boolean;
         };
         PageableObject: {
@@ -1505,8 +1513,6 @@ export interface components {
             totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
-            first?: boolean;
-            last?: boolean;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["PlatformAuditLogResponse"][];
@@ -1516,6 +1522,8 @@ export interface components {
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
+            first?: boolean;
+            last?: boolean;
             empty?: boolean;
         };
         PlatformAuditLogResponse: {
@@ -1545,8 +1553,6 @@ export interface components {
             totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
-            first?: boolean;
-            last?: boolean;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["KitchenOrder"][];
@@ -1556,6 +1562,8 @@ export interface components {
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
+            first?: boolean;
+            last?: boolean;
             empty?: boolean;
         };
         KitchenDisplayEntry: {
@@ -1584,8 +1592,6 @@ export interface components {
             totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
-            first?: boolean;
-            last?: boolean;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["MenuItemResponse"][];
@@ -1595,6 +1601,8 @@ export interface components {
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
+            first?: boolean;
+            last?: boolean;
             empty?: boolean;
         };
         PageCategoryResponse: {
@@ -1602,8 +1610,6 @@ export interface components {
             totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
-            first?: boolean;
-            last?: boolean;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["CategoryResponse"][];
@@ -1613,6 +1619,8 @@ export interface components {
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
+            first?: boolean;
+            last?: boolean;
             empty?: boolean;
         };
         PageCashShiftResponse: {
@@ -1620,8 +1628,6 @@ export interface components {
             totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
-            first?: boolean;
-            last?: boolean;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["CashShiftResponse"][];
@@ -1631,6 +1637,8 @@ export interface components {
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
+            first?: boolean;
+            last?: boolean;
             empty?: boolean;
         };
         CashShiftDetailResponse: {
@@ -2495,6 +2503,50 @@ export interface operations {
             };
         };
     };
+    getStaff: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["StaffMemberResponse"][];
+                };
+            };
+        };
+    };
+    createStaff: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateStaffRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["StaffMemberResponse"];
+                };
+            };
+        };
+    };
     expandCapacity: {
         parameters: {
             query?: never;
@@ -3017,26 +3069,6 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["CashShiftResponse"];
-                };
-            };
-        };
-    };
-    getStaff: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["StaffMemberResponse"][];
                 };
             };
         };
