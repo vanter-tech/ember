@@ -100,6 +100,9 @@ export const TableInformation = () => {
   }
 
   const hasItems = itemsToWaiter && itemsToWaiter.length > 0
+  const hasBillableItems = itemsToWaiter.some(
+    (item) => item.status === 'READY' || item.status === 'DELIVERED'
+  )
 
   const subtotal =
     itemsToWaiter.reduce((total, item) => total + (item.price ?? 0), 0) ??
@@ -402,6 +405,7 @@ export const TableInformation = () => {
                   {hasItems ? (
                     <Button
                       className="w-full h-15 text-2xl font-bold"
+                      disabled={!hasBillableItems}
                       onClick={() =>
                         openModal('CHARGE_TABLE', {
                           sessionId: id,
@@ -409,7 +413,9 @@ export const TableInformation = () => {
                         })
                       }
                     >
-                      Cobrar Mesa
+                      {hasBillableItems
+                        ? 'Cobrar Mesa'
+                        : 'Esperando entrega de pedidos'}
                     </Button>
                   ) : (
                     <Button
