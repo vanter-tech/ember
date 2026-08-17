@@ -1,5 +1,5 @@
 import { ParticipantQrModal } from './components/ParticipantsQrModal'
-import { DashboardService, SessionTableService } from '@/lib/api'
+import { DashboardService, SessionTableService, cashShiftService } from '@/lib/api'
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/store/authStore'
 import { useWebsocketStore } from '@/store/websocket'
@@ -23,6 +23,14 @@ export const Tables = () => {
     queryFn: () => DashboardService.getDashboardData(),
     enabled: !!restaurantId,
   })
+
+  const { data: cashShift } = useQuery({
+    queryKey: ['cashShiftCurrent'],
+    queryFn: cashShiftService.current,
+    enabled: !!restaurantId,
+  })
+
+  const isCajaOpen = cashShift?.status === 'OPEN'
 
   const tableDetails = dashboardData?.find(
     (data) => data.tableId === selectedTable
@@ -79,13 +87,21 @@ export const Tables = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-3 gap-4 relative">
+          {!isCajaOpen && (
+            <div className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-white/80 backdrop-blur-sm">
+              <span className="max-w-[80%] text-center text-lg font-semibold text-zinc-600">
+                Necesita abrir la caja para poder asignar mesa.
+              </span>
+            </div>
+          )}
           {dashboardData?.map((table) => (
             <Card
               key={table.tableId}
-              onClick={() => setSelectedTable(table.tableId)}
-              className={`cursor-pointer shadow-sm border-zinc-100 
+              onClick={() => isCajaOpen && setSelectedTable(table.tableId)}
+              className={`shadow-sm border-zinc-100
                 h-40 flex flex-col justify-between rounded-2xl relative
+                ${isCajaOpen ? 'cursor-pointer' : 'pointer-events-none cursor-not-allowed opacity-50'}
                 ${table.isOccupied ? 'border-2 bg-[#8c1717] text-white' : 'bg-white text-black'}`}
             >
               <CardHeader className="p-4 pb-0 flex justify-between">
@@ -185,6 +201,7 @@ export const Tables = () => {
                 <Button
                   variant={'outline'}
                   className="w-full text-md"
+                  disabled={!isCajaOpen}
                   onClick={(e) => {
                     openModal('PARTICIPANTS_QR', tableDetails)
                     e.preventDefault()
