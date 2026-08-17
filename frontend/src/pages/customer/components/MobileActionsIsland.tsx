@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowRight, MoreHorizontal, Users } from 'lucide-react'
+import { ArrowRight, MoreHorizontal, Receipt, Users } from 'lucide-react'
 import { useSessionStore } from '@/store/sessionStore'
 import { ParticipantsList } from './ParticipantsList'
 
@@ -46,6 +46,19 @@ export const MobileActionsIsland = () => {
                 <ArrowRight className="h-4 w-4 text-zinc-500" />
                 <span className="text-sm font-medium text-zinc-700">
                   Ver comanda
+                </span>
+              </button>
+              <button
+                type="button"
+                className="flex items-center gap-3 p-2 rounded-xl text-left transition-colors hover:bg-zinc-50"
+                onClick={() => {
+                  close()
+                  navigate(`${tableId}/bill`)
+                }}
+              >
+                <Receipt className="h-4 w-4 text-zinc-500" />
+                <span className="text-sm font-medium text-zinc-700">
+                  Ver cuenta
                 </span>
               </button>
             </div>

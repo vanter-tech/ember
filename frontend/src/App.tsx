@@ -23,6 +23,7 @@ import { CustomerLayout } from './layouts/CustomerLayout'
 import { Home } from './pages/customer/Home'
 import { Menu } from './pages/customer/Menu'
 import { ComandaView } from './pages/customer/ComandaView'
+import { Bill } from './pages/customer/Bill'
 import { OrdersDisplays } from './pages/kitchen/OrdersDisplay'
 import { KitchenLayout } from './layouts/KitchenLayout'
 import { TenantLanding } from './pages/public/TenantLanding'
@@ -70,6 +71,7 @@ export default function App() {
             <Route path='home' element={<Home/>}/>
             <Route path='menu' element={<Menu/>}/>
             <Route path="menu/:id/comanda" element={<ComandaView/>} />
+            <Route path="menu/:id/bill" element={<Bill/>} />
           </Route>
         </Route>
 
