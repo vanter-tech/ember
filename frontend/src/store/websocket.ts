@@ -4,6 +4,7 @@ import SockJS from 'sockjs-client'
 import { useAuthStore } from "./authStore";
 import { useSessionStore } from "./sessionStore";
 import { queryClient } from "@/queryClient";
+import type { WaiterBillState } from "@/lib/api";
 
 interface WebSocketState {
     stompClient: Client | null,
@@ -95,6 +96,15 @@ export const useWebsocketStore = create<WebSocketState>((set, get) => ({
             if(eventData.type === 'ITEMS_CONFIRMED'){
                 useSessionStore.getState().updateSession({items: eventData.sessionItems})
             }
+            if(eventData.type === 'BILL_READY'){
+                useSessionStore.getState().setBillReady(
+                    { id: eventData.billId, total: eventData.total },
+                    eventData.splits
+                )
+            }
+            if(eventData.type === 'SPLIT_PAID'){
+                useSessionStore.getState().markSplitPaid(eventData.participantName)
+            }
             if(eventData.type === 'SESSION_CLOSED'){
                 useSessionStore.getState().clearSession()
                 queryClient.removeQueries({queryKey: ['sessionDetails']})
@@ -148,6 +158,52 @@ export const useWebsocketStore = create<WebSocketState>((set, get) => ({
                 eventData.type === 'SESSION_CLOSED'
             ){
                 queryClient.invalidateQueries({queryKey: ['sessionDetails', sessionId]})
+            }
+            if(eventData.type === 'BILL_READY'){
+                queryClient.setQueryData<WaiterBillState>(['bill', sessionId], {
+                    id: eventData.billId,
+                    total: eventData.total,
+                    splits: eventData.splits,
+                })
+            }
+            if(eventData.type === 'SPLIT_PAID'){
+                queryClient.setQueryData<WaiterBillState | undefined>(['bill', sessionId], (old) =>
+                    old
+                        ? {
+                            ...old,
+                            splits: old.splits.map((split) =>
+                                split.participantName === eventData.participantName
+                                    ? { ...split, paid: true }
+                                    : split
+                            ),
+                            pendingDigitalPayments: (old.pendingDigitalPayments || []).filter(
+                                (p) => p.participantName !== eventData.participantName
+                            ),
+                        }
+                        : old
+                )
+            }
+            if(eventData.type === 'DIGITAL_PAYMENT_INITIATED'){
+                queryClient.setQueryData<WaiterBillState | undefined>(['bill', sessionId], (old) =>
+                    old
+                        ? {
+                            ...old,
+                            pendingDigitalPayments: [
+                                ...(old.pendingDigitalPayments || []).filter(
+                                    (p) => p.participantName !== eventData.participantName
+                                ),
+                                {
+                                    id: eventData.paymentId,
+                                    participantName: eventData.participantName,
+                                    amount: eventData.amount,
+                                },
+                            ],
+                        }
+                        : old
+                )
+            }
+            if(eventData.type === 'SESSION_CLOSED'){
+                queryClient.removeQueries({queryKey: ['bill', sessionId]})
             }
         })
 

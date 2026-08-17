@@ -24,6 +24,23 @@ export type tableStatus = components['schemas']['SessionStatusDto']
 export type kitchenOrdersDisplayByTables = components['schemas']['KitchenDisplayEntry']
 export type kitchenOrders = components['schemas']['KitchenOrder']
 export type OrderItemStatus = components['schemas']['UpdateItemStatusRequest']['status']
+export type SplitMethod = calculateBill['splitMethod']
+export type Bill = components['schemas']['Bill']
+export type BillSplit = components['schemas']['BillSplit']
+export type Payment = components['schemas']['Payment']
+
+export interface PendingDigitalPayment {
+  id: number
+  participantName: string
+  amount: number
+}
+
+export interface WaiterBillState {
+  id: number
+  total: number
+  splits: BillSplit[]
+  pendingDigitalPayments?: PendingDigitalPayment[]
+}
 
 export interface Page<T> {
   content: T[]
@@ -446,6 +463,47 @@ export const cashShiftService = {
   },
   dailyReport: async (date: string): Promise<DailyReportResponse> => {
     const { data } = await api.get<DailyReportResponse>('/cash-shifts/daily-report', { params: { date } })
+    return data
+  },
+}
+
+export const billingService = {
+  requestBilling: async (
+    sessionId: string,
+    splitMethod: SplitMethod,
+    participantCount?: number
+  ): Promise<void> => {
+    await api.post<void>(`/billing/sessions/${sessionId}/request`, {
+      splitMethod,
+      participantCount,
+    })
+  },
+  registerPhysicalPayment: async (
+    billId: number,
+    participantName: string,
+    amount: number
+  ): Promise<Payment> => {
+    const { data } = await api.post<Payment>('/billing/payments/physical', {
+      billId,
+      participantName,
+      amount,
+    })
+    return data
+  },
+  initiateDigitalPayment: async (
+    billId: number,
+    participantName: string,
+    amount: number
+  ): Promise<Payment> => {
+    const { data } = await api.post<Payment>('/billing/payments/digital', {
+      billId,
+      participantName,
+      amount,
+    })
+    return data
+  },
+  confirmDigitalPayment: async (paymentId: number): Promise<Payment> => {
+    const { data } = await api.post<Payment>(`/billing/payments/${paymentId}/confirm`)
     return data
   },
 }
