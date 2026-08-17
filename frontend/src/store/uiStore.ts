@@ -4,7 +4,7 @@ export type ModalType = 'CREATE_CATEGORY' | 'EDIT_CATEGORY' | 'DELETE_CATEGORY' 
                         'CREATE_ITEMS' | 'EDIT_ITEMS' | 'DELETE_ITEMS' |
                          'PARTICIPANTS_QR' | 'JOIN_TABLE' | 'TENANT_SUSPENDED' |
                          'OPEN_SHIFT' | 'CASH_MOVEMENT' | 'CLOSE_SHIFT' |
-                         'CHARGE_TABLE' | null;
+                         'CHARGE_TABLE' | 'CREATE_STAFF' | null;
 
 export type SettingsType = 'BRANDING' | 'MENU' | 'BILLING' | 'HARDWARE'|
                             'SPACE'| 'HORARIO'| null;

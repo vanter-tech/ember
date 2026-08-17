@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { staffService } from '@/lib/api'
 import { useUIStore } from '@/store/uiStore'
+import { CreateStaffModal } from './components/CreateStaffModal'
 import { StaffFilters } from './components/StaffFilters'
 import { StaffGrid } from './components/StaffGrid'
 import { StaffHeader } from './components/StaffHeader'
@@ -11,6 +12,7 @@ import type { StaffFilter } from './types'
 export const Staff = () => {
   const [roleFilter, setRoleFilter] = useState<StaffFilter>('ALL')
   const searchTerm = useUIStore((state) => state.searchTerm)
+  const openModal = useUIStore((state) => state.openModal)
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['staff'],
@@ -44,10 +46,14 @@ export const Staff = () => {
       )}
       {!isLoading && !isError && (
         <>
-          <StaffGrid members={filteredStaff} />
+          <StaffGrid
+            members={filteredStaff}
+            onAddRole={() => openModal('CREATE_STAFF')}
+          />
           <StaffKpis members={staff} />
         </>
       )}
+      <CreateStaffModal />
     </div>
   )
 }

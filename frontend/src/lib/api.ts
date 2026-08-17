@@ -409,9 +409,23 @@ export const analyticsService = {
 export type StaffMemberResponse = components['schemas']['StaffMemberResponse']
 export type UpdateStaffProfileRequest = components['schemas']['UpdateStaffProfileRequest']
 
+// Hand-typed: no generated schema exists yet for POST /admin/staff (same temporary gap
+// RequestBillingRequest had before its endpoint's first `pnpm run openapi` regen) — swap for
+// `components['schemas']['CreateStaffRequest']` next time backend-types.ts is regenerated.
+export interface CreateStaffRequest {
+  name: string
+  email: string
+  password: string
+  role: 'WAITER' | 'KITCHEN' | 'ADMIN'
+}
+
 export const staffService = {
   getAll: async (): Promise<StaffMemberResponse[]> => {
     const { data } = await api.get<StaffMemberResponse[]>('/admin/staff')
+    return data
+  },
+  create: async (request: CreateStaffRequest): Promise<StaffMemberResponse> => {
+    const { data } = await api.post<StaffMemberResponse>('/admin/staff', request)
     return data
   },
   updateProfile: async (
