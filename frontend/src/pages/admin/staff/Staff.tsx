@@ -5,6 +5,8 @@ import { useUIStore } from '@/store/uiStore'
 import { GlobalDeleteModal } from '@/components/GlobalDeleteModal'
 import { CreateStaffModal } from './components/CreateStaffModal'
 import { EditStaffModal } from './components/EditStaffModal'
+import { staffService } from '@/lib/api'
+import { useUIStore } from '@/store/uiStore'
 import { StaffFilters } from './components/StaffFilters'
 import { StaffGrid } from './components/StaffGrid'
 import { StaffHeader } from './components/StaffHeader'
@@ -60,6 +62,10 @@ export const Staff = () => {
       <CreateStaffModal />
       <EditStaffModal />
       <GlobalDeleteModal />
+          <StaffGrid members={filteredStaff} />
+          <StaffKpis members={staff} />
+        </>
+      )}
     </div>
   )
 }

@@ -56,6 +56,7 @@ class SecurityAuditTest {
         "GET,  /billing/payments/1/refunds",
         "PATCH, /api/admin/users/u-1/role",
         "POST, /api/admin/staff",
+        "PATCH, /api/admin/users/u-1/role",
         "GET,  /api/admin/staff",
         "PATCH, /api/admin/staff/u-1",
         "GET,  /api/admin/analytics/range",
@@ -70,6 +71,7 @@ class SecurityAuditTest {
         "POST, /cash-shifts/1/movements",
         "POST, /cash-shifts/1/close",
         "GET,  /cash-shifts/daily-report"
+        "GET,  /api/admin/analytics/tables"
     })
     void unauthenticated_returns401(String method, String path) throws Exception {
         var request = switch (method.trim()) {

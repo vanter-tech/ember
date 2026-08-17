@@ -105,6 +105,7 @@ public class AnalyticsService {
 
         return new AnalyticsSummaryResponse(
                 scaled(netRevenue),
+                scaled(revenue == null ? BigDecimal.ZERO : revenue),
                 activeSessions,
                 averageOrderValue,
                 paidBillCount,

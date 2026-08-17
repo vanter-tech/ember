@@ -75,6 +75,21 @@ export type SalesGranularity = Lowercase<
   NonNullable<components['schemas']['AnalyticsSalesResponse']['granularity']>
 >
 
+export type AnalyticsSummaryResponse = components['schemas']['AnalyticsSummaryResponse']
+export type AnalyticsSalesResponse = components['schemas']['AnalyticsSalesResponse']
+export type SalesBucket = components['schemas']['SalesBucket']
+export type AnalyticsProductsResponse = components['schemas']['AnalyticsProductsResponse']
+export type ProductPerformance = components['schemas']['ProductPerformance']
+export type CategoryPerformance = components['schemas']['CategoryPerformance']
+export type AnalyticsTablesResponse = components['schemas']['AnalyticsTablesResponse']
+export type TablePerformance = components['schemas']['TablePerformance']
+
+// The 'granularity' request param has no dedicated schema (it's a plain string query param
+// server-side), so it's derived from the response enum rather than hand-typed.
+export type SalesGranularity = Lowercase<
+  NonNullable<components['schemas']['AnalyticsSalesResponse']['granularity']>
+>
+
 declare global {
   interface Window {
     ENV: {

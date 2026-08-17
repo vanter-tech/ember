@@ -776,6 +776,24 @@ export interface paths {
         trace?: never;
     };
     "/cash-shifts": {
+    "/admin/staff": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the current tenant's staff, i.e. every non-CUSTOMER user (ADMIN) */
+        get: operations["getStaff"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/restaurant": {
         parameters: {
             query?: never;
             header?: never;
@@ -793,6 +811,104 @@ export interface paths {
         trace?: never;
     };
     "/cash-shifts/{id}": {
+    "/admin/analytics/tables": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Table performance: turnover, revenue and average session duration per table
+         * @description 'from'/'to' are the same optional inclusive window the summary uses. Tables come back ordered by revenue and only include tables that turned over at least once in the window; 'activeTableCount' and 'averageTurnoverRate' are always live and ignore the window.
+         */
+        get: operations["getTables"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/analytics/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Summary cards: total revenue, live active sessions and average order value
+         * @description 'from'/'to' are optional inclusive ISO date-times bounding the revenue and average-order-value figures; they default to the tenant's whole history up to now. The active-session count is always live and ignores them.
+         */
+        get: operations["getSummary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/analytics/sales": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Temporal sales series: revenue and settled orders bucketed over time
+         * @description 'granularity' is one of day|week|month|year (case-insensitive, defaults to day) and 'from'/'to' are the same optional inclusive window the summary uses. The returned series is gap-free, with quiet buckets reported as zeros.
+         */
+        get: operations["getSales"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/analytics/range": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get the tenant's billing-activity window, to bound dashboard date pickers */
+        get: operations["getRange"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/analytics/products": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Product performance: each menu item's and category's share of settled sales
+         * @description 'from'/'to' are the same optional inclusive window the summary uses. Products and categories come back ordered by revenue, with a running cumulative share for Pareto charts. 'limit' trims the product list to the top N; the totals and every share still cover the whole window.
+         */
+        get: operations["getProducts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sessions/{sessionId}/cancel": {
         parameters: {
             query?: never;
             header?: never;
@@ -1484,6 +1600,31 @@ export interface components {
             location?: string;
             efficiencyPercentage?: number;
             pendingHours?: number;
+        };
+        StaffMemberResponse: {
+            id?: string;
+            name?: string;
+            email?: string;
+            /** @enum {string} */
+            role?: "CUSTOMER" | "WAITER" | "KITCHEN" | "ADMIN";
+            /** Format: date-time */
+            createdAt?: string;
+            active?: boolean;
+            jobTitle?: string;
+            shift?: string;
+            contractType?: string;
+            location?: string;
+            efficiencyPercentage?: number;
+            pendingHours?: number;
+        };
+        UpdateStaffProfileRequest: {
+            active?: boolean;
+            jobTitle?: string;
+            shift?: string;
+            contractType?: string;
+            location?: string;
+            efficiencyPercentage?: number;
+            pendingHours?: number;
             name?: string;
             email?: string;
         };
@@ -1555,14 +1696,16 @@ export interface components {
             totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
-            first?: boolean;
-            last?: boolean;
+            /** Format: int64 */
+            totalElements?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["PlatformRestaurantSummaryResponse"][];
             /** Format: int32 */
             number?: number;
             sort?: components["schemas"]["SortObject"];
+            first?: boolean;
+            last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
@@ -1574,9 +1717,12 @@ export interface components {
             sort?: components["schemas"]["SortObject"];
             paged?: boolean;
             /** Format: int32 */
+            pageSize?: number;
+            /** Format: int32 */
             pageNumber?: number;
             /** Format: int32 */
             pageSize?: number;
+            paged?: boolean;
             unpaged?: boolean;
         };
         SortObject: {
@@ -1610,11 +1756,17 @@ export interface components {
             first?: boolean;
             last?: boolean;
             /** Format: int32 */
+            totalPages?: number;
+            /** Format: int64 */
+            totalElements?: number;
+            /** Format: int32 */
             size?: number;
             content?: components["schemas"]["PlatformAuditLogResponse"][];
             /** Format: int32 */
             number?: number;
             sort?: components["schemas"]["SortObject"];
+            first?: boolean;
+            last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
@@ -1650,11 +1802,17 @@ export interface components {
             first?: boolean;
             last?: boolean;
             /** Format: int32 */
+            totalPages?: number;
+            /** Format: int64 */
+            totalElements?: number;
+            /** Format: int32 */
             size?: number;
             content?: components["schemas"]["KitchenOrder"][];
             /** Format: int32 */
             number?: number;
             sort?: components["schemas"]["SortObject"];
+            first?: boolean;
+            last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
@@ -1682,18 +1840,36 @@ export interface components {
             currentSession?: components["schemas"]["ActiveSessionSummary"];
         };
         PageMenuItemResponse: {
-            /** Format: int64 */
-            totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
-            first?: boolean;
-            last?: boolean;
+            /** Format: int64 */
+            totalElements?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["MenuItemResponse"][];
             /** Format: int32 */
             number?: number;
             sort?: components["schemas"]["SortObject"];
+            first?: boolean;
+            last?: boolean;
+            /** Format: int32 */
+            numberOfElements?: number;
+            pageable?: components["schemas"]["PageableObject"];
+            empty?: boolean;
+        };
+        PageCategoryResponse: {
+            /** Format: int32 */
+            totalPages?: number;
+            /** Format: int64 */
+            totalElements?: number;
+            /** Format: int32 */
+            size?: number;
+            content?: components["schemas"]["CategoryResponse"][];
+            /** Format: int32 */
+            number?: number;
+            sort?: components["schemas"]["SortObject"];
+            first?: boolean;
+            last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
@@ -2867,6 +3043,7 @@ export interface operations {
         };
     };
     updateStaffProfile: {
+    create_1: {
         parameters: {
             query?: never;
             header?: never;
@@ -2893,8 +3070,11 @@ export interface operations {
         };
     };
     updatePlan: {
+    getAll_2: {
         parameters: {
-            query?: never;
+            query: {
+                pageable: components["schemas"]["Pageable"];
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -2917,6 +3097,12 @@ export interface operations {
         };
     };
     getSession: {
+                    "*/*": components["schemas"]["PageCategoryResponse"];
+                };
+            };
+        };
+    };
+    create_2: {
         parameters: {
             query?: never;
             header?: never;
@@ -3072,6 +3258,7 @@ export interface operations {
         };
     };
     getAllOrders: {
+    login_1: {
         parameters: {
             query: {
                 pageable: components["schemas"]["Pageable"];
@@ -3116,6 +3303,55 @@ export interface operations {
         };
     };
     getDisplay: {
+    updateStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlatformRestaurantStatusUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PlatformRestaurantSummaryResponse"];
+                };
+            };
+        };
+    };
+    changePassword: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlatformPasswordChangeRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    updateItemStatus: {
         parameters: {
             query?: never;
             header?: never;
@@ -3180,6 +3416,33 @@ export interface operations {
         };
     };
     detail: {
+    updateStaffProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateStaffProfileRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["StaffMemberResponse"];
+                };
+            };
+        };
+    };
+    updatePlan: {
         parameters: {
             query?: never;
             header?: never;
@@ -3288,6 +3551,52 @@ export interface operations {
         };
     };
     get: {
+    getById_2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PlatformRestaurantDetailResponse"];
+                };
+            };
+        };
+    };
+    getAll_3: {
+        parameters: {
+            query: {
+                restaurantId?: string;
+                pageable: components["schemas"]["Pageable"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PagePlatformAuditLogResponse"];
+                };
+            };
+        };
+    };
+    getMenus: {
         parameters: {
             query?: never;
             header?: never;
@@ -3303,6 +3612,141 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["Restaurant"];
+                };
+            };
+        };
+    };
+    getTables: {
+        parameters: {
+            query?: {
+                from?: string;
+                to?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AnalyticsTablesResponse"];
+                };
+            };
+        };
+    };
+    getSummary: {
+        parameters: {
+            query?: {
+                from?: string;
+                to?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AnalyticsSummaryResponse"];
+                };
+            };
+        };
+    };
+    getSales: {
+        parameters: {
+            query?: {
+                granularity?: string;
+                from?: string;
+                to?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AnalyticsSalesResponse"];
+                };
+            };
+        };
+    };
+    getRange: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AnalyticsRangeResponse"];
+                };
+            };
+        };
+    };
+    getProducts: {
+    getStaff: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["StaffMemberResponse"][];
+                };
+            };
+        };
+    };
+    get: {
+        parameters: {
+            query?: {
+                from?: string;
+                to?: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AnalyticsProductsResponse"];
                 };
             };
         };
