@@ -9,9 +9,12 @@ interface WebSocketState {
     stompClient: Client | null,
     isConnected: boolean,
     currentSubscription: any | null,
+    waiterSessionSubscription: any | null,
     subscribeToSession:(sessionId: string) => void,
     subscribeToKitchen:(tenantId: string) => void,
     subscribeToWaiter:(tenantId: string) => void,
+    subscribeToWaiterSession:(sessionId: string) => void,
+    unsubscribeFromWaiterSession:() => void,
     connect: () => void,
     disconnect: () => void
 }
@@ -22,6 +25,7 @@ export const useWebsocketStore = create<WebSocketState>((set, get) => ({
     stompClient: null,
     isConnected: false,
     currentSubscription: null,
+    waiterSessionSubscription: null,
 
     connect: () => {
         if (get().stompClient) return;
@@ -122,6 +126,44 @@ export const useWebsocketStore = create<WebSocketState>((set, get) => ({
         set({currentSubscription: subscription})
     },
 
+    subscribeToWaiterSession: (sessionId: string) => {
+        const currentClient = get().stompClient
+
+        if(!currentClient || !currentClient.connected) {
+            return
+        }
+
+        const existingSub = get().waiterSessionSubscription
+
+        if(existingSub) {
+            existingSub.unsubscribe()
+        }
+
+        const subscription = currentClient.subscribe(`/topic/session/${sessionId}`, (msg) => {
+            const eventData = JSON.parse(msg.body)
+            if(
+                eventData.type === 'ITEM_ADDED' ||
+                eventData.type === 'ITEMS_CONFIRMED' ||
+                eventData.type === 'ITEM_DELETED' ||
+                eventData.type === 'SESSION_CLOSED'
+            ){
+                queryClient.invalidateQueries({queryKey: ['sessionDetails', sessionId]})
+            }
+        })
+
+        set({waiterSessionSubscription: subscription})
+    },
+
+    unsubscribeFromWaiterSession: () => {
+        const existingSub = get().waiterSessionSubscription
+
+        if(existingSub) {
+            existingSub.unsubscribe()
+        }
+
+        set({waiterSessionSubscription: null})
+    },
+
     subscribeToWaiter: (tenantId: string) => {
         const currentClient = get().stompClient
 
@@ -143,17 +185,20 @@ export const useWebsocketStore = create<WebSocketState>((set, get) => ({
     },
 
     disconnect:() => {
-        
-        const { stompClient, currentSubscription } = get()
+
+        const { stompClient, currentSubscription, waiterSessionSubscription } = get()
 
         if(currentSubscription) {
             currentSubscription.unsubscribe()
+        }
+        if(waiterSessionSubscription) {
+            waiterSessionSubscription.unsubscribe()
         }
         if(stompClient) {
             stompClient.deactivate()
         }
 
-        set({stompClient: null, isConnected: false, currentSubscription: null})
+        set({stompClient: null, isConnected: false, currentSubscription: null, waiterSessionSubscription: null})
 
     }
 

@@ -2,9 +2,10 @@ import { ParticipantQrModal } from './components/ParticipantsQrModal'
 import { DashboardService, SessionTableService } from '@/lib/api'
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/store/authStore'
+import { useWebsocketStore } from '@/store/websocket'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Armchair, Users } from 'lucide-react'
 import { useUIStore } from '@/store/uiStore'
 import { Link } from 'react-router-dom'
@@ -34,6 +35,25 @@ export const Tables = () => {
     queryFn: () => SessionTableService.sessionInformation(sessionId!),
     enabled: !!sessionId,
   })
+
+  const { isConnected, stompClient, subscribeToWaiterSession, unsubscribeFromWaiterSession } =
+    useWebsocketStore()
+
+  useEffect(() => {
+    if (sessionId && isConnected && stompClient?.connected) {
+      subscribeToWaiterSession(sessionId)
+    }
+
+    return () => {
+      unsubscribeFromWaiterSession()
+    }
+  }, [
+    sessionId,
+    isConnected,
+    stompClient,
+    subscribeToWaiterSession,
+    unsubscribeFromWaiterSession,
+  ])
 
   const itemsToWaiter = sessionData?.items
     ? sessionData.items.filter((item) => item.status != 'DRAFT')
