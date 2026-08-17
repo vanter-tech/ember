@@ -3,27 +3,34 @@ package com.vanter.ember.identity.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.vanter.ember.config.ResourceNotFoundException;
+import com.vanter.ember.identity.dto.CreateStaffRequest;
 import com.vanter.ember.identity.dto.UpdateStaffProfileRequest;
 import com.vanter.ember.identity.model.Role;
 import com.vanter.ember.identity.model.User;
 import com.vanter.ember.identity.repository.UserRepository;
 import com.vanter.ember.restaurant.model.Restaurant;
+import com.vanter.ember.restaurant.repository.RestaurantRepository;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 @ExtendWith(MockitoExtension.class)
 class UserAdminServiceTest {
 
     @Mock UserRepository userRepository;
+    @Mock RestaurantRepository restaurantRepository;
+    @Mock PasswordEncoder passwordEncoder;
     @InjectMocks UserAdminService userAdminService;
 
     private static final UUID TENANT_A = UUID.randomUUID();
@@ -37,6 +44,63 @@ class UserAdminServiceTest {
                 .passwordHash("hash")
                 .restaurantId(Restaurant.builder().id(tenantId).name("Test").slug("test-" + tenantId).build())
                 .build();
+    }
+
+    private Restaurant restaurantFor(UUID tenantId) {
+        return Restaurant.builder().id(tenantId).name("Test").slug("test-" + tenantId).build();
+    }
+
+    @Test
+    void create_savesEncodedPasswordAndTenantBoundUser() {
+        Restaurant restaurant = restaurantFor(TENANT_A);
+        when(userRepository.existsByEmail("ana@test.com")).thenReturn(false);
+        when(restaurantRepository.findById(TENANT_A)).thenReturn(Optional.of(restaurant));
+        when(passwordEncoder.encode("Sup3r$ecret")).thenReturn("hashed");
+        when(userRepository.save(any())).thenAnswer(inv -> {
+            User u = inv.getArgument(0);
+            u.setId("u-new");
+            return u;
+        });
+
+        var result = userAdminService.create(
+                TENANT_A, new CreateStaffRequest("Ana", "ana@test.com", "Sup3r$ecret", Role.WAITER));
+
+        ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(captor.capture());
+        assertThat(captor.getValue().getPasswordHash()).isEqualTo("hashed");
+        assertThat(captor.getValue().getRestaurantId()).isEqualTo(restaurant);
+        assertThat(captor.getValue().getRole()).isEqualTo(Role.WAITER);
+        assertThat(result.id()).isEqualTo("u-new");
+        assertThat(result.name()).isEqualTo("Ana");
+        assertThat(result.role()).isEqualTo(Role.WAITER);
+    }
+
+    @Test
+    void create_throwsWhenRoleIsCustomer() {
+        assertThatThrownBy(() -> userAdminService.create(
+                TENANT_A, new CreateStaffRequest("Ana", "ana@test.com", "Sup3r$ecret", Role.CUSTOMER)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("CUSTOMER");
+    }
+
+    @Test
+    void create_throwsWhenEmailAlreadyInUse() {
+        when(userRepository.existsByEmail("ana@test.com")).thenReturn(true);
+
+        assertThatThrownBy(() -> userAdminService.create(
+                TENANT_A, new CreateStaffRequest("Ana", "ana@test.com", "Sup3r$ecret", Role.WAITER)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Email already in use");
+    }
+
+    @Test
+    void create_throwsWhenRestaurantNotFound() {
+        when(userRepository.existsByEmail("ana@test.com")).thenReturn(false);
+        when(restaurantRepository.findById(TENANT_A)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> userAdminService.create(
+                TENANT_A, new CreateStaffRequest("Ana", "ana@test.com", "Sup3r$ecret", Role.WAITER)))
+                .isInstanceOf(ResourceNotFoundException.class);
     }
 
     @Test
