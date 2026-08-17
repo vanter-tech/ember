@@ -8,7 +8,6 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -19,12 +18,10 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.TenantId;
 
 @Entity
-@Table(
-        name = "bills",
-        uniqueConstraints =
-                @UniqueConstraint(
-                        name = "uk_bills_tenant_session",
-                        columnNames = {"tenant_id", "session_id"}))
+// The partial unique index (tenant_id, session_id) WHERE status <> 'VOIDED' lives in
+// V8__refunds_and_voids.sql, not here — a JPA-level uniqueConstraints would only support a
+// full-table constraint and would fight the migration under ddl-auto: update.
+@Table(name = "bills")
 @Data
 @Builder
 @NoArgsConstructor
@@ -55,4 +52,13 @@ public class Bill {
 
     @Column(nullable = false)
     private LocalDateTime createdAt;
+
+    @Column(name = "voided_by")
+    private String voidedBy;
+
+    @Column(name = "voided_at")
+    private LocalDateTime voidedAt;
+
+    @Column(name = "void_reason")
+    private String voidReason;
 }

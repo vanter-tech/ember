@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.vanter.ember.billing.model.Bill;
 import com.vanter.ember.billing.model.BillSplit;
+import com.vanter.ember.billing.model.BillSplitStatus;
 import com.vanter.ember.billing.model.BillStatus;
 import com.vanter.ember.billing.model.SplitMethod;
 import com.vanter.ember.config.AbstractTenantIsolationTest;
@@ -48,7 +49,7 @@ class BillSplitRepositoryTenantIsolationTest extends AbstractTenantIsolationTest
                                         .bill(bill)
                                         .participantName(participantName)
                                         .amount(new BigDecimal("30.00"))
-                                        .paid(false)
+                                        .status(BillSplitStatus.UNPAID)
                                         .build()));
     }
 

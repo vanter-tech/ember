@@ -2,7 +2,10 @@ import { create } from 'zustand';
 
 export type ModalType = 'CREATE_CATEGORY' | 'EDIT_CATEGORY' | 'DELETE_CATEGORY' |
                         'CREATE_ITEMS' | 'EDIT_ITEMS' | 'DELETE_ITEMS' |
-                         'PARTICIPANTS_QR' | 'JOIN_TABLE' | 'TENANT_SUSPENDED' |null;
+                         'PARTICIPANTS_QR' | 'JOIN_TABLE' | 'TENANT_SUSPENDED' |
+                         'OPEN_SHIFT' | 'CASH_MOVEMENT' | 'CLOSE_SHIFT' |
+                         'CHARGE_TABLE' | 'CREATE_STAFF' | 'EDIT_STAFF' | 'DELETE_STAFF' |
+                         'VOID_BILL' | 'REFUND_PAYMENT' | null;
 
 export type SettingsType = 'BRANDING' | 'MENU' | 'BILLING' | 'HARDWARE'|
                             'SPACE'| 'HORARIO'| null;

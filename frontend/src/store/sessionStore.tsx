@@ -3,15 +3,19 @@ import { persist } from 'zustand/middleware'
 import type { sessionResponse } from '@/lib/api'
 import type { orderItemDTO } from '@/lib/api'
 import type { participantDTO } from '@/lib/api'
+import type { Bill, BillSplit } from '@/lib/api'
 
 interface sessionState extends sessionResponse {
+  bill?: Bill
+  billSplits?: BillSplit[]
   setSession: (data: sessionResponse) => void
   clearSession: () => void
   updateSession: (data: any) => void
   addParticipant: (participant: participantDTO) => void
   addItem: (item: orderItemDTO) => void
-
-
+  setBillReady: (bill: Bill, splits: BillSplit[]) => void
+  markSplitStatus: (participantName: string, status: BillSplit['status']) => void
+  clearBill: () => void
 }
 
 export const useSessionStore = create<sessionState>()(
@@ -24,6 +28,8 @@ export const useSessionStore = create<sessionState>()(
       joinCode: undefined,
       participants: undefined,
       items: undefined,
+      bill: undefined,
+      billSplits: undefined,
 
 
       setSession: (data) => set(data),
@@ -38,7 +44,22 @@ export const useSessionStore = create<sessionState>()(
           items: [...(state.items || []), item],
         }))
       },
-    
+      setBillReady: (bill, splits) => {
+        set({ bill, billSplits: splits })
+      },
+      markSplitStatus: (participantName, status) => {
+        set((state) => ({
+          billSplits: (state.billSplits || []).map((split) =>
+            split.participantName === participantName
+              ? { ...split, status }
+              : split
+          ),
+        }))
+      },
+      clearBill: () => {
+        set({ bill: undefined, billSplits: undefined })
+      },
+
 
       clearSession: () => {
         set({
@@ -49,6 +70,8 @@ export const useSessionStore = create<sessionState>()(
           joinCode: undefined,
           participants: undefined,
           items: undefined,
+          bill: undefined,
+          billSplits: undefined,
         })
       },
     }),

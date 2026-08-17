@@ -21,6 +21,8 @@ import com.vanter.ember.billing.repository.BillSalesTotals;
 import com.vanter.ember.billing.repository.PaidBillActivity;
 import com.vanter.ember.billing.repository.PaymentDailyRevenue;
 import com.vanter.ember.billing.repository.PaymentRepository;
+import com.vanter.ember.billing.repository.RefundDailyAmount;
+import com.vanter.ember.billing.repository.RefundRepository;
 import com.vanter.ember.catalog.model.Category;
 import com.vanter.ember.catalog.model.MenuItem;
 import com.vanter.ember.catalog.repository.MenuItemRepository;
@@ -57,6 +59,7 @@ class AnalyticsServiceTest {
     @Mock SessionRepository sessionRepository;
     @Mock MenuItemRepository menuItemRepository;
     @Mock DiningTableRepository diningTableRepository;
+    @Mock RefundRepository refundRepository;
 
     @InjectMocks AnalyticsService analyticsService;
 
@@ -144,6 +147,36 @@ class AnalyticsServiceTest {
 
         verify(paymentRepository, never()).sumConfirmedRevenue(any(), any(), any());
         verify(billRepository, never()).findSalesTotals(any(), any(), any());
+    }
+
+    @Test
+    void getSummary_netsOutRefundsIssuedInTheWindow() {
+        when(paymentRepository.sumConfirmedRevenue(eq(TENANT_ID), any(), any()))
+                .thenReturn(new BigDecimal("100.00"));
+        when(refundRepository.sumRefundsInWindow(eq(TENANT_ID), any(), any()))
+                .thenReturn(new BigDecimal("15.00"));
+        when(billRepository.findSalesTotals(eq(TENANT_ID), any(), any())).thenReturn(null);
+        when(sessionRepository.countByTenantIdAndStatus(any(), any())).thenReturn(0L);
+
+        AnalyticsSummaryResponse summary = analyticsService.getSummary(TENANT_ID, FROM, TO);
+
+        assertThat(summary.totalRevenue()).isEqualByComparingTo("85.00");
+    }
+
+    @Test
+    void getSales_netsOutRefundsPerBucket() {
+        when(paymentRepository.findConfirmedRevenueByDay(eq(TENANT_ID), any(), any()))
+                .thenReturn(List.of(new PaymentDailyRevenue(2026, 8, 17, new BigDecimal("100.00"))));
+        when(refundRepository.findRefundsByDay(eq(TENANT_ID), any(), any()))
+                .thenReturn(List.of(new RefundDailyAmount(2026, 8, 17, new BigDecimal("15.00"))));
+        when(billRepository.findPaidBillsByDay(eq(TENANT_ID), any(), any())).thenReturn(List.of());
+
+        AnalyticsSalesResponse sales = analyticsService.getSales(
+                TENANT_ID, "day", LocalDateTime.of(2026, 8, 17, 0, 0), LocalDateTime.of(2026, 8, 17, 23, 59));
+
+        assertThat(sales.totalRevenue()).isEqualByComparingTo("85.00");
+        assertThat(sales.buckets()).singleElement()
+                .satisfies(bucket -> assertThat(bucket.revenue()).isEqualByComparingTo("85.00"));
     }
 
     private static PaymentDailyRevenue revenueOn(int month, int day, String amount) {

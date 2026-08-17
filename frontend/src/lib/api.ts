@@ -24,6 +24,29 @@ export type tableStatus = components['schemas']['SessionStatusDto']
 export type kitchenOrdersDisplayByTables = components['schemas']['KitchenDisplayEntry']
 export type kitchenOrders = components['schemas']['KitchenOrder']
 export type OrderItemStatus = components['schemas']['UpdateItemStatusRequest']['status']
+export type SplitMethod = calculateBill['splitMethod']
+export type Bill = components['schemas']['Bill']
+export type BillSplit = components['schemas']['BillSplit']
+export type Payment = components['schemas']['Payment']
+export type RequestBillingRequest = components['schemas']['RequestBillingRequest']
+export type PaymentResponse = components['schemas']['PaymentResponse']
+export type RefundResponse = components['schemas']['RefundResponse']
+export type Refund = components['schemas']['Refund']
+
+// WebSocket-only shapes (BILL_READY/SPLIT_PAID/DIGITAL_PAYMENT_INITIATED broadcasts) — the OpenAPI
+// spec only documents REST responses, so these have no generated schema to switch to.
+export interface PendingDigitalPayment {
+  id: number
+  participantName: string
+  amount: number
+}
+
+export interface WaiterBillState {
+  id: number
+  total: number
+  splits: BillSplit[]
+  pendingDigitalPayments?: PendingDigitalPayment[]
+}
 
 export interface Page<T> {
   content: T[]
@@ -35,14 +58,22 @@ export interface Page<T> {
 
 export type RestaurantResponse = components['schemas']['Restaurant']
 export type UpdateRestaurantPlanRequest = components['schemas']['UpdateRestaurantPlanRequest']
+export type PublicBranding = components['schemas']['PublicBrandingResponse']
 
-export interface PublicBranding {
-  slug: string
-  businessName: string
-  primaryThemeColor: string
-  openingTime: string
-  closingTime: string
-}
+export type AnalyticsSummaryResponse = components['schemas']['AnalyticsSummaryResponse']
+export type AnalyticsSalesResponse = components['schemas']['AnalyticsSalesResponse']
+export type SalesBucket = components['schemas']['SalesBucket']
+export type AnalyticsProductsResponse = components['schemas']['AnalyticsProductsResponse']
+export type ProductPerformance = components['schemas']['ProductPerformance']
+export type CategoryPerformance = components['schemas']['CategoryPerformance']
+export type AnalyticsTablesResponse = components['schemas']['AnalyticsTablesResponse']
+export type TablePerformance = components['schemas']['TablePerformance']
+
+// The 'granularity' request param has no dedicated schema (it's a plain string query param
+// server-side), so it's derived from the response enum rather than hand-typed.
+export type SalesGranularity = Lowercase<
+  NonNullable<components['schemas']['AnalyticsSalesResponse']['granularity']>
+>
 
 export type AnalyticsSummaryResponse = components['schemas']['AnalyticsSummaryResponse']
 export type AnalyticsSalesResponse = components['schemas']['AnalyticsSalesResponse']
@@ -387,6 +418,7 @@ export const analyticsService = {
 }
 
 export type StaffMemberResponse = components['schemas']['StaffMemberResponse']
+export type CreateStaffRequest = components['schemas']['CreateStaffRequest']
 export type UpdateStaffProfileRequest = components['schemas']['UpdateStaffProfileRequest']
 
 export const staffService = {
@@ -394,11 +426,121 @@ export const staffService = {
     const { data } = await api.get<StaffMemberResponse[]>('/admin/staff')
     return data
   },
+  create: async (request: CreateStaffRequest): Promise<StaffMemberResponse> => {
+    const { data } = await api.post<StaffMemberResponse>('/admin/staff', request)
+    return data
+  },
   updateProfile: async (
     userId: string,
     request: UpdateStaffProfileRequest
   ): Promise<StaffMemberResponse> => {
     const { data } = await api.patch<StaffMemberResponse>(`/admin/staff/${userId}`, request)
+    return data
+  },
+}
+
+export type CashMovementType = components['schemas']['RecordMovementRequest']['type']
+export type CashShiftResponse = components['schemas']['CashShiftResponse']
+export type CashMovementResponse = components['schemas']['CashMovementResponse']
+export type CashShiftDetailResponse = components['schemas']['CashShiftDetailResponse']
+export type DailyReportResponse = components['schemas']['DailyReportResponse']
+
+export const cashShiftService = {
+  open: async (openingFloat: number): Promise<CashShiftResponse> => {
+    const { data } = await api.post<CashShiftResponse>('/cash-shifts/open', { openingFloat })
+    return data
+  },
+  current: async (): Promise<CashShiftResponse | null> => {
+    try {
+      const { data } = await api.get<CashShiftResponse>('/cash-shifts/current')
+      return data
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response?.status === 404) return null
+      throw error
+    }
+  },
+  history: async (
+    params: { from?: string; to?: string; page?: number; size?: number } = {}
+  ): Promise<Page<CashShiftResponse>> => {
+    const { data } = await api.get<Page<CashShiftResponse>>('/cash-shifts', { params })
+    return data
+  },
+  detail: async (id: number): Promise<CashShiftDetailResponse> => {
+    const { data } = await api.get<CashShiftDetailResponse>(`/cash-shifts/${id}`)
+    return data
+  },
+  recordMovement: async (
+    id: number,
+    movement: components['schemas']['RecordMovementRequest']
+  ): Promise<CashMovementResponse> => {
+    const { data } = await api.post<CashMovementResponse>(`/cash-shifts/${id}/movements`, movement)
+    return data
+  },
+  close: async (id: number, countedCash: number): Promise<CashShiftResponse> => {
+    const { data } = await api.post<CashShiftResponse>(`/cash-shifts/${id}/close`, { countedCash })
+    return data
+  },
+  dailyReport: async (date: string): Promise<DailyReportResponse> => {
+    const { data } = await api.get<DailyReportResponse>('/cash-shifts/daily-report', { params: { date } })
+    return data
+  },
+}
+
+export const billingService = {
+  requestBilling: async (
+    sessionId: string,
+    splitMethod: SplitMethod,
+    participantCount?: number
+  ): Promise<void> => {
+    const body: RequestBillingRequest = { splitMethod, participantCount }
+    await api.post<void>(`/billing/sessions/${sessionId}/request`, body)
+  },
+  registerPhysicalPayment: async (
+    billId: number,
+    participantName: string,
+    amount: number
+  ): Promise<Payment> => {
+    const { data } = await api.post<Payment>('/billing/payments/physical', {
+      billId,
+      participantName,
+      amount,
+    })
+    return data
+  },
+  initiateDigitalPayment: async (
+    billId: number,
+    participantName: string,
+    amount: number
+  ): Promise<Payment> => {
+    const { data } = await api.post<Payment>('/billing/payments/digital', {
+      billId,
+      participantName,
+      amount,
+    })
+    return data
+  },
+  confirmDigitalPayment: async (paymentId: number): Promise<Payment> => {
+    const { data } = await api.post<Payment>(`/billing/payments/${paymentId}/confirm`)
+    return data
+  },
+  voidBill: async (billId: number, reason: string): Promise<Bill> => {
+    const { data } = await api.post<Bill>(`/billing/bills/${billId}/void`, { reason })
+    return data
+  },
+  listPayments: async (billId: number): Promise<PaymentResponse[]> => {
+    const { data } = await api.get<PaymentResponse[]>(`/billing/bills/${billId}/payments`)
+    return data
+  },
+  refundPayment: async (
+    paymentId: number,
+    amount: number | undefined,
+    reason: string
+  ): Promise<Refund> => {
+    const { data } = await api.post<Refund>(`/billing/payments/${paymentId}/refund`, { amount, reason })
+    return data
+  },
+  listRefunds: async (paymentId: number): Promise<RefundResponse[]> => {
+    const { data } = await api.get<RefundResponse[]>(`/billing/payments/${paymentId}/refunds`)
     return data
   },
 }

@@ -4,6 +4,7 @@ import com.vanter.ember.billing.dto.BillReadyMessage;
 import com.vanter.ember.billing.event.BillingRequested;
 import com.vanter.ember.billing.model.Bill;
 import com.vanter.ember.billing.model.BillSplit;
+import com.vanter.ember.billing.model.BillSplitStatus;
 import com.vanter.ember.billing.model.BillStatus;
 import com.vanter.ember.billing.model.SplitMethod;
 import com.vanter.ember.billing.service.BillingService;
@@ -40,9 +41,9 @@ class BillingEventListenerTest {
     private List<BillSplit> sampleSplits(Bill bill) {
         return List.of(
                 BillSplit.builder().bill(bill).participantName("Alice")
-                        .amount(new BigDecimal("12.50")).paid(false).build(),
+                        .amount(new BigDecimal("12.50")).status(BillSplitStatus.UNPAID).build(),
                 BillSplit.builder().bill(bill).participantName("Bob")
-                        .amount(new BigDecimal("10.00")).paid(false).build()
+                        .amount(new BigDecimal("10.00")).status(BillSplitStatus.UNPAID).build()
         );
     }
 

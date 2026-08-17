@@ -44,11 +44,18 @@ class SecurityAuditTest {
         "DELETE, /api/sessions/sess-1/items/item-1",
         "GET,  /api/kitchen/orders",
         "GET,  /api/kitchen/display",
+        "POST, /api/billing/sessions/sess-1/request",
         "POST, /api/billing/sessions/sess-1/bill",
         "POST, /api/billing/bills/1/split",
         "POST, /api/billing/payments/physical",
         "POST, /api/billing/payments/digital",
         "POST, /api/billing/payments/1/confirm",
+        "POST, /billing/bills/1/void",
+        "GET,  /billing/bills/1/payments",
+        "POST, /billing/payments/1/refund",
+        "GET,  /billing/payments/1/refunds",
+        "PATCH, /api/admin/users/u-1/role",
+        "POST, /api/admin/staff",
         "PATCH, /api/admin/users/u-1/role",
         "GET,  /api/admin/staff",
         "PATCH, /api/admin/staff/u-1",
@@ -56,6 +63,14 @@ class SecurityAuditTest {
         "GET,  /api/admin/analytics/summary",
         "GET,  /api/admin/analytics/sales",
         "GET,  /api/admin/analytics/products",
+        "GET,  /api/admin/analytics/tables",
+        "POST, /cash-shifts/open",
+        "GET,  /cash-shifts/current",
+        "GET,  /cash-shifts",
+        "GET,  /cash-shifts/1",
+        "POST, /cash-shifts/1/movements",
+        "POST, /cash-shifts/1/close",
+        "GET,  /cash-shifts/daily-report"
         "GET,  /api/admin/analytics/tables"
     })
     void unauthenticated_returns401(String method, String path) throws Exception {

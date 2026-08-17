@@ -11,7 +11,7 @@ import {
   CardHeader,
 } from '@/components/ui/card'
 import { useEffect, useState } from 'react'
-import { ArrowLeft, Plus } from 'lucide-react'
+import { ArrowLeft, Plus, Receipt } from 'lucide-react'
 import { useWebsocketStore } from '@/store/websocket'
 import { useSessionStore } from '@/store/sessionStore'
 import { ParticipantsPopUp } from '@/pages/customer/components/ParticipantsPopUp'
@@ -120,10 +120,19 @@ export const Menu = () => {
                 Explora nuestra seleccion gourmet para hoy.
               </p>
             </div>
-            <Badge className="p-6 text-md font-bold flex gap-3">
-              {' '}
-              Codigo de la mesa: {joinCode}
-            </Badge>
+            <div className="flex items-center gap-3">
+              <Badge className="p-6 text-md font-bold flex gap-3">
+                {' '}
+                Codigo de la mesa: {joinCode}
+              </Badge>
+              <Button
+                variant="secondary"
+                className="rounded-full h-13 px-5"
+                onClick={() => navigate(`${sessionId}/bill`)}
+              >
+                <Receipt className="w-4 h-4 mr-2" /> Ver cuenta
+              </Button>
+            </div>
           </div>
           <div className="flex flex-row gap-3 p-2 pb-5 border-b overflow-x-auto">
             {menuItems.map((categories) => (

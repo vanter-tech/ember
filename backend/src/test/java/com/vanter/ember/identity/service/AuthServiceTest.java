@@ -179,6 +179,21 @@ class AuthServiceTest {
     }
 
     @Test
+    void login_throwsWhenUserIsInactive() {
+        User user = User.builder()
+                .email("ana@test.com").passwordHash("hashed").role(Role.WAITER).active(false).build();
+        LoginRequest req = new LoginRequest();
+        req.setEmail("ana@test.com");
+        req.setPassword("secret");
+
+        when(userRepository.findByEmail("ana@test.com")).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("secret", "hashed")).thenReturn(true);
+
+        assertThatThrownBy(() -> authService.login(req))
+                .isInstanceOf(BadCredentialsException.class);
+    }
+
+    @Test
     void login_throwsForWrongPassword() {
         User user = User.builder()
                 .email("ana@test.com").passwordHash("hashed").role(Role.CUSTOMER).build();

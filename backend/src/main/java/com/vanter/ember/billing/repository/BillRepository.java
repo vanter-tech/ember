@@ -16,6 +16,9 @@ public interface BillRepository extends JpaRepository<Bill, Long> {
 
     Optional<Bill> findBySessionId(String sessionId);
 
+    /** Same lookup as {@link #findBySessionId}, excluding a voided bill so a session can be re-billed. */
+    Optional<Bill> findBySessionIdAndStatusNot(String sessionId, BillStatus status);
+
     List<Bill> findByStatus(BillStatus status);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)

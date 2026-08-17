@@ -106,10 +106,15 @@ public class SecurityConfig {
                 String email = jwtService.extractSubject(token);
                 if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                     UserDetails userDetails = userDetailsService.loadUserByUsername(email);
-                    UsernamePasswordAuthenticationToken authToken =
-                            new UsernamePasswordAuthenticationToken(
-                                    userDetails, null, userDetails.getAuthorities());
-                    SecurityContextHolder.getContext().setAuthentication(authToken);
+                    // A deactivated staff account's JWT can still be within its validity window —
+                    // simply not authenticating here lets the existing anyRequest().authenticated()
+                    // rule reject it the same way an absent/invalid token already does.
+                    if (userDetails.isEnabled()) {
+                        UsernamePasswordAuthenticationToken authToken =
+                                new UsernamePasswordAuthenticationToken(
+                                        userDetails, null, userDetails.getAuthorities());
+                        SecurityContextHolder.getContext().setAuthentication(authToken);
+                    }
                 }
                 UUID tenantId = jwtService.extractTenantId(token);
                 TenantContextHolder.setTenantId(tenantId);

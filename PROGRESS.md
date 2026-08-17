@@ -47,5 +47,31 @@
 - [x] **redesign-analytics-enterprise-ui:** Shadcn Card/Table polish + Recharts `AreaChart` for `/admin/analytics`; zero hook/query changes. Report 111.
 - [x] **summarycards-kpi-accent-refinement:** KPI card values/icons now use the brand accent (`text-primary`/`bg-primary/10`); uppercase titles. Report 112.
 - [x] **analytics-cards-padding-and-title-polish:** `py-6` on all `/admin/analytics` Cards, icon-chip `CardTitle`s, `TableAnalytics` stats restyled to match KPI accent. Report 113.
-- [x] **EMB-FloatingNav:** `/admin/staff` Gestión de Personal (header/search, department filters, employee card grid + ghost add-card, bottom KPIs), `FloatingNav` `Users` link; UI-only with `MOCK_STAFF`, no backend endpoint yet. Report 114.
+- [x] **EMB-FloatingNav:** `/admin/staff` Gestión de Personal (header/search, department filters, employee card grid + ghost add-card, bottom KPIs), `FloatingNav` `Users` link. Report 114.
+- [x] **feature-waiter-dashboard-table-orders-panel:** `/waiter/tables` sidebar now shows real non-draft orders (scrollable) via `sessionInformation`, replacing the static placeholder. Report 115.
+- [x] **EMB-CR-01..07 (Cash Register & Daily Shift Management):** `cashregister` backend module (entities/migration/repositories, service+events+websocket, `/cash-shifts` controller) + payment-shift gate (EMB-CR-01–04), waiter operate page + admin oversight/Z-report page (EMB-CR-05–07). Reports 116–122. Pending: final whole-branch review + manual browser check.
+- [x] **bugfix-waiter-tables-realtime-orders:** `/waiter/tables` "Detalles de mesa" panel now live-updates on new/confirmed/deleted orders via a new independent `waiterSessionSubscription` WS slot. Report 123.
+- [x] **EMB-PAY-01..04 (Customer Payment Cycle):** `POST /billing/sessions/{id}/request` wires the previously-unpublished `BillingRequested` event; `SPLIT_PAID`/`DIGITAL_PAYMENT_INITIATED` broadcasts (EMB-PAY-01). Frontend `billingService` + WebSocket wiring, no GET endpoint so state is WS-push-only (EMB-PAY-02). Waiter `ChargeTableModal` + real split/payment UI in `TableInformation.tsx` (EMB-PAY-03). Customer `Bill.tsx` "Mi Cuenta" screen + nav entries (EMB-PAY-04). Reports 124–127.
+- [x] **bugfix-billing-request-generated-type + bugfix-cobrar-mesa-no-billable-items:** `billingService.requestBilling` switched to the regenerated `RequestBillingRequest` type (128); "Cobrar Mesa" disabled until an item is `READY`/`DELIVERED`, fixing a 409 on confirm (129).
+- [x] **EMB-STAFF-01..04 (Employee CRUD):** `POST /admin/staff` — tenant-bound `CreateStaffRequest(name,email,password,role)`, rejects CUSTOMER + duplicate email (01) + `CreateStaffModal.tsx` (02), reports 130–131. `PATCH /admin/staff/{id}` gained `name`/`email`; `active=false` now actually revokes access — `AuthService.login` + `EmberUserDetailsService`+`SecurityConfig.jwtAuthFilter` all gate on it, not just cosmetic (03) + `EditStaffModal.tsx`/`GlobalDeleteModal`'s `DELETE_STAFF` (labeled "Desactivar", not "Eliminar" — no hard-delete endpoint exists, by design) (04), reports 132–133. bugfix-staff-generated-types (134) then swapped `UpdateStaffProfileRequest`/`PublicBranding` to their newly-regenerated schemas.
+- [x] **bugfix-waiter-tables-require-open-caja:** `/waiter/tables` grid + `Asignar Mesa` button disabled with centered overlay message when no `OPEN` `cashShiftService.current()` shift (135); tweak-waiter-tables-caja-overlay-style then swapped disabled-card `opacity-50`→`blur-sm` and overlay text to brand red `#8c1717` (136).
+- [x] **EMB-RV-01:** `Refund` entity + `BillSplitStatus` + `BillStatus.VOIDED` + `Bill` void columns + `V8` migration + repo methods. Report 137.
+- [x] **EMB-RV-02:** `BillingService.voidBill` + `PaymentService.refundPayment` service logic. Report 138.
+- [x] **EMB-RV-03:** `BillingController` void/refund endpoints + request DTOs. Report 139.
+- [x] **EMB-RV-04:** `CashShiftDetailResponse` gains a shift's payments. Report 140.
+- [x] **EMB-RV-05:** `AnalyticsService` nets refunds out of revenue. Report 141. EMB-RV backend stream (01-05) complete.
+- [x] **EMB-RV-06:** Frontend shared prep — regenerated `backend-types.ts`, `api.ts` void/refund methods, `uiStore`/`sessionStore`/`websocket.ts` wiring. Report 142.
+- [x] **EMB-RV-07:** `VoidBillModal`/`RefundPaymentModal` + `TableInformation.tsx`/`Bill.tsx` status-read updates. Report 143.
+- [x] **EMB-RV-08:** `ShiftHistoryTable.tsx` expandable payments + refund action. Report 144. EMB-RV backlog (01-08) complete.
+- [x] **bugfix-refund-modal-review-findings:** `RefundPaymentModal.tsx` now also invalidates `['cashShiftDetail']` on refund success, and syncs its amount field on `[payment?.id]` (not the whole object) so a background refetch can't silently overwrite a typed partial-refund amount. Report 144 (appended).
+- [x] **EMB-RV-final-review-fix-wave:** Fixed 2 Critical + 4 Important whole-branch-review findings (void-then-rebill guard, stale JPA unique constraint, `SplitPaidMessage` status migration, voided-bill payment guard, admin→waiter refund-button relocation, `RefundPaymentModal` payment-id resolution). Report 145. EMB-RV backlog COMPLETE and merged to `feature/kitchen-view`.
+- [x] **bugfix-confirmDigitalPayment-voided-bill-guard:** the one payment entry point (`confirmDigitalPayment`) the final-review fix wave missed — added the same `BillStatus.VOIDED` guard its two siblings already had, closing the last EMB-RV finding before merge. Backend 687/687 green.
+- [ ] **EMB-CLP-01:** `loyalty` module data layer — `LoyaltyTier` enum, `LoyaltyAccount`/`LoyaltyTransaction`/`LoyaltyReward` entities + migration + repositories + tenant-isolation test.
+- [ ] **EMB-CLP-02:** `SettingsPayload.LoyaltySettings` (enabled/accrualMode/pointsPerVisit/pointsPerCurrencyUnit/plata-oro-platinoThreshold) + admin "Fidelización" Settings tab.
+- [ ] **EMB-CLP-03:** `LoyaltyService` — tier computation (computed-on-read) + accrual math for both modes, unit-tested at threshold boundaries.
+- [ ] **EMB-CLP-04:** `LoyaltyAccount` creation hook on first table-join at a tenant.
+- [ ] **EMB-CLP-05:** `LoyaltyAccrualListener` on the existing `PaymentCompleted` event — per-participant crediting off each `BillSplit`.
+- [ ] **EMB-CLP-06:** Admin reward-catalog endpoints (`POST/GET/PATCH /loyalty/rewards`) + DTOs + `SecurityAuditTest` rows.
+- [ ] **EMB-CLP-07:** Admin reward-catalog frontend UI (create/edit/toggle-active).
+- [ ] **EMB-CLP-08:** `GET /loyalty/accounts/me` + minimal customer-facing "you earned N points" surface on `Bill.tsx`.
 - [ ] new tasks coming soon....

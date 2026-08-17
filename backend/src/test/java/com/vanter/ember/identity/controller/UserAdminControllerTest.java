@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vanter.ember.config.CorsConfig;
 import com.vanter.ember.config.SecurityConfig;
 import com.vanter.ember.config.TenantContextHolder;
+import com.vanter.ember.identity.dto.CreateStaffRequest;
 import com.vanter.ember.identity.dto.StaffMemberResponse;
 import com.vanter.ember.identity.dto.UpdateUserRoleRequest;
 import com.vanter.ember.identity.model.Role;
@@ -31,6 +32,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -115,6 +117,53 @@ class UserAdminControllerTest {
         mockMvc.perform(patch("/admin/users/u-1/role")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"role\": null}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void createStaff_returnsCreatedForAdmin() throws Exception {
+        TenantContextHolder.setTenantId(TENANT_ID);
+        when(userAdminService.create(eq(TENANT_ID), any())).thenReturn(new StaffMemberResponse(
+                "u-new", "Ana", "ana@test.com", Role.WAITER, Instant.now(),
+                true, null, null, null, null, null, BigDecimal.ZERO));
+
+        CreateStaffRequest request = new CreateStaffRequest("Ana", "ana@test.com", "Sup3r$ecret", Role.WAITER);
+        mockMvc.perform(post("/admin/staff")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value("u-new"))
+                .andExpect(jsonPath("$.role").value("WAITER"))
+                .andExpect(jsonPath("$.passwordHash").doesNotExist());
+    }
+
+    @Test
+    @WithMockUser(roles = "WAITER")
+    void createStaff_forbiddenForWaiter() throws Exception {
+        CreateStaffRequest request = new CreateStaffRequest("Ana", "ana@test.com", "Sup3r$ecret", Role.WAITER);
+        mockMvc.perform(post("/admin/staff")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void createStaff_unauthenticatedReturns401() throws Exception {
+        CreateStaffRequest request = new CreateStaffRequest("Ana", "ana@test.com", "Sup3r$ecret", Role.WAITER);
+        mockMvc.perform(post("/admin/staff")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void createStaff_returns400ForWeakPassword() throws Exception {
+        CreateStaffRequest request = new CreateStaffRequest("Ana", "ana@test.com", "weak", Role.WAITER);
+        mockMvc.perform(post("/admin/staff")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
     }
 
