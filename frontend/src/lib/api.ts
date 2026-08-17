@@ -28,7 +28,10 @@ export type SplitMethod = calculateBill['splitMethod']
 export type Bill = components['schemas']['Bill']
 export type BillSplit = components['schemas']['BillSplit']
 export type Payment = components['schemas']['Payment']
+export type RequestBillingRequest = components['schemas']['RequestBillingRequest']
 
+// WebSocket-only shapes (BILL_READY/SPLIT_PAID/DIGITAL_PAYMENT_INITIATED broadcasts) — the OpenAPI
+// spec only documents REST responses, so these have no generated schema to switch to.
 export interface PendingDigitalPayment {
   id: number
   participantName: string
@@ -473,10 +476,8 @@ export const billingService = {
     splitMethod: SplitMethod,
     participantCount?: number
   ): Promise<void> => {
-    await api.post<void>(`/billing/sessions/${sessionId}/request`, {
-      splitMethod,
-      participantCount,
-    })
+    const body: RequestBillingRequest = { splitMethod, participantCount }
+    await api.post<void>(`/billing/sessions/${sessionId}/request`, body)
   },
   registerPhysicalPayment: async (
     billId: number,
