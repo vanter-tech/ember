@@ -30,6 +30,7 @@ public class EmberUserDetailsService implements UserDetailsService {
                         .username(user.getEmail())
                         .password(user.getPasswordHash())
                         .roles(user.getRole().name())
+                        .disabled(!Boolean.TRUE.equals(user.getActive()))
                         .build())
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + email));
     }

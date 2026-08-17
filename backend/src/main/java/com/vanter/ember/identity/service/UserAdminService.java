@@ -73,6 +73,13 @@ public class UserAdminService {
             throw new ResourceNotFoundException("User not found: " + userId);
         }
 
+        if (request.name() != null) user.setName(request.name());
+        if (request.email() != null && !request.email().equals(user.getEmail())) {
+            if (userRepository.existsByEmail(request.email())) {
+                throw new IllegalArgumentException("Email already in use: " + request.email());
+            }
+            user.setEmail(request.email());
+        }
         if (request.active() != null) user.setActive(request.active());
         if (request.jobTitle() != null) user.setJobTitle(request.jobTitle());
         if (request.shift() != null) user.setShift(request.shift());

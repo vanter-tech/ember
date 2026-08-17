@@ -48,6 +48,10 @@ public class AuthService {
             throw new BadCredentialsException("Invalid credentials");
         }
 
+        if (!Boolean.TRUE.equals(user.getActive())) {
+            throw new BadCredentialsException("Invalid credentials");
+        }
+
         return buildResponse(user, tenantIdOf(user));
     }
 

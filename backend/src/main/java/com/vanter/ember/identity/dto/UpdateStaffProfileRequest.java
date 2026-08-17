@@ -3,6 +3,7 @@ package com.vanter.ember.identity.dto;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 
@@ -14,4 +15,6 @@ public record UpdateStaffProfileRequest(
         @Size(max = 255) String contractType,
         @Size(max = 255) String location,
         @DecimalMin("0") @DecimalMax("100") @Digits(integer = 3, fraction = 2) BigDecimal efficiencyPercentage,
-        @DecimalMin("0") @Digits(integer = 4, fraction = 2) BigDecimal pendingHours) {}
+        @DecimalMin("0") @Digits(integer = 4, fraction = 2) BigDecimal pendingHours,
+        @Size(max = 255) String name,
+        @Email(message = "Email must be valid") @Size(max = 255) String email) {}

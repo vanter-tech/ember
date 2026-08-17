@@ -126,7 +126,8 @@ class UserAdminServiceTest {
         when(userRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         var result = userAdminService.updateProfile(
-                "u-1", TENANT_A, new UpdateStaffProfileRequest(false, null, null, null, null, null, null));
+                "u-1", TENANT_A,
+                new UpdateStaffProfileRequest(false, null, null, null, null, null, null, null, null));
 
         assertThat(result.active()).isFalse();
         assertThat(result.shift()).isEqualTo("Mañana");
@@ -140,7 +141,8 @@ class UserAdminServiceTest {
         when(userRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         var result = userAdminService.updateProfile(
-                "u-1", TENANT_A, new UpdateStaffProfileRequest(null, null, null, null, null, null, null));
+                "u-1", TENANT_A,
+                new UpdateStaffProfileRequest(null, null, null, null, null, null, null, null, null));
 
         assertThat(result.id()).isEqualTo(existing.getId());
         assertThat(result.name()).isEqualTo(existing.getName());
@@ -156,11 +158,50 @@ class UserAdminServiceTest {
     }
 
     @Test
+    void updateProfile_appliesNameAndEmail() {
+        User existing = waiterFor(TENANT_A);
+        when(userRepository.findById("u-1")).thenReturn(Optional.of(existing));
+        when(userRepository.existsByEmail("ana.new@test.com")).thenReturn(false);
+        when(userRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        var result = userAdminService.updateProfile("u-1", TENANT_A, new UpdateStaffProfileRequest(
+                null, null, null, null, null, null, null, "Ana Nueva", "ana.new@test.com"));
+
+        assertThat(result.name()).isEqualTo("Ana Nueva");
+        assertThat(result.email()).isEqualTo("ana.new@test.com");
+    }
+
+    @Test
+    void updateProfile_settingEmailToItsOwnCurrentValueDoesNotThrow() {
+        User existing = waiterFor(TENANT_A);
+        when(userRepository.findById("u-1")).thenReturn(Optional.of(existing));
+        when(userRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        var result = userAdminService.updateProfile("u-1", TENANT_A, new UpdateStaffProfileRequest(
+                null, null, null, null, null, null, null, null, "ana@test.com"));
+
+        assertThat(result.email()).isEqualTo("ana@test.com");
+    }
+
+    @Test
+    void updateProfile_throwsWhenNewEmailAlreadyInUseByAnotherUser() {
+        User existing = waiterFor(TENANT_A);
+        when(userRepository.findById("u-1")).thenReturn(Optional.of(existing));
+        when(userRepository.existsByEmail("taken@test.com")).thenReturn(true);
+
+        assertThatThrownBy(() -> userAdminService.updateProfile("u-1", TENANT_A, new UpdateStaffProfileRequest(
+                null, null, null, null, null, null, null, null, "taken@test.com")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Email already in use");
+    }
+
+    @Test
     void updateProfile_throwsWhenUserBelongsToAnotherTenant() {
         when(userRepository.findById("u-1")).thenReturn(Optional.of(waiterFor(UUID.randomUUID())));
 
         assertThatThrownBy(() -> userAdminService.updateProfile(
-                "u-1", TENANT_A, new UpdateStaffProfileRequest(false, null, null, null, null, null, null)))
+                "u-1", TENANT_A,
+                new UpdateStaffProfileRequest(false, null, null, null, null, null, null, null, null)))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
@@ -169,7 +210,8 @@ class UserAdminServiceTest {
         when(userRepository.findById("missing")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> userAdminService.updateProfile(
-                "missing", TENANT_A, new UpdateStaffProfileRequest(false, null, null, null, null, null, null)))
+                "missing", TENANT_A,
+                new UpdateStaffProfileRequest(false, null, null, null, null, null, null, null, null)))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 }
