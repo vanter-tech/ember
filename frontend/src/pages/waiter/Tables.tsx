@@ -89,8 +89,8 @@ export const Tables = () => {
 
         <div className="grid grid-cols-3 gap-4 relative">
           {!isCajaOpen && (
-            <div className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-white/80 backdrop-blur-sm">
-              <span className="max-w-[80%] text-center text-lg font-semibold text-zinc-600">
+            <div className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-white/40">
+              <span className="max-w-[80%] text-center text-lg font-semibold text-[#8c1717]">
                 Necesita abrir la caja para poder asignar mesa.
               </span>
             </div>
@@ -101,7 +101,7 @@ export const Tables = () => {
               onClick={() => isCajaOpen && setSelectedTable(table.tableId)}
               className={`shadow-sm border-zinc-100
                 h-40 flex flex-col justify-between rounded-2xl relative
-                ${isCajaOpen ? 'cursor-pointer' : 'pointer-events-none cursor-not-allowed opacity-50'}
+                ${isCajaOpen ? 'cursor-pointer' : 'pointer-events-none cursor-not-allowed blur-sm'}
                 ${table.isOccupied ? 'border-2 bg-[#8c1717] text-white' : 'bg-white text-black'}`}
             >
               <CardHeader className="p-4 pb-0 flex justify-between">
