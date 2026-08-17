@@ -2,11 +2,14 @@ package com.vanter.ember.billing.repository;
 
 import com.vanter.ember.billing.model.Payment;
 import com.vanter.ember.billing.model.PaymentStatus;
+import jakarta.persistence.LockModeType;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -93,4 +96,15 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
             @Param("tenantId") UUID tenantId,
             @Param("from") LocalDateTime from,
             @Param("to") LocalDateTime to);
+
+    /** Physical payments landed in one shift — the historical-dispute lookup surface for a refund. */
+    List<Payment> findByCashShiftId(Long cashShiftId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select p from Payment p where p.id = :id")
+    Optional<Payment> findByIdForUpdate(@Param("id") Long id);
+
+    /** Guards {@code BillingService#voidBill} — a bill with a confirmed payment must be refunded, not voided. */
+    @Query("select count(p) > 0 from Payment p where p.bill.id = :billId and p.status = :status")
+    boolean existsByBillIdAndStatus(@Param("billId") Long billId, @Param("status") PaymentStatus status);
 }

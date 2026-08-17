@@ -13,6 +13,8 @@ import {
   Banknote,
   CreditCard,
   CheckCircle2,
+  Ban,
+  RotateCcw,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import toast from 'react-hot-toast'
@@ -27,6 +29,8 @@ import {
 import { useUIStore } from '@/store/uiStore'
 import { GlobalDeleteModal } from '../../components/GlobalDeleteModal'
 import { ChargeTableModal } from './components/ChargeTableModal'
+import { VoidBillModal } from './components/VoidBillModal'
+import { RefundPaymentModal } from './components/RefundPaymentModal'
 import { useWebsocketStore } from '@/store/websocket'
 
 export const TableInformation = () => {
@@ -306,10 +310,19 @@ export const TableInformation = () => {
         </div>
         <div className="lg:col-span-1">
           <Card>
-            <CardHeader className="p-7 border-b border">
+            <CardHeader className="p-7 border-b border flex flex-row items-center justify-between">
               <CardTitle className="text-2xl text-gray-800 font-bold">
                 {billData ? 'Cuenta' : 'Resumen'}
               </CardTitle>
+              {billData && !billData.splits.some((s) => s.status !== 'UNPAID') && (
+                <Button
+                  variant="ghost"
+                  className="text-sm text-destructive"
+                  onClick={() => openModal('VOID_BILL', { billId: billData.id, sessionId: id })}
+                >
+                  <Ban className="w-4 h-4 mr-2" /> Anular Cuenta
+                </Button>
+              )}
             </CardHeader>
             {billData ? (
               <>
@@ -331,10 +344,26 @@ export const TableInformation = () => {
                             ${split.amount?.toFixed(2)}
                           </span>
                         </div>
-                        {split.paid ? (
-                          <Badge className="flex items-center gap-1">
-                            <CheckCircle2 className="w-4 h-4" /> Pagado
-                          </Badge>
+                        {split.status === 'PAID' || split.status === 'PARTIALLY_PAID' ? (
+                          <div className="flex items-center gap-2">
+                            <Badge className="flex items-center gap-1">
+                              <CheckCircle2 className="w-4 h-4" />
+                              {split.status === 'PAID' ? 'Pagado' : 'Pago parcial'}
+                            </Badge>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() =>
+                                openModal('REFUND_PAYMENT', {
+                                  billId: billData.id,
+                                  sessionId: id,
+                                  participantName: split.participantName,
+                                })
+                              }
+                            >
+                              <RotateCcw className="w-4 h-4" />
+                            </Button>
+                          </div>
                         ) : pendingDigital ? (
                           <Button
                             className="text-sm"
@@ -435,6 +464,8 @@ export const TableInformation = () => {
         </div>
         <GlobalDeleteModal/>
         <ChargeTableModal/>
+        <VoidBillModal />
+        <RefundPaymentModal />
       </div>
     </>
   )

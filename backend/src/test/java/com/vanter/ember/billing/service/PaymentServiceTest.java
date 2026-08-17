@@ -3,16 +3,22 @@ package com.vanter.ember.billing.service;
 import com.vanter.ember.billing.event.PaymentCompleted;
 import com.vanter.ember.billing.model.Bill;
 import com.vanter.ember.billing.model.BillSplit;
+import com.vanter.ember.billing.model.BillSplitStatus;
 import com.vanter.ember.billing.model.BillStatus;
 import com.vanter.ember.billing.model.Payment;
 import com.vanter.ember.billing.model.PaymentMethod;
 import com.vanter.ember.billing.model.PaymentStatus;
+import com.vanter.ember.billing.model.Refund;
 import com.vanter.ember.billing.model.SplitMethod;
 import com.vanter.ember.billing.repository.BillRepository;
 import com.vanter.ember.billing.repository.BillSplitRepository;
 import com.vanter.ember.billing.repository.PaymentRepository;
+import com.vanter.ember.billing.repository.RefundRepository;
+import com.vanter.ember.cashregister.model.CashMovement;
+import com.vanter.ember.cashregister.model.CashMovementType;
 import com.vanter.ember.cashregister.model.CashShift;
 import com.vanter.ember.cashregister.model.CashShiftStatus;
+import com.vanter.ember.cashregister.repository.CashMovementRepository;
 import com.vanter.ember.cashregister.repository.CashShiftRepository;
 import com.vanter.ember.config.ResourceNotFoundException;
 import com.vanter.ember.config.TenantContextHolder;
@@ -57,6 +63,8 @@ class PaymentServiceTest {
     @Mock UserRepository userRepository;
     @Mock ApplicationEventPublisher eventPublisher;
     @Mock SimpMessagingTemplate messagingTemplate;
+    @Mock RefundRepository refundRepository;
+    @Mock CashMovementRepository cashMovementRepository;
     @InjectMocks PaymentService paymentService;
 
     private static final UUID TABLE_ID = UUID.randomUUID();
@@ -91,7 +99,7 @@ class PaymentServiceTest {
     private BillSplit unpaidSplit(Bill bill, String participant, String amount) {
         return BillSplit.builder()
                 .id(10L).bill(bill).participantName(participant)
-                .amount(new BigDecimal(amount)).paid(false).build();
+                .amount(new BigDecimal(amount)).status(BillSplitStatus.UNPAID).build();
     }
 
     private Session sampleSession() {
@@ -149,7 +157,7 @@ class PaymentServiceTest {
 
         ArgumentCaptor<BillSplit> captor = ArgumentCaptor.forClass(BillSplit.class);
         verify(billSplitRepository).save(captor.capture());
-        assertThat(captor.getValue().isPaid()).isTrue();
+        assertThat(captor.getValue().getStatus()).isEqualTo(BillSplitStatus.PAID);
     }
 
     @Test
@@ -174,7 +182,7 @@ class PaymentServiceTest {
         assertThat(captor.getValue().type()).isEqualTo("SPLIT_PAID");
         assertThat(captor.getValue().billId()).isEqualTo(1L);
         assertThat(captor.getValue().participantName()).isEqualTo("Alice");
-        assertThat(captor.getValue().paid()).isTrue();
+        assertThat(captor.getValue().status()).isEqualTo("PAID");
     }
 
     @Test
@@ -183,7 +191,7 @@ class PaymentServiceTest {
         BillSplit aliceSplit = unpaidSplit(bill, "Alice", "12.50");
         BillSplit bobSplitPaid = BillSplit.builder()
                 .id(11L).bill(bill).participantName("Bob")
-                .amount(new BigDecimal("10.00")).paid(true).build();
+                .amount(new BigDecimal("10.00")).status(BillSplitStatus.PAID).build();
         when(cashShiftRepository.findOpenForUpdate(any())).thenReturn(Optional.of(openShift()));
         when(userRepository.findByEmail("alice@ember.local")).thenReturn(Optional.of(waiterUser()));
         when(billRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(bill));
@@ -255,6 +263,19 @@ class PaymentServiceTest {
                 paymentService.registerPhysicalPayment(1L, "Alice", new BigDecimal("0.01"), "alice@ember.local"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("amount");
+    }
+
+    @Test
+    void registerPhysicalPayment_throwsWhenBillIsVoided() {
+        Bill voided = sampleBill();
+        voided.setStatus(BillStatus.VOIDED);
+        when(cashShiftRepository.findOpenForUpdate(any())).thenReturn(Optional.of(openShift()));
+        when(billRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(voided));
+
+        assertThatThrownBy(() ->
+                paymentService.registerPhysicalPayment(1L, "Alice", new BigDecimal("12.50"), "alice@ember.local"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("voided");
     }
 
     // --- initiateDigitalPayment tests ---
@@ -354,6 +375,18 @@ class PaymentServiceTest {
                 .hasMessageContaining("amount");
     }
 
+    @Test
+    void initiateDigitalPayment_throwsWhenBillIsVoided() {
+        Bill voided = sampleBill();
+        voided.setStatus(BillStatus.VOIDED);
+        when(billRepository.findById(1L)).thenReturn(Optional.of(voided));
+
+        assertThatThrownBy(() ->
+                paymentService.initiateDigitalPayment(1L, "Alice", new BigDecimal("12.50"), "alice@ember.local"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("voided");
+    }
+
     // --- confirmDigitalPayment tests ---
 
     private Payment pendingDigitalPayment(Bill bill, String participant) {
@@ -398,7 +431,7 @@ class PaymentServiceTest {
 
         ArgumentCaptor<BillSplit> captor = ArgumentCaptor.forClass(BillSplit.class);
         verify(billSplitRepository).save(captor.capture());
-        assertThat(captor.getValue().isPaid()).isTrue();
+        assertThat(captor.getValue().getStatus()).isEqualTo(BillSplitStatus.PAID);
     }
 
     @Test
@@ -422,7 +455,7 @@ class PaymentServiceTest {
                 org.mockito.ArgumentMatchers.eq("/topic/session/sess-1"), captor.capture());
         assertThat(captor.getValue().type()).isEqualTo("SPLIT_PAID");
         assertThat(captor.getValue().participantName()).isEqualTo("Alice");
-        assertThat(captor.getValue().paid()).isTrue();
+        assertThat(captor.getValue().status()).isEqualTo("PAID");
     }
 
     @Test
@@ -431,7 +464,7 @@ class PaymentServiceTest {
         Payment payment = pendingDigitalPayment(bill, "Alice");
         BillSplit aliceSplit = unpaidSplit(bill, "Alice", "12.50");
         BillSplit bobPaid = BillSplit.builder().id(11L).bill(bill)
-                .participantName("Bob").amount(new BigDecimal("10.00")).paid(true).build();
+                .participantName("Bob").amount(new BigDecimal("10.00")).status(BillSplitStatus.PAID).build();
         when(paymentRepository.findById(20L)).thenReturn(Optional.of(payment));
         when(billRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(bill));
         when(billSplitRepository.findByBillIdAndParticipantName(1L, "Alice"))
@@ -453,6 +486,181 @@ class PaymentServiceTest {
         when(paymentRepository.findById(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> paymentService.confirmDigitalPayment(99L))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void confirmDigitalPayment_throwsWhenBillIsVoided() {
+        Bill voided = sampleBill();
+        voided.setStatus(BillStatus.VOIDED);
+        Payment payment = pendingDigitalPayment(voided, "Alice");
+        when(paymentRepository.findById(20L)).thenReturn(Optional.of(payment));
+        when(billRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(voided));
+
+        assertThatThrownBy(() -> paymentService.confirmDigitalPayment(20L))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("voided");
+    }
+
+    // --- refundPayment tests ---
+
+    private Payment confirmedPhysicalPayment(Bill bill, String amount) {
+        return Payment.builder()
+                .id(30L).bill(bill).participantName("Alice")
+                .amount(new BigDecimal(amount)).method(PaymentMethod.PHYSICAL)
+                .status(PaymentStatus.CONFIRMED).cashShiftId(9L).processedBy("user-1")
+                .createdAt(LocalDateTime.now()).build();
+    }
+
+    private BillSplit paidSplit(Bill bill, String participant, String amount) {
+        return BillSplit.builder()
+                .id(10L).bill(bill).participantName(participant)
+                .amount(new BigDecimal(amount)).status(BillSplitStatus.PAID).build();
+    }
+
+    @Test
+    void refundPayment_fullAmount_createsRefundAndMarksSplitUnpaid() {
+        Bill bill = sampleBill();
+        Payment payment = confirmedPhysicalPayment(bill, "12.50");
+        BillSplit split = paidSplit(bill, "Alice", "12.50");
+        when(paymentRepository.findByIdForUpdate(30L)).thenReturn(Optional.of(payment));
+        // Two calls happen: the pre-refund balance check (sees 0 refunded so far), then
+        // updateSplitStatus's post-save recompute (sees the 12.50 just issued) — Mockito's
+        // consecutive-return-values feature simulates the flush a real query would observe.
+        when(refundRepository.sumByPaymentId(30L)).thenReturn(BigDecimal.ZERO, new BigDecimal("12.50"));
+        when(userRepository.findByEmail("alice@ember.local")).thenReturn(Optional.of(waiterUser()));
+        when(cashShiftRepository.findOpenForUpdate(any())).thenReturn(Optional.of(openShift()));
+        when(refundRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(billSplitRepository.findByBillIdAndParticipantName(1L, "Alice"))
+                .thenReturn(Optional.of(split));
+        when(paymentRepository.findByBillId(1L)).thenReturn(List.of(payment));
+        when(billSplitRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        Refund refund = paymentService.refundPayment(30L, null, "customer dispute", "alice@ember.local");
+
+        assertThat(refund.getAmount()).isEqualByComparingTo("12.50");
+        assertThat(refund.getReason()).isEqualTo("customer dispute");
+        assertThat(refund.getRefundedBy()).isEqualTo("user-1");
+
+        ArgumentCaptor<BillSplit> splitCaptor = ArgumentCaptor.forClass(BillSplit.class);
+        verify(billSplitRepository).save(splitCaptor.capture());
+        assertThat(splitCaptor.getValue().getStatus()).isEqualTo(BillSplitStatus.UNPAID);
+    }
+
+    @Test
+    void refundPayment_partialAmount_marksSplitPartiallyPaid() {
+        Bill bill = sampleBill();
+        Payment payment = confirmedPhysicalPayment(bill, "12.50");
+        BillSplit split = paidSplit(bill, "Alice", "12.50");
+        when(paymentRepository.findByIdForUpdate(30L)).thenReturn(Optional.of(payment));
+        // Same two-call shape as the full-refund test above: pre-refund balance check sees 0,
+        // updateSplitStatus's post-save recompute sees the 5.00 just issued.
+        when(refundRepository.sumByPaymentId(30L)).thenReturn(BigDecimal.ZERO, new BigDecimal("5.00"));
+        when(userRepository.findByEmail("alice@ember.local")).thenReturn(Optional.of(waiterUser()));
+        when(cashShiftRepository.findOpenForUpdate(any())).thenReturn(Optional.of(openShift()));
+        when(refundRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(billSplitRepository.findByBillIdAndParticipantName(1L, "Alice"))
+                .thenReturn(Optional.of(split));
+        when(paymentRepository.findByBillId(1L)).thenReturn(List.of(payment));
+        when(billSplitRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        Refund refund = paymentService.refundPayment(
+                30L, new BigDecimal("5.00"), "comped an item", "alice@ember.local");
+
+        assertThat(refund.getAmount()).isEqualByComparingTo("5.00");
+        ArgumentCaptor<BillSplit> splitCaptor = ArgumentCaptor.forClass(BillSplit.class);
+        verify(billSplitRepository).save(splitCaptor.capture());
+        assertThat(splitCaptor.getValue().getStatus()).isEqualTo(BillSplitStatus.PARTIALLY_PAID);
+    }
+
+    @Test
+    void refundPayment_physical_recordsCashOutMovementOnTheCurrentOpenShift() {
+        Bill bill = sampleBill();
+        Payment payment = confirmedPhysicalPayment(bill, "12.50");
+        BillSplit split = paidSplit(bill, "Alice", "12.50");
+        when(paymentRepository.findByIdForUpdate(30L)).thenReturn(Optional.of(payment));
+        when(refundRepository.sumByPaymentId(30L)).thenReturn(BigDecimal.ZERO);
+        when(userRepository.findByEmail("alice@ember.local")).thenReturn(Optional.of(waiterUser()));
+        when(cashShiftRepository.findOpenForUpdate(any())).thenReturn(Optional.of(openShift()));
+        when(refundRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(billSplitRepository.findByBillIdAndParticipantName(1L, "Alice"))
+                .thenReturn(Optional.of(split));
+        when(paymentRepository.findByBillId(1L)).thenReturn(List.of(payment));
+        when(billSplitRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        paymentService.refundPayment(30L, null, "customer dispute", "alice@ember.local");
+
+        ArgumentCaptor<CashMovement> movementCaptor = ArgumentCaptor.forClass(CashMovement.class);
+        verify(cashMovementRepository).save(movementCaptor.capture());
+        assertThat(movementCaptor.getValue().getCashShiftId()).isEqualTo(9L);
+        assertThat(movementCaptor.getValue().getType()).isEqualTo(CashMovementType.CASH_OUT);
+        assertThat(movementCaptor.getValue().getAmount()).isEqualByComparingTo("12.50");
+    }
+
+    @Test
+    void refundPayment_physical_throwsWhenNoOpenShift() {
+        Bill bill = sampleBill();
+        Payment payment = confirmedPhysicalPayment(bill, "12.50");
+        when(paymentRepository.findByIdForUpdate(30L)).thenReturn(Optional.of(payment));
+        when(refundRepository.sumByPaymentId(30L)).thenReturn(BigDecimal.ZERO);
+        when(userRepository.findByEmail("alice@ember.local")).thenReturn(Optional.of(waiterUser()));
+        when(cashShiftRepository.findOpenForUpdate(any())).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> paymentService.refundPayment(30L, null, "reason", "alice@ember.local"))
+                .isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    void refundPayment_digital_doesNotTouchCashShift() {
+        Bill bill = sampleBill();
+        Payment payment = Payment.builder()
+                .id(31L).bill(bill).participantName("Alice")
+                .amount(new BigDecimal("12.50")).method(PaymentMethod.DIGITAL)
+                .status(PaymentStatus.CONFIRMED).processedBy("user-1")
+                .createdAt(LocalDateTime.now()).build();
+        BillSplit split = paidSplit(bill, "Alice", "12.50");
+        when(paymentRepository.findByIdForUpdate(31L)).thenReturn(Optional.of(payment));
+        when(refundRepository.sumByPaymentId(31L)).thenReturn(BigDecimal.ZERO);
+        when(userRepository.findByEmail("alice@ember.local")).thenReturn(Optional.of(waiterUser()));
+        when(refundRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(billSplitRepository.findByBillIdAndParticipantName(1L, "Alice"))
+                .thenReturn(Optional.of(split));
+        when(paymentRepository.findByBillId(1L)).thenReturn(List.of(payment));
+        when(billSplitRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        paymentService.refundPayment(31L, null, "customer dispute", "alice@ember.local");
+
+        verify(cashMovementRepository, never()).save(any());
+        verify(cashShiftRepository, never()).findOpenForUpdate(any());
+    }
+
+    @Test
+    void refundPayment_throwsWhenPaymentNotConfirmed() {
+        Bill bill = sampleBill();
+        Payment pending = pendingDigitalPayment(bill, "Alice");
+        when(paymentRepository.findByIdForUpdate(20L)).thenReturn(Optional.of(pending));
+
+        assertThatThrownBy(() -> paymentService.refundPayment(20L, null, "reason", "alice@ember.local"))
+                .isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    void refundPayment_throwsWhenAmountExceedsRemainingBalance() {
+        Bill bill = sampleBill();
+        Payment payment = confirmedPhysicalPayment(bill, "12.50");
+        when(paymentRepository.findByIdForUpdate(30L)).thenReturn(Optional.of(payment));
+        when(refundRepository.sumByPaymentId(30L)).thenReturn(new BigDecimal("8.00"));
+
+        assertThatThrownBy(() -> paymentService.refundPayment(
+                30L, new BigDecimal("5.00"), "reason", "alice@ember.local"))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void refundPayment_throwsWhenPaymentNotFound() {
+        when(paymentRepository.findByIdForUpdate(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> paymentService.refundPayment(99L, null, "reason", "alice@ember.local"))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 }

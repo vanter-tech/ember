@@ -2,6 +2,7 @@ package com.vanter.ember.billing.repository;
 
 import com.vanter.ember.billing.model.Bill;
 import com.vanter.ember.billing.model.BillSplit;
+import com.vanter.ember.billing.model.BillSplitStatus;
 import com.vanter.ember.billing.model.BillStatus;
 import com.vanter.ember.billing.model.SplitMethod;
 import org.junit.jupiter.api.Test;
@@ -36,7 +37,7 @@ class BillSplitRepositoryTest {
         Bill bill = savedBill();
         BillSplit split = BillSplit.builder()
                 .bill(bill).participantName("Alice")
-                .amount(new BigDecimal("25.00")).paid(false).build();
+                .amount(new BigDecimal("25.00")).status(BillSplitStatus.UNPAID).build();
 
         BillSplit saved = billSplitRepository.save(split);
 
@@ -44,16 +45,16 @@ class BillSplitRepositoryTest {
         assertThat(saved.getBill().getId()).isEqualTo(bill.getId());
         assertThat(saved.getParticipantName()).isEqualTo("Alice");
         assertThat(saved.getAmount()).isEqualByComparingTo("25.00");
-        assertThat(saved.isPaid()).isFalse();
+        assertThat(saved.getStatus()).isEqualTo(BillSplitStatus.UNPAID);
     }
 
     @Test
     void findByBillId_returnsAllSplitsForBill() {
         Bill bill = savedBill();
         billSplitRepository.save(BillSplit.builder()
-                .bill(bill).participantName("Alice").amount(new BigDecimal("25.00")).paid(false).build());
+                .bill(bill).participantName("Alice").amount(new BigDecimal("25.00")).status(BillSplitStatus.UNPAID).build());
         billSplitRepository.save(BillSplit.builder()
-                .bill(bill).participantName("Bob").amount(new BigDecimal("15.00")).paid(false).build());
+                .bill(bill).participantName("Bob").amount(new BigDecimal("15.00")).status(BillSplitStatus.UNPAID).build());
 
         List<BillSplit> splits = billSplitRepository.findByBillId(bill.getId());
 
@@ -64,7 +65,7 @@ class BillSplitRepositoryTest {
     void findByBillIdAndParticipantName_returnsSplit() {
         Bill bill = savedBill();
         billSplitRepository.save(BillSplit.builder()
-                .bill(bill).participantName("Alice").amount(new BigDecimal("25.00")).paid(false).build());
+                .bill(bill).participantName("Alice").amount(new BigDecimal("25.00")).status(BillSplitStatus.UNPAID).build());
 
         Optional<BillSplit> found = billSplitRepository.findByBillIdAndParticipantName(bill.getId(), "Alice");
 

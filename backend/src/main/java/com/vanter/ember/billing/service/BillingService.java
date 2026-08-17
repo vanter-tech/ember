@@ -1,12 +1,18 @@
 package com.vanter.ember.billing.service;
 
+import com.vanter.ember.billing.dto.BillVoidedMessage;
 import com.vanter.ember.billing.model.Bill;
 import com.vanter.ember.billing.model.BillSplit;
+import com.vanter.ember.billing.model.BillSplitStatus;
 import com.vanter.ember.billing.model.BillStatus;
+import com.vanter.ember.billing.model.PaymentStatus;
 import com.vanter.ember.billing.model.SplitMethod;
 import com.vanter.ember.billing.repository.BillRepository;
 import com.vanter.ember.billing.repository.BillSplitRepository;
+import com.vanter.ember.billing.repository.PaymentRepository;
 import com.vanter.ember.config.ResourceNotFoundException;
+import com.vanter.ember.identity.model.User;
+import com.vanter.ember.identity.repository.UserRepository;
 import com.vanter.ember.session.model.OrderItem;
 import com.vanter.ember.session.model.OrderItemStatus;
 import com.vanter.ember.session.model.Session;
@@ -20,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,10 +37,13 @@ public class BillingService {
     private final BillRepository billRepository;
     private final BillSplitRepository billSplitRepository;
     private final SessionService sessionService;
+    private final PaymentRepository paymentRepository;
+    private final UserRepository userRepository;
+    private final SimpMessagingTemplate messagingTemplate;
 
     @Transactional
     public Bill calculateBill(String sessionId, SplitMethod splitMethod) {
-        if (billRepository.findBySessionId(sessionId).isPresent()) {
+        if (billRepository.findBySessionIdAndStatusNot(sessionId, BillStatus.VOIDED).isPresent()) {
             throw new IllegalStateException("Session already billed: " + sessionId);
         }
 
@@ -65,6 +75,36 @@ public class BillingService {
     }
 
     @Transactional
+    public Bill voidBill(Long billId, String reason, String voidedByEmail) {
+        Bill bill = billRepository.findByIdForUpdate(billId)
+                .orElseThrow(() -> new ResourceNotFoundException("Bill not found: " + billId));
+        if (bill.getStatus() != BillStatus.OPEN) {
+            throw new IllegalStateException("Bill is not open: " + billId);
+        }
+        if (paymentRepository.existsByBillIdAndStatus(billId, PaymentStatus.CONFIRMED)) {
+            throw new IllegalStateException(
+                    "Cannot void a bill with a confirmed payment; refund it instead: " + billId);
+        }
+
+        bill.setStatus(BillStatus.VOIDED);
+        bill.setVoidedBy(resolveUserId(voidedByEmail));
+        bill.setVoidedAt(LocalDateTime.now());
+        bill.setVoidReason(reason);
+        Bill saved = billRepository.save(bill);
+
+        messagingTemplate.convertAndSend(
+                "/topic/session/" + bill.getSessionId(), BillVoidedMessage.of(billId, reason));
+
+        return saved;
+    }
+
+    private String resolveUserId(String email) {
+        return userRepository.findByEmail(email)
+                .map(User::getId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + email));
+    }
+
+    @Transactional
     public List<BillSplit> splitByConsumption(Long billId) {
         Bill bill = billRepository.findById(billId)
                 .orElseThrow(() -> new ResourceNotFoundException("Bill not found: " + billId));
@@ -82,7 +122,7 @@ public class BillingService {
                         .bill(bill)
                         .participantName(e.getKey())
                         .amount(e.getValue())
-                        .paid(false)
+                        .status(BillSplitStatus.UNPAID)
                         .build())
                 .toList();
 
@@ -118,7 +158,7 @@ public class BillingService {
                     .bill(bill)
                     .participantName(names.get(i))
                     .amount(amount)
-                    .paid(false)
+                    .status(BillSplitStatus.UNPAID)
                     .build());
         }
 

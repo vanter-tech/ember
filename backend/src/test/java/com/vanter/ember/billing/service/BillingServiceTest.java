@@ -2,22 +2,32 @@ package com.vanter.ember.billing.service;
 
 import com.vanter.ember.billing.model.Bill;
 import com.vanter.ember.billing.model.BillSplit;
+import com.vanter.ember.billing.model.BillSplitStatus;
 import com.vanter.ember.billing.model.BillStatus;
+import com.vanter.ember.billing.model.PaymentStatus;
 import com.vanter.ember.billing.model.SplitMethod;
 import com.vanter.ember.billing.repository.BillRepository;
 import com.vanter.ember.billing.repository.BillSplitRepository;
+import com.vanter.ember.billing.repository.PaymentRepository;
+import com.vanter.ember.identity.model.Role;
+import com.vanter.ember.identity.model.User;
+import com.vanter.ember.identity.repository.UserRepository;
+import com.vanter.ember.config.TenantContextHolder;
 import com.vanter.ember.session.model.OrderItem;
 import com.vanter.ember.session.model.OrderItemStatus;
 import com.vanter.ember.session.model.Participant;
 import com.vanter.ember.session.model.Session;
 import com.vanter.ember.session.model.SessionStatus;
 import com.vanter.ember.session.service.SessionService;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import com.vanter.ember.config.ResourceNotFoundException;
 import java.math.BigDecimal;
@@ -40,7 +50,22 @@ class BillingServiceTest {
     @Mock BillRepository billRepository;
     @Mock BillSplitRepository billSplitRepository;
     @Mock SessionService sessionService;
+    @Mock PaymentRepository paymentRepository;
+    @Mock UserRepository userRepository;
+    @Mock SimpMessagingTemplate messagingTemplate;
     @InjectMocks BillingService billingService;
+
+    private static final UUID TENANT_ID = UUID.randomUUID();
+
+    @BeforeEach
+    void bindTenant() {
+        TenantContextHolder.setTenantId(TENANT_ID);
+    }
+
+    @AfterEach
+    void clearTenant() {
+        TenantContextHolder.clear();
+    }
 
     private Session sessionWithMixedItems() {
         return Session.builder()
@@ -61,7 +86,7 @@ class BillingServiceTest {
     @Test
     void calculateBill_sumsPricesOfDeliveredAndReadyItems() {
         when(sessionService.findById("sess-1")).thenReturn(sessionWithMixedItems());
-        when(billRepository.findBySessionId("sess-1")).thenReturn(Optional.empty());
+        when(billRepository.findBySessionIdAndStatusNot("sess-1", BillStatus.VOIDED)).thenReturn(Optional.empty());
         when(billRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         Bill bill = billingService.calculateBill("sess-1", SplitMethod.BY_CONSUMPTION);
@@ -81,7 +106,7 @@ class BillingServiceTest {
                                 .status(OrderItemStatus.PENDING).build()
                 ))).build();
         when(sessionService.findById("sess-1")).thenReturn(session);
-        when(billRepository.findBySessionId("sess-1")).thenReturn(Optional.empty());
+        when(billRepository.findBySessionIdAndStatusNot("sess-1", BillStatus.VOIDED)).thenReturn(Optional.empty());
         when(billRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         Bill bill = billingService.calculateBill("sess-1", SplitMethod.BY_CONSUMPTION);
@@ -97,7 +122,7 @@ class BillingServiceTest {
                                 .status(OrderItemStatus.PENDING).build()
                 ))).build();
         when(sessionService.findById("sess-1")).thenReturn(session);
-        when(billRepository.findBySessionId("sess-1")).thenReturn(Optional.empty());
+        when(billRepository.findBySessionIdAndStatusNot("sess-1", BillStatus.VOIDED)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> billingService.calculateBill("sess-1", SplitMethod.BY_CONSUMPTION))
                 .isInstanceOf(IllegalStateException.class)
@@ -109,7 +134,7 @@ class BillingServiceTest {
         Session closed = Session.builder().id("sess-1").tableId(UUID.randomUUID()).status(SessionStatus.CLOSED)
                 .items(new ArrayList<>()).build();
         when(sessionService.findById("sess-1")).thenReturn(closed);
-        when(billRepository.findBySessionId("sess-1")).thenReturn(Optional.empty());
+        when(billRepository.findBySessionIdAndStatusNot("sess-1", BillStatus.VOIDED)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> billingService.calculateBill("sess-1", SplitMethod.BY_CONSUMPTION))
                 .isInstanceOf(IllegalStateException.class)
@@ -121,7 +146,7 @@ class BillingServiceTest {
         Session session = Session.builder().id("sess-1").tableId(UUID.randomUUID()).status(SessionStatus.OPEN)
                 .items(new ArrayList<>()).build();
         when(sessionService.findById("sess-1")).thenReturn(session);
-        when(billRepository.findBySessionId("sess-1")).thenReturn(Optional.empty());
+        when(billRepository.findBySessionIdAndStatusNot("sess-1", BillStatus.VOIDED)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> billingService.calculateBill("sess-1", SplitMethod.BY_CONSUMPTION))
                 .isInstanceOf(IllegalStateException.class)
@@ -130,7 +155,7 @@ class BillingServiceTest {
 
     @Test
     void calculateBill_throwsWhenSessionAlreadyBilled() {
-        when(billRepository.findBySessionId("sess-1"))
+        when(billRepository.findBySessionIdAndStatusNot("sess-1", BillStatus.VOIDED))
                 .thenReturn(Optional.of(Bill.builder().id(1L).build()));
 
         assertThatThrownBy(() -> billingService.calculateBill("sess-1", SplitMethod.BY_CONSUMPTION))
@@ -139,9 +164,22 @@ class BillingServiceTest {
     }
 
     @Test
+    void calculateBill_succeedsAfterThePreviousBillWasVoided() {
+        when(billRepository.findBySessionIdAndStatusNot("sess-1", BillStatus.VOIDED))
+                .thenReturn(Optional.empty());
+        when(sessionService.findById("sess-1")).thenReturn(sessionWithMixedItems());
+        when(billRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        Bill bill = billingService.calculateBill("sess-1", SplitMethod.BY_CONSUMPTION);
+
+        assertThat(bill.getTotal()).isEqualByComparingTo("22.50");
+        assertThat(bill.getStatus()).isEqualTo(BillStatus.OPEN);
+    }
+
+    @Test
     void calculateBill_persistsBillWithOpenStatusAndCorrectFields() {
         when(sessionService.findById("sess-1")).thenReturn(sessionWithMixedItems());
-        when(billRepository.findBySessionId("sess-1")).thenReturn(Optional.empty());
+        when(billRepository.findBySessionIdAndStatusNot("sess-1", BillStatus.VOIDED)).thenReturn(Optional.empty());
         when(billRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         billingService.calculateBill("sess-1", SplitMethod.EQUAL_PARTS);
@@ -211,7 +249,7 @@ class BillingServiceTest {
 
         List<BillSplit> splits = billingService.splitByConsumption(1L);
 
-        assertThat(splits).allMatch(s -> !s.isPaid());
+        assertThat(splits).allMatch(s -> s.getStatus() == BillSplitStatus.UNPAID);
     }
 
     @Test
@@ -316,7 +354,7 @@ class BillingServiceTest {
 
         List<BillSplit> splits = billingService.splitEqually(1L, 3);
 
-        assertThat(splits).allMatch(s -> !s.isPaid());
+        assertThat(splits).allMatch(s -> s.getStatus() == BillSplitStatus.UNPAID);
     }
 
     @Test
@@ -324,6 +362,79 @@ class BillingServiceTest {
         when(billRepository.findById(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> billingService.splitEqually(99L, 3))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    // --- voidBill tests ---
+
+    private Bill openBill() {
+        return Bill.builder()
+                .id(1L).sessionId("sess-1").total(new BigDecimal("22.50"))
+                .splitMethod(SplitMethod.BY_CONSUMPTION).status(BillStatus.OPEN)
+                .createdAt(LocalDateTime.now()).build();
+    }
+
+    @Test
+    void voidBill_setsStatusVoidedAndStampsReason() {
+        Bill bill = openBill();
+        when(billRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(bill));
+        when(paymentRepository.existsByBillIdAndStatus(1L, PaymentStatus.CONFIRMED)).thenReturn(false);
+        when(userRepository.findByEmail("waiter@ember.local"))
+                .thenReturn(Optional.of(User.builder().id("user-1").role(Role.WAITER).build()));
+        when(billRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        Bill voided = billingService.voidBill(1L, "wrong split method", "waiter@ember.local");
+
+        assertThat(voided.getStatus()).isEqualTo(BillStatus.VOIDED);
+        assertThat(voided.getVoidReason()).isEqualTo("wrong split method");
+        assertThat(voided.getVoidedBy()).isEqualTo("user-1");
+        assertThat(voided.getVoidedAt()).isNotNull();
+    }
+
+    @Test
+    void voidBill_broadcastsBillVoidedToSessionTopic() {
+        Bill bill = openBill();
+        when(billRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(bill));
+        when(paymentRepository.existsByBillIdAndStatus(1L, PaymentStatus.CONFIRMED)).thenReturn(false);
+        when(userRepository.findByEmail("waiter@ember.local"))
+                .thenReturn(Optional.of(User.builder().id("user-1").role(Role.WAITER).build()));
+        when(billRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        billingService.voidBill(1L, "wrong split method", "waiter@ember.local");
+
+        ArgumentCaptor<com.vanter.ember.billing.dto.BillVoidedMessage> captor =
+                ArgumentCaptor.forClass(com.vanter.ember.billing.dto.BillVoidedMessage.class);
+        verify(messagingTemplate).convertAndSend(
+                org.mockito.ArgumentMatchers.eq("/topic/session/sess-1"), captor.capture());
+        assertThat(captor.getValue().type()).isEqualTo("BILL_VOIDED");
+        assertThat(captor.getValue().billId()).isEqualTo(1L);
+    }
+
+    @Test
+    void voidBill_throwsWhenBillIsNotOpen() {
+        Bill paid = openBill();
+        paid.setStatus(BillStatus.PAID);
+        when(billRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(paid));
+
+        assertThatThrownBy(() -> billingService.voidBill(1L, "reason", "waiter@ember.local"))
+                .isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    void voidBill_throwsWhenAConfirmedPaymentAlreadyExists() {
+        Bill bill = openBill();
+        when(billRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(bill));
+        when(paymentRepository.existsByBillIdAndStatus(1L, PaymentStatus.CONFIRMED)).thenReturn(true);
+
+        assertThatThrownBy(() -> billingService.voidBill(1L, "reason", "waiter@ember.local"))
+                .isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    void voidBill_throwsWhenBillNotFound() {
+        when(billRepository.findByIdForUpdate(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> billingService.voidBill(99L, "reason", "waiter@ember.local"))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 }

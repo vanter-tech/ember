@@ -6,9 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { formatCurrency } from '@/lib/format'
+import { RotateCcw } from 'lucide-react'
 import { OpenShiftDialog } from './components/OpenShiftDialog'
 import { MovementDialog } from './components/MovementDialog'
 import { CloseShiftDialog } from './components/CloseShiftDialog'
+import { RefundPaymentModal } from '@/pages/waiter/components/RefundPaymentModal'
 
 export const CashRegister = () => {
   const { openModal } = useUIStore()
@@ -110,12 +112,70 @@ export const CashRegister = () => {
               </Table>
             </CardContent>
           </Card>
+
+          <Card className="border border-border/40 bg-background py-6 shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Pagos
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Participante</TableHead>
+                    <TableHead>Monto</TableHead>
+                    <TableHead>Reembolsado</TableHead>
+                    <TableHead className="text-right">Acción</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {(detail?.payments ?? []).length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-center text-sm text-muted-foreground">
+                        Sin pagos registrados en este turno.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    (detail!.payments ?? []).map((payment) => (
+                      <TableRow key={payment.id}>
+                        <TableCell>{payment.participantName}</TableCell>
+                        <TableCell>{formatCurrency(payment.amount ?? 0)}</TableCell>
+                        <TableCell>
+                          {payment.refundedAmount && payment.refundedAmount > 0
+                            ? formatCurrency(payment.refundedAmount)
+                            : '—'}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            disabled={!payment.remaining || payment.remaining <= 0}
+                            onClick={() =>
+                              openModal('REFUND_PAYMENT', {
+                                billId: payment.billId,
+                                participantName: payment.participantName,
+                                paymentId: payment.id,
+                              })
+                            }
+                          >
+                            <RotateCcw className="w-4 h-4 mr-1" /> Reembolsar
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
         </>
       )}
 
       <OpenShiftDialog />
       <MovementDialog />
       <CloseShiftDialog />
+      <RefundPaymentModal />
     </div>
   )
 }

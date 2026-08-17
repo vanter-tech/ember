@@ -14,7 +14,8 @@ interface sessionState extends sessionResponse {
   addParticipant: (participant: participantDTO) => void
   addItem: (item: orderItemDTO) => void
   setBillReady: (bill: Bill, splits: BillSplit[]) => void
-  markSplitPaid: (participantName: string) => void
+  markSplitStatus: (participantName: string, status: BillSplit['status']) => void
+  clearBill: () => void
 }
 
 export const useSessionStore = create<sessionState>()(
@@ -46,14 +47,17 @@ export const useSessionStore = create<sessionState>()(
       setBillReady: (bill, splits) => {
         set({ bill, billSplits: splits })
       },
-      markSplitPaid: (participantName) => {
+      markSplitStatus: (participantName, status) => {
         set((state) => ({
           billSplits: (state.billSplits || []).map((split) =>
             split.participantName === participantName
-              ? { ...split, paid: true }
+              ? { ...split, status }
               : split
           ),
         }))
+      },
+      clearBill: () => {
+        set({ bill: undefined, billSplits: undefined })
       },
 
 

@@ -29,6 +29,9 @@ export type Bill = components['schemas']['Bill']
 export type BillSplit = components['schemas']['BillSplit']
 export type Payment = components['schemas']['Payment']
 export type RequestBillingRequest = components['schemas']['RequestBillingRequest']
+export type PaymentResponse = components['schemas']['PaymentResponse']
+export type RefundResponse = components['schemas']['RefundResponse']
+export type Refund = components['schemas']['Refund']
 
 // WebSocket-only shapes (BILL_READY/SPLIT_PAID/DIGITAL_PAYMENT_INITIATED broadcasts) — the OpenAPI
 // spec only documents REST responses, so these have no generated schema to switch to.
@@ -503,6 +506,26 @@ export const billingService = {
   },
   confirmDigitalPayment: async (paymentId: number): Promise<Payment> => {
     const { data } = await api.post<Payment>(`/billing/payments/${paymentId}/confirm`)
+    return data
+  },
+  voidBill: async (billId: number, reason: string): Promise<Bill> => {
+    const { data } = await api.post<Bill>(`/billing/bills/${billId}/void`, { reason })
+    return data
+  },
+  listPayments: async (billId: number): Promise<PaymentResponse[]> => {
+    const { data } = await api.get<PaymentResponse[]>(`/billing/bills/${billId}/payments`)
+    return data
+  },
+  refundPayment: async (
+    paymentId: number,
+    amount: number | undefined,
+    reason: string
+  ): Promise<Refund> => {
+    const { data } = await api.post<Refund>(`/billing/payments/${paymentId}/refund`, { amount, reason })
+    return data
+  },
+  listRefunds: async (paymentId: number): Promise<RefundResponse[]> => {
+    const { data } = await api.get<RefundResponse[]>(`/billing/payments/${paymentId}/refunds`)
     return data
   },
 }

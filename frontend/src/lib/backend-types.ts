@@ -299,6 +299,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/billing/payments/{id}/refund": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Refund a confirmed payment, full or partial (WAITER) */
+        post: operations["refundPayment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/billing/payments/{id}/confirm": {
         parameters: {
             query?: never;
@@ -344,6 +361,23 @@ export interface paths {
         put?: never;
         /** Initiate digital payment (WAITER/CUSTOMER) */
         post: operations["initiateDigitalPayment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/billing/bills/{id}/void": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Void a bill before any payment lands (WAITER) */
+        post: operations["voidBill"];
         delete?: never;
         options?: never;
         head?: never;
@@ -809,6 +843,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/billing/payments/{id}/refunds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List refunds issued against a payment (WAITER/ADMIN) */
+        get: operations["listRefunds"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/billing/bills/{id}/payments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List a bill's payments with refund status (WAITER/ADMIN) */
+        get: operations["listPayments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/restaurant": {
         parameters: {
             query?: never;
@@ -1221,9 +1289,17 @@ export interface components {
             /** @enum {string} */
             splitMethod?: "BY_CONSUMPTION" | "EQUAL_PARTS";
             /** @enum {string} */
-            status?: "OPEN" | "PAID";
+            status?: "OPEN" | "PAID" | "VOIDED";
             /** Format: date-time */
             createdAt?: string;
+            voidedBy?: string;
+            /** Format: date-time */
+            voidedAt?: string;
+            voidReason?: string;
+        };
+        RefundPaymentRequest: {
+            amount?: number;
+            reason: string;
         };
         Payment: {
             /** Format: int64 */
@@ -1244,6 +1320,18 @@ export interface components {
             cashShiftId?: number;
             processedBy?: string;
         };
+        Refund: {
+            /** Format: int64 */
+            id?: number;
+            /** Format: uuid */
+            tenantId?: string;
+            payment?: components["schemas"]["Payment"];
+            amount?: number;
+            reason?: string;
+            refundedBy?: string;
+            /** Format: date-time */
+            createdAt?: string;
+        };
         PhysicalPaymentRequest: {
             /** Format: int64 */
             billId: number;
@@ -1255,6 +1343,9 @@ export interface components {
             billId: number;
             participantName: string;
             amount: number;
+        };
+        VoidBillRequest: {
+            reason: string;
         };
         SplitBillRequest: {
             /** @enum {string} */
@@ -1270,7 +1361,8 @@ export interface components {
             bill?: components["schemas"]["Bill"];
             participantName?: string;
             amount?: number;
-            paid?: boolean;
+            /** @enum {string} */
+            status?: "UNPAID" | "PARTIALLY_PAID" | "PAID";
         };
         RegisterRequest: {
             name: string;
@@ -1480,11 +1572,11 @@ export interface components {
             /** Format: int64 */
             offset?: number;
             sort?: components["schemas"]["SortObject"];
-            /** Format: int32 */
-            pageSize?: number;
+            paged?: boolean;
             /** Format: int32 */
             pageNumber?: number;
-            paged?: boolean;
+            /** Format: int32 */
+            pageSize?: number;
             unpaged?: boolean;
         };
         SortObject: {
@@ -1646,6 +1738,21 @@ export interface components {
         CashShiftDetailResponse: {
             shift?: components["schemas"]["CashShiftResponse"];
             movements?: components["schemas"]["CashMovementResponse"][];
+            payments?: components["schemas"]["PaymentResponse"][];
+        };
+        PaymentResponse: {
+            /** Format: int64 */
+            id?: number;
+            /** Format: int64 */
+            billId?: number;
+            participantName?: string;
+            amount?: number;
+            method?: string;
+            status?: string;
+            /** Format: date-time */
+            createdAt?: string;
+            refundedAmount?: number;
+            remaining?: number;
         };
         DailyReportResponse: {
             /** Format: date */
@@ -1656,6 +1763,15 @@ export interface components {
             totalCashIn?: number;
             totalCashOut?: number;
             shifts?: components["schemas"]["CashShiftResponse"][];
+        };
+        RefundResponse: {
+            /** Format: int64 */
+            id?: number;
+            amount?: number;
+            reason?: string;
+            refundedByName?: string;
+            /** Format: date-time */
+            createdAt?: string;
         };
         AnalyticsTablesResponse: {
             /** Format: date-time */
@@ -2361,6 +2477,32 @@ export interface operations {
             };
         };
     };
+    refundPayment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RefundPaymentRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["Refund"];
+                };
+            };
+        };
+    };
     confirmDigitalPayment: {
         parameters: {
             query?: never;
@@ -2427,6 +2569,32 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["Payment"];
+                };
+            };
+        };
+    };
+    voidBill: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VoidBillRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["Bill"];
                 };
             };
         };
@@ -3071,6 +3239,50 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["CashShiftResponse"];
+                };
+            };
+        };
+    };
+    listRefunds: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["RefundResponse"][];
+                };
+            };
+        };
+    };
+    listPayments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PaymentResponse"][];
                 };
             };
         };

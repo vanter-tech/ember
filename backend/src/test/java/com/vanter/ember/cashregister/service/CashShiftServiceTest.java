@@ -3,8 +3,14 @@ package com.vanter.ember.cashregister.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.vanter.ember.billing.dto.PaymentResponse;
+import com.vanter.ember.billing.model.Payment;
+import com.vanter.ember.billing.service.PaymentService;
+import com.vanter.ember.cashregister.dto.CashShiftDetailResponse;
 import com.vanter.ember.cashregister.model.CashMovement;
 import com.vanter.ember.cashregister.model.CashMovementType;
 import com.vanter.ember.cashregister.model.CashShift;
@@ -16,6 +22,7 @@ import com.vanter.ember.config.ResourceNotFoundException;
 import com.vanter.ember.identity.repository.UserRepository;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -33,6 +40,7 @@ class CashShiftServiceTest {
     @Mock PaymentRepository paymentRepository;
     @Mock UserRepository userRepository;
     @Mock ApplicationEventPublisher eventPublisher;
+    @Mock PaymentService paymentService;
     @InjectMocks CashShiftService cashShiftService;
 
     private static final UUID TENANT_ID = UUID.randomUUID();
@@ -135,5 +143,23 @@ class CashShiftServiceTest {
 
         assertThatThrownBy(() -> cashShiftService.getCurrentOpenShift(TENANT_ID))
                 .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void getDetail_includesPaymentsForTheShift() {
+        CashShift shift = openShift();
+        when(cashShiftRepository.findById(1L)).thenReturn(Optional.of(shift));
+        when(cashMovementRepository.findByCashShiftIdOrderByCreatedAtAsc(1L)).thenReturn(List.of());
+        when(paymentRepository.findByCashShiftId(1L)).thenReturn(List.of(mock(Payment.class)));
+        PaymentResponse response = new PaymentResponse(
+                20L, 1L, "Alice", new BigDecimal("25.00"), "PHYSICAL", "CONFIRMED",
+                LocalDateTime.now(), BigDecimal.ZERO, new BigDecimal("25.00"));
+        when(paymentService.toResponses(anyList())).thenReturn(List.of(response));
+        when(userRepository.findAllById(any())).thenReturn(List.of());
+
+        CashShiftDetailResponse detail = cashShiftService.getDetail(1L);
+
+        assertThat(detail.payments()).hasSize(1);
+        assertThat(detail.payments().get(0).participantName()).isEqualTo("Alice");
     }
 }

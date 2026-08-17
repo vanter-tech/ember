@@ -1,6 +1,9 @@
 package com.vanter.ember.cashregister.service;
 
+import com.vanter.ember.billing.dto.PaymentResponse;
+import com.vanter.ember.billing.model.Payment;
 import com.vanter.ember.billing.repository.PaymentRepository;
+import com.vanter.ember.billing.service.PaymentService;
 import com.vanter.ember.cashregister.dto.CashMovementResponse;
 import com.vanter.ember.cashregister.dto.CashShiftDetailResponse;
 import com.vanter.ember.cashregister.dto.CashShiftResponse;
@@ -47,6 +50,7 @@ public class CashShiftService {
     private final PaymentRepository paymentRepository;
     private final UserRepository userRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final PaymentService paymentService;
 
     @Transactional
     public CashShift openShift(UUID tenantId, String openedByUserId, BigDecimal openingFloat) {
@@ -142,6 +146,7 @@ public class CashShiftService {
     public CashShiftDetailResponse getDetail(Long id) {
         CashShift shift = getById(id);
         List<CashMovement> movements = cashMovementRepository.findByCashShiftIdOrderByCreatedAtAsc(id);
+        List<Payment> payments = paymentRepository.findByCashShiftId(id);
 
         Set<String> userIds = new HashSet<>();
         userIds.add(shift.getOpenedBy());
@@ -151,8 +156,9 @@ public class CashShiftService {
 
         List<CashMovementResponse> movementResponses =
                 movements.stream().map(m -> toMovementResponse(m, names)).toList();
+        List<PaymentResponse> paymentResponses = paymentService.toResponses(payments);
 
-        return new CashShiftDetailResponse(toResponse(shift, names), movementResponses);
+        return new CashShiftDetailResponse(toResponse(shift, names), movementResponses, paymentResponses);
     }
 
     public Page<CashShift> getHistory(UUID tenantId, LocalDateTime from, LocalDateTime to, Pageable pageable) {

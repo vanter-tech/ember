@@ -81,7 +81,7 @@ export const Bill = () => {
                         ${split.amount?.toFixed(2)}
                       </span>
                     </div>
-                    {split.paid ? (
+                    {split.status === 'PAID' || split.status === 'PARTIALLY_PAID' ? (
                       <Badge className="flex items-center gap-1">
                         <CheckCircle2 className="w-4 h-4" /> Pagado
                       </Badge>
@@ -93,7 +93,7 @@ export const Bill = () => {
               </CardContent>
             </Card>
 
-            {mySplit && !mySplit.paid && (
+            {mySplit && mySplit.status === 'UNPAID' && (
               <Button
                 className="w-full h-15 text-xl font-bold gap-2"
                 disabled={payMutation.isPending || paymentRequested}

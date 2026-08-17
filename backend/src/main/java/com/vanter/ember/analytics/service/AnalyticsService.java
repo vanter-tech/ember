@@ -17,6 +17,8 @@ import com.vanter.ember.billing.repository.BillSalesTotals;
 import com.vanter.ember.billing.repository.PaidBillActivity;
 import com.vanter.ember.billing.repository.PaymentDailyRevenue;
 import com.vanter.ember.billing.repository.PaymentRepository;
+import com.vanter.ember.billing.repository.RefundDailyAmount;
+import com.vanter.ember.billing.repository.RefundRepository;
 import com.vanter.ember.catalog.model.MenuItem;
 import com.vanter.ember.catalog.repository.MenuItemRepository;
 import com.vanter.ember.session.model.OrderItem;
@@ -61,6 +63,7 @@ public class AnalyticsService {
     private final SessionRepository sessionRepository;
     private final MenuItemRepository menuItemRepository;
     private final DiningTableRepository diningTableRepository;
+    private final RefundRepository refundRepository;
 
     @Transactional(readOnly = true)
     public AnalyticsRangeResponse getRange(UUID restaurantId) {
@@ -88,6 +91,9 @@ public class AnalyticsService {
         LocalDateTime windowEnd = window.end();
 
         BigDecimal revenue = paymentRepository.sumConfirmedRevenue(restaurantId, windowStart, windowEnd);
+        BigDecimal refunds = refundRepository.sumRefundsInWindow(restaurantId, windowStart, windowEnd);
+        BigDecimal netRevenue = (revenue == null ? BigDecimal.ZERO : revenue)
+                .subtract(refunds == null ? BigDecimal.ZERO : refunds);
         BillSalesTotals sales = billRepository.findSalesTotals(restaurantId, windowStart, windowEnd);
         long activeSessions = sessionRepository.countByTenantIdAndStatus(restaurantId, SessionStatus.OPEN);
 
@@ -98,7 +104,7 @@ public class AnalyticsService {
                 : salesTotal.divide(BigDecimal.valueOf(paidBillCount), 2, RoundingMode.HALF_UP);
 
         return new AnalyticsSummaryResponse(
-                scaled(revenue == null ? BigDecimal.ZERO : revenue),
+                scaled(netRevenue),
                 activeSessions,
                 averageOrderValue,
                 paidBillCount,
@@ -130,6 +136,13 @@ public class AnalyticsService {
             revenueByBucket.merge(
                     granularity.bucketStart(row.date()),
                     row.revenue() == null ? BigDecimal.ZERO : row.revenue(),
+                    BigDecimal::add);
+        }
+        for (RefundDailyAmount row :
+                refundRepository.findRefundsByDay(restaurantId, window.start(), window.end())) {
+            revenueByBucket.merge(
+                    granularity.bucketStart(row.date()),
+                    (row.amount() == null ? BigDecimal.ZERO : row.amount()).negate(),
                     BigDecimal::add);
         }
 

@@ -3,15 +3,21 @@ package com.vanter.ember.billing.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vanter.ember.billing.dto.CalculateBillRequest;
 import com.vanter.ember.billing.dto.DigitalPaymentRequest;
+import com.vanter.ember.billing.dto.PaymentResponse;
 import com.vanter.ember.billing.dto.PhysicalPaymentRequest;
+import com.vanter.ember.billing.dto.RefundPaymentRequest;
+import com.vanter.ember.billing.dto.RefundResponse;
 import com.vanter.ember.billing.dto.RequestBillingRequest;
 import com.vanter.ember.billing.dto.SplitBillRequest;
+import com.vanter.ember.billing.dto.VoidBillRequest;
 import com.vanter.ember.billing.model.Bill;
 import com.vanter.ember.billing.model.BillSplit;
+import com.vanter.ember.billing.model.BillSplitStatus;
 import com.vanter.ember.billing.model.BillStatus;
 import com.vanter.ember.billing.model.Payment;
 import com.vanter.ember.billing.model.PaymentMethod;
 import com.vanter.ember.billing.model.PaymentStatus;
+import com.vanter.ember.billing.model.Refund;
 import com.vanter.ember.billing.model.SplitMethod;
 import com.vanter.ember.billing.service.BillingService;
 import com.vanter.ember.billing.service.PaymentService;
@@ -39,6 +45,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -65,7 +72,7 @@ class BillingControllerTest {
     private BillSplit sampleSplit(Bill bill) {
         return BillSplit.builder()
                 .id(10L).bill(bill).participantName("Alice")
-                .amount(new BigDecimal("25.00")).paid(false).build();
+                .amount(new BigDecimal("25.00")).status(BillSplitStatus.UNPAID).build();
     }
 
     private Payment samplePayment(Bill bill) {
@@ -298,6 +305,127 @@ class BillingControllerTest {
     @WithMockUser(roles = "CUSTOMER")
     void confirmDigitalPayment_forbiddenForCustomer() throws Exception {
         mockMvc.perform(post("/billing/payments/20/confirm"))
+                .andExpect(status().isForbidden());
+    }
+
+    private Refund sampleRefund(Payment payment) {
+        return Refund.builder()
+                .id(40L).payment(payment).amount(new BigDecimal("10.00"))
+                .reason("customer dispute").refundedBy("user-1")
+                .createdAt(LocalDateTime.now()).build();
+    }
+
+    // --- POST /billing/bills/{id}/void ---
+
+    @Test
+    @WithMockUser(username = "waiter@ember.local", roles = "WAITER")
+    void voidBill_returnsOkForWaiter() throws Exception {
+        Bill voided = sampleBill();
+        voided.setStatus(BillStatus.VOIDED);
+        when(billingService.voidBill(eq(1L), anyString(), anyString())).thenReturn(voided);
+
+        VoidBillRequest req = new VoidBillRequest("wrong split method");
+        mockMvc.perform(post("/billing/bills/1/void")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("VOIDED"));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void voidBill_forbiddenForAdmin() throws Exception {
+        VoidBillRequest req = new VoidBillRequest("reason");
+        mockMvc.perform(post("/billing/bills/1/void")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isForbidden());
+    }
+
+    // --- GET /billing/bills/{id}/payments ---
+
+    @Test
+    @WithMockUser(roles = "WAITER")
+    void listPayments_returnsOkForWaiter() throws Exception {
+        Bill bill = sampleBill();
+        PaymentResponse response = new PaymentResponse(
+                20L, 1L, "Alice", new BigDecimal("25.00"), "PHYSICAL", "CONFIRMED",
+                LocalDateTime.now(), BigDecimal.ZERO, new BigDecimal("25.00"));
+        when(paymentService.listPayments(1L)).thenReturn(List.of(response));
+
+        mockMvc.perform(get("/billing/bills/1/payments"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].participantName").value("Alice"))
+                .andExpect(jsonPath("$[0].remaining").value(25.00));
+    }
+
+    @Test
+    @WithMockUser(roles = "CUSTOMER")
+    void listPayments_forbiddenForCustomer() throws Exception {
+        mockMvc.perform(get("/billing/bills/1/payments"))
+                .andExpect(status().isForbidden());
+    }
+
+    // --- POST /billing/payments/{id}/refund ---
+
+    @Test
+    @WithMockUser(username = "waiter@ember.local", roles = "WAITER")
+    void refundPayment_returnsCreatedForWaiter() throws Exception {
+        Bill bill = sampleBill();
+        Payment payment = samplePayment(bill);
+        when(paymentService.refundPayment(eq(20L), any(), anyString(), anyString()))
+                .thenReturn(sampleRefund(payment));
+
+        RefundPaymentRequest req = new RefundPaymentRequest(new BigDecimal("10.00"), "customer dispute");
+        mockMvc.perform(post("/billing/payments/20/refund")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.amount").value(10.00))
+                .andExpect(jsonPath("$.reason").value("customer dispute"));
+    }
+
+    @Test
+    @WithMockUser(roles = "CUSTOMER")
+    void refundPayment_forbiddenForCustomer() throws Exception {
+        RefundPaymentRequest req = new RefundPaymentRequest(new BigDecimal("10.00"), "reason");
+        mockMvc.perform(post("/billing/payments/20/refund")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void refundPayment_forbiddenForAdmin() throws Exception {
+        // ADMIN can discover a refundable payment (listPayments is hasAnyRole('WAITER','ADMIN')) but
+        // never executes the refund itself — WAITER alone authorizes refunds and voids, matching
+        // every other billing mutation (calculateBill/splitBill/registerPhysicalPayment).
+        RefundPaymentRequest req = new RefundPaymentRequest(new BigDecimal("10.00"), "reason");
+        mockMvc.perform(post("/billing/payments/20/refund")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isForbidden());
+    }
+
+    // --- GET /billing/payments/{id}/refunds ---
+
+    @Test
+    @WithMockUser(roles = "WAITER")
+    void listRefunds_returnsOkForWaiter() throws Exception {
+        RefundResponse response = new RefundResponse(
+                40L, new BigDecimal("10.00"), "customer dispute", "Alice", LocalDateTime.now());
+        when(paymentService.listRefunds(20L)).thenReturn(List.of(response));
+
+        mockMvc.perform(get("/billing/payments/20/refunds"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].reason").value("customer dispute"));
+    }
+
+    @Test
+    @WithMockUser(roles = "KITCHEN")
+    void listRefunds_forbiddenForKitchen() throws Exception {
+        mockMvc.perform(get("/billing/payments/20/refunds"))
                 .andExpect(status().isForbidden());
     }
 }

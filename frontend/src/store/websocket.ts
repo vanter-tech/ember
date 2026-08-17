@@ -103,7 +103,13 @@ export const useWebsocketStore = create<WebSocketState>((set, get) => ({
                 )
             }
             if(eventData.type === 'SPLIT_PAID'){
-                useSessionStore.getState().markSplitPaid(eventData.participantName)
+                useSessionStore.getState().markSplitStatus(eventData.participantName, eventData.status)
+            }
+            if(eventData.type === 'SPLIT_REFUNDED'){
+                useSessionStore.getState().markSplitStatus(eventData.participantName, eventData.status)
+            }
+            if(eventData.type === 'BILL_VOIDED'){
+                useSessionStore.getState().clearBill()
             }
             if(eventData.type === 'SESSION_CLOSED'){
                 useSessionStore.getState().clearSession()
@@ -173,7 +179,7 @@ export const useWebsocketStore = create<WebSocketState>((set, get) => ({
                             ...old,
                             splits: old.splits.map((split) =>
                                 split.participantName === eventData.participantName
-                                    ? { ...split, paid: true }
+                                    ? { ...split, status: eventData.status }
                                     : split
                             ),
                             pendingDigitalPayments: (old.pendingDigitalPayments || []).filter(
@@ -182,6 +188,23 @@ export const useWebsocketStore = create<WebSocketState>((set, get) => ({
                         }
                         : old
                 )
+            }
+            if(eventData.type === 'SPLIT_REFUNDED'){
+                queryClient.setQueryData<WaiterBillState | undefined>(['bill', sessionId], (old) =>
+                    old
+                        ? {
+                            ...old,
+                            splits: old.splits.map((split) =>
+                                split.participantName === eventData.participantName
+                                    ? { ...split, status: eventData.status }
+                                    : split
+                            ),
+                        }
+                        : old
+                )
+            }
+            if(eventData.type === 'BILL_VOIDED'){
+                queryClient.removeQueries({queryKey: ['bill', sessionId]})
             }
             if(eventData.type === 'DIGITAL_PAYMENT_INITIATED'){
                 queryClient.setQueryData<WaiterBillState | undefined>(['bill', sessionId], (old) =>
