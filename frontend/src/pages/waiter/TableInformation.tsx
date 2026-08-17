@@ -1,6 +1,7 @@
 import { useParams, Link } from 'react-router-dom'
+import { useEffect } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { SessionTableService } from '@/lib/api'
+import { SessionTableService, billingService, type WaiterBillState } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import {
   ArrowLeft,
@@ -9,6 +10,9 @@ import {
   ArrowRightLeft,
   Plus,
   Trash2,
+  Banknote,
+  CreditCard,
+  CheckCircle2,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import toast from 'react-hot-toast'
@@ -22,17 +26,43 @@ import {
 } from '@/components/ui/card'
 import { useUIStore } from '@/store/uiStore'
 import { GlobalDeleteModal } from '../../components/GlobalDeleteModal'
+import { ChargeTableModal } from './components/ChargeTableModal'
+import { useWebsocketStore } from '@/store/websocket'
 
 export const TableInformation = () => {
   const { id } = useParams()
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const { openModal } = useUIStore()
+  const { isConnected, stompClient, subscribeToWaiterSession, unsubscribeFromWaiterSession } =
+    useWebsocketStore()
 
   const { data: sessionData, isPending: isLoadingData } = useQuery({
     queryKey: ['sessionDetails', id],
     queryFn: () => SessionTableService.sessionInformation(id!),
   })
+
+  const { data: billData } = useQuery<WaiterBillState | undefined>({
+    queryKey: ['bill', id],
+    queryFn: () => Promise.resolve(undefined),
+    enabled: false,
+  })
+
+  useEffect(() => {
+    if (id && isConnected && stompClient?.connected) {
+      subscribeToWaiterSession(id)
+    }
+    return () => {
+      unsubscribeFromWaiterSession()
+    }
+  }, [id, isConnected, stompClient, subscribeToWaiterSession, unsubscribeFromWaiterSession])
+
+  useEffect(() => {
+    if (sessionData?.status === 'CLOSED') {
+      toast.success('Mesa pagada y cerrada.')
+      navigate('/waiter/tables')
+    }
+  }, [sessionData?.status, navigate])
 
   const itemsToWaiter = sessionData?.items
     ? sessionData.items.filter((item) => item.status != 'DRAFT')
@@ -45,6 +75,24 @@ export const TableInformation = () => {
       toast.success('Mesa cerrada.')
       navigate('/waiter/tables')
     },
+  })
+
+  const physicalPaymentMutation = useMutation({
+    mutationFn: ({
+      participantName,
+      amount,
+    }: {
+      participantName: string
+      amount: number
+    }) => billingService.registerPhysicalPayment(billData!.id, participantName, amount),
+    onSuccess: () => toast.success('Pago en efectivo registrado.'),
+    onError: () => toast.error('No se pudo registrar el pago. ¿Hay una caja abierta?'),
+  })
+
+  const confirmDigitalPaymentMutation = useMutation({
+    mutationFn: (paymentId: number) => billingService.confirmDigitalPayment(paymentId),
+    onSuccess: () => toast.success('Pago digital confirmado.'),
+    onError: () => toast.error('No se pudo confirmar el pago digital.'),
   })
 
   if (isLoadingData) {
@@ -257,55 +305,130 @@ export const TableInformation = () => {
           <Card>
             <CardHeader className="p-7 border-b border">
               <CardTitle className="text-2xl text-gray-800 font-bold">
-                Resumen
+                {billData ? 'Cuenta' : 'Resumen'}
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="flex justify-between text-xl text-gray-500 pt-4 pl-4 pr-4">
-                <span>Subtotal</span>
-                <span className="text-xl font-bold text-[#8B0000]">
-                  ${subtotal.toFixed(2)}
-                </span>
-              </div>
-              <div className="flex justify-between text-xl text-gray-500 pt-4 pl-4 pr-4">
-                <span>Taxes (10%)</span>
-                <span className="text-xl font-bold text-[#8B0000]">
-                  ${taxes.toFixed(2)}
-                </span>
-              </div>
-              <div className="flex justify-between text-xl text-gray-500 p-4">
-                <span>Propina (15%)</span>
-                <span className="text-xl font-bold text-[#8B0000]">
-                  ${tip.toFixed(2)}
-                </span>
-              </div>
-            </CardContent>
-            <CardFooter className="flex flex-col gap-3">
-              <div className="flex justify-between text-xl text-gray-500 p-4 w-full">
-                <span className="text-2xl font-bold">Total</span>
-                <span className="text-3xl font-bold text-[#8B0000]">
-                  ${total.toFixed(2)}
-                </span>
-              </div>
-              {hasItems ? (
-                <Button className="w-full h-15 text-2xl font-bold">
-                  Cobrar Mesa
-                </Button>
-              ) : (
-                <Button
-                  className="w-full h-15 text-2xl font-bold"
-                  onClick={() => {
-                    mutation.mutate(id!)
-                  }}
-                  disabled={mutation.isPending}
-                >
-                  {mutation.isPending ? 'Cerrando' : 'Cerrar mesa'}
-                </Button>
-              )}
-            </CardFooter>
+            {billData ? (
+              <>
+                <CardContent className="flex flex-col gap-3 max-h-100 overflow-y-auto">
+                  {billData.splits.map((split) => {
+                    const pendingDigital = billData.pendingDigitalPayments?.find(
+                      (p) => p.participantName === split.participantName
+                    )
+                    return (
+                      <div
+                        key={split.participantName}
+                        className="flex items-center justify-between p-4 bg-gray-50/80 rounded-2xl"
+                      >
+                        <div className="flex flex-col">
+                          <span className="font-semibold text-gray-800">
+                            {split.participantName}
+                          </span>
+                          <span className="text-sm text-gray-500">
+                            ${split.amount?.toFixed(2)}
+                          </span>
+                        </div>
+                        {split.paid ? (
+                          <Badge className="flex items-center gap-1">
+                            <CheckCircle2 className="w-4 h-4" /> Pagado
+                          </Badge>
+                        ) : pendingDigital ? (
+                          <Button
+                            className="text-sm"
+                            onClick={() =>
+                              confirmDigitalPaymentMutation.mutate(pendingDigital.id)
+                            }
+                            disabled={confirmDigitalPaymentMutation.isPending}
+                          >
+                            <CreditCard className="w-4 h-4 mr-2" /> Confirmar digital
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="secondary"
+                            className="text-sm"
+                            onClick={() =>
+                              physicalPaymentMutation.mutate({
+                                participantName: split.participantName!,
+                                amount: split.amount!,
+                              })
+                            }
+                            disabled={physicalPaymentMutation.isPending}
+                          >
+                            <Banknote className="w-4 h-4 mr-2" /> Marcar pagado
+                          </Button>
+                        )}
+                      </div>
+                    )
+                  })}
+                </CardContent>
+                <CardFooter className="flex flex-col gap-3">
+                  <div className="flex justify-between text-xl text-gray-500 p-4 w-full">
+                    <span className="text-2xl font-bold">Total</span>
+                    <span className="text-3xl font-bold text-[#8B0000]">
+                      ${billData.total.toFixed(2)}
+                    </span>
+                  </div>
+                </CardFooter>
+              </>
+            ) : (
+              <>
+                <CardContent>
+                  <div className="flex justify-between text-xl text-gray-500 pt-4 pl-4 pr-4">
+                    <span>Subtotal</span>
+                    <span className="text-xl font-bold text-[#8B0000]">
+                      ${subtotal.toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-xl text-gray-500 pt-4 pl-4 pr-4">
+                    <span>Taxes (10%)</span>
+                    <span className="text-xl font-bold text-[#8B0000]">
+                      ${taxes.toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-xl text-gray-500 p-4">
+                    <span>Propina (15%)</span>
+                    <span className="text-xl font-bold text-[#8B0000]">
+                      ${tip.toFixed(2)}
+                    </span>
+                  </div>
+                </CardContent>
+                <CardFooter className="flex flex-col gap-3">
+                  <div className="flex justify-between text-xl text-gray-500 p-4 w-full">
+                    <span className="text-2xl font-bold">Total</span>
+                    <span className="text-3xl font-bold text-[#8B0000]">
+                      ${total.toFixed(2)}
+                    </span>
+                  </div>
+                  {hasItems ? (
+                    <Button
+                      className="w-full h-15 text-2xl font-bold"
+                      onClick={() =>
+                        openModal('CHARGE_TABLE', {
+                          sessionId: id,
+                          participantCount: sessionData?.participants?.length ?? 1,
+                        })
+                      }
+                    >
+                      Cobrar Mesa
+                    </Button>
+                  ) : (
+                    <Button
+                      className="w-full h-15 text-2xl font-bold"
+                      onClick={() => {
+                        mutation.mutate(id!)
+                      }}
+                      disabled={mutation.isPending}
+                    >
+                      {mutation.isPending ? 'Cerrando' : 'Cerrar mesa'}
+                    </Button>
+                  )}
+                </CardFooter>
+              </>
+            )}
           </Card>
         </div>
         <GlobalDeleteModal/>
+        <ChargeTableModal/>
       </div>
     </>
   )
