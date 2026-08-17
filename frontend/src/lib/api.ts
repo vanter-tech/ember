@@ -55,14 +55,7 @@ export interface Page<T> {
 
 export type RestaurantResponse = components['schemas']['Restaurant']
 export type UpdateRestaurantPlanRequest = components['schemas']['UpdateRestaurantPlanRequest']
-
-export interface PublicBranding {
-  slug: string
-  businessName: string
-  primaryThemeColor: string
-  openingTime: string
-  closingTime: string
-}
+export type PublicBranding = components['schemas']['PublicBrandingResponse']
 
 export type AnalyticsSummaryResponse = components['schemas']['AnalyticsSummaryResponse']
 export type AnalyticsSalesResponse = components['schemas']['AnalyticsSalesResponse']
@@ -408,21 +401,7 @@ export const analyticsService = {
 
 export type StaffMemberResponse = components['schemas']['StaffMemberResponse']
 export type CreateStaffRequest = components['schemas']['CreateStaffRequest']
-
-// Hand-typed: the generated UpdateStaffProfileRequest predates the name/email fields staff
-// editing needs (same temporary gap CreateStaffRequest itself had until this backend-types.ts
-// regen) — swap for `components['schemas']['UpdateStaffProfileRequest']` next regen.
-export interface UpdateStaffProfileRequest {
-  name?: string
-  email?: string
-  active?: boolean
-  jobTitle?: string
-  shift?: string
-  contractType?: string
-  location?: string
-  efficiencyPercentage?: number
-  pendingHours?: number
-}
+export type UpdateStaffProfileRequest = components['schemas']['UpdateStaffProfileRequest']
 
 export const staffService = {
   getAll: async (): Promise<StaffMemberResponse[]> => {
