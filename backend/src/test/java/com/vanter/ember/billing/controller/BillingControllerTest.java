@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vanter.ember.billing.dto.CalculateBillRequest;
 import com.vanter.ember.billing.dto.DigitalPaymentRequest;
 import com.vanter.ember.billing.dto.PhysicalPaymentRequest;
+import com.vanter.ember.billing.dto.RequestBillingRequest;
 import com.vanter.ember.billing.dto.SplitBillRequest;
 import com.vanter.ember.billing.model.Bill;
 import com.vanter.ember.billing.model.BillSplit;
@@ -72,6 +73,38 @@ class BillingControllerTest {
                 .id(20L).bill(bill).participantName("Alice")
                 .amount(new BigDecimal("25.00")).method(PaymentMethod.PHYSICAL)
                 .status(PaymentStatus.CONFIRMED).createdAt(LocalDateTime.now()).build();
+    }
+
+    // --- POST /billing/sessions/{sessionId}/request ---
+
+    @Test
+    @WithMockUser(roles = "WAITER")
+    void requestBilling_returnsAcceptedForWaiter() throws Exception {
+        RequestBillingRequest req = new RequestBillingRequest(SplitMethod.EQUAL_PARTS, 2);
+        mockMvc.perform(post("/billing/sessions/sess-1/request")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isAccepted());
+    }
+
+    @Test
+    @WithMockUser(roles = "CUSTOMER")
+    void requestBilling_forbiddenForCustomer() throws Exception {
+        RequestBillingRequest req = new RequestBillingRequest(SplitMethod.BY_CONSUMPTION, null);
+        mockMvc.perform(post("/billing/sessions/sess-1/request")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "KITCHEN")
+    void requestBilling_forbiddenForKitchen() throws Exception {
+        RequestBillingRequest req = new RequestBillingRequest(SplitMethod.BY_CONSUMPTION, null);
+        mockMvc.perform(post("/billing/sessions/sess-1/request")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isForbidden());
     }
 
     // --- POST /billing/sessions/{sessionId}/bill ---

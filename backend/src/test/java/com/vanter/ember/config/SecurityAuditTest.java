@@ -44,6 +44,7 @@ class SecurityAuditTest {
         "DELETE, /api/sessions/sess-1/items/item-1",
         "GET,  /api/kitchen/orders",
         "GET,  /api/kitchen/display",
+        "POST, /api/billing/sessions/sess-1/request",
         "POST, /api/billing/sessions/sess-1/bill",
         "POST, /api/billing/bills/1/split",
         "POST, /api/billing/payments/physical",

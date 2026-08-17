@@ -1,5 +1,7 @@
 package com.vanter.ember.billing.service;
 
+import com.vanter.ember.billing.dto.DigitalPaymentInitiatedMessage;
+import com.vanter.ember.billing.dto.SplitPaidMessage;
 import com.vanter.ember.billing.event.PaymentCompleted;
 import com.vanter.ember.billing.model.Bill;
 import com.vanter.ember.billing.model.BillSplit;
@@ -22,6 +24,7 @@ import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,6 +39,7 @@ public class PaymentService {
     private final CashShiftRepository cashShiftRepository;
     private final UserRepository userRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final SimpMessagingTemplate messagingTemplate;
 
     @Transactional
     public Payment registerPhysicalPayment(
@@ -58,6 +62,9 @@ public class PaymentService {
 
         split.setPaid(true);
         billSplitRepository.save(split);
+        messagingTemplate.convertAndSend(
+                "/topic/session/" + bill.getSessionId(),
+                SplitPaidMessage.of(billId, participantName, true));
 
         Payment payment = paymentRepository.save(Payment.builder()
                 .bill(bill)
@@ -95,7 +102,7 @@ public class PaymentService {
                     "Payment amount " + amount + " does not match split amount " + split.getAmount());
         }
 
-        return paymentRepository.save(Payment.builder()
+        Payment payment = paymentRepository.save(Payment.builder()
                 .bill(bill)
                 .participantName(participantName)
                 .amount(amount)
@@ -105,6 +112,12 @@ public class PaymentService {
                 .processedBy(resolveUserId(processedByEmail))
                 .createdAt(LocalDateTime.now())
                 .build());
+
+        messagingTemplate.convertAndSend(
+                "/topic/session/" + bill.getSessionId(),
+                DigitalPaymentInitiatedMessage.of(payment.getId(), billId, participantName, amount));
+
+        return payment;
     }
 
     @Transactional
@@ -112,7 +125,7 @@ public class PaymentService {
         Payment payment = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Payment not found: " + paymentId));
 
-        billRepository.findByIdForUpdate(payment.getBill().getId())
+        Bill bill = billRepository.findByIdForUpdate(payment.getBill().getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Bill not found: " + payment.getBill().getId()));
 
         BillSplit split = billSplitRepository
@@ -122,6 +135,9 @@ public class PaymentService {
 
         split.setPaid(true);
         billSplitRepository.save(split);
+        messagingTemplate.convertAndSend(
+                "/topic/session/" + bill.getSessionId(),
+                SplitPaidMessage.of(bill.getId(), payment.getParticipantName(), true));
 
         payment.setStatus(PaymentStatus.CONFIRMED);
         Payment saved = paymentRepository.save(payment);

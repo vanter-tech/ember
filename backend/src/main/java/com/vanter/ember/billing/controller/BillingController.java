@@ -3,7 +3,9 @@ package com.vanter.ember.billing.controller;
 import com.vanter.ember.billing.dto.CalculateBillRequest;
 import com.vanter.ember.billing.dto.DigitalPaymentRequest;
 import com.vanter.ember.billing.dto.PhysicalPaymentRequest;
+import com.vanter.ember.billing.dto.RequestBillingRequest;
 import com.vanter.ember.billing.dto.SplitBillRequest;
+import com.vanter.ember.billing.event.BillingRequested;
 import com.vanter.ember.billing.model.Bill;
 import com.vanter.ember.billing.model.BillSplit;
 import com.vanter.ember.billing.model.Payment;
@@ -15,6 +17,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -33,6 +36,19 @@ public class BillingController {
 
     private final BillingService billingService;
     private final PaymentService paymentService;
+    private final ApplicationEventPublisher eventPublisher;
+
+    @Operation(summary = "Calculate and split the bill for a session in one step, "
+            + "broadcasting it to everyone on the session's WebSocket topic (WAITER)")
+    @PostMapping("/sessions/{sessionId}/request")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    @PreAuthorize("hasRole('WAITER')")
+    public void requestBilling(@PathVariable String sessionId,
+                                @Valid @RequestBody RequestBillingRequest request) {
+        eventPublisher.publishEvent(new BillingRequested(
+                sessionId, request.splitMethod(),
+                request.participantCount() == null ? 0 : request.participantCount()));
+    }
 
     @Operation(summary = "Calculate bill for a session (WAITER)")
     @PostMapping("/sessions/{sessionId}/bill")

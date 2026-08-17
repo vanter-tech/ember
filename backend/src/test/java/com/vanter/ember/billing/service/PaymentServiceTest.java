@@ -30,6 +30,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -55,6 +56,7 @@ class PaymentServiceTest {
     @Mock CashShiftRepository cashShiftRepository;
     @Mock UserRepository userRepository;
     @Mock ApplicationEventPublisher eventPublisher;
+    @Mock SimpMessagingTemplate messagingTemplate;
     @InjectMocks PaymentService paymentService;
 
     private static final UUID TABLE_ID = UUID.randomUUID();
@@ -148,6 +150,31 @@ class PaymentServiceTest {
         ArgumentCaptor<BillSplit> captor = ArgumentCaptor.forClass(BillSplit.class);
         verify(billSplitRepository).save(captor.capture());
         assertThat(captor.getValue().isPaid()).isTrue();
+    }
+
+    @Test
+    void registerPhysicalPayment_broadcastsSplitPaidToSessionTopic() {
+        Bill bill = sampleBill();
+        BillSplit split = unpaidSplit(bill, "Alice", "12.50");
+        when(cashShiftRepository.findOpenForUpdate(any())).thenReturn(Optional.of(openShift()));
+        when(userRepository.findByEmail("alice@ember.local")).thenReturn(Optional.of(waiterUser()));
+        when(billRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(bill));
+        when(billSplitRepository.findByBillIdAndParticipantName(1L, "Alice"))
+                .thenReturn(Optional.of(split));
+        when(billSplitRepository.findByBillId(1L))
+                .thenReturn(List.of(unpaidSplit(bill, "Bob", "10.00")));
+        when(paymentRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        paymentService.registerPhysicalPayment(1L, "Alice", new BigDecimal("12.50"), "alice@ember.local");
+
+        ArgumentCaptor<com.vanter.ember.billing.dto.SplitPaidMessage> captor =
+                ArgumentCaptor.forClass(com.vanter.ember.billing.dto.SplitPaidMessage.class);
+        verify(messagingTemplate).convertAndSend(
+                org.mockito.ArgumentMatchers.eq("/topic/session/sess-1"), captor.capture());
+        assertThat(captor.getValue().type()).isEqualTo("SPLIT_PAID");
+        assertThat(captor.getValue().billId()).isEqualTo(1L);
+        assertThat(captor.getValue().participantName()).isEqualTo("Alice");
+        assertThat(captor.getValue().paid()).isTrue();
     }
 
     @Test
@@ -268,6 +295,32 @@ class PaymentServiceTest {
     }
 
     @Test
+    void initiateDigitalPayment_broadcastsPaymentInitiatedToSessionTopic() {
+        Bill bill = sampleBill();
+        when(userRepository.findByEmail("alice@ember.local")).thenReturn(Optional.of(waiterUser()));
+        when(billRepository.findById(1L)).thenReturn(Optional.of(bill));
+        when(billSplitRepository.findByBillIdAndParticipantName(1L, "Alice"))
+                .thenReturn(Optional.of(unpaidSplit(bill, "Alice", "12.50")));
+        when(paymentRepository.save(any())).thenAnswer(inv -> {
+            Payment p = inv.getArgument(0);
+            p.setId(21L);
+            return p;
+        });
+
+        paymentService.initiateDigitalPayment(1L, "Alice", new BigDecimal("12.50"), "alice@ember.local");
+
+        ArgumentCaptor<com.vanter.ember.billing.dto.DigitalPaymentInitiatedMessage> captor =
+                ArgumentCaptor.forClass(com.vanter.ember.billing.dto.DigitalPaymentInitiatedMessage.class);
+        verify(messagingTemplate).convertAndSend(
+                org.mockito.ArgumentMatchers.eq("/topic/session/sess-1"), captor.capture());
+        assertThat(captor.getValue().type()).isEqualTo("DIGITAL_PAYMENT_INITIATED");
+        assertThat(captor.getValue().paymentId()).isEqualTo(21L);
+        assertThat(captor.getValue().billId()).isEqualTo(1L);
+        assertThat(captor.getValue().participantName()).isEqualTo("Alice");
+        assertThat(captor.getValue().amount()).isEqualByComparingTo("12.50");
+    }
+
+    @Test
     void initiateDigitalPayment_throwsWhenBillNotFound() {
         when(billRepository.findById(99L)).thenReturn(Optional.empty());
 
@@ -346,6 +399,30 @@ class PaymentServiceTest {
         ArgumentCaptor<BillSplit> captor = ArgumentCaptor.forClass(BillSplit.class);
         verify(billSplitRepository).save(captor.capture());
         assertThat(captor.getValue().isPaid()).isTrue();
+    }
+
+    @Test
+    void confirmDigitalPayment_broadcastsSplitPaidToSessionTopic() {
+        Bill bill = sampleBill();
+        Payment payment = pendingDigitalPayment(bill, "Alice");
+        BillSplit split = unpaidSplit(bill, "Alice", "12.50");
+        when(paymentRepository.findById(20L)).thenReturn(Optional.of(payment));
+        when(billRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(bill));
+        when(billSplitRepository.findByBillIdAndParticipantName(1L, "Alice"))
+                .thenReturn(Optional.of(split));
+        when(billSplitRepository.findByBillId(1L))
+                .thenReturn(List.of(unpaidSplit(bill, "Bob", "10.00")));
+        when(paymentRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        paymentService.confirmDigitalPayment(20L);
+
+        ArgumentCaptor<com.vanter.ember.billing.dto.SplitPaidMessage> captor =
+                ArgumentCaptor.forClass(com.vanter.ember.billing.dto.SplitPaidMessage.class);
+        verify(messagingTemplate).convertAndSend(
+                org.mockito.ArgumentMatchers.eq("/topic/session/sess-1"), captor.capture());
+        assertThat(captor.getValue().type()).isEqualTo("SPLIT_PAID");
+        assertThat(captor.getValue().participantName()).isEqualTo("Alice");
+        assertThat(captor.getValue().paid()).isTrue();
     }
 
     @Test
