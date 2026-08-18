@@ -63,6 +63,44 @@ export interface LoyaltySettings {
 }
 export type SettingsResponseWithLoyalty = SettingsResponse & { loyalty?: LoyaltySettings }
 
+// Interim hand-typed shapes for /loyalty/rewards (EMB-CLP-06/07) — same "not regenerated yet"
+// reason as LoyaltySettings above; swap for components['schemas'][...] once `pnpm run openapi` runs.
+export type LoyaltyTier = 'BRONCE' | 'PLATA' | 'ORO' | 'PLATINO'
+export interface LoyaltyRewardResponse {
+  id: number
+  name: string
+  description: string | null
+  requiredTier: LoyaltyTier
+  active: boolean
+  createdAt: string
+}
+export interface CreateLoyaltyRewardRequest {
+  name: string
+  description?: string
+  requiredTier: LoyaltyTier
+}
+export interface UpdateLoyaltyRewardRequest {
+  name?: string
+  description?: string
+  requiredTier?: LoyaltyTier
+  active?: boolean
+}
+
+export const loyaltyRewardService = {
+  list: async (): Promise<LoyaltyRewardResponse[]> => {
+    const { data } = await api.get<LoyaltyRewardResponse[]>('/loyalty/rewards')
+    return data
+  },
+  create: async (request: CreateLoyaltyRewardRequest): Promise<LoyaltyRewardResponse> => {
+    const { data } = await api.post<LoyaltyRewardResponse>('/loyalty/rewards', request)
+    return data
+  },
+  update: async (id: number, request: UpdateLoyaltyRewardRequest): Promise<LoyaltyRewardResponse> => {
+    const { data } = await api.patch<LoyaltyRewardResponse>(`/loyalty/rewards/${id}`, request)
+    return data
+  },
+}
+
 export interface Page<T> {
   content: T[]
   totalElements: number
