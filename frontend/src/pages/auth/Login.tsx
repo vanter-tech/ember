@@ -7,6 +7,7 @@ import toast from 'react-hot-toast'
 import { useAuthStore } from '../../store/authStore'
 import { authService } from '@/lib/api'
 import { LanguageSwitcher } from '@/components/LanguageSwitcher'
+import { useTranslation } from '@/lib/i18n'
 
 import { Button } from '../../components/ui/button'
 import { Input } from '../../components/ui/input'
@@ -35,6 +36,8 @@ type LoginFormInputs = z.infer<typeof loginSchema>
 export const Login = () => {
   const navigate = useNavigate()
   const { setAuth } = useAuthStore()
+  const { t: tAuth } = useTranslation('auth')
+  const { t: tCommon } = useTranslation('common')
 
   const form = useForm<LoginFormInputs>({
     resolver: zodResolver(loginSchema),
@@ -93,12 +96,12 @@ export const Login = () => {
         </div>
         <CardHeader>
           <CardTitle className="text-3xl text-center text-[#920703] font-bold">
-            Ember
+            {tCommon('brandFallback')}
             <br />
-            Please log in to continue.
+            {tAuth('loginTagline')}
           </CardTitle>
           <CardDescription className="text-center">
-            Type your email and password to access your account.
+            {tAuth('loginDescription')}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -136,7 +139,7 @@ export const Login = () => {
                         </svg>
 
                         <Input
-                          placeholder="Enter your email"
+                          placeholder={tAuth('emailPlaceholder')}
                           {...field}
                           className="pl-10"
                           autoComplete="email"
@@ -180,7 +183,7 @@ export const Login = () => {
                         </svg>
                         <Input
                           className="pl-10"
-                          placeholder="Enter your password"
+                          placeholder={tAuth('passwordPlaceholder')}
                           type="password"
                           autoComplete="current-password"
                           {...field}
@@ -197,11 +200,11 @@ export const Login = () => {
                 className="w-full"
                 disabled={form.formState.isSubmitting}
               >
-                {form.formState.isSubmitting ? 'Logging in...' : 'Login'}
+                {form.formState.isSubmitting ? tAuth('loggingIn') : tAuth('login')}
               </Button>
 
               <Button asChild variant="outline" className="w-full text-center mb-3">
-                <Link to="/register">Register</Link>
+                <Link to="/register">{tAuth('registerLink')}</Link>
               </Button>
             </form>
           </Form>
