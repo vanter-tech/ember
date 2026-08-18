@@ -178,6 +178,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/loyalty/rewards": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List all rewards for the current tenant, including inactive (ADMIN) */
+        get: operations["list"];
+        put?: never;
+        /** Create a reward catalog entry (ADMIN) */
+        post: operations["create_1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/catalog/items": {
         parameters: {
             query?: never;
@@ -189,7 +207,7 @@ export interface paths {
         get: operations["getAll_1"];
         put?: never;
         /** Create a menu item (ADMIN) */
-        post: operations["create_1"];
+        post: operations["create_2"];
         delete?: never;
         options?: never;
         head?: never;
@@ -207,7 +225,7 @@ export interface paths {
         get: operations["getAll_2"];
         put?: never;
         /** Create a category (ADMIN) */
-        post: operations["create_2"];
+        post: operations["create_3"];
         delete?: never;
         options?: never;
         head?: never;
@@ -504,6 +522,23 @@ export interface paths {
         patch: operations["changePassword"];
         trace?: never;
     };
+    "/loyalty/rewards/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Edit a reward's fields / toggle active (ADMIN) */
+        patch: operations["update_2"];
+        trace?: never;
+    };
     "/kitchen/orders/{orderId}/items/{itemId}/status": {
         parameters: {
             query?: never;
@@ -699,6 +734,23 @@ export interface paths {
             cookie?: never;
         };
         get: operations["getMenus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/loyalty/accounts/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Caller's own loyalty account for the current tenant (CUSTOMER) */
+        get: operations["me"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1062,6 +1114,21 @@ export interface components {
             autoPrintTickets?: boolean;
             printCustomerReceipt?: boolean;
         };
+        LoyaltySettings: {
+            enabled?: boolean;
+            /** @enum {string} */
+            accrualMode?: "BY_VISIT" | "BY_AMOUNT_SPENT";
+            /** Format: int32 */
+            pointsPerVisit?: number;
+            /** Format: double */
+            pointsPerCurrencyUnit?: number;
+            /** Format: int32 */
+            plataThreshold?: number;
+            /** Format: int32 */
+            oroThreshold?: number;
+            /** Format: int32 */
+            platinoThreshold?: number;
+        };
         MenuSettings: {
             showOutOfStockItems?: boolean;
             enableItemSearch?: boolean;
@@ -1080,6 +1147,7 @@ export interface components {
             space?: components["schemas"]["SpaceSettings"];
             paymentGateway?: components["schemas"]["PaymentGatewaySettings"];
             businessHours?: components["schemas"]["BusinessHoursSettings"];
+            loyalty?: components["schemas"]["LoyaltySettings"];
         };
         SpaceSettings: {
             /** Format: int32 */
@@ -1225,6 +1293,23 @@ export interface components {
             operatorId?: string;
             name?: string;
             email?: string;
+        };
+        CreateLoyaltyRewardRequest: {
+            name: string;
+            description?: string;
+            /** @enum {string} */
+            requiredTier: "BRONCE" | "PLATA" | "ORO" | "PLATINO";
+        };
+        LoyaltyRewardResponse: {
+            /** Format: int64 */
+            id?: number;
+            name?: string;
+            description?: string;
+            /** @enum {string} */
+            requiredTier?: "BRONCE" | "PLATA" | "ORO" | "PLATINO";
+            active?: boolean;
+            /** Format: date-time */
+            createdAt?: string;
         };
         RecordMovementRequest: {
             /** @enum {string} */
@@ -1416,6 +1501,13 @@ export interface components {
             currentPassword: string;
             newPassword: string;
         };
+        UpdateLoyaltyRewardRequest: {
+            name?: string;
+            description?: string;
+            /** @enum {string} */
+            requiredTier?: "BRONCE" | "PLATA" | "ORO" | "PLATINO";
+            active?: boolean;
+        };
         UpdateItemStatusRequest: {
             /** @enum {string} */
             status: "DRAFT" | "PENDING" | "PREPARING" | "READY" | "DELIVERED";
@@ -1555,14 +1647,14 @@ export interface components {
             totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
-            first?: boolean;
-            last?: boolean;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["PlatformRestaurantSummaryResponse"][];
             /** Format: int32 */
             number?: number;
             sort?: components["schemas"]["SortObject"];
+            first?: boolean;
+            last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
@@ -1572,11 +1664,11 @@ export interface components {
             /** Format: int64 */
             offset?: number;
             sort?: components["schemas"]["SortObject"];
+            /** Format: int32 */
+            pageSize?: number;
             paged?: boolean;
             /** Format: int32 */
             pageNumber?: number;
-            /** Format: int32 */
-            pageSize?: number;
             unpaged?: boolean;
         };
         SortObject: {
@@ -1607,14 +1699,14 @@ export interface components {
             totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
-            first?: boolean;
-            last?: boolean;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["PlatformAuditLogResponse"][];
             /** Format: int32 */
             number?: number;
             sort?: components["schemas"]["SortObject"];
+            first?: boolean;
+            last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
@@ -1642,19 +1734,39 @@ export interface components {
             imgUrl?: string;
             items?: components["schemas"]["MenuItemResponse"][];
         };
+        LoyaltyAccountResponse: {
+            /** Format: int32 */
+            totalPoints?: number;
+            /** @enum {string} */
+            tier?: "BRONCE" | "PLATA" | "ORO" | "PLATINO";
+            /** @enum {string} */
+            nextTier?: "BRONCE" | "PLATA" | "ORO" | "PLATINO";
+            /** Format: int32 */
+            pointsToNextTier?: number;
+            rewards?: components["schemas"]["RewardCatalogEntryResponse"][];
+        };
+        RewardCatalogEntryResponse: {
+            /** Format: int64 */
+            id?: number;
+            name?: string;
+            description?: string;
+            /** @enum {string} */
+            requiredTier?: "BRONCE" | "PLATA" | "ORO" | "PLATINO";
+            unlocked?: boolean;
+        };
         PageKitchenOrder: {
             /** Format: int64 */
             totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
-            first?: boolean;
-            last?: boolean;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["KitchenOrder"][];
             /** Format: int32 */
             number?: number;
             sort?: components["schemas"]["SortObject"];
+            first?: boolean;
+            last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
@@ -1686,14 +1798,14 @@ export interface components {
             totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
-            first?: boolean;
-            last?: boolean;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["MenuItemResponse"][];
             /** Format: int32 */
             number?: number;
             sort?: components["schemas"]["SortObject"];
+            first?: boolean;
+            last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
@@ -1704,14 +1816,14 @@ export interface components {
             totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
-            first?: boolean;
-            last?: boolean;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["CategoryResponse"][];
             /** Format: int32 */
             number?: number;
             sort?: components["schemas"]["SortObject"];
+            first?: boolean;
+            last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
@@ -1722,14 +1834,14 @@ export interface components {
             totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
-            first?: boolean;
-            last?: boolean;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["CashShiftResponse"][];
             /** Format: int32 */
             number?: number;
             sort?: components["schemas"]["SortObject"];
+            first?: boolean;
+            last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
@@ -2254,6 +2366,50 @@ export interface operations {
             };
         };
     };
+    list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["LoyaltyRewardResponse"][];
+                };
+            };
+        };
+    };
+    create_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateLoyaltyRewardRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["LoyaltyRewardResponse"];
+                };
+            };
+        };
+    };
     getAll_1: {
         parameters: {
             query: {
@@ -2277,7 +2433,7 @@ export interface operations {
             };
         };
     };
-    create_1: {
+    create_2: {
         parameters: {
             query?: never;
             header?: never;
@@ -2327,7 +2483,7 @@ export interface operations {
             };
         };
     };
-    create_2: {
+    create_3: {
         parameters: {
             query?: never;
             header?: never;
@@ -2791,6 +2947,32 @@ export interface operations {
             };
         };
     };
+    update_2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateLoyaltyRewardRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["LoyaltyRewardResponse"];
+                };
+            };
+        };
+    };
     updateItemStatus: {
         parameters: {
             query?: never;
@@ -3067,6 +3249,26 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["MenuDTO"][];
+                };
+            };
+        };
+    };
+    me: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["LoyaltyAccountResponse"];
                 };
             };
         };

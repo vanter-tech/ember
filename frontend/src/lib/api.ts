@@ -48,43 +48,13 @@ export interface WaiterBillState {
   pendingDigitalPayments?: PendingDigitalPayment[]
 }
 
-// Interim hand-typed shape for SettingsPayload.loyalty (EMB-CLP-02) — backend-types.ts has not
-// been regenerated against the new field yet. Swap for components['schemas']['LoyaltySettings']
-// once `pnpm run openapi` is re-run (same pattern as reports 128/134).
-export type LoyaltyAccrualMode = 'BY_VISIT' | 'BY_AMOUNT_SPENT'
-export interface LoyaltySettings {
-  enabled: boolean
-  accrualMode: LoyaltyAccrualMode
-  pointsPerVisit: number
-  pointsPerCurrencyUnit: number
-  plataThreshold: number
-  oroThreshold: number
-  platinoThreshold: number
-}
-export type SettingsResponseWithLoyalty = SettingsResponse & { loyalty?: LoyaltySettings }
+export type LoyaltySettings = components['schemas']['LoyaltySettings']
+export type LoyaltyAccrualMode = NonNullable<LoyaltySettings['accrualMode']>
 
-// Interim hand-typed shapes for /loyalty/rewards (EMB-CLP-06/07) — same "not regenerated yet"
-// reason as LoyaltySettings above; swap for components['schemas'][...] once `pnpm run openapi` runs.
-export type LoyaltyTier = 'BRONCE' | 'PLATA' | 'ORO' | 'PLATINO'
-export interface LoyaltyRewardResponse {
-  id: number
-  name: string
-  description: string | null
-  requiredTier: LoyaltyTier
-  active: boolean
-  createdAt: string
-}
-export interface CreateLoyaltyRewardRequest {
-  name: string
-  description?: string
-  requiredTier: LoyaltyTier
-}
-export interface UpdateLoyaltyRewardRequest {
-  name?: string
-  description?: string
-  requiredTier?: LoyaltyTier
-  active?: boolean
-}
+export type LoyaltyRewardResponse = components['schemas']['LoyaltyRewardResponse']
+export type CreateLoyaltyRewardRequest = components['schemas']['CreateLoyaltyRewardRequest']
+export type UpdateLoyaltyRewardRequest = components['schemas']['UpdateLoyaltyRewardRequest']
+export type LoyaltyTier = NonNullable<LoyaltyRewardResponse['requiredTier']>
 
 export const loyaltyRewardService = {
   list: async (): Promise<LoyaltyRewardResponse[]> => {
@@ -101,22 +71,8 @@ export const loyaltyRewardService = {
   },
 }
 
-// Interim hand-typed shape for GET /loyalty/accounts/me (EMB-CLP-08) — same "not regenerated yet"
-// reason as LoyaltyRewardResponse above.
-export interface RewardCatalogEntry {
-  id: number
-  name: string
-  description: string | null
-  requiredTier: LoyaltyTier
-  unlocked: boolean
-}
-export interface LoyaltyAccountResponse {
-  totalPoints: number
-  tier: LoyaltyTier
-  nextTier: LoyaltyTier | null
-  pointsToNextTier: number | null
-  rewards: RewardCatalogEntry[]
-}
+export type RewardCatalogEntry = components['schemas']['RewardCatalogEntryResponse']
+export type LoyaltyAccountResponse = components['schemas']['LoyaltyAccountResponse']
 
 export const loyaltyAccountService = {
   me: async (): Promise<LoyaltyAccountResponse> => {

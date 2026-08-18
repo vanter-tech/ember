@@ -57,7 +57,7 @@ export const EditRewardModal = () => {
   })
 
   const mutation = useMutation({
-    mutationFn: (data: EditRewardInputs) => loyaltyRewardService.update(reward!.id, data),
+    mutationFn: (data: EditRewardInputs) => loyaltyRewardService.update(reward!.id!, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['loyaltyRewards'] })
       toast.success('Recompensa actualizada.')

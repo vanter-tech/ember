@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { SettingsService, loyaltyRewardService } from '@/lib/api';
-import type { LoyaltyAccrualMode, LoyaltySettings as LoyaltySettingsPayload, SettingsResponseWithLoyalty } from '@/lib/api';
+import type { LoyaltyAccrualMode, LoyaltySettings as LoyaltySettingsPayload, SettingsResponse } from '@/lib/api';
 import { Gift, Loader2, Pencil, Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -34,7 +34,7 @@ export const LoyaltySettings = () => {
 
   const { data: settings, isPending: isLoadingSettings } = useQuery({
     queryKey: ['restaurantSettings'],
-    queryFn: () => SettingsService.getSettings() as Promise<SettingsResponseWithLoyalty>,
+    queryFn: SettingsService.getSettings,
   });
 
   const { data: rewards, isPending: isLoadingRewards } = useQuery({
@@ -53,7 +53,7 @@ export const LoyaltySettings = () => {
   const currentPlatinoThreshold = draftLoyalty?.platinoThreshold ?? settings?.loyalty?.platinoThreshold ?? LOYALTY_DEFAULTS.platinoThreshold;
 
   const updateSettingsMutation = useMutation({
-    mutationFn: (updatedPayload: SettingsResponseWithLoyalty) => SettingsService.updateSettings(updatedPayload),
+    mutationFn: (updatedPayload: SettingsResponse) => SettingsService.updateSettings(updatedPayload),
     onSuccess: () => {
       setDraftLoyalty(undefined);
       queryClient.invalidateQueries({ queryKey: ['restaurantSettings'] });
@@ -80,7 +80,7 @@ export const LoyaltySettings = () => {
   const handleSave = () => {
     if (!settings) return;
 
-    const payloadToSave: SettingsResponseWithLoyalty = {
+    const payloadToSave: SettingsResponse = {
       ...settings,
       loyalty: {
         enabled: currentEnabled,
@@ -286,8 +286,8 @@ export const LoyaltySettings = () => {
                     )}
                   </TableCell>
                   <TableCell>
-                    <Badge className={TIER_BADGE_CLASSNAMES[reward.requiredTier]}>
-                      {TIER_LABELS[reward.requiredTier]}
+                    <Badge className={TIER_BADGE_CLASSNAMES[reward.requiredTier!]}>
+                      {TIER_LABELS[reward.requiredTier!]}
                     </Badge>
                   </TableCell>
                   <TableCell>

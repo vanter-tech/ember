@@ -109,7 +109,7 @@ export const Bill = () => {
                       ¡Ganaste puntos! Ahora tienes {loyaltyAccount.totalPoints} pts
                     </span>
                     <span className="text-sm text-gray-500">
-                      Nivel {TIER_LABELS[loyaltyAccount.tier]}
+                      Nivel {TIER_LABELS[loyaltyAccount.tier!]}
                       {loyaltyAccount.nextTier &&
                         ` — ${loyaltyAccount.pointsToNextTier} pts para ${TIER_LABELS[loyaltyAccount.nextTier]}`}
                     </span>
