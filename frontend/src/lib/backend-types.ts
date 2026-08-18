@@ -759,6 +759,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/loyalty/accounts/me/visits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Caller's most recent visits for the current tenant (CUSTOMER); 404 if no tenant is bound (customer has never joined a table anywhere) */
+        get: operations["myVisits"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/kitchen/orders": {
         parameters: {
             query?: never;
@@ -1653,20 +1670,20 @@ export interface components {
             /** Format: int32 */
             number?: number;
             sort?: components["schemas"]["SortObject"];
-            first?: boolean;
-            last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
+            first?: boolean;
+            last?: boolean;
             empty?: boolean;
         };
         PageableObject: {
             /** Format: int64 */
             offset?: number;
             sort?: components["schemas"]["SortObject"];
+            paged?: boolean;
             /** Format: int32 */
             pageSize?: number;
-            paged?: boolean;
             /** Format: int32 */
             pageNumber?: number;
             unpaged?: boolean;
@@ -1705,11 +1722,11 @@ export interface components {
             /** Format: int32 */
             number?: number;
             sort?: components["schemas"]["SortObject"];
-            first?: boolean;
-            last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
+            first?: boolean;
+            last?: boolean;
             empty?: boolean;
         };
         PlatformAuditLogResponse: {
@@ -1754,6 +1771,13 @@ export interface components {
             requiredTier?: "BRONCE" | "PLATA" | "ORO" | "PLATINO";
             unlocked?: boolean;
         };
+        LoyaltyVisitResponse: {
+            /** Format: date-time */
+            visitedAt?: string;
+            amountPaid?: number;
+            /** Format: int32 */
+            pointsEarned?: number;
+        };
         PageKitchenOrder: {
             /** Format: int64 */
             totalElements?: number;
@@ -1765,11 +1789,11 @@ export interface components {
             /** Format: int32 */
             number?: number;
             sort?: components["schemas"]["SortObject"];
-            first?: boolean;
-            last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
+            first?: boolean;
+            last?: boolean;
             empty?: boolean;
         };
         KitchenDisplayEntry: {
@@ -1804,11 +1828,11 @@ export interface components {
             /** Format: int32 */
             number?: number;
             sort?: components["schemas"]["SortObject"];
-            first?: boolean;
-            last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
+            first?: boolean;
+            last?: boolean;
             empty?: boolean;
         };
         PageCategoryResponse: {
@@ -1822,11 +1846,11 @@ export interface components {
             /** Format: int32 */
             number?: number;
             sort?: components["schemas"]["SortObject"];
-            first?: boolean;
-            last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
+            first?: boolean;
+            last?: boolean;
             empty?: boolean;
         };
         PageCashShiftResponse: {
@@ -1840,11 +1864,11 @@ export interface components {
             /** Format: int32 */
             number?: number;
             sort?: components["schemas"]["SortObject"];
-            first?: boolean;
-            last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
+            first?: boolean;
+            last?: boolean;
             empty?: boolean;
         };
         CashShiftDetailResponse: {
@@ -3269,6 +3293,26 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["LoyaltyAccountResponse"];
+                };
+            };
+        };
+    };
+    myVisits: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["LoyaltyVisitResponse"][];
                 };
             };
         };

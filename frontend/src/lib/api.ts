@@ -73,10 +73,15 @@ export const loyaltyRewardService = {
 
 export type RewardCatalogEntry = components['schemas']['RewardCatalogEntryResponse']
 export type LoyaltyAccountResponse = components['schemas']['LoyaltyAccountResponse']
+export type LoyaltyVisitResponse = components['schemas']['LoyaltyVisitResponse']
 
 export const loyaltyAccountService = {
   me: async (): Promise<LoyaltyAccountResponse> => {
     const { data } = await api.get<LoyaltyAccountResponse>('/loyalty/accounts/me')
+    return data
+  },
+  visits: async (): Promise<LoyaltyVisitResponse[]> => {
+    const { data } = await api.get<LoyaltyVisitResponse[]>('/loyalty/accounts/me/visits')
     return data
   },
 }
