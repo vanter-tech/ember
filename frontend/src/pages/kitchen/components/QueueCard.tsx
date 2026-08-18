@@ -42,7 +42,7 @@ export const QueueCard = ({order}: {order: kitchenOrders}) => {
         </CardHeader>
         <CardContent className='flex-1 overflow-y-auto px-6'>
             <ul className='space-y-4'>
-                {order.items?.map((item) => {
+                {order.items?.filter((item) => item.status !== 'DELIVERED').map((item) => {
                   const status = item.status ?? 'PENDING'
                   const next = NEXT_STATUS[status]
                   return (

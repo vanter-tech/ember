@@ -56,7 +56,7 @@ export const FocusedCard = ({ order }: { order: kitchenOrders }) => {
           </CardHeader>
           <CardContent>
             <ul className="flex flex-wrap gap-3">
-              {order.items?.map((item) => {
+              {order.items?.filter((item) => item.status !== 'DELIVERED').map((item) => {
                 const status = item.status ?? 'PENDING'
                 const next = NEXT_STATUS[status]
                 return (
