@@ -4,6 +4,7 @@ import { QueueCard } from './components/QueueCard'
 import { FocusedCard } from './components/FocusedCard'
 import { useWebsocketStore } from '@/store/websocket'
 import { Badge } from '@/components/ui/badge'
+import { LanguageSwitcher } from '@/components/LanguageSwitcher'
 
 export const OrdersDisplays = () => {
   const isConnected = useWebsocketStore((state) => state.isConnected)
@@ -53,9 +54,12 @@ export const OrdersDisplays = () => {
           />
           {isConnected ? 'Conectado' : 'Desconectado'}
         </Badge>
-        <h1 className="text-3xl font-bold text-[#8c1717] tracking-tight">
-          Ember
-        </h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-3xl font-bold text-[#8c1717] tracking-tight">
+            Ember
+          </h1>
+          <LanguageSwitcher />
+        </div>
         <span className="text-sm text-gray-500 mt-1">
           Monitor de cocina - KDS
         </span>

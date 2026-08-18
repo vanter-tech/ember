@@ -4,6 +4,7 @@ import { useAuthStore } from '../store/authStore'
 import { Search, Plus, Clock } from 'lucide-react'
 import { useUIStore, type ModalType } from '@/store/uiStore'
 import { settingStore } from '@/store/settingStore'
+import { LanguageSwitcher } from '@/components/LanguageSwitcher'
 
 export const TopNav = () => {
   let actionType: ModalType | null = null
@@ -61,13 +62,14 @@ export const TopNav = () => {
       className="w-full bg-white rounded-2xl shadows-sm border border-zinc-100 px-6
         py-3 flex items-center justify-between mb-6"
     >
-      <div className="flex items-center ">
+      <div className="flex items-center gap-3">
         <h1
           className="text-3xl font-bold
                 text-[#8c1717] tracking-tight"
         >
           {settings?.branding?.businessName || 'Ember'}
         </h1>
+        <LanguageSwitcher />
       </div>
       <div className="flex-1 max-w-md mx-8">
         <div

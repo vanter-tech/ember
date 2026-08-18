@@ -6,6 +6,7 @@ import axios from 'axios'
 import toast from 'react-hot-toast'
 import { useAuthStore } from '../../store/authStore'
 import { authService } from '@/lib/api'
+import { LanguageSwitcher } from '@/components/LanguageSwitcher'
 
 import { Button } from '../../components/ui/button'
 import { Input } from '../../components/ui/input'
@@ -86,7 +87,10 @@ export const Login = () => {
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-slate-50">
-      <Card className="w-full max-w-md shadow-lg">
+      <Card className="w-full max-w-md shadow-lg relative">
+        <div className="absolute top-4 right-4">
+          <LanguageSwitcher />
+        </div>
         <CardHeader>
           <CardTitle className="text-3xl text-center text-[#920703] font-bold">
             Ember

@@ -13,6 +13,7 @@ import {
 import { useEffect, useState } from 'react'
 import { ArrowLeft, Plus, Receipt } from 'lucide-react'
 import { useWebsocketStore } from '@/store/websocket'
+import { LanguageSwitcher } from '@/components/LanguageSwitcher'
 import { useSessionStore } from '@/store/sessionStore'
 import { ParticipantsPopUp } from '@/pages/customer/components/ParticipantsPopUp'
 import { ItemsFloatingIsland } from './components/ItemsFloatingIsland'
@@ -111,6 +112,7 @@ export const Menu = () => {
           <h1 className="text-3xl font-bold text-[#8c1717] tracking-tight">
             Ember
           </h1>
+          <LanguageSwitcher />
         </div>
         <div className="flex flex-col gap-4 p-4">
           <div className="flex items-center justify-between p-4">
