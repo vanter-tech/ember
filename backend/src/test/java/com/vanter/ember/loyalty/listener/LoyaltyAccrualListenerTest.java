@@ -121,8 +121,8 @@ class LoyaltyAccrualListenerTest {
 
         listener.handlePaymentCompleted(new PaymentCompleted(SESSION_ID, UUID.randomUUID(), BILL_ID));
 
-        verify(loyaltyAccountService).credit(eq(aliceAccount), eq(30), eq("BILL_SETTLED"), eq(BILL_ID));
-        verify(loyaltyAccountService).credit(eq(bobAccount), eq(20), eq("BILL_SETTLED"), eq(BILL_ID));
+        verify(loyaltyAccountService).credit(eq(aliceAccount), eq(30), eq("BILL_SETTLED"), eq(BILL_ID), eq(aliceSplit.getAmount()));
+        verify(loyaltyAccountService).credit(eq(bobAccount), eq(20), eq("BILL_SETTLED"), eq(BILL_ID), eq(bobSplit.getAmount()));
     }
 
     @Test
@@ -139,6 +139,6 @@ class LoyaltyAccrualListenerTest {
         listener.handlePaymentCompleted(new PaymentCompleted(SESSION_ID, UUID.randomUUID(), BILL_ID));
 
         verify(loyaltyAccountService, never()).findOrCreate(any(), any());
-        verify(loyaltyAccountService, never()).credit(any(), anyInt(), any(), any());
+        verify(loyaltyAccountService, never()).credit(any(), anyInt(), any(), any(), any());
     }
 }

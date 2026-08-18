@@ -60,6 +60,6 @@ public class LoyaltyAccrualListener {
             Long billId) {
         int points = loyaltyService.computeAccrualPoints(split.getAmount(), settings);
         LoyaltyAccount account = loyaltyAccountService.findOrCreate(tenantId, userId);
-        loyaltyAccountService.credit(account, points, REASON_BILL_SETTLED, billId);
+        loyaltyAccountService.credit(account, points, REASON_BILL_SETTLED, billId, split.getAmount());
     }
 }

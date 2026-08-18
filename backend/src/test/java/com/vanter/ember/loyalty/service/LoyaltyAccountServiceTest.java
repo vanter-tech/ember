@@ -6,7 +6,10 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import com.vanter.ember.loyalty.model.LoyaltyAccount;
+import com.vanter.ember.loyalty.model.LoyaltyTransaction;
 import com.vanter.ember.loyalty.repository.LoyaltyAccountRepository;
+import com.vanter.ember.loyalty.repository.LoyaltyTransactionRepository;
+import java.math.BigDecimal;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -20,6 +23,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class LoyaltyAccountServiceTest {
 
     @Mock LoyaltyAccountRepository loyaltyAccountRepository;
+    @Mock LoyaltyTransactionRepository loyaltyTransactionRepository;
     @InjectMocks LoyaltyAccountService loyaltyAccountService;
 
     private static final UUID TENANT_ID = UUID.randomUUID();
@@ -57,5 +61,21 @@ class LoyaltyAccountServiceTest {
         assertThat(result).isSameAs(existing);
         verify(loyaltyAccountRepository).findByTenantIdAndUserId(TENANT_ID, USER_ID);
         verifyNoMoreInteractions(loyaltyAccountRepository);
+    }
+
+    @Test
+    void credit_persistsAmountOnTheLedgerRow() {
+        LoyaltyAccount account = LoyaltyAccount.builder().id(1L).userId(USER_ID).totalPoints(10).build();
+
+        loyaltyAccountService.credit(account, 5, "BILL_SETTLED", 42L, new BigDecimal("30.00"));
+
+        assertThat(account.getTotalPoints()).isEqualTo(15);
+        verify(loyaltyAccountRepository).save(account);
+        ArgumentCaptor<LoyaltyTransaction> captor = ArgumentCaptor.forClass(LoyaltyTransaction.class);
+        verify(loyaltyTransactionRepository).save(captor.capture());
+        assertThat(captor.getValue().getAmount()).isEqualByComparingTo("30.00");
+        assertThat(captor.getValue().getBillId()).isEqualTo(42L);
+        assertThat(captor.getValue().getPoints()).isEqualTo(5);
+        assertThat(captor.getValue().getReason()).isEqualTo("BILL_SETTLED");
     }
 }

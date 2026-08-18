@@ -9,6 +9,7 @@ import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
@@ -55,6 +56,9 @@ public class LoyaltyTransaction {
 
     @Column(name = "bill_id", nullable = false)
     private Long billId;
+
+    @Column(precision = 10, scale = 2)
+    private BigDecimal amount;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;

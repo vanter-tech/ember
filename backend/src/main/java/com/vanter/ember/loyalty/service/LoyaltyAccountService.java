@@ -11,6 +11,7 @@ import com.vanter.ember.loyalty.repository.LoyaltyRewardRepository;
 import com.vanter.ember.loyalty.repository.LoyaltyTransactionRepository;
 import com.vanter.ember.settings.model.SettingsPayload;
 import com.vanter.ember.settings.service.SettingService;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -73,7 +74,7 @@ public class LoyaltyAccountService {
     }
 
     @Transactional
-    public void credit(LoyaltyAccount account, int points, String reason, Long billId) {
+    public void credit(LoyaltyAccount account, int points, String reason, Long billId, BigDecimal amount) {
         account.setTotalPoints(account.getTotalPoints() + points);
         loyaltyAccountRepository.save(account);
         loyaltyTransactionRepository.save(LoyaltyTransaction.builder()
@@ -81,6 +82,7 @@ public class LoyaltyAccountService {
                 .points(points)
                 .reason(reason)
                 .billId(billId)
+                .amount(amount)
                 .createdAt(LocalDateTime.now())
                 .build());
     }
