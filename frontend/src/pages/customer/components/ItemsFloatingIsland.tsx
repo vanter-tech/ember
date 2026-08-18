@@ -3,12 +3,14 @@ import {useSessionStore} from "@/store/sessionStore"
 import { ArrowRight } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import { useAuthStore } from "@/store/authStore"
+import { useTranslation } from "@/lib/i18n"
 
 export const ItemsFloatingIsland = () => {
     const navigate = useNavigate()
     const items = useSessionStore((state) => state.items  || [])
     const tableId = useSessionStore((state) => state.tableId)
     const currentId = useAuthStore((state) => state.userId)
+    const { t } = useTranslation('customer')
 
     const myFilterItems = items.filter((item) => item.participantId === currentId)
 
@@ -23,7 +25,7 @@ export const ItemsFloatingIsland = () => {
                     {previewItems.map((_item,index) => (
                         <div key={index} className="w-10 h-10 rounded-full border-2 border-white bg-gray-800
                         flex items-center justify-centerr text-xs text-white">
-                            Foto
+                            {t('itemsIslandPhotoPlaceholder')}
                         </div>
                     ))}
                 </div>
@@ -35,15 +37,15 @@ export const ItemsFloatingIsland = () => {
                 )}
             </div>
             <span className="text-sm font-medium text-gray-600">
-                {myFilterItems.length} platos seleccionados
+                {t('itemsIslandSelectedCount', { count: myFilterItems.length })}
             </span>
-            
+
             <Button className="px-5 rounded-full text-sm font-semibold flex items-center gap-2"
             onClick={()=> {
                 navigate(`${tableId}/comanda`)
             }}
             >
-                Ver Comanda
+                {t('itemsIslandViewComanda')}
                 <ArrowRight />
             </Button>
         </div>

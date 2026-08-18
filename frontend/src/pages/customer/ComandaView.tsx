@@ -18,6 +18,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/authStore'
+import { useTranslation } from '@/lib/i18n'
 
 type SessionItem = NonNullable<
   ReturnType<typeof useSessionStore.getState>['items']
@@ -70,6 +71,7 @@ export const ComandaView = () => {
   const sessionId = useSessionStore((state) => state.id)
   const queryClient = useQueryClient()
   const navigate = useNavigate()
+  const { t } = useTranslation('customer')
 
   const Participants = useMemo(
     () => groupByParticipant(items.filter((item) => item.status === 'DRAFT')),
@@ -148,10 +150,10 @@ export const ComandaView = () => {
 
           <div className="flex flex-col">
             <h2 className="text-2xl text-[#8c1717] font-bold uppercase">
-              Revision de Comanda
+              {t('comandaTitle')}
             </h2>
 
-            <p className="text-md text-gray-500 mt-1">Mesa</p>
+            <p className="text-md text-gray-500 mt-1">{t('comandaTableLabel')}</p>
           </div>
         </header>
 
@@ -159,8 +161,7 @@ export const ComandaView = () => {
           <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-6">
           {Participants.length === 0 && (
             <div className="md:col-span-2 text-center py-12 text-gray-400">
-              No tienes platillos nuevos. Agrega algo desde el menú para armar tu
-              próximo pedido.
+              {t('comandaEmptyDrafts')}
             </div>
           )}
           {Participants.map((person, index) => (
@@ -178,15 +179,15 @@ export const ComandaView = () => {
                       <h2 className="text-2xl font-bold ">{person.name}</h2>
 
                       {index === 0 ? (
-                        <Badge className="p-3 text-sm">Anfitrion</Badge>
+                        <Badge className="p-3 text-sm">{t('comandaHost')}</Badge>
                       ) : (
-                        <Badge className="p-3 text-sm">Participante</Badge>
+                        <Badge className="p-3 text-sm">{t('comandaParticipant')}</Badge>
                       )}
                     </div>
                   </div>
 
                   <div className="flex gap-2 flex-col items-start">
-                    <h2 className="text-sm text-gray-500 mt-1">Subtotal</h2>
+                    <h2 className="text-sm text-gray-500 mt-1">{t('comandaSubtotalLabel')}</h2>
 
                     <span className="text-lg text-[#8c1717] font-bold">
                       ${person.subtotal.toFixed(2)}
@@ -252,11 +253,11 @@ export const ComandaView = () => {
         </div>
 
         <div className="lg:col-span-1 flex flex-col gap-4">
-          <h3 className="text-lg font-bold text-gray-700">Historial</h3>
+          <h3 className="text-lg font-bold text-gray-700">{t('comandaHistoryTitle')}</h3>
 
           {Historial.length === 0 ? (
             <p className="text-sm text-gray-400">
-              Aún no has enviado ningún pedido.
+              {t('comandaNoHistory')}
             </p>
           ) : (
             Historial.map((person, index) => (
@@ -264,7 +265,7 @@ export const ComandaView = () => {
                 <CardHeader className="p-4 pb-2">
                   <CardTitle className="flex items-center justify-between text-base">
                     <span className="font-bold">{person.name}</span>
-                    <Badge variant="outline">Enviado</Badge>
+                    <Badge variant="outline">{t('comandaSentBadge')}</Badge>
                   </CardTitle>
                 </CardHeader>
 
@@ -292,19 +293,19 @@ export const ComandaView = () => {
         <Card className=" p-6 mt-8 flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex flex-col gap-3 w-full md:w-120">
             <div className="flex justify-between">
-              <h2 className="text-sm text-gray-500 mt-1">Subtotal</h2>
+              <h2 className="text-sm text-gray-500 mt-1">{t('comandaSubtotalLabel')}</h2>
 
               <span>${tableSubTotal.toFixed(2)}</span>
             </div>
 
             <div className="flex justify-between">
-              <h2 className="text-sm text-gray-500 mt-1">Servicio (10%)</h2>
+              <h2 className="text-sm text-gray-500 mt-1">{t('comandaServiceLabel')}</h2>
 
               <span>${services.toFixed(2)}</span>
             </div>
 
             <div className="flex justify-between border-t pt-2 mt-1">
-              <h2 className="text-sm text-gray-700 mt-1 font-bold">Total</h2>
+              <h2 className="text-sm text-gray-700 mt-1 font-bold">{t('comandaTotalLabel')}</h2>
 
               <span>${total.toFixed(2)}</span>
             </div>
@@ -321,7 +322,7 @@ export const ComandaView = () => {
             }}
           >
             <Send className="w-7 h-7" />
-            {confirmItemsMutation.isPending ? 'Enviando...' : 'Enviar a cocina'}
+            {confirmItemsMutation.isPending ? t('comandaSending') : t('comandaSendToKitchen')}
           </Button>
         </Card>
       </div>

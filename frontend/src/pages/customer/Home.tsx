@@ -10,6 +10,7 @@ import { useUIStore } from '@/store/uiStore'
 import { loyaltyAccountService } from '@/lib/api'
 import { formatCurrency } from '@/lib/format'
 import { TIER_LABELS, TIER_BADGE_CLASSNAMES } from '@/pages/admin/components/settings/loyalty/types'
+import { useTranslation } from '@/lib/i18n'
 import type { MouseEvent } from 'react'
 
 const formatVisitDate = (isoDateTime: string) =>
@@ -22,6 +23,7 @@ const formatVisitDate = (isoDateTime: string) =>
 export const Home = () => {
   const { name } = useAuthStore()
   const { openModal } = useUIStore()
+  const { t } = useTranslation('customer')
 
   const openJoinModal = (e: MouseEvent) => {
     openModal('JOIN_TABLE')
@@ -67,7 +69,7 @@ export const Home = () => {
               <div className="flex flex-col">
                 <h2 className="text-2xl font-bold text-gray-900">{name}</h2>
                 <p className="text-sm text-gray-500 mt-1">
-                  Amante de la gastronomia y mas cosas.
+                  {t('homeBio')}
                 </p>
               </div>
             </div>
@@ -77,7 +79,7 @@ export const Home = () => {
                 onClick={openJoinModal}
               >
                 <Utensils className="mr-2 h-5 w-5" />
-                Entrar a una mesa.
+                {t('homeJoinTableCta')}
               </Button>
             </div>
           </CardContent>
@@ -102,7 +104,7 @@ export const Home = () => {
               </Avatar>
               <div className="flex flex-col">
                 <h2 className="text-xl font-bold text-gray-900">{name}</h2>
-                <p className="text-sm text-gray-500">Bienvenido de vuelta.</p>
+                <p className="text-sm text-gray-500">{t('homeWelcomeBack')}</p>
               </div>
             </div>
             <Button
@@ -111,7 +113,7 @@ export const Home = () => {
               onClick={openJoinModal}
             >
               <Utensils className="mr-2 h-4 w-4" />
-              Entrar a una mesa
+              {t('homeJoinTableCtaShort')}
             </Button>
           </CardContent>
         </Card>
@@ -122,7 +124,7 @@ export const Home = () => {
               {loyaltyAccount.restaurantName && (
                 <div className="flex items-center gap-1.5 text-xs font-medium text-[#8c1717]/70">
                   <Store className="w-3.5 h-3.5" />
-                  Fidelización en {loyaltyAccount.restaurantName}
+                  {t('loyaltyProgramAt', { restaurantName: loyaltyAccount.restaurantName! })}
                 </div>
               )}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
@@ -132,7 +134,7 @@ export const Home = () => {
                     <span className="text-2xl font-bold text-gray-900">
                       {loyaltyAccount.totalPoints}
                     </span>
-                    <span className="text-sm text-gray-500">puntos</span>
+                    <span className="text-sm text-gray-500">{t('loyaltyPointsLabel')}</span>
                   </div>
                 </div>
                 <div className="flex flex-col justify-center gap-2 sm:border-x sm:border-[#8c1717]/10 sm:px-6">
@@ -148,19 +150,22 @@ export const Home = () => {
                         />
                       </div>
                       <span className="text-sm text-gray-500">
-                        {loyaltyAccount.pointsToNextTier} pts para {TIER_LABELS[loyaltyAccount.nextTier]}
+                        {t('loyaltyPointsToNextTier', {
+                          points: loyaltyAccount.pointsToNextTier!,
+                          tierName: TIER_LABELS[loyaltyAccount.nextTier],
+                        })}
                       </span>
                     </>
                   ) : (
-                    <span className="text-sm text-gray-500">Nivel máximo alcanzado</span>
+                    <span className="text-sm text-gray-500">{t('loyaltyMaxTierReached')}</span>
                   )}
                 </div>
                 <div className="flex flex-col justify-center gap-1">
                   <span className="text-xs uppercase tracking-wide text-gray-400">
-                    Última visita
+                    {t('loyaltyLastVisitLabel')}
                   </span>
                   <span className="text-sm font-semibold text-gray-700">
-                    {lastVisitDate ? formatVisitDate(lastVisitDate) : 'Sin visitas aún'}
+                    {lastVisitDate ? formatVisitDate(lastVisitDate) : t('loyaltyNoVisitsYet')}
                   </span>
                 </div>
               </div>
@@ -172,13 +177,13 @@ export const Home = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
               <History className="w-5 h-5 text-[#8c1717]" />
-              Tus visitas
+              {t('loyaltyVisitsTitle')}
             </CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
             {!visits || visits.length === 0 ? (
               <p className="text-sm text-gray-400 text-center py-6">
-                Aún no tienes visitas registradas.
+                {t('loyaltyNoVisitsRegistered')}
               </p>
             ) : (
               visits.map((visit, index) => (
@@ -194,7 +199,7 @@ export const Home = () => {
                       {visit.amountPaid != null ? formatCurrency(visit.amountPaid) : '—'}
                     </span>
                     <span className="text-xs text-[#8c1717] font-semibold">
-                      +{visit.pointsEarned} pts
+                      {t('loyaltyVisitPoints', { points: visit.pointsEarned! })}
                     </span>
                   </div>
                 </div>

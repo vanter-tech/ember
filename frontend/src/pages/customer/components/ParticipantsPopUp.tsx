@@ -2,11 +2,13 @@ import { useSessionStore } from '@/store/sessionStore'
 import { useState } from 'react'
 import { AvatarInitials, AvatarColors } from '@/components/AvatarInitials'
 import { ParticipantsList } from './ParticipantsList'
+import { useTranslation } from '@/lib/i18n'
 
 export const ParticipantsPopUp = () => {
   const { id: tableId, participants } = useSessionStore()
   if (!tableId || !participants) return null
   const [isOpen, setIsOpen] = useState(false)
+  const { t } = useTranslation('customer')
   const visibleParticipants = participants.slice(0, 3)
   const remainingParticipants = participants.length - 3
 
@@ -41,11 +43,13 @@ export const ParticipantsPopUp = () => {
         </div>
         <div className="flex-col justify-center hidden md:flex pr-1">
           <span className="text-sm font-semibold text-zinc-800 leading-none mb-1">
-            Partipantes en la mesa
+            {t('participantsPopupTitle')}
           </span>
           <span className="text-[11px] text-zinc-500 leading-none font-medium">
             {participants.length}{' '}
-            {participants.length === 1 ? 'Persona' : 'Personas'}
+            {participants.length === 1
+              ? t('participantsPopupPersonSingular')
+              : t('participantsPopupPersonPlural')}
           </span>
         </div>
       </div>
