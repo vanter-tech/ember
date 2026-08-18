@@ -71,8 +71,8 @@ export const Tables = () => {
     return <div className="p-6 text-zinc-500">Cargando datos del panel...</div>
   }
   return (
-    <div className="flex w-full h-full gap-5 p-5">
-      <div className="w-[70%]">
+    <div className="flex flex-col md:flex-row w-full h-full gap-5 p-5">
+      <div className="w-full md:w-[70%]">
         <div className="flex justify-between mb-5">
           <h2>Salon Principal</h2>
           <div className="flex gap-4">
@@ -87,7 +87,7 @@ export const Tables = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-4 relative">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 relative">
           {!isCajaOpen && (
             <div className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-white/40">
               <span className="max-w-[80%] text-center text-lg font-semibold text-[#8c1717]">
@@ -130,7 +130,7 @@ export const Tables = () => {
           ))}
         </div>
       </div>
-      <div className="w-[30%] border-l border-zinc-200 pl-5">
+      <div className="w-full md:w-[30%] border-t md:border-t-0 md:border-l border-zinc-200 pt-5 md:pt-0 md:pl-5">
         {tableDetails ? (
           <div>
             <h2 className="text-xl font-semibold mb-5">Detalles de mesa</h2>
