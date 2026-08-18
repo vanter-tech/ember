@@ -89,9 +89,9 @@ export const Home = () => {
 
   return (
     <>
-      <div className="flex flex-col gap-4">
-        <Card className="w-full border-none shadow-sm bg-white rounded-2xl">
-          <CardContent className="flex items-center justify-between gap-4 p-6">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+        <Card className="md:col-span-4 border border-gray-100 shadow-sm bg-white rounded-3xl transition-all duration-200 hover:shadow-md hover:border-[#8c1717]/20">
+          <CardContent className="flex flex-col gap-6 md:flex-row items-center justify-between p-6">
             <div className="flex items-center gap-4">
               <Avatar className="h-16 w-16 border-2 border-gray-100">
                 <AvatarImage
@@ -105,7 +105,11 @@ export const Home = () => {
                 <p className="text-sm text-gray-500">Bienvenido de vuelta.</p>
               </div>
             </div>
-            <Button variant="outline" className="rounded-2xl" onClick={openJoinModal}>
+            <Button
+              variant="outline"
+              className="rounded-2xl border-[#8c1717]/30 text-[#8c1717] hover:bg-[#8c1717] hover:text-white transition-colors"
+              onClick={openJoinModal}
+            >
               <Utensils className="mr-2 h-4 w-4" />
               Entrar a una mesa
             </Button>
@@ -113,32 +117,40 @@ export const Home = () => {
         </Card>
 
         {loyaltyAccount && (
-          <Card className="bg-[#8c1717]/5 border-2 border-[#8c1717]/20 rounded-2xl">
-            <CardContent className="py-5 flex items-center gap-3">
-              <Sparkles className="w-8 h-8 text-[#8c1717] shrink-0" />
-              <div className="flex flex-col gap-1">
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold">{loyaltyAccount.totalPoints} pts</span>
-                  <Badge className={TIER_BADGE_CLASSNAMES[loyaltyAccount.tier!]}>
-                    {TIER_LABELS[loyaltyAccount.tier!]}
-                  </Badge>
+          <Card className="md:col-span-3 bg-[#8c1717]/5 border-2 border-[#8c1717]/20 rounded-3xl transition-all duration-200 hover:shadow-lg hover:border-[#8c1717]/40">
+            <CardContent className="p-6 grid grid-cols-1 sm:grid-cols-3 gap-6">
+              <div className="flex items-center gap-3">
+                <Sparkles className="w-8 h-8 text-[#8c1717] shrink-0" />
+                <div className="flex flex-col">
+                  <span className="text-2xl font-bold text-gray-900">
+                    {loyaltyAccount.totalPoints}
+                  </span>
+                  <span className="text-sm text-gray-500">puntos</span>
                 </div>
+              </div>
+              <div className="flex flex-col justify-center gap-1 sm:border-x sm:border-[#8c1717]/10 sm:px-6">
+                <Badge className={`w-fit ${TIER_BADGE_CLASSNAMES[loyaltyAccount.tier!]}`}>
+                  {TIER_LABELS[loyaltyAccount.tier!]}
+                </Badge>
                 {loyaltyAccount.nextTier && (
                   <span className="text-sm text-gray-500">
                     {loyaltyAccount.pointsToNextTier} pts para {TIER_LABELS[loyaltyAccount.nextTier]}
                   </span>
                 )}
-                {lastVisitDate && (
-                  <span className="text-xs text-gray-400">
-                    Última visita: {formatVisitDate(lastVisitDate)}
-                  </span>
-                )}
+              </div>
+              <div className="flex flex-col justify-center gap-1">
+                <span className="text-xs uppercase tracking-wide text-gray-400">
+                  Última visita
+                </span>
+                <span className="text-sm font-semibold text-gray-700">
+                  {lastVisitDate ? formatVisitDate(lastVisitDate) : 'Sin visitas aún'}
+                </span>
               </div>
             </CardContent>
           </Card>
         )}
 
-        <Card className="border-none shadow-sm bg-white rounded-2xl">
+        <Card className="md:col-span-1 border border-gray-100 shadow-sm bg-white rounded-3xl transition-all duration-200 hover:shadow-md hover:border-[#8c1717]/20">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
               <History className="w-5 h-5 text-[#8c1717]" />
@@ -154,17 +166,19 @@ export const Home = () => {
               visits.map((visit, index) => (
                 <div
                   key={index}
-                  className="flex items-center justify-between p-4 rounded-2xl bg-gray-50"
+                  className="flex flex-col gap-1 p-3 rounded-2xl bg-gray-50 transition-colors hover:bg-[#8c1717]/5"
                 >
-                  <span className="text-sm text-gray-600">
+                  <span className="text-xs text-gray-500">
                     {visit.visitedAt ? formatVisitDate(visit.visitedAt) : '—'}
                   </span>
-                  <span className="font-semibold">
-                    {visit.amountPaid != null ? formatCurrency(visit.amountPaid) : '—'}
-                  </span>
-                  <span className="text-sm text-[#8c1717] font-semibold">
-                    +{visit.pointsEarned} pts
-                  </span>
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-sm">
+                      {visit.amountPaid != null ? formatCurrency(visit.amountPaid) : '—'}
+                    </span>
+                    <span className="text-xs text-[#8c1717] font-semibold">
+                      +{visit.pointsEarned} pts
+                    </span>
+                  </div>
                 </div>
               ))
             )}
