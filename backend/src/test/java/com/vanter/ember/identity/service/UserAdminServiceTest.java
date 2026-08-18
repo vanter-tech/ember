@@ -134,7 +134,6 @@ class UserAdminServiceTest {
         var result = userAdminService.updateProfile(
                 "u-1", TENANT_A,
                 new UpdateStaffProfileRequest(false, null, null, null, null, null, null, null, null));
-                "u-1", TENANT_A, new UpdateStaffProfileRequest(false, null, null, null, null, null, null));
 
         assertThat(result.active()).isFalse();
         assertThat(result.shift()).isEqualTo("Mañana");
@@ -150,7 +149,6 @@ class UserAdminServiceTest {
         var result = userAdminService.updateProfile(
                 "u-1", TENANT_A,
                 new UpdateStaffProfileRequest(null, null, null, null, null, null, null, null, null));
-                "u-1", TENANT_A, new UpdateStaffProfileRequest(null, null, null, null, null, null, null));
 
         assertThat(result.id()).isEqualTo(existing.getId());
         assertThat(result.name()).isEqualTo(existing.getName());
@@ -210,7 +208,6 @@ class UserAdminServiceTest {
         assertThatThrownBy(() -> userAdminService.updateProfile(
                 "u-1", TENANT_A,
                 new UpdateStaffProfileRequest(false, null, null, null, null, null, null, null, null)))
-                "u-1", TENANT_A, new UpdateStaffProfileRequest(false, null, null, null, null, null, null)))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
@@ -221,7 +218,6 @@ class UserAdminServiceTest {
         assertThatThrownBy(() -> userAdminService.updateProfile(
                 "missing", TENANT_A,
                 new UpdateStaffProfileRequest(false, null, null, null, null, null, null, null, null)))
-                "missing", TENANT_A, new UpdateStaffProfileRequest(false, null, null, null, null, null, null)))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 }

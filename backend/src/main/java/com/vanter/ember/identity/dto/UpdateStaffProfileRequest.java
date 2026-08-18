@@ -18,4 +18,3 @@ public record UpdateStaffProfileRequest(
         @DecimalMin("0") @Digits(integer = 4, fraction = 2) BigDecimal pendingHours,
         @Size(max = 255) String name,
         @Email(message = "Email must be valid") @Size(max = 255) String email) {}
-        @DecimalMin("0") @Digits(integer = 4, fraction = 2) BigDecimal pendingHours) {}

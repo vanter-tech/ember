@@ -48,6 +48,44 @@ export interface WaiterBillState {
   pendingDigitalPayments?: PendingDigitalPayment[]
 }
 
+export type LoyaltySettings = components['schemas']['LoyaltySettings']
+export type LoyaltyAccrualMode = NonNullable<LoyaltySettings['accrualMode']>
+
+export type LoyaltyRewardResponse = components['schemas']['LoyaltyRewardResponse']
+export type CreateLoyaltyRewardRequest = components['schemas']['CreateLoyaltyRewardRequest']
+export type UpdateLoyaltyRewardRequest = components['schemas']['UpdateLoyaltyRewardRequest']
+export type LoyaltyTier = NonNullable<LoyaltyRewardResponse['requiredTier']>
+
+export const loyaltyRewardService = {
+  list: async (): Promise<LoyaltyRewardResponse[]> => {
+    const { data } = await api.get<LoyaltyRewardResponse[]>('/loyalty/rewards')
+    return data
+  },
+  create: async (request: CreateLoyaltyRewardRequest): Promise<LoyaltyRewardResponse> => {
+    const { data } = await api.post<LoyaltyRewardResponse>('/loyalty/rewards', request)
+    return data
+  },
+  update: async (id: number, request: UpdateLoyaltyRewardRequest): Promise<LoyaltyRewardResponse> => {
+    const { data } = await api.patch<LoyaltyRewardResponse>(`/loyalty/rewards/${id}`, request)
+    return data
+  },
+}
+
+export type RewardCatalogEntry = components['schemas']['RewardCatalogEntryResponse']
+export type LoyaltyAccountResponse = components['schemas']['LoyaltyAccountResponse']
+export type LoyaltyVisitResponse = components['schemas']['LoyaltyVisitResponse']
+
+export const loyaltyAccountService = {
+  me: async (): Promise<LoyaltyAccountResponse> => {
+    const { data } = await api.get<LoyaltyAccountResponse>('/loyalty/accounts/me')
+    return data
+  },
+  visits: async (): Promise<LoyaltyVisitResponse[]> => {
+    const { data } = await api.get<LoyaltyVisitResponse[]>('/loyalty/accounts/me/visits')
+    return data
+  },
+}
+
 export interface Page<T> {
   content: T[]
   totalElements: number
@@ -59,21 +97,6 @@ export interface Page<T> {
 export type RestaurantResponse = components['schemas']['Restaurant']
 export type UpdateRestaurantPlanRequest = components['schemas']['UpdateRestaurantPlanRequest']
 export type PublicBranding = components['schemas']['PublicBrandingResponse']
-
-export type AnalyticsSummaryResponse = components['schemas']['AnalyticsSummaryResponse']
-export type AnalyticsSalesResponse = components['schemas']['AnalyticsSalesResponse']
-export type SalesBucket = components['schemas']['SalesBucket']
-export type AnalyticsProductsResponse = components['schemas']['AnalyticsProductsResponse']
-export type ProductPerformance = components['schemas']['ProductPerformance']
-export type CategoryPerformance = components['schemas']['CategoryPerformance']
-export type AnalyticsTablesResponse = components['schemas']['AnalyticsTablesResponse']
-export type TablePerformance = components['schemas']['TablePerformance']
-
-// The 'granularity' request param has no dedicated schema (it's a plain string query param
-// server-side), so it's derived from the response enum rather than hand-typed.
-export type SalesGranularity = Lowercase<
-  NonNullable<components['schemas']['AnalyticsSalesResponse']['granularity']>
->
 
 export type AnalyticsSummaryResponse = components['schemas']['AnalyticsSummaryResponse']
 export type AnalyticsSalesResponse = components['schemas']['AnalyticsSalesResponse']

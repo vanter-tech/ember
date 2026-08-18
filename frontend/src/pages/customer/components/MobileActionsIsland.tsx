@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowRight, MoreHorizontal, Receipt, Users } from 'lucide-react'
-import { ArrowRight, MoreHorizontal, Users } from 'lucide-react'
 import { useSessionStore } from '@/store/sessionStore'
 import { ParticipantsList } from './ParticipantsList'
 
