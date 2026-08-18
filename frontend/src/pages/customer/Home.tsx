@@ -56,7 +56,7 @@ export const Home = () => {
           <CardContent className="flex flex-col gap-6 md:flex-row items-center justify-evenly p-6 ">
             <div className="flex items-center gap-5 w-full md:w-auto">
               <div className="relative">
-                <Avatar className="h-40 w-40 border-2 border-gray-100">
+                <Avatar className="h-24 w-24 md:h-40 md:w-40 border-2 border-gray-100">
                   <AvatarImage
                     src="https://i.pravatar.cc/150?u=alejandra"
                     alt="Alejandra"
@@ -73,7 +73,7 @@ export const Home = () => {
             </div>
             <div className="w-full md:w-auto flex justify-end">
               <Button
-                className="w-full h-20  rounded-3xl md:w-auto hover:bg-[#660000] px-8 py-6 text-xl font-semibold transition-colors"
+                className="w-full h-14 md:h-20 rounded-3xl md:w-auto hover:bg-[#660000] px-6 md:px-8 py-4 md:py-6 text-base md:text-xl font-semibold transition-colors"
                 onClick={openJoinModal}
               >
                 <Utensils className="mr-2 h-5 w-5" />
