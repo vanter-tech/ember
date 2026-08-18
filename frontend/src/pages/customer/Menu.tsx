@@ -189,10 +189,10 @@ export const Menu = () => {
             </Card>
           ))}
         </div>
-        <div className="fixed bottom-10 left-11 z-50 hidden sm:block">
+        <div className="fixed bottom-24 md:bottom-10 left-11 z-50 hidden sm:block">
           <ParticipantsPopUp />
         </div>
-        <div className="fixed bottom-10 right-11 z-50 hidden sm:block">
+        <div className="fixed bottom-24 md:bottom-10 right-11 z-50 hidden sm:block">
           <ItemsFloatingIsland />
         </div>
         <div className="fixed bottom-24 right-6 z-50 sm:hidden">
