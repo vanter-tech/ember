@@ -42,4 +42,28 @@ public class LoyaltyService {
                 .setScale(0, RoundingMode.HALF_UP)
                 .intValueExact();
     }
+
+    /** Next rung on the fixed tier ladder, or {@code null} if already {@code PLATINO}. */
+    public LoyaltyTier nextTier(LoyaltyTier current) {
+        return switch (current) {
+            case BRONCE -> LoyaltyTier.PLATA;
+            case PLATA -> LoyaltyTier.ORO;
+            case ORO -> LoyaltyTier.PLATINO;
+            case PLATINO -> null;
+        };
+    }
+
+    /** Points still needed to reach {@code next}, or {@code null} if {@code next} is null (maxed). */
+    public Integer pointsToNextTier(int totalPoints, LoyaltyTier next, SettingsPayload.LoyaltySettings settings) {
+        if (next == null) {
+            return null;
+        }
+        int threshold = switch (next) {
+            case PLATA -> settings.getPlataThreshold();
+            case ORO -> settings.getOroThreshold();
+            case PLATINO -> settings.getPlatinoThreshold();
+            case BRONCE -> 0;
+        };
+        return Math.max(threshold - totalPoints, 0);
+    }
 }

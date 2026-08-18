@@ -101,6 +101,30 @@ export const loyaltyRewardService = {
   },
 }
 
+// Interim hand-typed shape for GET /loyalty/accounts/me (EMB-CLP-08) — same "not regenerated yet"
+// reason as LoyaltyRewardResponse above.
+export interface RewardCatalogEntry {
+  id: number
+  name: string
+  description: string | null
+  requiredTier: LoyaltyTier
+  unlocked: boolean
+}
+export interface LoyaltyAccountResponse {
+  totalPoints: number
+  tier: LoyaltyTier
+  nextTier: LoyaltyTier | null
+  pointsToNextTier: number | null
+  rewards: RewardCatalogEntry[]
+}
+
+export const loyaltyAccountService = {
+  me: async (): Promise<LoyaltyAccountResponse> => {
+    const { data } = await api.get<LoyaltyAccountResponse>('/loyalty/accounts/me')
+    return data
+  },
+}
+
 export interface Page<T> {
   content: T[]
   totalElements: number

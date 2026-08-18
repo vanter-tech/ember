@@ -1,13 +1,14 @@
 import { Link } from 'react-router-dom'
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { useSessionStore } from '@/store/sessionStore'
 import { useAuthStore } from '@/store/authStore'
-import { billingService } from '@/lib/api'
+import { billingService, loyaltyAccountService } from '@/lib/api'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, CreditCard, CheckCircle2, Clock } from 'lucide-react'
+import { ArrowLeft, CreditCard, CheckCircle2, Clock, Sparkles } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { TIER_LABELS } from '@/pages/admin/components/settings/loyalty/types'
 
 export const Bill = () => {
   const bill = useSessionStore((state) => state.bill)
@@ -18,6 +19,12 @@ export const Bill = () => {
 
   const myName = participants?.find((p) => p.userId === currentId)?.name
   const mySplit = billSplits?.find((split) => split.participantName === myName)
+  const { data: loyaltyAccount } = useQuery({
+    queryKey: ['loyaltyAccount', 'me'],
+    queryFn: loyaltyAccountService.me,
+    enabled: mySplit?.status === 'PAID',
+    retry: false,
+  })
 
   const payMutation = useMutation({
     mutationFn: () =>
@@ -92,6 +99,24 @@ export const Bill = () => {
                 ))}
               </CardContent>
             </Card>
+
+            {loyaltyAccount && (
+              <Card className="bg-[#8c1717]/5 border-2 border-[#8c1717]/20">
+                <CardContent className="py-5 flex items-center gap-3">
+                  <Sparkles className="w-8 h-8 text-[#8c1717] shrink-0" />
+                  <div className="flex flex-col">
+                    <span className="font-semibold">
+                      ¡Ganaste puntos! Ahora tienes {loyaltyAccount.totalPoints} pts
+                    </span>
+                    <span className="text-sm text-gray-500">
+                      Nivel {TIER_LABELS[loyaltyAccount.tier]}
+                      {loyaltyAccount.nextTier &&
+                        ` — ${loyaltyAccount.pointsToNextTier} pts para ${TIER_LABELS[loyaltyAccount.nextTier]}`}
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {mySplit && mySplit.status === 'UNPAID' && (
               <Button
