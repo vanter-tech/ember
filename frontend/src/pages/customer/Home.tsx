@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Utensils, Sparkles, History } from 'lucide-react'
+import { Utensils, Sparkles, History, Store } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/store/authStore'
 import { JoinTableModal } from './components/JoinTableModal'
@@ -118,33 +118,51 @@ export const Home = () => {
 
         {loyaltyAccount && (
           <Card className="md:col-span-3 bg-[#8c1717]/5 border-2 border-[#8c1717]/20 rounded-3xl transition-all duration-200 hover:shadow-lg hover:border-[#8c1717]/40">
-            <CardContent className="p-6 grid grid-cols-1 sm:grid-cols-3 gap-6">
-              <div className="flex items-center gap-3">
-                <Sparkles className="w-8 h-8 text-[#8c1717] shrink-0" />
-                <div className="flex flex-col">
-                  <span className="text-2xl font-bold text-gray-900">
-                    {loyaltyAccount.totalPoints}
-                  </span>
-                  <span className="text-sm text-gray-500">puntos</span>
+            <CardContent className="flex flex-col gap-4 p-6">
+              {loyaltyAccount.restaurantName && (
+                <div className="flex items-center gap-1.5 text-xs font-medium text-[#8c1717]/70">
+                  <Store className="w-3.5 h-3.5" />
+                  Fidelización en {loyaltyAccount.restaurantName}
                 </div>
-              </div>
-              <div className="flex flex-col justify-center gap-1 sm:border-x sm:border-[#8c1717]/10 sm:px-6">
-                <Badge className={`w-fit ${TIER_BADGE_CLASSNAMES[loyaltyAccount.tier!]}`}>
-                  {TIER_LABELS[loyaltyAccount.tier!]}
-                </Badge>
-                {loyaltyAccount.nextTier && (
-                  <span className="text-sm text-gray-500">
-                    {loyaltyAccount.pointsToNextTier} pts para {TIER_LABELS[loyaltyAccount.nextTier]}
+              )}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                <div className="flex items-center gap-3">
+                  <Sparkles className="w-8 h-8 text-[#8c1717] shrink-0" />
+                  <div className="flex flex-col">
+                    <span className="text-2xl font-bold text-gray-900">
+                      {loyaltyAccount.totalPoints}
+                    </span>
+                    <span className="text-sm text-gray-500">puntos</span>
+                  </div>
+                </div>
+                <div className="flex flex-col justify-center gap-2 sm:border-x sm:border-[#8c1717]/10 sm:px-6">
+                  <Badge className={`w-fit ${TIER_BADGE_CLASSNAMES[loyaltyAccount.tier!]}`}>
+                    {TIER_LABELS[loyaltyAccount.tier!]}
+                  </Badge>
+                  {loyaltyAccount.nextTier ? (
+                    <>
+                      <div className="h-2 w-full rounded-full bg-[#8c1717]/10 overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-[#8c1717] transition-all duration-500"
+                          style={{ width: `${loyaltyAccount.tierProgressPercent ?? 0}%` }}
+                        />
+                      </div>
+                      <span className="text-sm text-gray-500">
+                        {loyaltyAccount.pointsToNextTier} pts para {TIER_LABELS[loyaltyAccount.nextTier]}
+                      </span>
+                    </>
+                  ) : (
+                    <span className="text-sm text-gray-500">Nivel máximo alcanzado</span>
+                  )}
+                </div>
+                <div className="flex flex-col justify-center gap-1">
+                  <span className="text-xs uppercase tracking-wide text-gray-400">
+                    Última visita
                   </span>
-                )}
-              </div>
-              <div className="flex flex-col justify-center gap-1">
-                <span className="text-xs uppercase tracking-wide text-gray-400">
-                  Última visita
-                </span>
-                <span className="text-sm font-semibold text-gray-700">
-                  {lastVisitDate ? formatVisitDate(lastVisitDate) : 'Sin visitas aún'}
-                </span>
+                  <span className="text-sm font-semibold text-gray-700">
+                    {lastVisitDate ? formatVisitDate(lastVisitDate) : 'Sin visitas aún'}
+                  </span>
+                </div>
               </div>
             </CardContent>
           </Card>
