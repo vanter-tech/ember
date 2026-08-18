@@ -15,6 +15,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel } from '@/components/
 import { useUIStore } from '@/store/uiStore'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { cashShiftService } from '@/lib/api'
+import { useTranslation } from '@/lib/i18n'
 
 const openShiftSchema = z.object({
   openingFloat: z.coerce.number().min(0, 'El fondo inicial no puede ser negativo'),
@@ -23,6 +24,7 @@ const openShiftSchema = z.object({
 type OpenShiftInputs = z.infer<typeof openShiftSchema>
 
 export const OpenShiftDialog = () => {
+  const { t } = useTranslation('waiter')
   const { activeModal, closeModal } = useUIStore()
   const queryClient = useQueryClient()
 
@@ -48,7 +50,7 @@ export const OpenShiftDialog = () => {
     <Dialog open={activeModal === 'OPEN_SHIFT'} onOpenChange={(isOpen) => !isOpen && closeModal()}>
       <DialogContent className="sm:max-w-md rounded-3xl p-6">
         <DialogHeader className="mb-4">
-          <DialogTitle className="text-2xl font-bold text-zinc-800">Apertura de caja</DialogTitle>
+          <DialogTitle className="text-2xl font-bold text-zinc-800">{t('openShiftTitle')}</DialogTitle>
         </DialogHeader>
 
         <Form {...form}>
@@ -58,7 +60,7 @@ export const OpenShiftDialog = () => {
               name="openingFloat"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Fondo inicial</FormLabel>
+                  <FormLabel>{t('openingFloatLabel')}</FormLabel>
                   <FormControl>
                     <Input
                       type="number"
@@ -75,10 +77,10 @@ export const OpenShiftDialog = () => {
 
             <DialogFooter>
               <Button type="button" variant="outline" onClick={closeModal} disabled={mutation.isPending}>
-                Cancelar
+                {t('cancelButton')}
               </Button>
               <Button type="submit" disabled={mutation.isPending}>
-                {mutation.isPending ? 'Abriendo...' : 'Abrir caja'}
+                {mutation.isPending ? t('openingLabel') : t('openCajaButton')}
               </Button>
             </DialogFooter>
           </form>

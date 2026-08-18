@@ -17,6 +17,7 @@ import { useUIStore } from '@/store/uiStore'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { cashShiftService, type CashShiftResponse } from '@/lib/api'
 import { formatCurrency } from '@/lib/format'
+import { useTranslation } from '@/lib/i18n'
 
 const closeShiftSchema = z.object({
   countedCash: z.coerce.number().min(0, 'El monto contado no puede ser negativo'),
@@ -25,6 +26,7 @@ const closeShiftSchema = z.object({
 type CloseShiftInputs = z.infer<typeof closeShiftSchema>
 
 export const CloseShiftDialog = () => {
+  const { t } = useTranslation('waiter')
   const { activeModal, modalPayload, closeModal } = useUIStore()
   const queryClient = useQueryClient()
   const shiftId = modalPayload?.shiftId as number | undefined
@@ -58,22 +60,21 @@ export const CloseShiftDialog = () => {
     <Dialog open={activeModal === 'CLOSE_SHIFT'} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-md rounded-3xl p-6">
         <DialogHeader className="mb-4">
-          <DialogTitle className="text-2xl font-bold text-zinc-800">Arqueo de turno</DialogTitle>
+          <DialogTitle className="text-2xl font-bold text-zinc-800">{t('closeShiftTitle')}</DialogTitle>
         </DialogHeader>
 
         {!result ? (
           <Form {...form}>
             <form onSubmit={form.handleSubmit((data) => mutation.mutate(data))} className="space-y-5">
               <p className="text-sm text-muted-foreground">
-                Cuenta el efectivo en caja y escribe el total. El sistema mostrará la diferencia
-                después de registrar el conteo.
+                {t('closeShiftDescription')}
               </p>
               <FormField
                 control={form.control}
                 name="countedCash"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Efectivo contado</FormLabel>
+                    <FormLabel>{t('countedCashLabel')}</FormLabel>
                     <FormControl>
                       <Input
                         type="number"
@@ -90,10 +91,10 @@ export const CloseShiftDialog = () => {
 
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={closeModal} disabled={mutation.isPending}>
-                  Cancelar
+                  {t('cancelButton')}
                 </Button>
                 <Button type="submit" disabled={mutation.isPending || !shiftId}>
-                  {mutation.isPending ? 'Cerrando...' : 'Confirmar conteo'}
+                  {mutation.isPending ? t('closingShiftLabel') : t('confirmCountButton')}
                 </Button>
               </DialogFooter>
             </form>
@@ -102,15 +103,15 @@ export const CloseShiftDialog = () => {
           <div className="flex flex-col gap-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-xs text-muted-foreground">Esperado</p>
+                <p className="text-xs text-muted-foreground">{t('expectedLabel')}</p>
                 <p className="text-lg font-bold">{formatCurrency(result.expectedCash ?? 0)}</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Contado</p>
+                <p className="text-xs text-muted-foreground">{t('countedLabel')}</p>
                 <p className="text-lg font-bold">{formatCurrency(result.countedCash ?? 0)}</p>
               </div>
               <div className="col-span-2">
-                <p className="text-xs text-muted-foreground">Diferencia</p>
+                <p className="text-xs text-muted-foreground">{t('differenceLabel')}</p>
                 <p
                   className={`text-lg font-bold ${
                     (result.variance ?? 0) === 0
@@ -125,7 +126,7 @@ export const CloseShiftDialog = () => {
               </div>
             </div>
             <DialogFooter>
-              <Button onClick={() => handleOpenChange(false)}>Cerrar</Button>
+              <Button onClick={() => handleOpenChange(false)}>{t('closeButton')}</Button>
             </DialogFooter>
           </div>
         )}

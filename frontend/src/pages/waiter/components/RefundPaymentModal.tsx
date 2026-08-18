@@ -14,8 +14,10 @@ import { Textarea } from '@/components/ui/textarea'
 import { useUIStore } from '@/store/uiStore'
 import { billingService } from '@/lib/api'
 import toast from 'react-hot-toast'
+import { useTranslation } from '@/lib/i18n'
 
 export const RefundPaymentModal = () => {
+  const { t } = useTranslation('waiter')
   const { activeModal, modalPayload, closeModal } = useUIStore()
   const queryClient = useQueryClient()
   const [amount, setAmount] = useState('')
@@ -74,28 +76,28 @@ export const RefundPaymentModal = () => {
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
       <DialogContent className="sm:max-w-md rounded-3xl p-6">
         <DialogHeader className="mb-2">
-          <DialogTitle className="text-2xl font-bold text-zinc-800">Reembolsar Pago</DialogTitle>
+          <DialogTitle className="text-2xl font-bold text-zinc-800">{t('refundPaymentTitle')}</DialogTitle>
           <DialogDescription className="text-zinc-500 text-sm mt-1">
-            {modalPayload?.participantName} · saldo disponible: ${payment?.remaining?.toFixed(2) ?? '—'}
+            {modalPayload?.participantName} {t('availableBalanceLabel', { amount: payment?.remaining !== undefined ? `$${payment.remaining.toFixed(2)}` : '—' })}
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-3">
           <Input
             type="number"
             step="0.01"
-            placeholder="Monto a reembolsar"
+            placeholder={t('refundAmountPlaceholder')}
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
           />
           <Textarea
-            placeholder="Motivo del reembolso"
+            placeholder={t('refundReasonPlaceholder')}
             value={reason}
             onChange={(e) => setReason(e.target.value)}
           />
         </div>
         <DialogFooter className="mt-4">
           <Button variant="outline" onClick={handleClose}>
-            Cancelar
+            {t('cancelButton')}
           </Button>
           <Button
             variant="destructive"
@@ -107,7 +109,7 @@ export const RefundPaymentModal = () => {
               reason.trim().length === 0
             }
           >
-            Reembolsar
+            {t('refundButton')}
           </Button>
         </DialogFooter>
       </DialogContent>

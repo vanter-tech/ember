@@ -9,8 +9,10 @@ import { useEffect, useState } from 'react'
 import { Armchair, Users } from 'lucide-react'
 import { useUIStore } from '@/store/uiStore'
 import { Link } from 'react-router-dom'
+import { useTranslation } from '@/lib/i18n'
 
 export const Tables = () => {
+  const { t } = useTranslation('waiter')
   const { restaurantId } = useAuthStore()
   const [selectedTable, setSelectedTable] = useState<string | undefined>(
     undefined
@@ -68,21 +70,21 @@ export const Tables = () => {
     : []
 
   if (isLoadingDashboard) {
-    return <div className="p-6 text-zinc-500">Cargando datos del panel...</div>
+    return <div className="p-6 text-zinc-500">{t('loadingDashboard')}</div>
   }
   return (
     <div className="flex flex-col md:flex-row w-full h-full gap-5 p-5">
       <div className="w-full md:w-[70%]">
         <div className="flex justify-between mb-5">
-          <h2>Salon Principal</h2>
+          <h2>{t('mainRoomTitle')}</h2>
           <div className="flex gap-4">
             <div className="flex items-center gap-2">
               <div className="w-5 h-5 bg-[#8c1717] rounded-full"></div>
-              <span className="text-md text-zinc-500">Ocupado</span>
+              <span className="text-md text-zinc-500">{t('statusOccupied')}</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-5 h-5 bg-[#6b6161] rounded-full"></div>
-              <span className="text-md text-zinc-500">Libre</span>
+              <span className="text-md text-zinc-500">{t('statusFree')}</span>
             </div>
           </div>
         </div>
@@ -91,7 +93,7 @@ export const Tables = () => {
           {!isCajaOpen && (
             <div className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-white/40">
               <span className="max-w-[80%] text-center text-lg font-semibold text-[#8c1717]">
-                Necesita abrir la caja para poder asignar mesa.
+                {t('needOpenCajaOverlay')}
               </span>
             </div>
           )}
@@ -133,27 +135,27 @@ export const Tables = () => {
       <div className="w-full md:w-[30%] border-t md:border-t-0 md:border-l border-zinc-200 pt-5 md:pt-0 md:pl-5">
         {tableDetails ? (
           <div>
-            <h2 className="text-xl font-semibold mb-5">Detalles de mesa</h2>
+            <h2 className="text-xl font-semibold mb-5">{t('tableDetailsTitle')}</h2>
             <div className="bg-white rounded-2xl p-6">
               <div className="flex justify-between items-center">
                 <h2 className="text-[#8c1717] font-bold text-3xl">
                   M{tableDetails.tableNumber}
                 </h2>
                 <div className="flex flex-col gap-2 text-right">
-                  <span className="text-xs text-zinc-500">Mesero</span>
-                  {tableDetails.currentSession?.waiterName || 'Sin asignar'}
+                  <span className="text-xs text-zinc-500">{t('waiterLabel')}</span>
+                  {tableDetails.currentSession?.waiterName || t('unassignedLabel')}
                 </div>
               </div>
               <div className="flex items-center gap-2 mt-4">
                 {!tableDetails.isOccupied ? (
                   <div className="flex items-center gap-2">
                     <div className="w-5 h-5 bg-[#6b6161] rounded-full"></div>
-                    <span className="text-md text-zinc-500">Libre</span>
+                    <span className="text-md text-zinc-500">{t('statusFree')}</span>
                   </div>
                 ) : (
                   <div className="flex items-center gap-2">
                     <div className="w-5 h-5 bg-[#8c1717] rounded-full"></div>
-                    <span className="text-md text-zinc-500">Ocupado</span>
+                    <span className="text-md text-zinc-500">{t('statusOccupied')}</span>
                   </div>
                 )}
               </div>
@@ -180,22 +182,22 @@ export const Tables = () => {
                     ))}
                   </div>
                 ) : (
-                  <span>No hay pedido actualmente</span>
+                  <span>{t('noOrderCurrently')}</span>
                 )}
               </div>
               <div className="flex flex-col gap-4 mt-6">
                 <Button className="w-full text-md">
-                  {tableDetails.isOccupied ? 'Cobrar mesa' : 'Abrir mesa'}
+                  {tableDetails.isOccupied ? t('chargeTableButton') : t('openTableButton')}
                 </Button>
                 {tableDetails.isOccupied ? (
                   <Link to={tableDetails.currentSession?.sessionId + ''}>
-                    <Button className="w-full text-md">Ver Informacion</Button>
+                    <Button className="w-full text-md">{t('viewInfoButton')}</Button>
                   </Link>
                 ) : (
                   ' '
                 )}
                 <Button variant={'outline'} className="w-full text-md">
-                  Imprimir cuenta
+                  {t('printBillButton')}
                 </Button>
 
                 <Button
@@ -208,14 +210,14 @@ export const Tables = () => {
                     e.stopPropagation()
                   }}
                 >
-                  Asignar Mesa
+                  {t('assignTableLabel')}
                 </Button>
               </div>
             </div>
           </div>
         ) : (
           <div className="flex h-full items-center justify-center text-zinc-500">
-            Selecciona una mesa para ver los detalles
+            {t('selectTablePrompt')}
           </div>
         )}
       </div>

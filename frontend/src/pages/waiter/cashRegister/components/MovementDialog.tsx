@@ -17,6 +17,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel } from '@/components/
 import { useUIStore } from '@/store/uiStore'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { cashShiftService } from '@/lib/api'
+import { useTranslation } from '@/lib/i18n'
 
 const movementSchema = z.object({
   type: z.enum(['CASH_IN', 'CASH_OUT']),
@@ -27,6 +28,7 @@ const movementSchema = z.object({
 type MovementInputs = z.infer<typeof movementSchema>
 
 export const MovementDialog = () => {
+  const { t } = useTranslation('waiter')
   const { activeModal, modalPayload, closeModal } = useUIStore()
   const queryClient = useQueryClient()
   const shiftId = modalPayload?.shiftId as number | undefined
@@ -53,7 +55,7 @@ export const MovementDialog = () => {
     <Dialog open={activeModal === 'CASH_MOVEMENT'} onOpenChange={(isOpen) => !isOpen && closeModal()}>
       <DialogContent className="sm:max-w-md rounded-3xl p-6">
         <DialogHeader className="mb-4">
-          <DialogTitle className="text-2xl font-bold text-zinc-800">Movimiento manual</DialogTitle>
+          <DialogTitle className="text-2xl font-bold text-zinc-800">{t('movementDialogTitle')}</DialogTitle>
         </DialogHeader>
 
         <Form {...form}>
@@ -63,7 +65,7 @@ export const MovementDialog = () => {
               name="type"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Tipo</FormLabel>
+                  <FormLabel>{t('typeLabel')}</FormLabel>
                   <Select value={field.value} onValueChange={field.onChange}>
                     <FormControl>
                       <SelectTrigger className="w-full rounded-xl">
@@ -71,8 +73,8 @@ export const MovementDialog = () => {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="CASH_IN">Entrada</SelectItem>
-                      <SelectItem value="CASH_OUT">Salida</SelectItem>
+                      <SelectItem value="CASH_IN">{t('cashInLabel')}</SelectItem>
+                      <SelectItem value="CASH_OUT">{t('cashOutLabel')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </FormItem>
@@ -84,7 +86,7 @@ export const MovementDialog = () => {
               name="amount"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Monto</FormLabel>
+                  <FormLabel>{t('amountLabel')}</FormLabel>
                   <FormControl>
                     <Input
                       type="number"
@@ -104,7 +106,7 @@ export const MovementDialog = () => {
               name="reason"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Motivo</FormLabel>
+                  <FormLabel>{t('reasonLabel')}</FormLabel>
                   <FormControl>
                     <Textarea className="resize-none h-20 rounded-xl" {...field} />
                   </FormControl>
@@ -114,10 +116,10 @@ export const MovementDialog = () => {
 
             <DialogFooter>
               <Button type="button" variant="outline" onClick={closeModal} disabled={mutation.isPending}>
-                Cancelar
+                {t('cancelButton')}
               </Button>
               <Button type="submit" disabled={mutation.isPending || !shiftId}>
-                {mutation.isPending ? 'Guardando...' : 'Registrar'}
+                {mutation.isPending ? t('movementSavingLabel') : t('registerButton')}
               </Button>
             </DialogFooter>
           </form>
