@@ -2,6 +2,7 @@ package com.vanter.ember.loyalty.service;
 
 import com.vanter.ember.config.ResourceNotFoundException;
 import com.vanter.ember.loyalty.dto.LoyaltyAccountResponse;
+import com.vanter.ember.loyalty.dto.LoyaltyVisitResponse;
 import com.vanter.ember.loyalty.dto.RewardCatalogEntryResponse;
 import com.vanter.ember.loyalty.model.LoyaltyAccount;
 import com.vanter.ember.loyalty.model.LoyaltyTier;
@@ -13,6 +14,7 @@ import com.vanter.ember.settings.model.SettingsPayload;
 import com.vanter.ember.settings.service.SettingService;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -62,6 +64,24 @@ public class LoyaltyAccountService {
 
         return new LoyaltyAccountResponse(
                 account.getTotalPoints(), tier, nextTier, pointsToNextTier, rewards);
+    }
+
+    /**
+     * Caller's most recent visits (up to 20, newest first) for {@code
+     * /loyalty/accounts/me/visits} — 404s the same way {@link #getMyAccount} does if the
+     * customer has never joined a table at this tenant.
+     */
+    public List<LoyaltyVisitResponse> getMyVisits(UUID tenantId, String userId) {
+        LoyaltyAccount account = loyaltyAccountRepository.findByTenantIdAndUserId(tenantId, userId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "No loyalty account for this restaurant yet"));
+
+        return loyaltyTransactionRepository
+                .findByLoyaltyAccountIdOrderByCreatedAtDesc(account.getId())
+                .stream()
+                .limit(20)
+                .map(tx -> new LoyaltyVisitResponse(tx.getCreatedAt(), tx.getAmount(), tx.getPoints()))
+                .toList();
     }
 
     public LoyaltyAccount findOrCreate(UUID tenantId, String userId) {
