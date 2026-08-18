@@ -19,6 +19,7 @@ public class SettingsPayload {
     private SpaceSettings space = new SpaceSettings();
     private PaymentGatewaySettings paymentGateway = new PaymentGatewaySettings();
     private BusinessHoursSettings businessHours = new BusinessHoursSettings();
+    private LoyaltySettings loyalty = new LoyaltySettings();
 
     @Data
     public static class BrandingSettings{
@@ -82,6 +83,32 @@ public class SettingsPayload {
             private String openTime;
             private String closeTime;
         }
+    }
+
+    @Data
+    public static class LoyaltySettings {
+        private boolean enabled;
+        private AccrualMode accrualMode = AccrualMode.BY_VISIT;
+
+        @Min(value = 0, message = "Points per visit cannot be negative")
+        private int pointsPerVisit = 10;
+
+        @Min(value = 0, message = "Points per currency unit cannot be negative")
+        private double pointsPerCurrencyUnit = 1.0;
+
+        @Min(value = 0, message = "Threshold cannot be negative")
+        private int plataThreshold = 100;
+
+        @Min(value = 0, message = "Threshold cannot be negative")
+        private int oroThreshold = 500;
+
+        @Min(value = 0, message = "Threshold cannot be negative")
+        private int platinoThreshold = 1500;
+    }
+
+    public enum AccrualMode {
+        BY_VISIT,
+        BY_AMOUNT_SPENT
     }
 
     @Data

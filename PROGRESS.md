@@ -1,8 +1,8 @@
 # PROGRESS.md — Active Execution State
 
 ## Current Execution State
-- **Last Completed Task:** EMB-CLP-01 — `loyalty` module data layer (`LoyaltyTier` enum, `LoyaltyAccount`/`LoyaltyTransaction`/`LoyaltyReward` entities, `V9__loyalty_program.sql`, repositories, tenant-isolation test). Backend 692 tests green (687 + 5 new). Report 146. Predecessor: bugfix-confirmDigitalPayment-voided-bill-guard.
-- **Current Active Task:** none — EMB-CLP-02 (settings + admin tab) up next (see Task Queue Status). System health: backend `./mvnw test` green (692), frontend `pnpm run build` last verified green. Still-owed from before: EMB-CR whole-branch review, manual browser check of EMB-CR/EMB-STAFF/EMB-RV pages (no `claude-in-chrome` tool available this session either), repo-wide `pnpm run lint` ~15 pre-existing errors, `/landing` follow-ups, no UI trigger for `PATCH /admin/users/{id}/role`.
+- **Last Completed Task:** EMB-CLP-02 — `SettingsPayload.LoyaltySettings` (enabled/accrualMode/pointsPerVisit/pointsPerCurrencyUnit/plata-oro-platinoThreshold) + admin "Fidelización" Settings tab (`LoyaltySettings.tsx`). Backend 694 tests green (692 + 2 new). Report 147. Predecessor: EMB-CLP-01.
+- **Current Active Task:** none — EMB-CLP-03 (LoyaltyService: tier computation + accrual math, boundary-tested) up next (see Task Queue Status). System health: backend `./mvnw test` green (694), frontend `pnpm run build` green. Still-owed: `pnpm run openapi` regen + swap `api.ts`'s hand-typed `LoyaltySettings`/`SettingsResponseWithLoyalty` for the generated schema (report 147, same pattern as reports 128/134); EMB-CR whole-branch review; manual browser check of EMB-CR/EMB-STAFF/EMB-RV/EMB-CLP pages (no `claude-in-chrome` tool available this session either); repo-wide `pnpm run lint` ~15 pre-existing errors; `/landing` follow-ups; no UI trigger for `PATCH /admin/users/{id}/role`.
 
 ## Active Context & Recent Decisions
 - Monolith root at `ember/`; Java 17 + Spring Boot 3.5.14 / React 19 + TS + pnpm. Product: multi-tenant restaurant platform (collaborative cart, KDS, floor/waiter management, admin analytics). task-3.2 deleted `spring-kafka` — Spring `ApplicationEventPublisher` is the only event bus, do not reintroduce a broker.
@@ -34,7 +34,7 @@
 - [x] **EMB-RV-01..08 + fix waves (Refunds & Voids, COMPLETE):** backend `Refund` entity/service/endpoints/analytics-netting (01–05), frontend shared prep + `VoidBillModal`/`RefundPaymentModal` + admin historical view (06–08), plus a review-findings fix and a final whole-branch-review fix wave (2 Critical + 4 Important). Reports 137–145. See Active Context bullet for full architecture.
 - [x] **bugfix-confirmDigitalPayment-voided-bill-guard:** the one payment entry point (`confirmDigitalPayment`) the final-review fix wave missed — added the same `BillStatus.VOIDED` guard its two siblings already had, closing the last EMB-RV finding before merge. Backend 687/687 green.
 - [x] **EMB-CLP-01:** `loyalty` module data layer — `LoyaltyTier` enum, `LoyaltyAccount`/`LoyaltyTransaction`/`LoyaltyReward` entities + migration + repositories + tenant-isolation test. Report 146.
-- [ ] **EMB-CLP-02:** `SettingsPayload.LoyaltySettings` (enabled/accrualMode/pointsPerVisit/pointsPerCurrencyUnit/plata-oro-platinoThreshold) + admin "Fidelización" Settings tab.
+- [x] **EMB-CLP-02:** `SettingsPayload.LoyaltySettings` (enabled/accrualMode/pointsPerVisit/pointsPerCurrencyUnit/plata-oro-platinoThreshold) + admin "Fidelización" Settings tab. Report 147.
 - [ ] **EMB-CLP-03:** `LoyaltyService` — tier computation (computed-on-read) + accrual math for both modes, unit-tested at threshold boundaries.
 - [ ] **EMB-CLP-04:** `LoyaltyAccount` creation hook on first table-join at a tenant.
 - [ ] **EMB-CLP-05:** `LoyaltyAccrualListener` on the existing `PaymentCompleted` event — per-participant crediting off each `BillSplit`.

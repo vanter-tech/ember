@@ -48,6 +48,21 @@ export interface WaiterBillState {
   pendingDigitalPayments?: PendingDigitalPayment[]
 }
 
+// Interim hand-typed shape for SettingsPayload.loyalty (EMB-CLP-02) — backend-types.ts has not
+// been regenerated against the new field yet. Swap for components['schemas']['LoyaltySettings']
+// once `pnpm run openapi` is re-run (same pattern as reports 128/134).
+export type LoyaltyAccrualMode = 'BY_VISIT' | 'BY_AMOUNT_SPENT'
+export interface LoyaltySettings {
+  enabled: boolean
+  accrualMode: LoyaltyAccrualMode
+  pointsPerVisit: number
+  pointsPerCurrencyUnit: number
+  plataThreshold: number
+  oroThreshold: number
+  platinoThreshold: number
+}
+export type SettingsResponseWithLoyalty = SettingsResponse & { loyalty?: LoyaltySettings }
+
 export interface Page<T> {
   content: T[]
   totalElements: number

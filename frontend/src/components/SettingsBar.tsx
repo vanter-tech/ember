@@ -7,6 +7,7 @@ import {
   Receipt,
   Printer,
   Clock,
+  Gift,
 } from 'lucide-react';
 
 export const SettingsBar = () => {
@@ -66,6 +67,15 @@ export const SettingsBar = () => {
             >
                 <Clock className="mr-2 h-4 w-4" />
                 Horario
+            </Button>
+            <Button
+                variant={activeSettings === 'FIDELIZACION' ?
+                    'default' : 'ghost'}
+                onClick={() => openSettings('FIDELIZACION')}
+                className="justify-start"
+            >
+                <Gift className="mr-2 h-4 w-4" />
+                Fidelización
             </Button>
         </nav>
     )
