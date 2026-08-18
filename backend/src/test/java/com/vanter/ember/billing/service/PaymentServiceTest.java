@@ -208,6 +208,8 @@ class PaymentServiceTest {
         assertThat(captor.getValue().sessionId()).isEqualTo("sess-1");
         assertThat(captor.getValue().tableId()).isEqualTo(TABLE_ID);
         assertThat(captor.getValue().billId()).isEqualTo(1L);
+        assertThat(bill.getStatus()).isEqualTo(BillStatus.PAID);
+        verify(billRepository).save(bill);
     }
 
     @Test
@@ -226,6 +228,7 @@ class PaymentServiceTest {
         paymentService.registerPhysicalPayment(1L, "Alice", new BigDecimal("12.50"), "alice@ember.local");
 
         verify(eventPublisher, never()).publishEvent(any());
+        assertThat(bill.getStatus()).isEqualTo(BillStatus.OPEN);
     }
 
     @Test
@@ -479,6 +482,8 @@ class PaymentServiceTest {
         verify(eventPublisher).publishEvent(captor.capture());
         assertThat(captor.getValue().billId()).isEqualTo(1L);
         assertThat(captor.getValue().sessionId()).isEqualTo("sess-1");
+        assertThat(bill.getStatus()).isEqualTo(BillStatus.PAID);
+        verify(billRepository).save(bill);
     }
 
     @Test

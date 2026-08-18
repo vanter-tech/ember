@@ -99,6 +99,8 @@ public class PaymentService {
         List<BillSplit> allSplits = billSplitRepository.findByBillId(billId);
         boolean allPaid = allSplits.stream().allMatch(s -> s.getStatus() == BillSplitStatus.PAID);
         if (allPaid) {
+            bill.setStatus(BillStatus.PAID);
+            billRepository.save(bill);
             UUID tableId = sessionService.findById(bill.getSessionId()).getTableId();
             eventPublisher.publishEvent(new PaymentCompleted(bill.getSessionId(), tableId, billId));
         }
@@ -171,6 +173,8 @@ public class PaymentService {
         List<BillSplit> allSplits = billSplitRepository.findByBillId(payment.getBill().getId());
         boolean allPaid = allSplits.stream().allMatch(s -> s.getStatus() == BillSplitStatus.PAID);
         if (allPaid) {
+            bill.setStatus(BillStatus.PAID);
+            billRepository.save(bill);
             UUID tableId = sessionService.findById(payment.getBill().getSessionId()).getTableId();
             eventPublisher.publishEvent(
                     new PaymentCompleted(payment.getBill().getSessionId(), tableId,
