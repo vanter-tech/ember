@@ -10,12 +10,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
+import { useTranslation } from '@/lib/i18n';
 
 type SettingsPayload = components['schemas']['SettingsPayload'];
 type BillingSettings = components['schemas']['BillingSettings'];
 type TaxRule = components['schemas']['TaxRule'];
 
 export const BillingSettings = () => {
+  const { t } = useTranslation('admin');
   const queryClient = useQueryClient();
 
   const { data: settings, isPending: isLoadingSettings } = useQuery({
@@ -103,7 +105,7 @@ export const BillingSettings = () => {
   };
 
   if (isLoadingSettings) {
-    return <div className="p-6 text-zinc-500">Cargando configuraciones...</div>;
+    return <div className="p-6 text-zinc-500">{t('loadingSettingsLabel')}</div>;
   }
 
   return (
@@ -113,15 +115,15 @@ export const BillingSettings = () => {
           <Receipt className="w-6 h-6" />
         </div>
         <div>
-          <CardTitle className="text-xl">Facturación</CardTitle>
-          <CardDescription>Configura moneda, impuestos y propinas sugeridas.</CardDescription>
+          <CardTitle className="text-xl">{t('billingLabel')}</CardTitle>
+          <CardDescription>{t('billingCardDescription')}</CardDescription>
         </div>
       </CardHeader>
 
       <CardContent className="space-y-8">
         <div className="max-w-md grid grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="currencySymbol">Símbolo de moneda</Label>
+            <Label htmlFor="currencySymbol">{t('currencySymbolLabel')}</Label>
             <Input
               id="currencySymbol"
               value={currentCurrencySymbol}
@@ -130,7 +132,7 @@ export const BillingSettings = () => {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="taxRate">Tasa de impuesto (%)</Label>
+            <Label htmlFor="taxRate">{t('taxRateLabel')}</Label>
             <Input
               id="taxRate"
               type="number"
@@ -146,9 +148,9 @@ export const BillingSettings = () => {
 
         <div className="flex items-center justify-between max-w-md">
           <div className="space-y-0.5">
-            <Label htmlFor="taxIncludeInMenuPrice">Impuesto incluido en el precio del menú</Label>
+            <Label htmlFor="taxIncludeInMenuPrice">{t('taxIncludedLabel')}</Label>
             <p className="text-xs text-muted-foreground">
-              Si está activo, los precios del menú ya incluyen el impuesto.
+              {t('taxIncludedDescription')}
             </p>
           </div>
           <Switch
@@ -159,7 +161,7 @@ export const BillingSettings = () => {
         </div>
 
         <div className="max-w-md space-y-3">
-          <Label>Propinas sugeridas (%)</Label>
+          <Label>{t('suggestedTipsLabel')}</Label>
           <div className="flex flex-wrap gap-2">
             {currentTipPercentages.map((tip, index) => (
               <span
@@ -171,7 +173,7 @@ export const BillingSettings = () => {
                   type="button"
                   onClick={() => handleRemoveTip(index)}
                   className="text-zinc-400 hover:text-zinc-700"
-                  aria-label={`Eliminar propina sugerida ${tip}%`}
+                  aria-label={t('removeTipAriaLabel', { tip })}
                 >
                   <X className="w-3 h-3" />
                 </button>
@@ -183,25 +185,25 @@ export const BillingSettings = () => {
               type="number"
               min="0"
               max="100"
-              placeholder="Ej. 10"
+              placeholder={t('tipPlaceholderExample')}
               value={newTipValue}
               onChange={(e) => setNewTipValue(e.target.value)}
               className="focus-visible:ring-[#7a1315]"
             />
             <Button type="button" variant="outline" onClick={handleAddTip}>
               <Plus className="w-4 h-4 mr-1" />
-              Agregar
+              {t('addButton')}
             </Button>
           </div>
         </div>
 
         <div className="space-y-3">
-          <Label>Reglas de impuestos</Label>
+          <Label>{t('taxRulesLabel')}</Label>
           <div className="space-y-3">
             {currentTaxRules.map((rule, index) => (
               <div key={index} className="flex flex-wrap items-end gap-3 border border-zinc-200 rounded-lg p-3">
                 <div className="space-y-1">
-                  <Label htmlFor={`taxRuleName-${index}`} className="text-xs">Nombre</Label>
+                  <Label htmlFor={`taxRuleName-${index}`} className="text-xs">{t('nameLabel')}</Label>
                   <Input
                     id={`taxRuleName-${index}`}
                     value={rule.name ?? ''}
@@ -210,7 +212,7 @@ export const BillingSettings = () => {
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label htmlFor={`taxRuleRate-${index}`} className="text-xs">Tasa (%)</Label>
+                  <Label htmlFor={`taxRuleRate-${index}`} className="text-xs">{t('taxRuleRateLabel')}</Label>
                   <Input
                     id={`taxRuleRate-${index}`}
                     type="number"
@@ -228,7 +230,7 @@ export const BillingSettings = () => {
                     checked={rule.includedInPrice ?? false}
                     onCheckedChange={(checked) => handleTaxRuleChange(index, { includedInPrice: checked })}
                   />
-                  <Label htmlFor={`taxRuleIncluded-${index}`} className="text-xs">Incluido en precio</Label>
+                  <Label htmlFor={`taxRuleIncluded-${index}`} className="text-xs">{t('includedInPriceLabel')}</Label>
                 </div>
                 <Button
                   type="button"
@@ -243,7 +245,7 @@ export const BillingSettings = () => {
           </div>
           <Button type="button" variant="outline" onClick={handleAddTaxRule}>
             <Plus className="w-4 h-4 mr-1" />
-            Agregar regla
+            {t('addTaxRuleButton')}
           </Button>
         </div>
       </CardContent>
@@ -255,7 +257,7 @@ export const BillingSettings = () => {
           disabled={draftBilling === undefined || updateSettingsMutation.isPending}
           className="text-zinc-700 hover:bg-zinc-100 p-4"
         >
-          Deshacer cambios
+          {t('undoChangesButton')}
         </Button>
 
         <Button
@@ -266,10 +268,10 @@ export const BillingSettings = () => {
           {updateSettingsMutation.isPending ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Guardando...
+              {t('savingEllipsisLabel')}
             </>
           ) : (
-            'Guardar Cambios'
+            t('saveSettingsButton')
           )}
         </Button>
       </CardFooter>

@@ -9,10 +9,12 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import { useTranslation } from '@/lib/i18n';
 
 type SettingsPayload = components['schemas']['SettingsPayload'];
 
 export const SpacesSettings = () => {
+  const { t } = useTranslation('admin');
   const queryClient = useQueryClient();
   
   const { data: settings, isPending: isLoadingSettings } = useQuery({
@@ -56,7 +58,7 @@ export const SpacesSettings = () => {
   };
 
   if (isLoadingSettings) {
-    return <div className="p-6 text-zinc-500">Cargando configuraciones...</div>;
+    return <div className="p-6 text-zinc-500">{t('loadingSettingsLabel')}</div>;
   }
 
   return (
@@ -66,14 +68,14 @@ export const SpacesSettings = () => {
           <LayoutDashboard className="w-6 h-6" />
         </div>
         <div>
-          <CardTitle className="text-xl">Espacios y Distribución</CardTitle>
-          <CardDescription>Define la cantidad física de mesas en tu local.</CardDescription>
+          <CardTitle className="text-xl">{t('spaceCardTitle')}</CardTitle>
+          <CardDescription>{t('spaceCardDescription')}</CardDescription>
         </div>
       </CardHeader>
 
       <CardContent>
         <div className="max-w-md space-y-3">
-          <Label htmlFor="totalTables">Cantidad Total de Mesas</Label>
+          <Label htmlFor="totalTables">{t('totalTablesLabel')}</Label>
           <Input
             id="totalTables"
             type="number"
@@ -84,22 +86,22 @@ export const SpacesSettings = () => {
             className="focus-visible:ring-[#7a1315]"
           />
           <p className="text-xs text-muted-foreground">
-            Al guardar, el sistema sincronizará automáticamente los códigos QR para la facturación.
+            {t('totalTablesDescription')}
           </p>
         </div>
       </CardContent>
 
       <CardFooter className="flex justify-end gap-3 pt-6 border-t">
-        <Button 
-          variant="outline" 
+        <Button
+          variant="outline"
           onClick={handleUndo}
           disabled={draftTables === undefined || updateSettingsMutation.isPending}
           className="text-zinc-700 hover:bg-zinc-100 p-4"
         >
-          Deshacer cambios
+          {t('undoChangesButton')}
         </Button>
-        
-        <Button 
+
+        <Button
           onClick={handleSave}
           disabled={draftTables === undefined || updateSettingsMutation.isPending}
           className="hover:bg-[#b91016] text-white p-4"
@@ -107,10 +109,10 @@ export const SpacesSettings = () => {
           {updateSettingsMutation.isPending ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Guardando...
+              {t('savingEllipsisLabel')}
             </>
           ) : (
-            'Guardar Cambios'
+            t('saveSettingsButton')
           )}
         </Button>
       </CardFooter>

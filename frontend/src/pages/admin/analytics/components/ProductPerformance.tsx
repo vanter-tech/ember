@@ -3,10 +3,12 @@ import { Tag, Trophy } from 'lucide-react'
 import { analyticsService } from '@/lib/api'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table'
+import { useTranslation } from '@/lib/i18n'
 
 const TOP_PRODUCTS_LIMIT = 10
 
 export const ProductPerformance = () => {
+  const { t } = useTranslation('admin')
   const { data, isLoading, isError } = useQuery({
     queryKey: ['analyticsProducts', TOP_PRODUCTS_LIMIT],
     queryFn: () => analyticsService.getProducts(undefined, undefined, TOP_PRODUCTS_LIMIT),
@@ -24,24 +26,24 @@ export const ProductPerformance = () => {
               <Trophy className="h-4 w-4 text-primary" strokeWidth={2} />
             </div>
             <CardTitle className="text-base font-semibold tracking-tight text-foreground">
-              Productos más vendidos
+              {t('topProductsTitle')}
             </CardTitle>
           </div>
         </CardHeader>
         <CardContent>
           {isLoading && (
             <div className="flex items-center justify-center py-16 text-sm text-muted-foreground">
-              Cargando productos...
+              {t('loadingProducts')}
             </div>
           )}
           {isError && (
             <div className="flex items-center justify-center py-16 text-sm text-destructive">
-              Error al cargar los productos.
+              {t('loadingProductsError')}
             </div>
           )}
           {data && products.length === 0 && (
             <div className="flex items-center justify-center py-16 text-sm text-muted-foreground">
-              Sin ventas registradas.
+              {t('noSalesRegistered')}
             </div>
           )}
           {products.length > 0 && (
@@ -58,7 +60,10 @@ export const ProductPerformance = () => {
                       )}
                     </span>
                     <span className="shrink-0 text-muted-foreground">
-                      ${(product.revenue ?? 0).toFixed(2)} · {product.quantitySold ?? 0} uds
+                      {t('productRevenueSummary', {
+                        revenue: (product.revenue ?? 0).toFixed(2),
+                        quantity: product.quantitySold ?? 0,
+                      })}
                     </span>
                   </div>
                   <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-muted">
@@ -68,8 +73,10 @@ export const ProductPerformance = () => {
                     />
                   </div>
                   <span className="text-[11px] text-muted-foreground">
-                    {(product.revenueShare ?? 0).toFixed(1)}% del ingreso · acumulado{' '}
-                    {(product.cumulativeShare ?? 0).toFixed(1)}%
+                    {t('productShareSummary', {
+                      share: (product.revenueShare ?? 0).toFixed(1),
+                      cumulative: (product.cumulativeShare ?? 0).toFixed(1),
+                    })}
                   </span>
                 </div>
               ))}
@@ -85,26 +92,32 @@ export const ProductPerformance = () => {
               <Tag className="h-4 w-4 text-primary" strokeWidth={2} />
             </div>
             <CardTitle className="text-base font-semibold tracking-tight text-foreground">
-              Por categoría
+              {t('byCategoryTitle')}
             </CardTitle>
           </div>
         </CardHeader>
         <CardContent>
           {data && categories.length === 0 && (
             <div className="flex items-center justify-center py-16 text-sm text-muted-foreground">
-              Sin datos.
+              {t('noDataLabel')}
             </div>
           )}
           {categories.length > 0 && (
             <Table>
-              <TableBody>
+              <TableBody className='gap-5 flex flex-col'>
                 {categories.map((category, index) => (
-                  <TableRow key={`${category.categoryId ?? 'deleted'}-${index}`}>
-                    <TableCell className="truncate font-medium text-foreground">
-                      {category.name ?? 'Sin categoría'}
+                  <TableRow key={`${category.categoryId ?? 'deleted'}-${index}`} className='flex flex-col'>
+                    <TableCell className="truncate font-medium text-foreground justify-between pl-0 pt-0 flex">
+                      <span>{index + 1}. {category.name ?? t('uncategorizedLabel')}</span>
+                      <span className="shrink-0 text-muted-foreground" >{(category.revenueShare ?? 0).toFixed(1)}%</span>
                     </TableCell>
-                    <TableCell className="text-right tabular-nums text-muted-foreground">
-                      {(category.revenueShare ?? 0).toFixed(1)}%
+                    <TableCell className="text-right tabular-nums text-muted-foreground p-0">
+                      <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                    <div
+                      className="h-full rounded-full bg-primary"
+                      style={{ width: `${category.revenueShare ?? 0}%` }}
+                    />
+                  </div>
                     </TableCell>
                   </TableRow>
                 ))}

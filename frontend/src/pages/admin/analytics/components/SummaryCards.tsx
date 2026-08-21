@@ -2,8 +2,10 @@ import { useQuery } from '@tanstack/react-query'
 import { analyticsService } from '@/lib/api'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { DollarSign, Users, Receipt } from 'lucide-react'
+import { useTranslation } from '@/lib/i18n'
 
 export const SummaryCards = () => {
+  const { t } = useTranslation('admin')
   const { data, isLoading, isError } = useQuery({
     queryKey: ['analyticsSummary'],
     queryFn: () => analyticsService.getSummary(),
@@ -12,7 +14,7 @@ export const SummaryCards = () => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-10 text-sm text-muted-foreground">
-        Cargando métricas...
+        {t('loadingSummaryMetrics')}
       </div>
     )
   }
@@ -20,24 +22,24 @@ export const SummaryCards = () => {
   if (isError || !data) {
     return (
       <div className="flex items-center justify-center py-10 text-sm text-destructive">
-        Error al cargar las métricas.
+        {t('loadingSummaryMetricsError')}
       </div>
     )
   }
 
   const cards = [
     {
-      label: 'Ingresos totales',
+      label: t('totalRevenueLabel'),
       value: `$${(data.totalRevenue ?? 0).toFixed(2)}`,
       icon: DollarSign,
     },
     {
-      label: 'Sesiones activas',
+      label: t('activeSessionsLabel'),
       value: data.activeSessions ?? 0,
       icon: Users,
     },
     {
-      label: 'Ticket promedio',
+      label: t('averageOrderValueLabel'),
       value: `$${(data.averageOrderValue ?? 0).toFixed(2)}`,
       icon: Receipt,
     },
@@ -50,13 +52,13 @@ export const SummaryCards = () => {
           key={label}
           className="border border-border/40 bg-background py-6 shadow-sm"
         >
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              {label}
-            </CardTitle>
+          <CardHeader className="flex flex-row items-center justify-start gap-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10">
               <Icon className="h-4 w-4 text-primary" strokeWidth={2} />
             </div>
+            <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              {label}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-3xl font-bold tracking-tight tabular-nums text-primary">

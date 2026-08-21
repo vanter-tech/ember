@@ -17,6 +17,7 @@ import { useUIStore } from '@/store/uiStore';
 import { CreateRewardModal } from './loyalty/CreateRewardModal';
 import { EditRewardModal } from './loyalty/EditRewardModal';
 import { TIER_BADGE_CLASSNAMES, TIER_LABELS } from './loyalty/types';
+import { useTranslation } from '@/lib/i18n';
 
 const LOYALTY_DEFAULTS: LoyaltySettingsPayload = {
   enabled: false,
@@ -29,6 +30,7 @@ const LOYALTY_DEFAULTS: LoyaltySettingsPayload = {
 };
 
 export const LoyaltySettings = () => {
+  const { t } = useTranslation('admin');
   const queryClient = useQueryClient();
   const openModal = useUIStore((state) => state.openModal);
 
@@ -101,7 +103,7 @@ export const LoyaltySettings = () => {
   };
 
   if (isLoadingSettings) {
-    return <div className="p-6 text-zinc-500">Cargando configuraciones...</div>;
+    return <div className="p-6 text-zinc-500">{t('loadingSettingsLabel')}</div>;
   }
 
   return (
@@ -112,8 +114,8 @@ export const LoyaltySettings = () => {
           <Gift className="w-6 h-6" />
         </div>
         <div>
-          <CardTitle className="text-xl">Fidelización</CardTitle>
-          <CardDescription>Configura el programa de puntos y niveles para tus clientes.</CardDescription>
+          <CardTitle className="text-xl">{t('loyaltyLabel')}</CardTitle>
+          <CardDescription>{t('loyaltyCardDescription')}</CardDescription>
         </div>
       </CardHeader>
 
@@ -121,9 +123,9 @@ export const LoyaltySettings = () => {
         <div className="max-w-md space-y-6">
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <Label htmlFor="loyaltyEnabled">Programa habilitado</Label>
+              <Label htmlFor="loyaltyEnabled">{t('loyaltyEnabledLabel')}</Label>
               <p className="text-xs text-muted-foreground">
-                Acumula puntos por cada mesa pagada y asigna niveles a tus clientes.
+                {t('loyaltyEnabledDescription')}
               </p>
             </div>
             <Switch
@@ -134,7 +136,7 @@ export const LoyaltySettings = () => {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="loyaltyAccrualMode">Modo de acumulación</Label>
+            <Label htmlFor="loyaltyAccrualMode">{t('accrualModeLabel')}</Label>
             <Select
               value={currentAccrualMode}
               onValueChange={(value) => updateDraft({ accrualMode: value as LoyaltyAccrualMode })}
@@ -143,15 +145,15 @@ export const LoyaltySettings = () => {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="BY_VISIT">Puntos fijos por visita</SelectItem>
-                <SelectItem value="BY_AMOUNT_SPENT">Puntos por monto gastado</SelectItem>
+                <SelectItem value="BY_VISIT">{t('byVisitOptionLabel')}</SelectItem>
+                <SelectItem value="BY_AMOUNT_SPENT">{t('byAmountOptionLabel')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           {currentAccrualMode === 'BY_VISIT' ? (
             <div className="space-y-2">
-              <Label htmlFor="loyaltyPointsPerVisit">Puntos por visita</Label>
+              <Label htmlFor="loyaltyPointsPerVisit">{t('pointsPerVisitLabel')}</Label>
               <Input
                 id="loyaltyPointsPerVisit"
                 type="number"
@@ -163,7 +165,7 @@ export const LoyaltySettings = () => {
             </div>
           ) : (
             <div className="space-y-2">
-              <Label htmlFor="loyaltyPointsPerCurrencyUnit">Puntos por unidad monetaria gastada</Label>
+              <Label htmlFor="loyaltyPointsPerCurrencyUnit">{t('pointsPerCurrencyLabel')}</Label>
               <Input
                 id="loyaltyPointsPerCurrencyUnit"
                 type="number"
@@ -177,10 +179,10 @@ export const LoyaltySettings = () => {
           )}
 
           <div className="space-y-2">
-            <Label>Umbrales de nivel (puntos acumulados)</Label>
+            <Label>{t('tierThresholdsLabel')}</Label>
             <div className="grid grid-cols-3 gap-3">
               <div className="space-y-1">
-                <Label htmlFor="loyaltyPlataThreshold" className="text-xs text-muted-foreground">Plata</Label>
+                <Label htmlFor="loyaltyPlataThreshold" className="text-xs text-muted-foreground">{t('tierSilverLabel')}</Label>
                 <Input
                   id="loyaltyPlataThreshold"
                   type="number"
@@ -191,7 +193,7 @@ export const LoyaltySettings = () => {
                 />
               </div>
               <div className="space-y-1">
-                <Label htmlFor="loyaltyOroThreshold" className="text-xs text-muted-foreground">Oro</Label>
+                <Label htmlFor="loyaltyOroThreshold" className="text-xs text-muted-foreground">{t('tierGoldLabel')}</Label>
                 <Input
                   id="loyaltyOroThreshold"
                   type="number"
@@ -202,7 +204,7 @@ export const LoyaltySettings = () => {
                 />
               </div>
               <div className="space-y-1">
-                <Label htmlFor="loyaltyPlatinoThreshold" className="text-xs text-muted-foreground">Platino</Label>
+                <Label htmlFor="loyaltyPlatinoThreshold" className="text-xs text-muted-foreground">{t('tierPlatinumLabel')}</Label>
                 <Input
                   id="loyaltyPlatinoThreshold"
                   type="number"
@@ -224,7 +226,7 @@ export const LoyaltySettings = () => {
           disabled={draftLoyalty === undefined || updateSettingsMutation.isPending}
           className="text-zinc-700 hover:bg-zinc-100 p-4"
         >
-          Deshacer cambios
+          {t('undoChangesButton')}
         </Button>
 
         <Button
@@ -235,10 +237,10 @@ export const LoyaltySettings = () => {
           {updateSettingsMutation.isPending ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Guardando...
+              {t('savingEllipsisLabel')}
             </>
           ) : (
-            'Guardar Cambios'
+            t('saveSettingsButton')
           )}
         </Button>
       </CardFooter>
@@ -247,32 +249,32 @@ export const LoyaltySettings = () => {
     <Card className="shadow-sm border-zinc-100">
       <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 p-6">
         <div>
-          <CardTitle className="text-xl">Catálogo de recompensas</CardTitle>
-          <CardDescription>Beneficios que tus clientes desbloquean por nivel.</CardDescription>
+          <CardTitle className="text-xl">{t('rewardCatalogTitle')}</CardTitle>
+          <CardDescription>{t('rewardCatalogDescription')}</CardDescription>
         </div>
         <Button
           onClick={() => openModal('CREATE_REWARD')}
           className="hover:bg-[#b91016] text-white"
         >
           <Plus className="mr-2 h-4 w-4" />
-          Nueva recompensa
+          {t('newRewardButton')}
         </Button>
       </CardHeader>
 
       <CardContent>
         {isLoadingRewards ? (
-          <div className="p-6 text-zinc-500">Cargando recompensas...</div>
+          <div className="p-6 text-zinc-500">{t('loadingRewards')}</div>
         ) : !rewards || rewards.length === 0 ? (
           <div className="flex items-center justify-center rounded-xl border border-dashed border-border py-12 text-sm text-muted-foreground">
-            Todavía no hay recompensas en el catálogo.
+            {t('noRewardsYet')}
           </div>
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Nombre</TableHead>
-                <TableHead>Nivel requerido</TableHead>
-                <TableHead>Estado</TableHead>
+                <TableHead>{t('nameLabel')}</TableHead>
+                <TableHead>{t('requiredTierLabel')}</TableHead>
+                <TableHead>{t('statusColumnLabel')}</TableHead>
                 <TableHead className="w-12" />
               </TableRow>
             </TableHeader>
@@ -292,7 +294,7 @@ export const LoyaltySettings = () => {
                   </TableCell>
                   <TableCell>
                     <Badge variant={reward.active ? 'default' : 'outline'}>
-                      {reward.active ? 'Activa' : 'Inactiva'}
+                      {reward.active ? t('activeRewardLabel') : t('inactiveRewardLabel')}
                     </Badge>
                   </TableCell>
                   <TableCell>

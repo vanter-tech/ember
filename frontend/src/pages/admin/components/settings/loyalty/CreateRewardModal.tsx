@@ -31,6 +31,7 @@ import { useUIStore } from '@/store/uiStore'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { loyaltyRewardService } from '@/lib/api'
 import { TIER_LABELS } from './types'
+import { useTranslation } from '@/lib/i18n'
 
 const createRewardSchema = z.object({
   name: z.string().min(2, 'El nombre debe tener al menos 2 caracteres').max(255),
@@ -41,6 +42,7 @@ const createRewardSchema = z.object({
 type CreateRewardInputs = z.infer<typeof createRewardSchema>
 
 export const CreateRewardModal = () => {
+  const { t } = useTranslation('admin')
   const { activeModal, closeModal } = useUIStore()
   const queryClient = useQueryClient()
 
@@ -75,10 +77,10 @@ export const CreateRewardModal = () => {
       <DialogContent className="sm:max-w-md rounded-3xl p-6">
         <DialogHeader className="mb-4">
           <DialogTitle className="text-2xl font-bold text-zinc-800">
-            Nueva recompensa
+            {t('newRewardButton')}
           </DialogTitle>
           <DialogDescription className="text-zinc-500 text-sm mt-1">
-            Agrega un beneficio al catálogo de fidelización.
+            {t('addRewardDialogDescription')}
           </DialogDescription>
         </DialogHeader>
 
@@ -92,10 +94,10 @@ export const CreateRewardModal = () => {
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Nombre</FormLabel>
+                  <FormLabel>{t('nameLabel')}</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="Ej. Postre gratis"
+                      placeholder={t('rewardNamePlaceholder')}
                       className="rounded-xl"
                       {...field}
                     />
@@ -109,10 +111,10 @@ export const CreateRewardModal = () => {
               name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Descripción</FormLabel>
+                  <FormLabel>{t('descriptionFieldLabel')}</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="Ej. Aplica en cualquier visita al alcanzar el nivel requerido"
+                      placeholder={t('rewardDescriptionPlaceholder')}
                       className="rounded-xl"
                       {...field}
                     />
@@ -126,7 +128,7 @@ export const CreateRewardModal = () => {
               name="requiredTier"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Nivel requerido</FormLabel>
+                  <FormLabel>{t('requiredTierLabel')}</FormLabel>
                   <Select value={field.value} onValueChange={field.onChange}>
                     <FormControl>
                       <SelectTrigger className="w-full rounded-xl">
@@ -152,10 +154,10 @@ export const CreateRewardModal = () => {
                 onClick={handleClose}
                 disabled={mutation.isPending}
               >
-                Cancelar
+                {t('cancelButton')}
               </Button>
               <Button type="submit" disabled={mutation.isPending}>
-                {mutation.isPending ? 'Guardando...' : 'Crear recompensa'}
+                {mutation.isPending ? t('savingEllipsisLabel') : t('createRewardButton')}
               </Button>
             </DialogFooter>
           </form>
