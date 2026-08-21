@@ -1,0 +1,14 @@
+export const kitchen = {
+  loadingOrders: 'Cargando pedidos...',
+  loadingOrdersError: 'No se pudieron cargar los pedidos.',
+  connected: 'Conectado',
+  disconnected: 'Desconectado',
+  kdsSubtitle: 'Monitor de cocina - KDS',
+  ticketLabel: 'Ticket: #{{code}}',
+  viewDetails: 'Ver detalles',
+  orderDetailsHeading: 'Detalles de Orden - M{{tableNumber}}',
+  clientPlaceholder: 'Cliente: #-Por-iterar',
+  entryTimeLabel: 'Ingreso: {{time}}',
+  printButton: 'Imprimir',
+  voidButton: 'Anular',
+}

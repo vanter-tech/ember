@@ -12,9 +12,11 @@ import { Badge } from '@/components/ui/badge'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import { NEXT_ACTION_LABEL, NEXT_STATUS, STATUS_LABEL } from '../lib/itemStatus'
+import { useTranslation } from '@/lib/i18n'
 
 export const QueueCard = ({order}: {order: kitchenOrders}) => {
   const queryClient = useQueryClient()
+  const { t } = useTranslation('kitchen')
 
   const updateItemStatusMutation = useMutation({
     mutationFn: ({ itemId, status }: { itemId: string; status: OrderItemStatus }) =>
@@ -36,7 +38,7 @@ export const QueueCard = ({order}: {order: kitchenOrders}) => {
                     {order.tableNumber || "?"}
                 </CardTitle>
                 <p className='text-xs text-gray-500 mt-1'>
-                    Ticket: #{order.id?.substring(0,6).toUpperCase()}
+                    {t('ticketLabel', { code: order.id?.substring(0,6).toUpperCase() ?? '' })}
                 </p>
             </div>
         </CardHeader>
@@ -70,7 +72,7 @@ export const QueueCard = ({order}: {order: kitchenOrders}) => {
         </CardContent>
         <CardFooter className='mt-auto'>
             <Button className='w-full py-2 hover:bg-red-800 font-medium transition-colors'>
-                Ver detalles
+                {t('viewDetails')}
             </Button>
         </CardFooter>
     </Card>
