@@ -1,5 +1,6 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from './ui/button'
+import { useTranslation } from '@/lib/i18n'
 
 interface PaginationControlsProps {
   page: number
@@ -12,6 +13,7 @@ export const PaginationControls = ({
   totalPages,
   onPageChange,
 }: PaginationControlsProps) => {
+  const { t } = useTranslation('admin')
   if (totalPages <= 1) {
     return null
   }
@@ -34,7 +36,7 @@ export const PaginationControls = ({
         disabled={page === 0}
         onClick={() => onPageChange(page - 1)}
         className={navItemClass(page > 0)}
-        title="Anterior"
+        title={t('previousLabel')}
       >
         <ChevronLeft strokeWidth={1.5} size={24} />
       </Button>
@@ -46,7 +48,7 @@ export const PaginationControls = ({
         disabled={page + 1 >= totalPages}
         onClick={() => onPageChange(page + 1)}
         className={navItemClass(page + 1 < totalPages)}
-        title="Siguiente"
+        title={t('nextLabel')}
       >
         <ChevronRight strokeWidth={1.5} size={24} />
       </Button>

@@ -4,10 +4,12 @@ import toast from 'react-hot-toast'
 import { categoryService, SessionTableService, staffService, type StaffMemberResponse } from '@/lib/api'
 import { useUIStore } from '@/store/uiStore'
 import { Button } from '@/components/ui/button'
+import { useTranslation } from '@/lib/i18n'
 
 export const GlobalDeleteModal = () => {
   const { activeModal, modalPayload, closeModal } = useUIStore()
   const queryClient = useQueryClient()
+  const { t } = useTranslation('admin')
 
   const isDeleteModal =
     activeModal === 'DELETE_CATEGORY' ||
@@ -51,8 +53,8 @@ export const GlobalDeleteModal = () => {
     mutation.mutate()
   }
 
-  const confirmLabel = activeModal === 'DELETE_STAFF' ? 'Sí, Desactivar' : 'Sí, Eliminar'
-  const pendingLabel = activeModal === 'DELETE_STAFF' ? 'Desactivando...' : 'Eliminando...'
+  const confirmLabel = activeModal === 'DELETE_STAFF' ? t('confirmDeactivateLabel') : t('confirmDeleteLabel')
+  const pendingLabel = activeModal === 'DELETE_STAFF' ? t('deactivatingLabel') : t('deletingLabel')
 
   return (
     <Dialog
@@ -62,17 +64,16 @@ export const GlobalDeleteModal = () => {
       <DialogContent className="sm:max-w-md rounded-3xl p-6">
         <DialogHeader className="mb-4">
           <DialogTitle className="m-auto text-2xl font-bold text-zinc-800">
-            ¿Estás seguro?
+            {t('confirmDeleteQuestion')}
           </DialogTitle>
           {activeModal === 'DELETE_STAFF' && (
             <p className="text-center text-sm text-zinc-500">
-              El empleado quedará inactivo y perderá acceso al sistema. Su historial
-              (pagos, turnos de caja) se conserva.
+              {t('deactivateStaffWarning')}
             </p>
           )}
           <div className="flex gap-4 mt-6 flex-col">
             <Button onClick={closeModal} variant="outline" className="w-full">
-              Cancelar
+              {t('cancelButton')}
             </Button>
             <Button
               onClick={handleDelete}

@@ -30,6 +30,7 @@ import { useUIStore } from '@/store/uiStore'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { staffService } from '@/lib/api'
 import { ROLE_LABELS } from '../types'
+import { useTranslation } from '@/lib/i18n'
 
 const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).+$/
 
@@ -51,6 +52,7 @@ type CreateStaffInputs = z.infer<typeof createStaffSchema>
 export const CreateStaffModal = () => {
   const { activeModal, closeModal } = useUIStore()
   const queryClient = useQueryClient()
+  const { t } = useTranslation('admin')
 
   const form = useForm<CreateStaffInputs>({
     resolver: zodResolver(createStaffSchema),
@@ -83,10 +85,10 @@ export const CreateStaffModal = () => {
       <DialogContent className="sm:max-w-md rounded-3xl p-6">
         <DialogHeader className="mb-4">
           <DialogTitle className="text-2xl font-bold text-zinc-800">
-            Agregar empleado
+            {t('addEmployeeLabel')}
           </DialogTitle>
           <DialogDescription className="text-zinc-500 text-sm mt-1">
-            Crea una cuenta de acceso para un nuevo miembro del equipo.
+            {t('addEmployeeDescription')}
           </DialogDescription>
         </DialogHeader>
 
@@ -100,10 +102,10 @@ export const CreateStaffModal = () => {
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Nombre completo</FormLabel>
+                  <FormLabel>{t('fullNameLabel')}</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="Ej. Ana Torres"
+                      placeholder={t('fullNamePlaceholder')}
                       className="rounded-xl"
                       {...field}
                     />
@@ -117,11 +119,11 @@ export const CreateStaffModal = () => {
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Correo electrónico</FormLabel>
+                  <FormLabel>{t('emailLabel')}</FormLabel>
                   <FormControl>
                     <Input
                       type="email"
-                      placeholder="ana@restaurante.com"
+                      placeholder={t('emailPlaceholderStaff')}
                       className="rounded-xl"
                       {...field}
                     />
@@ -135,7 +137,7 @@ export const CreateStaffModal = () => {
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Contraseña</FormLabel>
+                  <FormLabel>{t('passwordLabel')}</FormLabel>
                   <FormControl>
                     <Input type="password" className="rounded-xl" {...field} />
                   </FormControl>
@@ -148,7 +150,7 @@ export const CreateStaffModal = () => {
               name="role"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Rol</FormLabel>
+                  <FormLabel>{t('roleLabel')}</FormLabel>
                   <Select value={field.value} onValueChange={field.onChange}>
                     <FormControl>
                       <SelectTrigger className="w-full rounded-xl">
@@ -172,10 +174,10 @@ export const CreateStaffModal = () => {
                 onClick={handleClose}
                 disabled={mutation.isPending}
               >
-                Cancelar
+                {t('cancelButton')}
               </Button>
               <Button type="submit" disabled={mutation.isPending}>
-                {mutation.isPending ? 'Guardando...' : 'Agregar empleado'}
+                {mutation.isPending ? t('savingEllipsisLabel') : t('addEmployeeLabel')}
               </Button>
             </DialogFooter>
           </form>

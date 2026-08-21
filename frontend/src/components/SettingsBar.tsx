@@ -9,9 +9,11 @@ import {
   Clock,
   Gift,
 } from 'lucide-react';
+import { useTranslation } from '@/lib/i18n'
 
 export const SettingsBar = () => {
     const { activeSettings, openSettings } = useSettingsStore()
+    const { t } = useTranslation('admin')
     return (
         <nav className="flex flex-col gap-2 w-64">
             <Button
@@ -21,7 +23,7 @@ export const SettingsBar = () => {
                 className="justify-start"    
             >
                 <Store className="mr-2 h-4 w-4" />
-                Marca y Negocio
+                {t('brandingAndBusinessLabel')}
             </Button>
             <Button
                 variant={activeSettings === 'MENU' ?
@@ -30,7 +32,7 @@ export const SettingsBar = () => {
                 className="justify-start"
             >
                 <Utensils className="mr-2 h-4 w-4" />
-                Menú
+                {t('menuLabel')}
             </Button>
             <Button
                 variant={activeSettings === 'BILLING' ?
@@ -39,7 +41,7 @@ export const SettingsBar = () => {
                 className="justify-start"       
             >
                 <Receipt className="mr-2 h-4 w-4" />
-                Facturación
+                {t('billingLabel')}
             </Button>
             <Button
                 variant={activeSettings === 'HARDWARE' ?
@@ -48,7 +50,7 @@ export const SettingsBar = () => {
                 className="justify-start"
             >
                 <Printer className="mr-2 h-4 w-4" />
-                Hardware
+                {t('hardwareLabel')}
             </Button>
             <Button
                 variant={activeSettings === 'SPACE' ?
@@ -57,7 +59,7 @@ export const SettingsBar = () => {
                 className="justify-start"
             >
                 <ConciergeBell className="mr-2 h-4 w-4" />
-                Espacio
+                {t('spaceLabel')}
             </Button>
             <Button
                 variant={activeSettings === 'HORARIO' ?
@@ -66,7 +68,7 @@ export const SettingsBar = () => {
                 className="justify-start"
             >
                 <Clock className="mr-2 h-4 w-4" />
-                Horario
+                {t('scheduleLabel')}
             </Button>
             <Button
                 variant={activeSettings === 'FIDELIZACION' ?
@@ -75,7 +77,7 @@ export const SettingsBar = () => {
                 className="justify-start"
             >
                 <Gift className="mr-2 h-4 w-4" />
-                Fidelización
+                {t('loyaltyLabel')}
             </Button>
         </nav>
     )

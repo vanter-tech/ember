@@ -6,6 +6,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 import type { StaffMemberResponse } from '@/lib/api'
 import { ROLE_BADGE_CLASSNAMES, ROLE_LABELS } from '../types'
+import { useTranslation } from '@/lib/i18n'
 
 const getInitials = (name: string) =>
   name
@@ -22,15 +23,16 @@ interface StaffCardProps {
 }
 
 export const StaffCard = ({ member, onViewProfile, onOpenActions }: StaffCardProps) => {
+  const { t } = useTranslation('admin')
   const name = member.name ?? ''
   const roleKey = member.role ?? ''
 
   const metadata = [
-    member.shift ? { label: 'Turno', value: member.shift } : null,
-    member.contractType ? { label: 'Contrato', value: member.contractType } : null,
-    member.location ? { label: 'Ubicación', value: member.location } : null,
+    member.shift ? { label: t('shiftLabel'), value: member.shift } : null,
+    member.contractType ? { label: t('contractTypeLabel'), value: member.contractType } : null,
+    member.location ? { label: t('locationLabel'), value: member.location } : null,
     member.efficiencyPercentage != null
-      ? { label: 'Eficiencia', value: `${member.efficiencyPercentage}%` }
+      ? { label: t('efficiencyLabel'), value: `${member.efficiencyPercentage}%` }
       : null,
   ].filter((item): item is { label: string; value: string } => item !== null)
 
@@ -47,7 +49,7 @@ export const StaffCard = ({ member, onViewProfile, onOpenActions }: StaffCardPro
                 'absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-background',
                 member.active ?? false ? 'bg-emerald-500' : 'bg-zinc-300'
               )}
-              title={member.active ?? false ? 'Activo' : 'Inactivo'}
+              title={member.active ?? false ? t('activeStatus') : t('inactiveStatusLabel')}
             />
           </div>
           <Badge className={cn('border-transparent', ROLE_BADGE_CLASSNAMES[roleKey] ?? 'bg-zinc-100 text-zinc-700')}>
@@ -81,14 +83,14 @@ export const StaffCard = ({ member, onViewProfile, onOpenActions }: StaffCardPro
             className="flex-1"
             onClick={() => onViewProfile?.(member)}
           >
-            Perfil
+            {t('profileButton')}
           </Button>
           <Button
             type="button"
             variant="ghost"
             size="icon-sm"
             onClick={() => onOpenActions?.(member)}
-            aria-label="Más opciones"
+            aria-label={t('moreOptionsAriaLabel')}
           >
             <MoreHorizontal className="h-4 w-4" />
           </Button>
@@ -103,6 +105,7 @@ interface AddStaffCardProps {
 }
 
 export const AddStaffCard = ({ onClick }: AddStaffCardProps) => {
+  const { t } = useTranslation('admin')
   return (
     <button
       type="button"
@@ -110,7 +113,7 @@ export const AddStaffCard = ({ onClick }: AddStaffCardProps) => {
       className="flex min-h-[220px] flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-transparent text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
     >
       <Plus className="h-6 w-6" />
-      <span className="text-sm font-medium">Agregar nuevo rol</span>
+      <span className="text-sm font-medium">{t('addNewRoleButton')}</span>
     </button>
   )
 }
