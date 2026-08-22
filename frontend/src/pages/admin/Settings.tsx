@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {useSettingsStore} from "@/store/uiStore";
 import {SettingsBar} from "@/components/SettingsBar";
 import { BrandingSettings } from "./components/settings/BrandingSettings";
@@ -11,6 +12,7 @@ import { LoyaltySettings } from "./components/settings/LoyaltySettings";
 
 export const Settings = () => {
     const { activeSettings } = useSettingsStore();
+    const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
     const renderContent = () => {
         switch (activeSettings) {
@@ -19,12 +21,9 @@ export const Settings = () => {
             case 'MENU':
                 return <MenuSettings />;
             case 'BILLING':
-                return (
-                    <div className="flex flex-col gap-6">
-                        <BillingSettings />
-                        <PaymentGatewaySettings />
-                    </div>
-                );
+                return <BillingSettings />;
+            case 'PAYMENT_GATEWAY':
+                return <PaymentGatewaySettings />;
             case 'HARDWARE':
                 return <HardwareSettings />;
             case 'SPACE':
@@ -38,8 +37,11 @@ export const Settings = () => {
 
     return(
         <div className="p-6 flex flex-col md:flex-row gap-8">
-            <div className="w-full md:w-64 shrink-0">
-                <SettingsBar />
+            <div className={`w-full shrink-0 ${sidebarCollapsed ? 'md:w-fit' : 'md:w-64'}`}>
+                <SettingsBar
+                    collapsed={sidebarCollapsed}
+                    onToggleCollapsed={() => setSidebarCollapsed((prev) => !prev)}
+                />
             </div>
             <div className="flex-1 bg-white rounded-xl
             shadow-sm border border-zinc-200">

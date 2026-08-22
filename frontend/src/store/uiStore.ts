@@ -7,7 +7,7 @@ export type ModalType = 'CREATE_CATEGORY' | 'EDIT_CATEGORY' | 'DELETE_CATEGORY' 
                          'CHARGE_TABLE' | 'CREATE_STAFF' | 'EDIT_STAFF' | 'DELETE_STAFF' |
                          'VOID_BILL' | 'REFUND_PAYMENT' | 'CREATE_REWARD' | 'EDIT_REWARD' | null;
 
-export type SettingsType = 'BRANDING' | 'MENU' | 'BILLING' | 'HARDWARE'|
+export type SettingsType = 'BRANDING' | 'MENU' | 'BILLING' | 'PAYMENT_GATEWAY' | 'HARDWARE'|
                             'SPACE'| 'HORARIO'| 'FIDELIZACION'| null;
 
 interface UIState {
