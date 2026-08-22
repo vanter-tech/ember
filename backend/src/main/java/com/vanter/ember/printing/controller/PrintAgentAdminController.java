@@ -2,9 +2,13 @@ package com.vanter.ember.printing.controller;
 
 import com.vanter.ember.config.TenantContextHolder;
 import com.vanter.ember.printing.dto.CreatePrintAgentRequest;
+import com.vanter.ember.printing.dto.CreatePrinterConfigRequest;
 import com.vanter.ember.printing.dto.CreatedPrintAgentResponse;
 import com.vanter.ember.printing.dto.PrintAgentResponse;
+import com.vanter.ember.printing.dto.PrinterConfigResponse;
+import com.vanter.ember.printing.dto.UpdatePrinterConfigRequest;
 import com.vanter.ember.printing.service.PrintAgentService;
+import com.vanter.ember.printing.service.PrinterConfigService;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -28,6 +32,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class PrintAgentAdminController {
 
     private final PrintAgentService printAgentService;
+    private final PrinterConfigService printerConfigService;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -54,5 +59,23 @@ public class PrintAgentAdminController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void revoke(@PathVariable UUID id) {
         printAgentService.revoke(TenantContextHolder.requireTenantId(), id);
+    }
+
+    @PostMapping("/{agentId}/printers")
+    @ResponseStatus(HttpStatus.CREATED)
+    public PrinterConfigResponse addPrinter(
+            @PathVariable UUID agentId, @Valid @RequestBody CreatePrinterConfigRequest request) {
+        return printerConfigService.create(TenantContextHolder.requireTenantId(), agentId, request);
+    }
+
+    @GetMapping("/{agentId}/printers")
+    public List<PrinterConfigResponse> listPrinters(@PathVariable UUID agentId) {
+        return printerConfigService.listByAgent(TenantContextHolder.requireTenantId(), agentId);
+    }
+
+    @PatchMapping("/printers/{printerId}")
+    public PrinterConfigResponse updatePrinter(
+            @PathVariable UUID printerId, @RequestBody UpdatePrinterConfigRequest request) {
+        return printerConfigService.update(TenantContextHolder.requireTenantId(), printerId, request);
     }
 }
