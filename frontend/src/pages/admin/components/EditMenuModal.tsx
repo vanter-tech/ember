@@ -101,7 +101,7 @@ export const EditMenuModal = () => {
       open={activeModal == 'EDIT_ITEMS'}
       onOpenChange={(isOpen) => !isOpen && closeModal()}
     >
-      <DialogContent className="sm:max-w-md rounded-3xl p-6">
+      <DialogContent className="sm:max-w-xl rounded-3xl p-6">
         <DialogHeader className="mb-4">
           <DialogTitle className="text-2xl font-bold text-zinc-800">
             {t('editDishTitle')}
@@ -109,7 +109,10 @@ export const EditMenuModal = () => {
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-5"
+          >
             <FormField
               control={form.control}
               name="name"
@@ -119,23 +122,6 @@ export const EditMenuModal = () => {
                   <FormControl>
                     <Input
                       placeholder={t('categoryNamePlaceholder')}
-                      className="rounded-xl focus-visible:ring[#8c1717]"
-                      {...field}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t('descriptionLabel')}</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder={t('descriptionPlaceholder')}
                       className="rounded-xl focus-visible:ring[#8c1717]"
                       {...field}
                     />
@@ -164,10 +150,27 @@ export const EditMenuModal = () => {
 
             <FormField
               control={form.control}
+              name="description"
+              render={({ field }) => (
+                <FormItem className="sm:col-span-2">
+                  <FormLabel>{t('descriptionLabel')}</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder={t('descriptionPlaceholder')}
+                      className="rounded-xl focus-visible:ring[#8c1717]"
+                      {...field}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
               name="available"
               render={({ field }) => (
-                <FormItem className="flex flex-row items-center gap-3 rounded-lg border p-4">
-                  <FormLabel>{t('priceLabel')}</FormLabel>
+                <FormItem className="sm:col-span-2 flex flex-row items-center gap-3 rounded-lg border p-4">
+                  <FormLabel>{t('activateLabel')}</FormLabel>
                   <FormControl>
                     <Switch
                       checked={field.value}
@@ -183,7 +186,7 @@ export const EditMenuModal = () => {
               control={form.control}
               name="image"
               render={({ field: { value, onChange, ...fieldProps } }) => (
-                <FormItem>
+                <FormItem className="sm:col-span-2">
                   <FormLabel>{t('coverImageLabel')}</FormLabel>
                   <FormControl>
                     <Input
@@ -203,7 +206,7 @@ export const EditMenuModal = () => {
               )}
             />
 
-            <DialogFooter>
+            <DialogFooter className="sm:col-span-2">
               <Button
                 type="button"
                 variant="outline"

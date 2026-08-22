@@ -19,6 +19,7 @@ export const admin = {
   savingButton: 'Guardando',
   saveButton: 'Guardar',
   newCategoryDialogTitle: 'Nueva Categoria',
+  editCategoryDialogTitle: 'Editar Categoria',
   newCategoryDescriptionPlaceholder: 'Breve description',
   newDishDialogTitle: 'Nuevo platillo',
   dishNamePlaceholder: 'Ej. Pollo',

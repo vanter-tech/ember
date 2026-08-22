@@ -1,6 +1,6 @@
-import { Button } from '../../../components/ui/button'
-import { Input } from '../../../components/ui/input'
-import { Textarea } from '../../../components/ui/textarea'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -21,43 +21,49 @@ import {
 } from '@/components/ui/form'
 import { useUIStore } from '@/store/uiStore'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { categoryService } from '@/lib/api'
+import { categoryService, type CategoryResponse } from '@/lib/api'
 import { useTranslation } from '@/lib/i18n'
 
-export const NewCategoryModal = () => {
-  const { activeModal, closeModal } = useUIStore()
+const categoryScheme = z.object({
+  name: z.string().min(2, 'Name must have at least 2 characters'),
+  description: z.string().min(10, 'Type your description here'),
+  image: z
+    .any()
+    .refine((file) => file instanceof File, 'You must choose an image')
+    .refine((file) => file?.size <= 5 * 1024 * 1024, 'Size should be 5MB MAX')
+    .optional(),
+})
+
+type CategoryFormInputs = z.infer<typeof categoryScheme>
+
+export const EditCategoryModal = () => {
+  const { activeModal, modalPayload, closeModal } = useUIStore()
   const { t } = useTranslation('admin')
-
   const queryClient = useQueryClient()
-  type CategoryFormInputs = z.infer<typeof categoryScheme>
-
-  const categoryScheme = z.object({
-    name: z.string().min(2, 'Name must have at least 2 characters'),
-    description: z.string().min(10, 'Type your description here'),
-    image: z
-      .any()
-      .refine((file) => file instanceof File, 'You must choose an image')
-      .refine(
-        (file) => file?.size <= 5 * 1024 * 1024,
-        'Size should be 5MB MAX'
-      ),
-  })
+  const category = modalPayload as CategoryResponse | null
 
   const form = useForm<CategoryFormInputs>({
     resolver: zodResolver(categoryScheme),
-    defaultValues: {
-      name: '',
-      description: '',
+    values: {
+      name: category?.name ?? '',
+      description: category?.description ?? '',
       image: undefined,
     },
   })
 
   const mutation = useMutation({
-    mutationFn: categoryService.create,
+    mutationFn: (data: CategoryFormInputs) => {
+      const formData = new FormData()
+      formData.append('name', data.name)
+      formData.append('description', data.description)
+      if (data.image) {
+        formData.append('image', data.image)
+      }
+      return categoryService.update(category!.id!, formData)
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] })
-      toast.success('Category successful created!.')
-      form.reset()
+      toast.success('Category successful updated!.')
       closeModal()
     },
     onError: () => {
@@ -65,28 +71,23 @@ export const NewCategoryModal = () => {
     },
   })
 
-  const onSubmit = (data: CategoryFormInputs) => {
-    const formData = new FormData()
-    formData.append('name', data.name)
-    formData.append('description', data.description)
-    formData.append('image', data.image)
-    mutation.mutate(formData)
-  }
-
   return (
     <Dialog
-      open={activeModal == 'CREATE_CATEGORY'}
+      open={activeModal === 'EDIT_CATEGORY'}
       onOpenChange={(isOpen) => !isOpen && closeModal()}
     >
       <DialogContent className="sm:max-w-xl rounded-3xl p-6">
         <DialogHeader className="mb-4">
           <DialogTitle className="text-2xl font-bold text-zinc-800">
-            {t('newCategoryDialogTitle')}
+            {t('editCategoryDialogTitle')}
           </DialogTitle>
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+          <form
+            onSubmit={form.handleSubmit((data) => mutation.mutate(data))}
+            className="space-y-5"
+          >
             <FormField
               control={form.control}
               name="name"

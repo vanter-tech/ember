@@ -7,6 +7,7 @@ import { Pencil, Trash2 } from 'lucide-react'
 import { useUIStore } from '@/store/uiStore'
 
 import { NewCategoryModal } from '@/pages/admin/components/NewCategoryModal'
+import { EditCategoryModal } from '@/pages/admin/components/EditCategoryModal'
 import { Link } from 'react-router-dom'
 import { GlobalDeleteModal } from '@/components/GlobalDeleteModal'
 import { PaginationControls } from '@/components/PaginationControls'
@@ -124,6 +125,7 @@ export const Category = () => {
       />
 
       <NewCategoryModal />
+      <EditCategoryModal />
       <GlobalDeleteModal/>
     </div>
   )
