@@ -9,6 +9,7 @@ import { PaymentGatewaySettings } from "./components/settings/PaymentGatewaySett
 import { BusinessHoursSettings } from "./components/settings/BusinessHoursSettings";
 import { HardwareSettings } from "./components/settings/HardwareSettings";
 import { LoyaltySettings } from "./components/settings/LoyaltySettings";
+import { LoyaltyRewardsSettings } from "./components/settings/LoyaltyRewardsSettings";
 
 export const Settings = () => {
     const { activeSettings } = useSettingsStore();
@@ -32,6 +33,8 @@ export const Settings = () => {
                 return <BusinessHoursSettings />;
             case 'FIDELIZACION':
                 return <LoyaltySettings />;
+            case 'LOYALTY_REWARDS':
+                return <LoyaltyRewardsSettings />;
         }
     };
 

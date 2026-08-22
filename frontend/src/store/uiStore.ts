@@ -8,7 +8,7 @@ export type ModalType = 'CREATE_CATEGORY' | 'EDIT_CATEGORY' | 'DELETE_CATEGORY' 
                          'VOID_BILL' | 'REFUND_PAYMENT' | 'CREATE_REWARD' | 'EDIT_REWARD' | null;
 
 export type SettingsType = 'BRANDING' | 'MENU' | 'BILLING' | 'PAYMENT_GATEWAY' | 'HARDWARE'|
-                            'SPACE'| 'HORARIO'| 'FIDELIZACION'| null;
+                            'SPACE'| 'HORARIO'| 'FIDELIZACION' | 'LOYALTY_REWARDS'| null;
 
 interface UIState {
   activeModal: ModalType

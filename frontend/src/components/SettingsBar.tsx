@@ -1,4 +1,5 @@
-import { useSettingsStore } from '@/store/uiStore'
+import { useState } from 'react'
+import { useSettingsStore, type SettingsType } from '@/store/uiStore'
 import { Button } from './ui/button'
 import {
   Store,
@@ -9,10 +10,18 @@ import {
   Printer,
   Clock,
   Gift,
+  Award,
   PanelLeftClose,
   PanelLeftOpen,
 } from 'lucide-react';
 import { useTranslation } from '@/lib/i18n'
+
+type SettingsGroup = 'BILLING' | 'FIDELIZACION'
+
+const GROUP_MEMBERS: Record<SettingsGroup, SettingsType[]> = {
+  BILLING: ['BILLING', 'PAYMENT_GATEWAY'],
+  FIDELIZACION: ['FIDELIZACION', 'LOYALTY_REWARDS'],
+}
 
 export const SettingsBar = ({
   collapsed,
@@ -23,14 +32,33 @@ export const SettingsBar = ({
 }) => {
     const { activeSettings, openSettings } = useSettingsStore()
     const { t } = useTranslation('admin')
-    const billingGroupActive = activeSettings === 'BILLING' || activeSettings === 'PAYMENT_GATEWAY'
+    const [expandedGroup, setExpandedGroup] = useState<SettingsGroup | null>(null)
+
+    const handleGroupClick = (group: SettingsGroup) => {
+        if (expandedGroup === group) {
+            setExpandedGroup(null)
+            return
+        }
+        setExpandedGroup(group)
+        if (!GROUP_MEMBERS[group].includes(activeSettings)) {
+            openSettings(GROUP_MEMBERS[group][0])
+        }
+    }
+
+    const handleFlatClick = (settings: SettingsType) => {
+        setExpandedGroup(null)
+        openSettings(settings)
+    }
+
+    const billingGroupActive = GROUP_MEMBERS.BILLING.includes(activeSettings)
+    const loyaltyGroupActive = GROUP_MEMBERS.FIDELIZACION.includes(activeSettings)
 
     return (
         <nav className={`flex flex-col gap-2 ${collapsed ? 'w-fit' : 'w-64'}`}>
             <Button
                 variant={activeSettings === 'BRANDING' ?
                     'default' : 'ghost'}
-                onClick={() => openSettings('BRANDING')}
+                onClick={() => handleFlatClick('BRANDING')}
                 className={collapsed ? 'justify-center px-2' : 'justify-start'}
                 title={collapsed ? t('brandingAndBusinessLabel') : undefined}
             >
@@ -40,7 +68,7 @@ export const SettingsBar = ({
             <Button
                 variant={activeSettings === 'MENU' ?
                     'default' : 'ghost'}
-                onClick={() => openSettings('MENU')}
+                onClick={() => handleFlatClick('MENU')}
                 className={collapsed ? 'justify-center px-2' : 'justify-start'}
                 title={collapsed ? t('menuLabel') : undefined}
             >
@@ -52,12 +80,12 @@ export const SettingsBar = ({
                 variant={billingGroupActive ? 'default' : 'ghost'}
                 className={collapsed ? 'justify-center px-2' : 'justify-start'}
                 title={collapsed ? t('billingLabel') : undefined}
-                onClick={collapsed ? () => openSettings('BILLING') : undefined}
+                onClick={() => handleGroupClick('BILLING')}
             >
                 <Receipt className={collapsed ? 'h-4 w-4' : 'mr-2 h-4 w-4'} />
                 {!collapsed && t('billingLabel')}
             </Button>
-            {!collapsed && (
+            {!collapsed && expandedGroup === 'BILLING' && (
                 <div className="flex flex-col gap-1 pl-6">
                     <Button
                         variant={activeSettings === 'BILLING' ? 'destructive' : 'ghost'}
@@ -83,7 +111,7 @@ export const SettingsBar = ({
             <Button
                 variant={activeSettings === 'HARDWARE' ?
                     'default' : 'ghost'}
-                onClick={() => openSettings('HARDWARE')}
+                onClick={() => handleFlatClick('HARDWARE')}
                 className={collapsed ? 'justify-center px-2' : 'justify-start'}
                 title={collapsed ? t('hardwareLabel') : undefined}
             >
@@ -93,7 +121,7 @@ export const SettingsBar = ({
             <Button
                 variant={activeSettings === 'SPACE' ?
                     'default' : 'ghost'}
-                onClick={() => openSettings('SPACE')}
+                onClick={() => handleFlatClick('SPACE')}
                 className={collapsed ? 'justify-center px-2' : 'justify-start'}
                 title={collapsed ? t('spaceLabel') : undefined}
             >
@@ -103,23 +131,45 @@ export const SettingsBar = ({
             <Button
                 variant={activeSettings === 'HORARIO' ?
                     'default' : 'ghost'}
-                onClick={() => openSettings('HORARIO')}
+                onClick={() => handleFlatClick('HORARIO')}
                 className={collapsed ? 'justify-center px-2' : 'justify-start'}
                 title={collapsed ? t('scheduleLabel') : undefined}
             >
                 <Clock className={collapsed ? 'h-4 w-4' : 'mr-2 h-4 w-4'} />
                 {!collapsed && t('scheduleLabel')}
             </Button>
+
             <Button
-                variant={activeSettings === 'FIDELIZACION' ?
-                    'default' : 'ghost'}
-                onClick={() => openSettings('FIDELIZACION')}
+                variant={loyaltyGroupActive ? 'default' : 'ghost'}
                 className={collapsed ? 'justify-center px-2' : 'justify-start'}
                 title={collapsed ? t('loyaltyLabel') : undefined}
+                onClick={() => handleGroupClick('FIDELIZACION')}
             >
                 <Gift className={collapsed ? 'h-4 w-4' : 'mr-2 h-4 w-4'} />
                 {!collapsed && t('loyaltyLabel')}
             </Button>
+            {!collapsed && expandedGroup === 'FIDELIZACION' && (
+                <div className="flex flex-col gap-1 pl-6">
+                    <Button
+                        variant={activeSettings === 'FIDELIZACION' ? 'destructive' : 'ghost'}
+                        size="sm"
+                        onClick={() => openSettings('FIDELIZACION')}
+                        className="justify-start"
+                    >
+                        <Gift className="mr-2 h-4 w-4" />
+                        {t('loyaltyLabel')}
+                    </Button>
+                    <Button
+                        variant={activeSettings === 'LOYALTY_REWARDS' ? 'destructive' : 'ghost'}
+                        size="sm"
+                        onClick={() => openSettings('LOYALTY_REWARDS')}
+                        className="justify-start"
+                    >
+                        <Award className="mr-2 h-4 w-4" />
+                        {t('rewardCatalogTitle')}
+                    </Button>
+                </div>
+            )}
 
             <Button
                 variant="ghost"
