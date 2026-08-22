@@ -6,10 +6,12 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@
 import { Badge } from '@/components/ui/badge'
 import { formatCurrency } from '@/lib/format'
 import { PaginationControls } from '@/components/PaginationControls'
+import { useTranslation } from '@/lib/i18n'
 
 export const ShiftHistoryTable = () => {
   const [page, setPage] = useState(0)
   const [expandedId, setExpandedId] = useState<number | null>(null)
+  const { t } = useTranslation('admin')
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['cashShiftHistory', page],
@@ -23,11 +25,11 @@ export const ShiftHistoryTable = () => {
   })
 
   if (isLoading) {
-    return <div className="p-6 text-sm text-muted-foreground">Cargando turnos...</div>
+    return <div className="p-6 text-sm text-muted-foreground">{t('loadingShifts')}</div>
   }
 
   if (isError || !data) {
-    return <div className="p-6 text-sm text-destructive">Error al cargar el historial.</div>
+    return <div className="p-6 text-sm text-destructive">{t('loadingShiftsError')}</div>
   }
 
   return (
@@ -37,20 +39,20 @@ export const ShiftHistoryTable = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Turno</TableHead>
-                <TableHead>Estado</TableHead>
-                <TableHead>Abierto por</TableHead>
-                <TableHead>Cerrado por</TableHead>
-                <TableHead>Esperado</TableHead>
-                <TableHead>Contado</TableHead>
-                <TableHead>Diferencia</TableHead>
+                <TableHead>{t('shiftColumnLabel')}</TableHead>
+                <TableHead>{t('statusColumnLabel')}</TableHead>
+                <TableHead>{t('openedByColumnLabel')}</TableHead>
+                <TableHead>{t('closedByColumnLabel')}</TableHead>
+                <TableHead>{t('expectedColumnLabel')}</TableHead>
+                <TableHead>{t('countedColumnLabel')}</TableHead>
+                <TableHead>{t('varianceColumnLabel')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {data.content.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center text-sm text-muted-foreground">
-                    Sin turnos registrados.
+                    {t('noShiftsRegistered')}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -63,7 +65,7 @@ export const ShiftHistoryTable = () => {
                       <TableCell>#{shift.shiftNumber}</TableCell>
                       <TableCell>
                         <Badge variant={shift.status === 'OPEN' ? 'default' : 'secondary'}>
-                          {shift.status === 'OPEN' ? 'Abierto' : 'Cerrado'}
+                          {shift.status === 'OPEN' ? t('openStatus') : t('closedStatus')}
                         </Badge>
                       </TableCell>
                       <TableCell>{shift.openedByName}</TableCell>
@@ -76,9 +78,9 @@ export const ShiftHistoryTable = () => {
                       <TableRow key={`${shift.id}-detail`}>
                         <TableCell colSpan={7} className="bg-muted/30">
                           {!detail ? (
-                            <div className="py-3 text-sm text-muted-foreground">Cargando pagos...</div>
+                            <div className="py-3 text-sm text-muted-foreground">{t('loadingPayments')}</div>
                           ) : (detail.payments ?? []).length === 0 ? (
-                            <div className="py-3 text-sm text-muted-foreground">Sin pagos en este turno.</div>
+                            <div className="py-3 text-sm text-muted-foreground">{t('noPaymentsInShift')}</div>
                           ) : (
                             <div className="flex flex-col gap-2 py-2">
                               {(detail.payments ?? []).map((payment) => (
@@ -89,7 +91,7 @@ export const ShiftHistoryTable = () => {
                                   <span className="text-sm">
                                     {payment.participantName} — {formatCurrency(payment.amount ?? 0)}
                                     {payment.refundedAmount && payment.refundedAmount > 0
-                                      ? ` (reembolsado ${formatCurrency(payment.refundedAmount)})`
+                                      ? t('refundedAmountSuffix', { amount: formatCurrency(payment.refundedAmount) })
                                       : ''}
                                   </span>
                                   {/* ADMIN oversees billing here but never executes it — refunds are
@@ -97,7 +99,7 @@ export const ShiftHistoryTable = () => {
                                       @PreAuthorize("hasRole('WAITER')")), so this row is read-only.
                                       A WAITER refunds from the waiter cash-register page instead. */}
                                   <span className="text-xs text-muted-foreground">
-                                    {!payment.remaining || payment.remaining <= 0 ? 'Reembolsado' : '—'}
+                                    {!payment.remaining || payment.remaining <= 0 ? t('refundedLabel') : '—'}
                                   </span>
                                 </div>
                               ))}

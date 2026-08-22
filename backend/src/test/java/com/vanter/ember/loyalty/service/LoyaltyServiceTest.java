@@ -113,4 +113,17 @@ class LoyaltyServiceTest {
 
         assertThat(loyaltyService.computeAccrualPoints(BigDecimal.ZERO, settings)).isEqualTo(0);
     }
+
+    @Test
+    void tierFloor_bronceIsAlwaysZero() {
+        assertThat(loyaltyService.tierFloor(LoyaltyTier.BRONCE, settings())).isZero();
+    }
+
+    @Test
+    void tierFloor_matchesEachTiersOwnThreshold() {
+        LoyaltySettings settings = settings();
+        assertThat(loyaltyService.tierFloor(LoyaltyTier.PLATA, settings)).isEqualTo(100);
+        assertThat(loyaltyService.tierFloor(LoyaltyTier.ORO, settings)).isEqualTo(500);
+        assertThat(loyaltyService.tierFloor(LoyaltyTier.PLATINO, settings)).isEqualTo(1500);
+    }
 }

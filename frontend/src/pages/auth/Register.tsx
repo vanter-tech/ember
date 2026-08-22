@@ -6,6 +6,7 @@ import axios from 'axios'
 import toast from 'react-hot-toast'
 import { useAuthStore } from '../../store/authStore'
 import { authService } from '@/lib/api'
+import { useTranslation } from '@/lib/i18n'
 
 import { Button } from '../../components/ui/button'
 import { Input } from '../../components/ui/input'
@@ -35,6 +36,7 @@ type RegisterFormInputs = z.infer<typeof registerSchema>
 export const Register = () => {
   const navigate = useNavigate()
   const { setAuth } = useAuthStore()
+  const { t: tAuth } = useTranslation('auth')
 
   const form = useForm<RegisterFormInputs>({
     resolver: zodResolver(registerSchema),
@@ -65,10 +67,10 @@ export const Register = () => {
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader>
           <CardTitle className="text-2xl font-bold text-center text-[#920703] ">
-            Register
+            {tAuth('registerTitle')}
           </CardTitle>
           <CardDescription className="text-center">
-            Create an account to get started.
+            {tAuth('registerDescription')}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -106,7 +108,7 @@ export const Register = () => {
                         </svg>
                         <Input
                           className="pl-10"
-                          placeholder="Your name"
+                          placeholder={tAuth('namePlaceholder')}
                           {...field}
                         />
                       </div>
@@ -155,7 +157,7 @@ export const Register = () => {
                         </svg>
                         <Input
                           className="pl-10"
-                          placeholder="Your email"
+                          placeholder={tAuth('registerEmailPlaceholder')}
                           {...field}
                         />
                       </div>
@@ -198,7 +200,7 @@ export const Register = () => {
                         <Input
                           type="password"
                           className="pl-10"
-                          placeholder="Your password"
+                          placeholder={tAuth('registerPasswordPlaceholder')}
                           {...field}
                         />
                       </div>
@@ -213,10 +215,10 @@ export const Register = () => {
                 className="w-full"
                 disabled={form.formState.isSubmitting}
               >
-                Register
+                {tAuth('registerSubmit')}
               </Button>
               <Button asChild variant="outline" className="w-full text-center">
-                <Link to="/login">Already have an account? Login</Link>
+                <Link to="/login">{tAuth('loginLink')}</Link>
               </Button>
             </form>
           </Form>

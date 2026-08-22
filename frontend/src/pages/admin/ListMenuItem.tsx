@@ -14,9 +14,11 @@ import { Badge } from '@/components/ui/badge'
 import { EditMenuModal } from './components/EditMenuModal'
 import { GlobalDeleteModal } from '@/components/GlobalDeleteModal'
 import { PaginationControls } from '@/components/PaginationControls'
+import { useTranslation } from '@/lib/i18n'
 
 export const ListMenuItem = () => {
   const queryClient = useQueryClient()
+  const { t } = useTranslation('admin')
   const toggleActiveOrNotMutation = useMutation({
     mutationFn: menuItemService.toggleAvailability,
     onSuccess: () => {
@@ -39,12 +41,12 @@ export const ListMenuItem = () => {
   const menuItems = menuItemsPage?.content ?? []
 
   if (isLoading) {
-    return <div className="p-6 text-zinc-500">Cargando platillos...</div>
+    return <div className="p-6 text-zinc-500">{t('loadingMenuItems')}</div>
   }
 
   if (isError) {
     return (
-      <div className="p-6 text-red-500">Error al cargar los platillos.</div>
+      <div className="p-6 text-red-500">{t('loadingMenuItemsError')}</div>
     )
   }
 
@@ -66,14 +68,14 @@ export const ListMenuItem = () => {
                   className="absolute top-4 left-4 bg-white/90 px-3 py-1 text-xs
                 font-semibold text-green-700 rounded-full"
                 >
-                  Activo
+                  {t('activeStatus')}
                 </Badge>
               ) : (
                 <Badge
                   className="absolute top-4 left-4 bg-white/90 px-3 py-1 text-xs
                 font-semibold text-green-700 rounded-full"
                 >
-                  Desactivado
+                  {t('disabledStatus')}
                 </Badge>
               )}
             </div>

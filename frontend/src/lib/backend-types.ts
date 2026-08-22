@@ -1165,6 +1165,7 @@ export interface components {
             paymentGateway?: components["schemas"]["PaymentGatewaySettings"];
             businessHours?: components["schemas"]["BusinessHoursSettings"];
             loyalty?: components["schemas"]["LoyaltySettings"];
+            ticket?: components["schemas"]["TicketSettings"];
         };
         SpaceSettings: {
             /** Format: int32 */
@@ -1175,6 +1176,14 @@ export interface components {
             /** Format: double */
             rate?: number;
             includedInPrice?: boolean;
+        };
+        TicketSettings: {
+            headerMessage?: string;
+            footerMessage?: string;
+            /** @enum {string} */
+            paperWidth?: "MM_58" | "MM_80";
+            showTaxBreakdown?: boolean;
+            showTip?: boolean;
         };
         MenuItemRequest: {
             name: string;
@@ -1489,6 +1498,10 @@ export interface components {
             password: string;
             /** @enum {string} */
             role: "CUSTOMER" | "WAITER" | "KITCHEN" | "ADMIN";
+            jobTitle: string;
+            shift: string;
+            contractType: string;
+            location: string;
         };
         StaffMemberResponse: {
             id?: string;
@@ -1660,18 +1673,18 @@ export interface components {
             sort?: string[];
         };
         PagePlatformRestaurantSummaryResponse: {
-            /** Format: int32 */
-            totalPages?: number;
             /** Format: int64 */
             totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
+            first?: boolean;
+            last?: boolean;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["PlatformRestaurantSummaryResponse"][];
             /** Format: int32 */
             number?: number;
             sort?: components["schemas"]["SortObject"];
-            first?: boolean;
-            last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
@@ -1683,9 +1696,9 @@ export interface components {
             sort?: components["schemas"]["SortObject"];
             /** Format: int32 */
             pageSize?: number;
-            paged?: boolean;
             /** Format: int32 */
             pageNumber?: number;
+            paged?: boolean;
             unpaged?: boolean;
         };
         SortObject: {
@@ -1712,18 +1725,18 @@ export interface components {
             admins?: components["schemas"]["PlatformRestaurantAdminResponse"][];
         };
         PagePlatformAuditLogResponse: {
-            /** Format: int32 */
-            totalPages?: number;
             /** Format: int64 */
             totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
+            first?: boolean;
+            last?: boolean;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["PlatformAuditLogResponse"][];
             /** Format: int32 */
             number?: number;
             sort?: components["schemas"]["SortObject"];
-            first?: boolean;
-            last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
@@ -1760,6 +1773,9 @@ export interface components {
             nextTier?: "BRONCE" | "PLATA" | "ORO" | "PLATINO";
             /** Format: int32 */
             pointsToNextTier?: number;
+            /** Format: int32 */
+            tierProgressPercent?: number;
+            restaurantName?: string;
             rewards?: components["schemas"]["RewardCatalogEntryResponse"][];
         };
         RewardCatalogEntryResponse: {
@@ -1779,18 +1795,18 @@ export interface components {
             pointsEarned?: number;
         };
         PageKitchenOrder: {
-            /** Format: int32 */
-            totalPages?: number;
             /** Format: int64 */
             totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
+            first?: boolean;
+            last?: boolean;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["KitchenOrder"][];
             /** Format: int32 */
             number?: number;
             sort?: components["schemas"]["SortObject"];
-            first?: boolean;
-            last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
@@ -1818,54 +1834,54 @@ export interface components {
             currentSession?: components["schemas"]["ActiveSessionSummary"];
         };
         PageMenuItemResponse: {
-            /** Format: int32 */
-            totalPages?: number;
             /** Format: int64 */
             totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
+            first?: boolean;
+            last?: boolean;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["MenuItemResponse"][];
             /** Format: int32 */
             number?: number;
             sort?: components["schemas"]["SortObject"];
-            first?: boolean;
-            last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
             empty?: boolean;
         };
         PageCategoryResponse: {
-            /** Format: int32 */
-            totalPages?: number;
             /** Format: int64 */
             totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
+            first?: boolean;
+            last?: boolean;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["CategoryResponse"][];
             /** Format: int32 */
             number?: number;
             sort?: components["schemas"]["SortObject"];
-            first?: boolean;
-            last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
             empty?: boolean;
         };
         PageCashShiftResponse: {
-            /** Format: int32 */
-            totalPages?: number;
             /** Format: int64 */
             totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
+            first?: boolean;
+            last?: boolean;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["CashShiftResponse"][];
             /** Format: int32 */
             number?: number;
             sort?: components["schemas"]["SortObject"];
-            first?: boolean;
-            last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];

@@ -22,9 +22,11 @@ import {
 import { useUIStore } from '@/store/uiStore'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { categoryService } from '@/lib/api'
+import { useTranslation } from '@/lib/i18n'
 
 export const NewCategoryModal = () => {
   const { activeModal, closeModal } = useUIStore()
+  const { t } = useTranslation('admin')
 
   const queryClient = useQueryClient()
   type CategoryFormInputs = z.infer<typeof categoryScheme>
@@ -79,7 +81,7 @@ export const NewCategoryModal = () => {
       <DialogContent className="sm:max-w-md rounded-3xl p-6">
         <DialogHeader className="mb-4">
           <DialogTitle className="text-2xl font-bold text-zinc-800">
-            Nueva Categoria
+            {t('newCategoryDialogTitle')}
           </DialogTitle>
         </DialogHeader>
 
@@ -90,10 +92,10 @@ export const NewCategoryModal = () => {
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Nombre</FormLabel>
+                  <FormLabel>{t('nameLabel')}</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="Ej. Platos Fuertes"
+                      placeholder={t('categoryNamePlaceholder')}
                       className="rounded-xl focus-visible:ring[#8c1717]"
                       {...field}
                     />
@@ -107,10 +109,10 @@ export const NewCategoryModal = () => {
               name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Descripcion</FormLabel>
+                  <FormLabel>{t('descriptionLabel')}</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="Breve description"
+                      placeholder={t('newCategoryDescriptionPlaceholder')}
                       className="resize-none h-24 rounded-xl focus-visible:ring[#8c1717]"
                       {...field}
                     />
@@ -124,12 +126,12 @@ export const NewCategoryModal = () => {
               name="image"
               render={({ field: { value, onChange, ...fieldProps } }) => (
                 <FormItem>
-                  <FormLabel>Imagen de portada</FormLabel>
+                  <FormLabel>{t('coverImageLabel')}</FormLabel>
                   <FormControl>
                     <Input
                       type="file"
                       accept="image/*"
-                      placeholder="Imagen de portada"
+                      placeholder={t('coverImageLabel')}
                       className="rounded-xl file:text-[#8c1717] file:font-semibold
                     hover:file:cursor-pointer cursor-pointer"
                       onChange={(e) => {
@@ -150,11 +152,11 @@ export const NewCategoryModal = () => {
                 onClick={closeModal}
                 disabled={mutation.isPending}
               >
-                Cancelar
+                {t('cancelButton')}
               </Button>
 
               <Button type="submit" disabled={mutation.isPending}>
-                {mutation.isPending ? 'Guardando' : 'Guardar'}
+                {mutation.isPending ? t('savingButton') : t('saveButton')}
               </Button>
             </DialogFooter>
           </form>

@@ -30,6 +30,7 @@ import { useUIStore } from '@/store/uiStore'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { staffService } from '@/lib/api'
 import { ROLE_LABELS } from '../types'
+import { useTranslation } from '@/lib/i18n'
 
 const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).+$/
 
@@ -44,6 +45,10 @@ const createStaffSchema = z.object({
       'Debe incluir mayúscula, minúscula, número y carácter especial'
     ),
   role: z.enum(['WAITER', 'KITCHEN', 'ADMIN']),
+  jobTitle: z.string().min(1, 'El puesto es obligatorio'),
+  shift: z.string().min(1, 'El turno es obligatorio'),
+  contractType: z.string().min(1, 'El tipo de contrato es obligatorio'),
+  location: z.string().min(1, 'La ubicación es obligatoria'),
 })
 
 type CreateStaffInputs = z.infer<typeof createStaffSchema>
@@ -51,10 +56,20 @@ type CreateStaffInputs = z.infer<typeof createStaffSchema>
 export const CreateStaffModal = () => {
   const { activeModal, closeModal } = useUIStore()
   const queryClient = useQueryClient()
+  const { t } = useTranslation('admin')
 
   const form = useForm<CreateStaffInputs>({
     resolver: zodResolver(createStaffSchema),
-    defaultValues: { name: '', email: '', password: '', role: 'WAITER' },
+    defaultValues: {
+      name: '',
+      email: '',
+      password: '',
+      role: 'WAITER',
+      jobTitle: '',
+      shift: '',
+      contractType: '',
+      location: '',
+    },
   })
 
   const mutation = useMutation({
@@ -80,30 +95,30 @@ export const CreateStaffModal = () => {
       open={activeModal === 'CREATE_STAFF'}
       onOpenChange={(isOpen) => !isOpen && handleClose()}
     >
-      <DialogContent className="sm:max-w-md rounded-3xl p-6">
+      <DialogContent className="sm:max-w-xl rounded-3xl p-6">
         <DialogHeader className="mb-4">
           <DialogTitle className="text-2xl font-bold text-zinc-800">
-            Agregar empleado
+            {t('addEmployeeLabel')}
           </DialogTitle>
           <DialogDescription className="text-zinc-500 text-sm mt-1">
-            Crea una cuenta de acceso para un nuevo miembro del equipo.
+            {t('addEmployeeDescription')}
           </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit((data) => mutation.mutate(data))}
-            className="space-y-5"
+            className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-5"
           >
             <FormField
               control={form.control}
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Nombre completo</FormLabel>
+                  <FormLabel>{t('fullNameLabel')}</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="Ej. Ana Torres"
+                      placeholder={t('fullNamePlaceholder')}
                       className="rounded-xl"
                       {...field}
                     />
@@ -117,11 +132,11 @@ export const CreateStaffModal = () => {
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Correo electrónico</FormLabel>
+                  <FormLabel>{t('emailLabel')}</FormLabel>
                   <FormControl>
                     <Input
                       type="email"
-                      placeholder="ana@restaurante.com"
+                      placeholder={t('emailPlaceholderStaff')}
                       className="rounded-xl"
                       {...field}
                     />
@@ -135,7 +150,7 @@ export const CreateStaffModal = () => {
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Contraseña</FormLabel>
+                  <FormLabel>{t('passwordLabel')}</FormLabel>
                   <FormControl>
                     <Input type="password" className="rounded-xl" {...field} />
                   </FormControl>
@@ -148,7 +163,7 @@ export const CreateStaffModal = () => {
               name="role"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Rol</FormLabel>
+                  <FormLabel>{t('roleLabel')}</FormLabel>
                   <Select value={field.value} onValueChange={field.onChange}>
                     <FormControl>
                       <SelectTrigger className="w-full rounded-xl">
@@ -165,17 +180,85 @@ export const CreateStaffModal = () => {
               )}
             />
 
-            <DialogFooter>
+            <FormField
+              control={form.control}
+              name="jobTitle"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('jobTitleLabel')}</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder={t('jobTitlePlaceholder')}
+                      className="rounded-xl"
+                      {...field}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="shift"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('shiftLabel')}</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder={t('shiftPlaceholder')}
+                      className="rounded-xl"
+                      {...field}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="contractType"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('contractTypeLabel')}</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder={t('contractTypePlaceholder')}
+                      className="rounded-xl"
+                      {...field}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="location"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('locationLabel')}</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder={t('locationPlaceholder')}
+                      className="rounded-xl"
+                      {...field}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
+            <DialogFooter className="sm:col-span-2">
               <Button
                 type="button"
                 variant="outline"
                 onClick={handleClose}
                 disabled={mutation.isPending}
               >
-                Cancelar
+                {t('cancelButton')}
               </Button>
               <Button type="submit" disabled={mutation.isPending}>
-                {mutation.isPending ? 'Guardando...' : 'Agregar empleado'}
+                {mutation.isPending ? t('savingEllipsisLabel') : t('addEmployeeLabel')}
               </Button>
             </DialogFooter>
           </form>

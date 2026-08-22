@@ -10,11 +10,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
+import { useTranslation } from '@/lib/i18n';
 
 type SettingsPayload = components['schemas']['SettingsPayload'];
 type PaymentGatewaySettings = components['schemas']['PaymentGatewaySettings'];
 
 export const PaymentGatewaySettings = () => {
+  const { t } = useTranslation('admin');
   const queryClient = useQueryClient();
 
   const { data: settings, isPending: isLoadingSettings } = useQuery({
@@ -72,7 +74,7 @@ export const PaymentGatewaySettings = () => {
   };
 
   if (isLoadingSettings) {
-    return <div className="p-6 text-zinc-500">Cargando configuraciones...</div>;
+    return <div className="p-6 text-zinc-500">{t('loadingSettingsLabel')}</div>;
   }
 
   return (
@@ -82,8 +84,8 @@ export const PaymentGatewaySettings = () => {
           <CreditCard className="w-6 h-6" />
         </div>
         <div>
-          <CardTitle className="text-xl">Pasarela de Pagos</CardTitle>
-          <CardDescription>Conecta un proveedor de pagos digitales para tu local.</CardDescription>
+          <CardTitle className="text-xl">{t('paymentGatewayCardTitle')}</CardTitle>
+          <CardDescription>{t('paymentGatewayCardDescription')}</CardDescription>
         </div>
       </CardHeader>
 
@@ -91,9 +93,9 @@ export const PaymentGatewaySettings = () => {
         <div className="max-w-md space-y-6">
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <Label htmlFor="gatewayEnabled">Pasarela habilitada</Label>
+              <Label htmlFor="gatewayEnabled">{t('gatewayEnabledLabel')}</Label>
               <p className="text-xs text-muted-foreground">
-                Permite cobrar pagos digitales directamente desde Ember.
+                {t('paymentGatewayDescription', { brand: 'Ember' })}
               </p>
             </div>
             <Switch
@@ -104,10 +106,10 @@ export const PaymentGatewaySettings = () => {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="gatewayProvider">Proveedor</Label>
+            <Label htmlFor="gatewayProvider">{t('providerLabel')}</Label>
             <Input
               id="gatewayProvider"
-              placeholder="Ej. stripe, culqi, mercadopago"
+              placeholder={t('providerPlaceholder')}
               value={currentProvider}
               onChange={(e) => updateDraft({ provider: e.target.value })}
               className="focus-visible:ring-[#7a1315]"
@@ -115,10 +117,10 @@ export const PaymentGatewaySettings = () => {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="gatewayPublicKey">Clave pública</Label>
+            <Label htmlFor="gatewayPublicKey">{t('publicKeyLabel')}</Label>
             <Input
               id="gatewayPublicKey"
-              placeholder="pk_live_..."
+              placeholder={t('publicKeyPlaceholder')}
               value={currentPublicKey}
               onChange={(e) => updateDraft({ publicKey: e.target.value })}
               className="focus-visible:ring-[#7a1315]"
@@ -126,16 +128,16 @@ export const PaymentGatewaySettings = () => {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="gatewaySecretRef">Referencia del secreto</Label>
+            <Label htmlFor="gatewaySecretRef">{t('secretRefLabel')}</Label>
             <Input
               id="gatewaySecretRef"
-              placeholder="Ej. vault://payment-gateway/secret-key"
+              placeholder={t('secretRefPlaceholder')}
               value={currentSecretRef}
               onChange={(e) => updateDraft({ secretRef: e.target.value })}
               className="focus-visible:ring-[#7a1315]"
             />
             <p className="text-xs text-muted-foreground">
-              Solo una referencia al secreto administrado en tu bóveda de secretos. Nunca pegues aquí la clave secreta real.
+              {t('secretRefWarning')}
             </p>
           </div>
         </div>
@@ -148,7 +150,7 @@ export const PaymentGatewaySettings = () => {
           disabled={draftGateway === undefined || updateSettingsMutation.isPending}
           className="text-zinc-700 hover:bg-zinc-100 p-4"
         >
-          Deshacer cambios
+          {t('undoChangesButton')}
         </Button>
 
         <Button
@@ -159,10 +161,10 @@ export const PaymentGatewaySettings = () => {
           {updateSettingsMutation.isPending ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Guardando...
+              {t('savingEllipsisLabel')}
             </>
           ) : (
-            'Guardar Cambios'
+            t('saveSettingsButton')
           )}
         </Button>
       </CardFooter>

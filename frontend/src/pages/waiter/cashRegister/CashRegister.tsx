@@ -11,8 +11,10 @@ import { OpenShiftDialog } from './components/OpenShiftDialog'
 import { MovementDialog } from './components/MovementDialog'
 import { CloseShiftDialog } from './components/CloseShiftDialog'
 import { RefundPaymentModal } from '@/pages/waiter/components/RefundPaymentModal'
+import { useTranslation } from '@/lib/i18n'
 
 export const CashRegister = () => {
+  const { t } = useTranslation('waiter')
   const { openModal } = useUIStore()
 
   const { data: shift, isLoading } = useQuery({
@@ -27,21 +29,21 @@ export const CashRegister = () => {
   })
 
   if (isLoading) {
-    return <div className="p-6 text-zinc-500">Cargando caja...</div>
+    return <div className="p-6 text-zinc-500">{t('loadingCashRegister')}</div>
   }
 
   return (
     <div className="flex flex-col gap-8">
       <div className="flex flex-col gap-1">
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">Caja</h1>
-        <p className="text-sm text-muted-foreground">Apertura, movimientos y arqueo del turno.</p>
+        <h1 className="text-3xl font-bold tracking-tight text-foreground">{t('cashRegisterTitle')}</h1>
+        <p className="text-sm text-muted-foreground">{t('cashRegisterSubtitle')}</p>
       </div>
 
       {!shift ? (
         <Card className="border border-border/40 bg-background py-6 shadow-sm">
           <CardContent className="flex flex-col items-center gap-4 py-10">
-            <p className="text-sm text-muted-foreground">No hay un turno de caja abierto.</p>
-            <Button onClick={() => openModal('OPEN_SHIFT')}>Abrir caja</Button>
+            <p className="text-sm text-muted-foreground">{t('noOpenShift')}</p>
+            <Button onClick={() => openModal('OPEN_SHIFT')}>{t('openCajaButton')}</Button>
           </CardContent>
         </Card>
       ) : (
@@ -49,27 +51,27 @@ export const CashRegister = () => {
           <Card className="border border-border/40 bg-background py-6 shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Turno #{shift.shiftNumber}
+                {t('shiftNumberLabel', { number: shift.shiftNumber ?? '' })}
               </CardTitle>
-              <Badge variant="secondary">{shift.status === 'OPEN' ? 'Abierto' : 'Cerrado'}</Badge>
+              <Badge variant="secondary">{shift.status === 'OPEN' ? t('shiftStatusOpen') : t('shiftStatusClosed')}</Badge>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
                 <div>
-                  <p className="text-xs text-muted-foreground">Fondo inicial</p>
+                  <p className="text-xs text-muted-foreground">{t('openingFloatLabel')}</p>
                   <p className="text-lg font-bold text-primary">{formatCurrency(shift.openingFloat ?? 0)}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Abierto por</p>
+                  <p className="text-xs text-muted-foreground">{t('openedByLabel')}</p>
                   <p className="text-sm font-medium">{shift.openedByName}</p>
                 </div>
               </div>
               <div className="flex gap-2">
                 <Button variant="outline" onClick={() => openModal('CASH_MOVEMENT', { shiftId: shift.id })}>
-                  Registrar movimiento
+                  {t('recordMovementButton')}
                 </Button>
                 <Button onClick={() => openModal('CLOSE_SHIFT', { shiftId: shift.id })}>
-                  Cerrar caja (Arqueo)
+                  {t('closeCajaButton')}
                 </Button>
               </div>
             </CardContent>
@@ -78,30 +80,30 @@ export const CashRegister = () => {
           <Card className="border border-border/40 bg-background py-6 shadow-sm">
             <CardHeader>
               <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Movimientos
+                {t('movementsTitle')}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Tipo</TableHead>
-                    <TableHead>Monto</TableHead>
-                    <TableHead>Motivo</TableHead>
-                    <TableHead>Registrado por</TableHead>
+                    <TableHead>{t('typeLabel')}</TableHead>
+                    <TableHead>{t('amountLabel')}</TableHead>
+                    <TableHead>{t('reasonLabel')}</TableHead>
+                    <TableHead>{t('registeredByLabel')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {(detail?.movements ?? []).length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={4} className="text-center text-sm text-muted-foreground">
-                        Sin movimientos registrados.
+                        {t('noMovementsRegistered')}
                       </TableCell>
                     </TableRow>
                   ) : (
                     (detail!.movements ?? []).map((movement) => (
                       <TableRow key={movement.id}>
-                        <TableCell>{movement.type === 'CASH_IN' ? 'Entrada' : 'Salida'}</TableCell>
+                        <TableCell>{movement.type === 'CASH_IN' ? t('cashInLabel') : t('cashOutLabel')}</TableCell>
                         <TableCell>{formatCurrency(movement.amount ?? 0)}</TableCell>
                         <TableCell>{movement.reason}</TableCell>
                         <TableCell>{movement.createdByName}</TableCell>
@@ -116,24 +118,24 @@ export const CashRegister = () => {
           <Card className="border border-border/40 bg-background py-6 shadow-sm">
             <CardHeader>
               <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Pagos
+                {t('paymentsTitle')}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Participante</TableHead>
-                    <TableHead>Monto</TableHead>
-                    <TableHead>Reembolsado</TableHead>
-                    <TableHead className="text-right">Acción</TableHead>
+                    <TableHead>{t('participantLabel')}</TableHead>
+                    <TableHead>{t('amountLabel')}</TableHead>
+                    <TableHead>{t('refundedLabel')}</TableHead>
+                    <TableHead className="text-right">{t('actionLabel')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {(detail?.payments ?? []).length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={4} className="text-center text-sm text-muted-foreground">
-                        Sin pagos registrados en este turno.
+                        {t('noPaymentsRegistered')}
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -159,7 +161,7 @@ export const CashRegister = () => {
                               })
                             }
                           >
-                            <RotateCcw className="w-4 h-4 mr-1" /> Reembolsar
+                            <RotateCcw className="w-4 h-4 mr-1" /> {t('refundButton')}
                           </Button>
                         </TableCell>
                       </TableRow>

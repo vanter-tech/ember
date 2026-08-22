@@ -1,5 +1,6 @@
 import { AddStaffCard, StaffCard } from './StaffCard'
 import type { StaffMemberResponse } from '@/lib/api'
+import { useTranslation } from '@/lib/i18n'
 
 interface StaffGridProps {
   members: StaffMemberResponse[]
@@ -9,10 +10,11 @@ interface StaffGridProps {
 }
 
 export const StaffGrid = ({ members, onAddRole, onViewProfile, onOpenActions }: StaffGridProps) => {
+  const { t } = useTranslation('admin')
   if (members.length === 0) {
     return (
       <div className="flex items-center justify-center rounded-xl border border-dashed border-border py-16 text-sm text-muted-foreground">
-        Ningún empleado coincide con la búsqueda o el filtro seleccionado.
+        {t('noStaffMatchesFilter')}
       </div>
     )
   }

@@ -10,19 +10,21 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
+import { useTranslation } from '@/lib/i18n';
 
 type SettingsPayload = components['schemas']['SettingsPayload'];
 type DaySchedule = components['schemas']['DaySchedule'];
 type DayOfWeek = NonNullable<DaySchedule['day']>;
+type DayLabelKey = 'mondayLabel' | 'tuesdayLabel' | 'wednesdayLabel' | 'thursdayLabel' | 'fridayLabel' | 'saturdayLabel' | 'sundayLabel';
 
-const DAYS: { value: DayOfWeek; label: string }[] = [
-  { value: 'MONDAY', label: 'Lunes' },
-  { value: 'TUESDAY', label: 'Martes' },
-  { value: 'WEDNESDAY', label: 'Miércoles' },
-  { value: 'THURSDAY', label: 'Jueves' },
-  { value: 'FRIDAY', label: 'Viernes' },
-  { value: 'SATURDAY', label: 'Sábado' },
-  { value: 'SUNDAY', label: 'Domingo' },
+const DAYS: { value: DayOfWeek; labelKey: DayLabelKey }[] = [
+  { value: 'MONDAY', labelKey: 'mondayLabel' },
+  { value: 'TUESDAY', labelKey: 'tuesdayLabel' },
+  { value: 'WEDNESDAY', labelKey: 'wednesdayLabel' },
+  { value: 'THURSDAY', labelKey: 'thursdayLabel' },
+  { value: 'FRIDAY', labelKey: 'fridayLabel' },
+  { value: 'SATURDAY', labelKey: 'saturdayLabel' },
+  { value: 'SUNDAY', labelKey: 'sundayLabel' },
 ];
 
 const defaultDaySchedule = (day: DayOfWeek): DaySchedule => ({
@@ -33,6 +35,7 @@ const defaultDaySchedule = (day: DayOfWeek): DaySchedule => ({
 });
 
 export const BusinessHoursSettings = () => {
+  const { t } = useTranslation('admin');
   const queryClient = useQueryClient();
 
   const { data: settings, isPending: isLoadingSettings } = useQuery({
@@ -85,7 +88,7 @@ export const BusinessHoursSettings = () => {
   };
 
   if (isLoadingSettings) {
-    return <div className="p-6 text-zinc-500">Cargando configuraciones...</div>;
+    return <div className="p-6 text-zinc-500">{t('loadingSettingsLabel')}</div>;
   }
 
   return (
@@ -95,8 +98,8 @@ export const BusinessHoursSettings = () => {
           <Clock className="w-6 h-6" />
         </div>
         <div>
-          <CardTitle className="text-xl">Horario de Atención</CardTitle>
-          <CardDescription>Define el horario semanal por día. Distinto del horario general de marca.</CardDescription>
+          <CardTitle className="text-xl">{t('businessHoursLabel')}</CardTitle>
+          <CardDescription>{t('businessHoursCardDescription')}</CardDescription>
         </div>
       </CardHeader>
 
@@ -104,7 +107,8 @@ export const BusinessHoursSettings = () => {
         <div className="max-w-2xl space-y-4">
           {currentSchedule.map((entry) => {
             const day = entry.day as DayOfWeek;
-            const label = DAYS.find((d) => d.value === day)?.label ?? day;
+            const labelKey = DAYS.find((d) => d.value === day)?.labelKey;
+            const label = labelKey ? t(labelKey) : day;
             const isClosed = entry.closed ?? false;
 
             return (
@@ -121,7 +125,7 @@ export const BusinessHoursSettings = () => {
                     onCheckedChange={(checked) => handleDayChange(day, { closed: !checked })}
                   />
                   <Label htmlFor={`closed-${day}`} className="text-xs">
-                    {isClosed ? 'Cerrado' : 'Abierto'}
+                    {isClosed ? t('closedDayLabel') : t('openDayLabel')}
                   </Label>
                 </div>
 
@@ -133,7 +137,7 @@ export const BusinessHoursSettings = () => {
                     onChange={(e) => handleDayChange(day, { openTime: e.target.value })}
                     className="w-32 focus-visible:ring-[#7a1315]"
                   />
-                  <span className="text-sm text-zinc-500">a</span>
+                  <span className="text-sm text-zinc-500">{t('timeRangeSeparator')}</span>
                   <Input
                     type="time"
                     value={entry.closeTime ?? ''}
@@ -155,7 +159,7 @@ export const BusinessHoursSettings = () => {
           disabled={draftSchedule === undefined || updateSettingsMutation.isPending}
           className="text-zinc-700 hover:bg-zinc-100 p-4"
         >
-          Deshacer cambios
+          {t('undoChangesButton')}
         </Button>
 
         <Button
@@ -166,10 +170,10 @@ export const BusinessHoursSettings = () => {
           {updateSettingsMutation.isPending ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Guardando...
+              {t('savingEllipsisLabel')}
             </>
           ) : (
-            'Guardar Cambios'
+            t('saveSettingsButton')
           )}
         </Button>
       </CardFooter>

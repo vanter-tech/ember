@@ -32,8 +32,10 @@ import { ChargeTableModal } from './components/ChargeTableModal'
 import { VoidBillModal } from './components/VoidBillModal'
 import { RefundPaymentModal } from './components/RefundPaymentModal'
 import { useWebsocketStore } from '@/store/websocket'
+import { useTranslation } from '@/lib/i18n'
 
 export const TableInformation = () => {
+  const { t } = useTranslation('waiter')
   const { id } = useParams()
   const queryClient = useQueryClient()
   const navigate = useNavigate()
@@ -100,7 +102,7 @@ export const TableInformation = () => {
   })
 
   if (isLoadingData) {
-    return <div className="p-6 text-zinc-500">Cargando datos del panel...</div>
+    return <div className="p-6 text-zinc-500">{t('loadingDashboard')}</div>
   }
 
   const hasItems = itemsToWaiter && itemsToWaiter.length > 0
@@ -129,11 +131,11 @@ export const TableInformation = () => {
               </Button>
             </Link>
             <h1 className="text-4xl font-bold">
-              Mesa M{sessionData?.tableNumber}
+              {t('tableHeading', { number: sessionData?.tableNumber ?? '' })}
             </h1>
             {sessionData?.isOccupied ? (
               <Badge className="flex items-center gap-2 p-4 text-1xl">
-                <div className="w-4 h-4 bg-[#f3f1f1] rounded-full"></div>Ocupado
+                <div className="w-4 h-4 bg-[#f3f1f1] rounded-full"></div>{t('statusOccupied')}
               </Badge>
             ) : (
               ''
@@ -141,7 +143,7 @@ export const TableInformation = () => {
           </div>
           <div className="flex items-center gap-2 text-gray-500 pl-9">
             <User className="w-6 h-6" />
-            <span className="text-m">{sessionData?.waiterId} (CAMARERO)</span>
+            <span className="text-m">{sessionData?.waiterId} {t('waiterRoleLabel')}</span>
           </div>
         </div>
         <div className="flex items-center gap-3 pr-7">
@@ -149,17 +151,17 @@ export const TableInformation = () => {
             variant="secondary"
             className="rounded-full bg-gray-100 hover:bg-gray-200 text-1xl w-38 h-18"
           >
-            <Printer className="w-4 h-4 mr-2" /> Print Bill
+            <Printer className="w-4 h-4 mr-2" /> {t('printBillLabel')}
           </Button>
           <Button
             variant="secondary"
             className="rounded-full bg-gray-100 hover:bg-gray-200 text-1xl w-38 h-18"
           >
-            <ArrowRightLeft className="w-4 h-4 mr-2" /> Transfer
+            <ArrowRightLeft className="w-4 h-4 mr-2" /> {t('transferLabel')}
           </Button>
           {/* Botón principal rojo */}
           <Button className="rounded-full bg-[#8B0000] hover:bg-[#700000] text-1xl text-white w-38 h-18">
-            <Plus className="w-4 h-4 mr-2" /> Add Item
+            <Plus className="w-4 h-4 mr-2" /> {t('addItemLabel')}
           </Button>
         </div>
       </div>
@@ -169,7 +171,7 @@ export const TableInformation = () => {
             <div className="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-transparent via-[#8B0000] to-transparent opacity-20"></div>
             <CardHeader className="p-7 border-b border">
               <CardTitle className="text-2xl text-gray-800 font-bold">
-                Detalles de pedidos
+                {t('orderDetailsTitle')}
               </CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-3 max-h-87.5 overflow-y-auto pr-2">
@@ -217,7 +219,7 @@ export const TableInformation = () => {
                 ))
               ) : (
                 <div className="text-center py-8 text-gray-400">
-                  No hay pedidos registrados en esta mesa.
+                  {t('noOrdersRegistered')}
                 </div>
               )}
             </CardContent>
@@ -227,7 +229,7 @@ export const TableInformation = () => {
             <div className="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-transparent via-[#8B0000] to-transparent opacity-20"></div>
             <CardHeader className="p-7 border-b border">
               <CardTitle className="text-2xl text-gray-800 font-bold">
-                Participantes
+                {t('participantsTitle')}
               </CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-2 gap-4">
@@ -252,7 +254,7 @@ export const TableInformation = () => {
                 ))
               ) : (
                 <div className="col-span-2 text-center py-8 text-gray-400">
-                  No hay usuarios en esta mesa.
+                  {t('noUsersInTable')}
                 </div>
               )}
             </CardContent>
@@ -262,7 +264,7 @@ export const TableInformation = () => {
             <div className="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-transparent via-[#8B0000] to-transparent opacity-20"></div>
             <CardHeader className="p-7 border-b border">
               <CardTitle className="text-xs font-bold text-gray-500 tracking-widest uppercase">
-                Actividad
+                {t('activityTitle')}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -280,13 +282,13 @@ export const TableInformation = () => {
                         <div className="flex flex-col gap-2">
                           <span className="text-xs text-gray-700 font-medium">
                             {activity.type === 'ITEM_DELETED'
-                              ? `${activity.itemName} fue eliminado`
+                              ? t('itemDeletedLabel', { itemName: activity.itemName ?? '' })
                               : activity.itemName}
                           </span>
                           <span className="text-xs text-gray-400">
                             {activity.type === 'ITEM_DELETED'
-                              ? 'Eliminado'
-                              : 'Order hecha'}
+                              ? t('deletedLabel')
+                              : t('orderPlacedLabel')}
                             : {activity.timestamp}
                           </span>
                         </div>
@@ -297,10 +299,10 @@ export const TableInformation = () => {
                   <div className="absolute -left-6.25 top-1.5 w-2.5 h-2.5 rounded-full bg-gray-300"></div>
                   <div className="flex flex-col gap-2 pb-3">
                     <span className="text-xs text-gray-700 font-medium">
-                      Mesa abierta: {sessionData?.createdAt}
+                      {t('tableOpenedAtLabel', { timestamp: sessionData?.createdAt ?? '' })}
                     </span>
                     <span className="text-xs text-gray-400">
-                      Camerero: {sessionData?.waiterId}
+                      {t('waiterIdLabel', { waiterId: sessionData?.waiterId ?? '' })}
                     </span>
                   </div>
                 </div>
@@ -312,7 +314,7 @@ export const TableInformation = () => {
           <Card>
             <CardHeader className="p-7 border-b border flex flex-row items-center justify-between">
               <CardTitle className="text-2xl text-gray-800 font-bold">
-                {billData ? 'Cuenta' : 'Resumen'}
+                {billData ? t('billTitle') : t('summaryTitle')}
               </CardTitle>
               {billData && !billData.splits.some((s) => s.status !== 'UNPAID') && (
                 <Button
@@ -320,7 +322,7 @@ export const TableInformation = () => {
                   className="text-sm text-destructive"
                   onClick={() => openModal('VOID_BILL', { billId: billData.id, sessionId: id })}
                 >
-                  <Ban className="w-4 h-4 mr-2" /> Anular Cuenta
+                  <Ban className="w-4 h-4 mr-2" /> {t('voidBillLabel')}
                 </Button>
               )}
             </CardHeader>
@@ -348,7 +350,7 @@ export const TableInformation = () => {
                           <div className="flex items-center gap-2">
                             <Badge className="flex items-center gap-1">
                               <CheckCircle2 className="w-4 h-4" />
-                              {split.status === 'PAID' ? 'Pagado' : 'Pago parcial'}
+                              {split.status === 'PAID' ? t('paidLabel') : t('partiallyPaidLabel')}
                             </Badge>
                             <Button
                               variant="ghost"
@@ -372,7 +374,7 @@ export const TableInformation = () => {
                             }
                             disabled={confirmDigitalPaymentMutation.isPending}
                           >
-                            <CreditCard className="w-4 h-4 mr-2" /> Confirmar digital
+                            <CreditCard className="w-4 h-4 mr-2" /> {t('confirmDigitalButton')}
                           </Button>
                         ) : (
                           <Button
@@ -386,7 +388,7 @@ export const TableInformation = () => {
                             }
                             disabled={physicalPaymentMutation.isPending}
                           >
-                            <Banknote className="w-4 h-4 mr-2" /> Marcar pagado
+                            <Banknote className="w-4 h-4 mr-2" /> {t('markPaidButton')}
                           </Button>
                         )}
                       </div>
@@ -395,7 +397,7 @@ export const TableInformation = () => {
                 </CardContent>
                 <CardFooter className="flex flex-col gap-3">
                   <div className="flex justify-between text-xl text-gray-500 p-4 w-full">
-                    <span className="text-2xl font-bold">Total</span>
+                    <span className="text-2xl font-bold">{t('totalLabel')}</span>
                     <span className="text-3xl font-bold text-[#8B0000]">
                       ${billData.total.toFixed(2)}
                     </span>
@@ -406,19 +408,19 @@ export const TableInformation = () => {
               <>
                 <CardContent>
                   <div className="flex justify-between text-xl text-gray-500 pt-4 pl-4 pr-4">
-                    <span>Subtotal</span>
+                    <span>{t('subtotalLabel')}</span>
                     <span className="text-xl font-bold text-[#8B0000]">
                       ${subtotal.toFixed(2)}
                     </span>
                   </div>
                   <div className="flex justify-between text-xl text-gray-500 pt-4 pl-4 pr-4">
-                    <span>Taxes (10%)</span>
+                    <span>{t('taxesLabel')}</span>
                     <span className="text-xl font-bold text-[#8B0000]">
                       ${taxes.toFixed(2)}
                     </span>
                   </div>
                   <div className="flex justify-between text-xl text-gray-500 p-4">
-                    <span>Propina (15%)</span>
+                    <span>{t('tipLabel')}</span>
                     <span className="text-xl font-bold text-[#8B0000]">
                       ${tip.toFixed(2)}
                     </span>
@@ -426,7 +428,7 @@ export const TableInformation = () => {
                 </CardContent>
                 <CardFooter className="flex flex-col gap-3">
                   <div className="flex justify-between text-xl text-gray-500 p-4 w-full">
-                    <span className="text-2xl font-bold">Total</span>
+                    <span className="text-2xl font-bold">{t('totalLabel')}</span>
                     <span className="text-3xl font-bold text-[#8B0000]">
                       ${total.toFixed(2)}
                     </span>
@@ -443,8 +445,8 @@ export const TableInformation = () => {
                       }
                     >
                       {hasBillableItems
-                        ? 'Cobrar Mesa'
-                        : 'Esperando entrega de pedidos'}
+                        ? t('chargeMesaLabel')
+                        : t('waitingForDeliveryLabel')}
                     </Button>
                   ) : (
                     <Button
@@ -454,7 +456,7 @@ export const TableInformation = () => {
                       }}
                       disabled={mutation.isPending}
                     >
-                      {mutation.isPending ? 'Cerrando' : 'Cerrar mesa'}
+                      {mutation.isPending ? t('closingTableLabel') : t('closeTableButton')}
                     </Button>
                   )}
                 </CardFooter>

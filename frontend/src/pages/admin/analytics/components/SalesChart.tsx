@@ -13,12 +13,13 @@ import { analyticsService, type SalesGranularity } from '@/lib/api'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { useTranslation } from '@/lib/i18n'
 
-const GRANULARITY_OPTIONS: { value: SalesGranularity; label: string }[] = [
-  { value: 'day', label: 'Día' },
-  { value: 'week', label: 'Semana' },
-  { value: 'month', label: 'Mes' },
-  { value: 'year', label: 'Año' },
+const GRANULARITY_OPTIONS: { value: SalesGranularity; labelKey: 'granularityDayLabel' | 'granularityWeekLabel' | 'granularityMonthLabel' | 'granularityYearLabel' }[] = [
+  { value: 'day', labelKey: 'granularityDayLabel' },
+  { value: 'week', labelKey: 'granularityWeekLabel' },
+  { value: 'month', labelKey: 'granularityMonthLabel' },
+  { value: 'year', labelKey: 'granularityYearLabel' },
 ]
 
 const BUCKET_LABEL_FORMAT: Record<SalesGranularity, Intl.DateTimeFormatOptions> = {
@@ -29,6 +30,7 @@ const BUCKET_LABEL_FORMAT: Record<SalesGranularity, Intl.DateTimeFormatOptions> 
 }
 
 export const SalesChart = () => {
+  const { t, locale } = useTranslation('admin')
   const [granularity, setGranularity] = useState<SalesGranularity>('day')
 
   const { data, isLoading, isError } = useQuery({
@@ -41,7 +43,7 @@ export const SalesChart = () => {
   const chartData = buckets.map((bucket) => ({
     label: new Date(
       bucket.bucketStart ?? bucket.bucketEnd ?? ''
-    ).toLocaleDateString('es', BUCKET_LABEL_FORMAT[granularity]),
+    ).toLocaleDateString(locale === 'en' ? 'en-US' : 'es-MX', BUCKET_LABEL_FORMAT[granularity]),
     revenue: bucket.revenue ?? 0,
   }))
 
@@ -53,7 +55,7 @@ export const SalesChart = () => {
             <TrendingUp className="h-4 w-4 text-primary" strokeWidth={2} />
           </div>
           <CardTitle className="text-base font-semibold tracking-tight text-foreground">
-            Ventas en el tiempo
+            {t('salesOverTimeTitle')}
           </CardTitle>
         </div>
         <div className="flex items-center gap-1 rounded-full bg-muted/60 p-1">
@@ -69,7 +71,7 @@ export const SalesChart = () => {
               )}
               onClick={() => setGranularity(option.value)}
             >
-              {option.label}
+              {t(option.labelKey)}
             </Button>
           ))}
         </div>
@@ -77,17 +79,17 @@ export const SalesChart = () => {
       <CardContent>
         {isLoading && (
           <div className="flex items-center justify-center py-16 text-sm text-muted-foreground">
-            Cargando ventas...
+            {t('loadingSales')}
           </div>
         )}
         {isError && (
           <div className="flex items-center justify-center py-16 text-sm text-destructive">
-            Error al cargar las ventas.
+            {t('loadingSalesError')}
           </div>
         )}
         {data && chartData.length === 0 && (
           <div className="flex items-center justify-center py-16 text-sm text-muted-foreground">
-            Sin ventas registradas.
+            {t('noSalesRegistered')}
           </div>
         )}
         {chartData.length > 0 && (
@@ -121,7 +123,7 @@ export const SalesChart = () => {
                     border: '1px solid var(--border)',
                     fontSize: 12,
                   }}
-                  formatter={(value) => [`$${Number(value ?? 0).toFixed(2)}`, 'Ingresos']}
+                  formatter={(value) => [`$${Number(value ?? 0).toFixed(2)}`, t('revenueTooltipLabel')]}
                 />
                 <Area
                   type="monotone"

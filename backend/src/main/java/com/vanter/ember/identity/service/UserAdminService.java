@@ -53,6 +53,10 @@ public class UserAdminService {
                 .email(request.email())
                 .passwordHash(passwordEncoder.encode(request.password()))
                 .role(request.role())
+                .jobTitle(request.jobTitle())
+                .shift(request.shift())
+                .contractType(request.contractType())
+                .location(request.location())
                 .build());
 
         return toStaffResponse(user);

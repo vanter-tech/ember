@@ -12,8 +12,10 @@ import { useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { billingService, type SplitMethod } from '@/lib/api'
 import toast from 'react-hot-toast'
+import { useTranslation } from '@/lib/i18n'
 
 export const ChargeTableModal = () => {
+  const { t } = useTranslation('waiter')
   const { activeModal, modalPayload, closeModal } = useUIStore()
   const [splitMethod, setSplitMethod] = useState<SplitMethod>('BY_CONSUMPTION')
 
@@ -45,10 +47,10 @@ export const ChargeTableModal = () => {
       <DialogContent className="sm:max-w-md rounded-3xl p-6">
         <DialogHeader className="mb-2">
           <DialogTitle className="text-2xl font-bold text-zinc-800">
-            Cobrar Mesa
+            {t('chargeMesaLabel')}
           </DialogTitle>
           <DialogDescription className="text-zinc-500 text-sm mt-1">
-            Elige cómo se dividirá la cuenta entre los participantes.
+            {t('chargeMesaDescription')}
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-3">
@@ -61,9 +63,9 @@ export const ChargeTableModal = () => {
                 : 'border-zinc-200'
             }`}
           >
-            <span className="font-semibold block">Por consumo</span>
+            <span className="font-semibold block">{t('byConsumptionLabel')}</span>
             <span className="text-sm text-zinc-500">
-              Cada participante paga lo que pidió.
+              {t('byConsumptionDescription')}
             </span>
           </button>
           <button
@@ -75,10 +77,9 @@ export const ChargeTableModal = () => {
                 : 'border-zinc-200'
             }`}
           >
-            <span className="font-semibold block">Partes iguales</span>
+            <span className="font-semibold block">{t('equalPartsLabel')}</span>
             <span className="text-sm text-zinc-500">
-              El total se divide entre {modalPayload?.participantCount ?? 1}{' '}
-              participante(s).
+              {t('equalPartsDescription', { count: modalPayload?.participantCount ?? 1 })}
             </span>
           </button>
         </div>
@@ -88,7 +89,7 @@ export const ChargeTableModal = () => {
             onClick={() => mutation.mutate()}
             disabled={mutation.isPending}
           >
-            {mutation.isPending ? 'Calculando...' : 'Confirmar y calcular cuenta'}
+            {mutation.isPending ? t('calculatingLabel') : t('confirmChargeButton')}
           </Button>
         </DialogFooter>
       </DialogContent>

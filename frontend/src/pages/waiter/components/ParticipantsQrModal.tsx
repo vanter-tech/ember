@@ -14,8 +14,10 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { SessionTableService } from '@/lib/api'
 import toast from 'react-hot-toast'
 import { QRCodeSVG } from 'qrcode.react'
+import { useTranslation } from '@/lib/i18n'
 
 export const ParticipantQrModal = () => {
+  const { t } = useTranslation('waiter')
   const { activeModal, modalPayload, closeModal } = useUIStore()
   const [participants, setParticipants] = useState(1)
   const [QrToken, setQrToken] = useState<string | null>(null)
@@ -72,14 +74,14 @@ export const ParticipantQrModal = () => {
       <DialogContent className="sm:max-w-md rounded-3xl p-6">
         <DialogHeader className="mb-2">
           <DialogTitle className="text-2xl font-bold text-zinc-800">
-            Asignar Mesa
+            {t('assignTableLabel')}
           </DialogTitle>
           <DialogDescription className="text-zinc-500 text-sm mt-1">
-            Configure los detalles de la mesa antes de abrirla
+            {t('assignTableDescription')}
           </DialogDescription>
         </DialogHeader>
         <p className="text-zinc-500 text-sm">
-          Selecciona la cantidad de clientes para la mesa.
+          {t('selectParticipantCountLabel')}
         </p>
         <div className="flex justify-between items-center bg-zinc-100 rounded-4xl p-2">
           <button
@@ -113,7 +115,7 @@ export const ParticipantQrModal = () => {
               level={'Q'}
             />
           ) : (
-            <span className="text-zinc-400">El codigo qr aparecera aca.</span>
+            <span className="text-zinc-400">{t('qrPlaceholderLabel')}</span>
           )}
         </div>
         <div
@@ -123,7 +125,7 @@ export const ParticipantQrModal = () => {
           {joinCode && (
             <div className="flex w-full flex-col items-center bg-zinc-100 rounded-4xl p-3 gap-2">
               <span className="text-lg font-bold">
-                Codigo para entrar a la mesa:
+                {t('joinCodeLabel')}
               </span>
               <span className="text-[#8c1717] text-3xl font-bold">
                 {joinCode}
@@ -143,7 +145,7 @@ export const ParticipantQrModal = () => {
             }}
             disabled={mutation.isPending}
           >
-            {mutation.isPending ? 'Guardando' : 'Abrir Mesa y Generar QR'}
+            {mutation.isPending ? t('qrSavingLabel') : t('openTableGenerateQrButton')}
           </Button>
         </DialogFooter>
       </DialogContent>

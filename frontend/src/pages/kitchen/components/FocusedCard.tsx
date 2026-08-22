@@ -7,9 +7,11 @@ import { Clock, TicketCheck, UserCheck } from 'lucide-react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import { NEXT_ACTION_LABEL, NEXT_STATUS, STATUS_LABEL } from '../lib/itemStatus'
+import { useTranslation } from '@/lib/i18n'
 
 export const FocusedCard = ({ order }: { order: kitchenOrders }) => {
   const queryClient = useQueryClient()
+  const { t } = useTranslation('kitchen')
 
   const updateItemStatusMutation = useMutation({
     mutationFn: ({ itemId, status }: { itemId: string; status: OrderItemStatus }) =>
@@ -30,33 +32,33 @@ export const FocusedCard = ({ order }: { order: kitchenOrders }) => {
         >
           <CardHeader className="flex flex-col gap-2 border-b">
             <h2 className="text-2xl font-bold text-[#8c1717] tracking-tight">
-              Detalles de Orden - M{order.tableNumber}
+              {t('orderDetailsHeading', { tableNumber: order.tableNumber ?? '' })}
             </h2>
             <div className="w-full flex items-center justify-between">
               <div className="flex gap-3">
                 <span className="flex items-center gap-2 text-xs text-gray-500 mt-1">
-                  <TicketCheck /> Ticket: #
-                  {order.id!.substring(0, 6).toUpperCase()}
+                  <TicketCheck />{' '}
+                  {t('ticketLabel', { code: order.id!.substring(0, 6).toUpperCase() })}
                 </span>
                 <span className="flex items-center gap-2 text-xs text-gray-500 mt-1">
-                  <UserCheck /> Cliente: #-Por-iterar
+                  <UserCheck /> {t('clientPlaceholder')}
                 </span>
                 <span className="flex items-center gap-2 text-xs text-gray-500 mt-1">
-                  <Clock /> Ingreso: {order.createdAt}
+                  <Clock /> {t('entryTimeLabel', { time: order.createdAt ?? '' })}
                 </span>
               </div>
 
               <div className="flex flex-row gap-3">
-                <Button className="p-6 ">Imprimir</Button>
+                <Button className="p-6 ">{t('printButton')}</Button>
                 <Button className="p-6 " variant={'destructive'}>
-                  Anular
+                  {t('voidButton')}
                 </Button>
               </div>
             </div>
           </CardHeader>
           <CardContent>
             <ul className="flex flex-wrap gap-3">
-              {order.items?.map((item) => {
+              {order.items?.filter((item) => item.status !== 'DELIVERED').map((item) => {
                 const status = item.status ?? 'PENDING'
                 const next = NEXT_STATUS[status]
                 return (

@@ -4,9 +4,12 @@ import { QueueCard } from './components/QueueCard'
 import { FocusedCard } from './components/FocusedCard'
 import { useWebsocketStore } from '@/store/websocket'
 import { Badge } from '@/components/ui/badge'
+import { LanguageSwitcher } from '@/components/LanguageSwitcher'
+import { useTranslation } from '@/lib/i18n'
 
 export const OrdersDisplays = () => {
   const isConnected = useWebsocketStore((state) => state.isConnected)
+  const { t } = useTranslation('kitchen')
 
   const {
     data: info = [],
@@ -26,7 +29,7 @@ export const OrdersDisplays = () => {
   if (isLoading) {
     return (
       <div className="flex flex-1 items-center justify-center h-full">
-        <span className="text-gray-500">Cargando pedidos...</span>
+        <span className="text-gray-500">{t('loadingOrders')}</span>
       </div>
     )
   }
@@ -35,7 +38,7 @@ export const OrdersDisplays = () => {
     return (
       <div className="flex flex-1 items-center justify-center h-full">
         <span className="text-red-600">
-          No se pudieron cargar los pedidos.
+          {t('loadingOrdersError')}
         </span>
       </div>
     )
@@ -51,13 +54,16 @@ export const OrdersDisplays = () => {
           <span
             className={`size-1.5 rounded-full ${isConnected ? 'bg-primary-foreground' : 'bg-destructive'}`}
           />
-          {isConnected ? 'Conectado' : 'Desconectado'}
+          {isConnected ? t('connected') : t('disconnected')}
         </Badge>
-        <h1 className="text-3xl font-bold text-[#8c1717] tracking-tight">
-          Ember
-        </h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-3xl font-bold text-[#8c1717] tracking-tight">
+            Ember
+          </h1>
+          <LanguageSwitcher />
+        </div>
         <span className="text-sm text-gray-500 mt-1">
-          Monitor de cocina - KDS
+          {t('kdsSubtitle')}
         </span>
       </div>
       <div className="flex flex-1 items-start gap-6 overflow-x-auto p-6">

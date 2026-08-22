@@ -1,0 +1,16 @@
+export const auth = {
+  loginTagline: 'Please log in to continue.',
+  loginDescription: 'Type your email and password to access your account.',
+  emailPlaceholder: 'Enter your email',
+  passwordPlaceholder: 'Enter your password',
+  loggingIn: 'Logging in...',
+  login: 'Login',
+  registerLink: 'Register',
+  registerTitle: 'Register',
+  registerDescription: 'Create an account to get started.',
+  namePlaceholder: 'Your name',
+  registerEmailPlaceholder: 'Your email',
+  registerPasswordPlaceholder: 'Your password',
+  registerSubmit: 'Register',
+  loginLink: 'Already have an account? Login',
+}

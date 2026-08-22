@@ -22,6 +22,7 @@ import { Switch } from '@/components/ui/switch'
 import { useUIStore } from '@/store/uiStore'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { staffService, type StaffMemberResponse } from '@/lib/api'
+import { useTranslation } from '@/lib/i18n'
 
 const editStaffSchema = z.object({
   name: z.string().min(2, 'El nombre debe tener al menos 2 caracteres'),
@@ -38,6 +39,7 @@ type EditStaffInputs = z.infer<typeof editStaffSchema>
 export const EditStaffModal = () => {
   const { activeModal, modalPayload, closeModal } = useUIStore()
   const queryClient = useQueryClient()
+  const { t } = useTranslation('admin')
   const member = modalPayload as StaffMemberResponse | null
 
   const form = useForm<EditStaffInputs>({
@@ -70,24 +72,24 @@ export const EditStaffModal = () => {
       open={activeModal === 'EDIT_STAFF'}
       onOpenChange={(isOpen) => !isOpen && closeModal()}
     >
-      <DialogContent className="sm:max-w-md rounded-3xl p-6">
+      <DialogContent className="sm:max-w-xl rounded-3xl p-6">
         <DialogHeader className="mb-4">
           <DialogTitle className="text-2xl font-bold text-zinc-800">
-            Editar empleado
+            {t('editEmployeeTitle')}
           </DialogTitle>
         </DialogHeader>
 
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit((data) => mutation.mutate(data))}
-            className="space-y-5"
+            className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-5"
           >
             <FormField
               control={form.control}
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Nombre completo</FormLabel>
+                  <FormLabel>{t('fullNameLabel')}</FormLabel>
                   <FormControl>
                     <Input className="rounded-xl" {...field} />
                   </FormControl>
@@ -100,7 +102,7 @@ export const EditStaffModal = () => {
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Correo electrónico</FormLabel>
+                  <FormLabel>{t('emailLabel')}</FormLabel>
                   <FormControl>
                     <Input type="email" className="rounded-xl" {...field} />
                   </FormControl>
@@ -113,10 +115,10 @@ export const EditStaffModal = () => {
               name="jobTitle"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Puesto</FormLabel>
+                  <FormLabel>{t('jobTitleLabel')}</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="Ej. Mesera"
+                      placeholder={t('jobTitlePlaceholder')}
                       className="rounded-xl"
                       {...field}
                     />
@@ -130,10 +132,10 @@ export const EditStaffModal = () => {
               name="shift"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Turno</FormLabel>
+                  <FormLabel>{t('shiftLabel')}</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="Ej. Mañana"
+                      placeholder={t('shiftPlaceholder')}
                       className="rounded-xl"
                       {...field}
                     />
@@ -147,10 +149,10 @@ export const EditStaffModal = () => {
               name="contractType"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Contrato</FormLabel>
+                  <FormLabel>{t('contractTypeLabel')}</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="Ej. Tiempo completo"
+                      placeholder={t('contractTypePlaceholder')}
                       className="rounded-xl"
                       {...field}
                     />
@@ -164,10 +166,10 @@ export const EditStaffModal = () => {
               name="location"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Ubicación</FormLabel>
+                  <FormLabel>{t('locationLabel')}</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="Ej. Sucursal Centro"
+                      placeholder={t('locationPlaceholder')}
                       className="rounded-xl"
                       {...field}
                     />
@@ -180,8 +182,8 @@ export const EditStaffModal = () => {
               control={form.control}
               name="active"
               render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between gap-3 rounded-lg border p-4">
-                  <FormLabel>Activo</FormLabel>
+                <FormItem className="sm:col-span-2 flex flex-row items-center justify-between gap-3 rounded-lg border p-4">
+                  <FormLabel>{t('activeStatus')}</FormLabel>
                   <FormControl>
                     <Switch checked={field.value} onCheckedChange={field.onChange} />
                   </FormControl>
@@ -189,17 +191,17 @@ export const EditStaffModal = () => {
               )}
             />
 
-            <DialogFooter>
+            <DialogFooter className="sm:col-span-2">
               <Button
                 type="button"
                 variant="outline"
                 onClick={closeModal}
                 disabled={mutation.isPending}
               >
-                Cancelar
+                {t('cancelButton')}
               </Button>
               <Button type="submit" disabled={mutation.isPending}>
-                {mutation.isPending ? 'Guardando...' : 'Guardar cambios'}
+                {mutation.isPending ? t('savingEllipsisLabel') : t('saveChangesButton')}
               </Button>
             </DialogFooter>
           </form>

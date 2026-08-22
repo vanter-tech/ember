@@ -9,8 +9,10 @@ import { Button } from '@/components/ui/button'
 import { ArrowLeft, CreditCard, CheckCircle2, Clock, Sparkles } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { TIER_LABELS } from '@/pages/admin/components/settings/loyalty/types'
+import { useTranslation } from '@/lib/i18n'
 
 export const Bill = () => {
+  const { t } = useTranslation('customer')
   const bill = useSessionStore((state) => state.bill)
   const billSplits = useSessionStore((state) => state.billSplits)
   const sessionId = useSessionStore((state) => state.id)
@@ -46,7 +48,7 @@ export const Bill = () => {
           </Button>
         </Link>
         <h2 className="text-2xl text-[#8c1717] font-bold uppercase">
-          Mi Cuenta
+          {t('billTitle')}
         </h2>
       </header>
 
@@ -54,8 +56,7 @@ export const Bill = () => {
         {!bill ? (
           <Card>
             <CardContent className="py-12 text-center text-gray-400">
-              Aún no se ha solicitado la cuenta. Pide al mesero que la calcule
-              cuando estés listo para pagar.
+              {t('billNotRequestedYet')}
             </CardContent>
           </Card>
         ) : (
@@ -63,7 +64,7 @@ export const Bill = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex justify-between items-center">
-                  <span>Total de la mesa</span>
+                  <span>{t('billTableTotal')}</span>
                   <span className="text-2xl text-[#8c1717] font-bold">
                     ${bill.total?.toFixed(2)}
                   </span>
@@ -82,7 +83,7 @@ export const Bill = () => {
                     <div className="flex flex-col">
                       <span className="font-semibold">
                         {split.participantName}
-                        {split.participantName === myName && ' (Tú)'}
+                        {split.participantName === myName && t('billYouSuffix')}
                       </span>
                       <span className="text-sm text-gray-500">
                         ${split.amount?.toFixed(2)}
@@ -90,10 +91,10 @@ export const Bill = () => {
                     </div>
                     {split.status === 'PAID' || split.status === 'PARTIALLY_PAID' ? (
                       <Badge className="flex items-center gap-1">
-                        <CheckCircle2 className="w-4 h-4" /> Pagado
+                        <CheckCircle2 className="w-4 h-4" /> {t('billStatusPaid')}
                       </Badge>
                     ) : (
-                      <Badge variant="outline">Pendiente</Badge>
+                      <Badge variant="outline">{t('billStatusPending')}</Badge>
                     )}
                   </div>
                 ))}
@@ -106,12 +107,15 @@ export const Bill = () => {
                   <Sparkles className="w-8 h-8 text-[#8c1717] shrink-0" />
                   <div className="flex flex-col">
                     <span className="font-semibold">
-                      ¡Ganaste puntos! Ahora tienes {loyaltyAccount.totalPoints} pts
+                      {t('billPointsEarned', { points: loyaltyAccount.totalPoints! })}
                     </span>
                     <span className="text-sm text-gray-500">
-                      Nivel {TIER_LABELS[loyaltyAccount.tier!]}
+                      {t('billLoyaltyTierLabel', { tierName: TIER_LABELS[loyaltyAccount.tier!] })}
                       {loyaltyAccount.nextTier &&
-                        ` — ${loyaltyAccount.pointsToNextTier} pts para ${TIER_LABELS[loyaltyAccount.nextTier]}`}
+                        t('billPointsToNextTier', {
+                          points: loyaltyAccount.pointsToNextTier!,
+                          tierName: TIER_LABELS[loyaltyAccount.nextTier],
+                        })}
                     </span>
                   </div>
                 </CardContent>
@@ -126,12 +130,12 @@ export const Bill = () => {
               >
                 {paymentRequested ? (
                   <>
-                    <Clock className="w-5 h-5" /> Esperando confirmación...
+                    <Clock className="w-5 h-5" /> {t('billWaitingConfirmation')}
                   </>
                 ) : (
                   <>
-                    <CreditCard className="w-5 h-5" /> Pagar mi parte ($
-                    {mySplit.amount?.toFixed(2)})
+                    <CreditCard className="w-5 h-5" />{' '}
+                    {t('billPayMyShare', { amount: mySplit.amount?.toFixed(2) ?? '0.00' })}
                   </>
                 )}
               </Button>

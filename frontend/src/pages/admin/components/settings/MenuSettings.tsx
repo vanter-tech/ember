@@ -9,11 +9,13 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
+import { useTranslation } from '@/lib/i18n';
 
 type SettingsPayload = components['schemas']['SettingsPayload'];
 type MenuSettings = components['schemas']['MenuSettings'];
 
 export const MenuSettings = () => {
+  const { t } = useTranslation('admin');
   const queryClient = useQueryClient();
 
   const { data: settings, isPending: isLoadingSettings } = useQuery({
@@ -65,7 +67,7 @@ export const MenuSettings = () => {
   };
 
   if (isLoadingSettings) {
-    return <div className="p-6 text-zinc-500">Cargando configuraciones...</div>;
+    return <div className="p-6 text-zinc-500">{t('loadingSettingsLabel')}</div>;
   }
 
   return (
@@ -75,8 +77,8 @@ export const MenuSettings = () => {
           <UtensilsCrossed className="w-6 h-6" />
         </div>
         <div>
-          <CardTitle className="text-xl">Menú Digital</CardTitle>
-          <CardDescription>Controla la visibilidad y búsqueda de los platos.</CardDescription>
+          <CardTitle className="text-xl">{t('digitalMenuCardTitle')}</CardTitle>
+          <CardDescription>{t('digitalMenuCardDescription')}</CardDescription>
         </div>
       </CardHeader>
 
@@ -84,9 +86,9 @@ export const MenuSettings = () => {
         <div className="max-w-md space-y-6">
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <Label htmlFor="showOutOfStockItems">Mostrar platos agotados</Label>
+              <Label htmlFor="showOutOfStockItems">{t('showOutOfStockLabel')}</Label>
               <p className="text-xs text-muted-foreground">
-                Los clientes verán los platos sin stock, marcados como no disponibles.
+                {t('showOutOfStockDescription')}
               </p>
             </div>
             <Switch
@@ -98,9 +100,9 @@ export const MenuSettings = () => {
 
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <Label htmlFor="enableItemSearch">Habilitar búsqueda de platos</Label>
+              <Label htmlFor="enableItemSearch">{t('enableSearchLabel')}</Label>
               <p className="text-xs text-muted-foreground">
-                Muestra una barra de búsqueda en el menú digital del cliente.
+                {t('enableSearchDescription')}
               </p>
             </div>
             <Switch
@@ -119,7 +121,7 @@ export const MenuSettings = () => {
           disabled={draftMenu === undefined || updateSettingsMutation.isPending}
           className="text-zinc-700 hover:bg-zinc-100 p-4"
         >
-          Deshacer cambios
+          {t('undoChangesButton')}
         </Button>
 
         <Button
@@ -130,10 +132,10 @@ export const MenuSettings = () => {
           {updateSettingsMutation.isPending ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Guardando...
+              {t('savingEllipsisLabel')}
             </>
           ) : (
-            'Guardar Cambios'
+            t('saveSettingsButton')
           )}
         </Button>
       </CardFooter>

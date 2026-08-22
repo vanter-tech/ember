@@ -8,4 +8,6 @@ public record LoyaltyAccountResponse(
         LoyaltyTier tier,
         LoyaltyTier nextTier,
         Integer pointsToNextTier,
+        Integer tierProgressPercent,
+        String restaurantName,
         List<RewardCatalogEntryResponse> rewards) {}

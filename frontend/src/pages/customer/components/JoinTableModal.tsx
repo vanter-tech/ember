@@ -17,6 +17,7 @@ import { useNavigate } from 'react-router-dom'
 import { isAxiosError } from 'axios'
 import { useSessionStore } from '@/store/sessionStore'
 import { useAuthStore } from '@/store/authStore'
+import { useTranslation } from '@/lib/i18n'
 
 export const JoinTableModal = () => {
   const { activeModal, closeModal } = useUIStore()
@@ -25,6 +26,7 @@ export const JoinTableModal = () => {
   const navigate = useNavigate()
   const {setSession} = useSessionStore()
   const setAuth = useAuthStore((state) => state.setAuth)
+  const { t } = useTranslation('customer')
 
   const mutation = useMutation({
     mutationFn: async (joinCode: string) => {
@@ -70,9 +72,9 @@ export const JoinTableModal = () => {
           {opciones == 'MENU' && (
             <>
               <DialogHeader className="mb-2">
-                <DialogTitle>Entrar a una mesa.</DialogTitle>
+                <DialogTitle>{t('homeJoinTableCta')}</DialogTitle>
                 <DialogDescription className="text-zinc-500 text-sm mt-1">
-                  Seleccione una opcion para entrar a la mesa.
+                  {t('joinModalSelectOption')}
                 </DialogDescription>
               </DialogHeader>
               <div className="flex justify-center items-center gap-4 flex-col">
@@ -90,9 +92,9 @@ export const JoinTableModal = () => {
                     <QrCode />
                   </div>
                   <div>
-                    <h2 className="font-bold text-md">Escanear codigo QR.</h2>
+                    <h2 className="font-bold text-md">{t('joinModalScanQrTitle')}</h2>
                     <p className="text-zinc-500 text-sm mt-1">
-                      Usa tu camara para escanear el codigo de la mesa.
+                      {t('joinModalScanQrDescription')}
                     </p>
                   </div>
                 </div>
@@ -111,9 +113,9 @@ export const JoinTableModal = () => {
                     <Keyboard />
                   </div>
                   <div>
-                    <h2 className="font-bold text-md">Ingresar codigo.</h2>
+                    <h2 className="font-bold text-md">{t('joinModalEnterCodeTitle')}</h2>
                     <p className="text-zinc-500 text-sm mt-1">
-                      Escriba el codigo de 5 digitos de su mesa.
+                      {t('joinModalEnterCodeDescription')}
                     </p>
                   </div>
                 </div>
@@ -123,9 +125,9 @@ export const JoinTableModal = () => {
           {opciones == 'CODE' && (
             <>
               <DialogHeader className="">
-                <DialogTitle>Ingresa el codigo.</DialogTitle>
+                <DialogTitle>{t('joinModalCodeScreenTitle')}</DialogTitle>
                 <DialogDescription className="text-zinc-500 text-sm mt-1">
-                  Ingrese con cuidado el codigo para ingresar a la mesa.
+                  {t('joinModalCodeScreenDescription')}
                 </DialogDescription>
               </DialogHeader>
               <div className="flex flex-col items-center justify-center w-full gap-5 ">
@@ -142,7 +144,7 @@ export const JoinTableModal = () => {
                     setOpciones('MENU')
                   }}
                 >
-                  Volver
+                  {t('joinModalBackButton')}
                 </Button>
                 <Button
                   className="w-full h-12 hover:bg-[#6a1111] font-bold text-lg"
@@ -151,7 +153,7 @@ export const JoinTableModal = () => {
                   }}
                   disabled={joinCode.length !== 5 || mutation.isPending}
                 >
-                  {mutation.isPending ? 'Entrando' : 'Confirmar'}
+                  {mutation.isPending ? t('joinModalSubmitting') : t('joinModalConfirm')}
                 </Button>
               </div>
             </>

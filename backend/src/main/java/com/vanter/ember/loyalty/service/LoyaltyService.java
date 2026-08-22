@@ -53,6 +53,16 @@ public class LoyaltyService {
         };
     }
 
+    /** The point total at which {@code tier} itself begins — BRONCE is always the floor at 0. */
+    public int tierFloor(LoyaltyTier tier, SettingsPayload.LoyaltySettings settings) {
+        return switch (tier) {
+            case BRONCE -> 0;
+            case PLATA -> settings.getPlataThreshold();
+            case ORO -> settings.getOroThreshold();
+            case PLATINO -> settings.getPlatinoThreshold();
+        };
+    }
+
     /** Points still needed to reach {@code next}, or {@code null} if {@code next} is null (maxed). */
     public Integer pointsToNextTier(int totalPoints, LoyaltyTier next, SettingsPayload.LoyaltySettings settings) {
         if (next == null) {

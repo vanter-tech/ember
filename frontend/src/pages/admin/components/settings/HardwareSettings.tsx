@@ -9,11 +9,13 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
+import { useTranslation } from '@/lib/i18n';
 
 type SettingsPayload = components['schemas']['SettingsPayload'];
 type HardwareSettings = components['schemas']['HardwareSettings'];
 
 export const HardwareSettings = () => {
+  const { t } = useTranslation('admin');
   const queryClient = useQueryClient();
 
   const { data: settings, isPending: isLoadingSettings } = useQuery({
@@ -65,7 +67,7 @@ export const HardwareSettings = () => {
   };
 
   if (isLoadingSettings) {
-    return <div className="p-6 text-zinc-500">Cargando configuraciones...</div>;
+    return <div className="p-6 text-zinc-500">{t('loadingSettingsLabel')}</div>;
   }
 
   return (
@@ -75,8 +77,8 @@ export const HardwareSettings = () => {
           <Printer className="w-6 h-6" />
         </div>
         <div>
-          <CardTitle className="text-xl">Impresión y Hardware</CardTitle>
-          <CardDescription>Controla el comportamiento de las impresoras de comandas y recibos.</CardDescription>
+          <CardTitle className="text-xl">{t('hardwareCardTitle')}</CardTitle>
+          <CardDescription>{t('hardwareCardDescription')}</CardDescription>
         </div>
       </CardHeader>
 
@@ -84,9 +86,9 @@ export const HardwareSettings = () => {
         <div className="max-w-md space-y-6">
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <Label htmlFor="autoPrintTickets">Impresión automática de comandas</Label>
+              <Label htmlFor="autoPrintTickets">{t('autoPrintTicketsLabel')}</Label>
               <p className="text-xs text-muted-foreground">
-                Imprime automáticamente el ticket de cocina al confirmar un pedido.
+                {t('autoPrintTicketsDescription')}
               </p>
             </div>
             <Switch
@@ -98,9 +100,9 @@ export const HardwareSettings = () => {
 
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <Label htmlFor="printCustomerReceipt">Imprimir recibo para el cliente</Label>
+              <Label htmlFor="printCustomerReceipt">{t('printCustomerReceiptLabel')}</Label>
               <p className="text-xs text-muted-foreground">
-                Genera automáticamente un recibo imprimible al cerrar la cuenta.
+                {t('printCustomerReceiptDescription')}
               </p>
             </div>
             <Switch
@@ -119,7 +121,7 @@ export const HardwareSettings = () => {
           disabled={draftHardware === undefined || updateSettingsMutation.isPending}
           className="text-zinc-700 hover:bg-zinc-100 p-4"
         >
-          Deshacer cambios
+          {t('undoChangesButton')}
         </Button>
 
         <Button
@@ -130,10 +132,10 @@ export const HardwareSettings = () => {
           {updateSettingsMutation.isPending ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Guardando...
+              {t('savingEllipsisLabel')}
             </>
           ) : (
-            'Guardar Cambios'
+            t('saveSettingsButton')
           )}
         </Button>
       </CardFooter>

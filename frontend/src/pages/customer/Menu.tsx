@@ -13,6 +13,8 @@ import {
 import { useEffect, useState } from 'react'
 import { ArrowLeft, Plus, Receipt } from 'lucide-react'
 import { useWebsocketStore } from '@/store/websocket'
+import { LanguageSwitcher } from '@/components/LanguageSwitcher'
+import { useTranslation } from '@/lib/i18n'
 import { useSessionStore } from '@/store/sessionStore'
 import { ParticipantsPopUp } from '@/pages/customer/components/ParticipantsPopUp'
 import { ItemsFloatingIsland } from './components/ItemsFloatingIsland'
@@ -27,6 +29,7 @@ export const Menu = () => {
   const joinCode = useSessionStore((state) => state.joinCode)
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const { t } = useTranslation('customer')
 
   const mutation = useMutation({
     mutationFn: async ({
@@ -95,10 +98,10 @@ export const Menu = () => {
 
 
   if (isLoading)
-    return <div className="p-6 text-zinc-500">Cargando platillos...</div>
+    return <div className="p-6 text-zinc-500">{t('loadingItems')}</div>
   if (isError)
     return (
-      <div className="p-6 text-red-500">Error al cargar los platillos.</div>
+      <div className="p-6 text-red-500">{t('loadingItemsError')}</div>
     )
 
   return (
@@ -111,26 +114,27 @@ export const Menu = () => {
           <h1 className="text-3xl font-bold text-[#8c1717] tracking-tight">
             Ember
           </h1>
+          <LanguageSwitcher />
         </div>
         <div className="flex flex-col gap-4 p-4">
           <div className="flex items-center justify-between p-4">
             <div className=" flex flex-col">
-              <h1 className="text-3xl font-bold">Carta Digital</h1>
+              <h1 className="text-3xl font-bold">{t('menuTitle')}</h1>
               <p className="text-sm text-gray-500 mt-1">
-                Explora nuestra seleccion gourmet para hoy.
+                {t('menuSubtitle')}
               </p>
             </div>
             <div className="flex items-center gap-3">
               <Badge className="p-6 text-md font-bold flex gap-3">
                 {' '}
-                Codigo de la mesa: {joinCode}
+                {t('tableCodeLabel', { code: joinCode ?? '' })}
               </Badge>
               <Button
                 variant="secondary"
                 className="rounded-full h-13 px-5"
                 onClick={() => navigate(`${sessionId}/bill`)}
               >
-                <Receipt className="w-4 h-4 mr-2" /> Ver cuenta
+                <Receipt className="w-4 h-4 mr-2" /> {t('viewBillLabel')}
               </Button>
             </div>
           </div>
@@ -189,10 +193,10 @@ export const Menu = () => {
             </Card>
           ))}
         </div>
-        <div className="fixed bottom-10 left-11 z-50 hidden sm:block">
+        <div className="fixed bottom-24 md:bottom-10 left-11 z-50 hidden sm:block">
           <ParticipantsPopUp />
         </div>
-        <div className="fixed bottom-10 right-11 z-50 hidden sm:block">
+        <div className="fixed bottom-24 md:bottom-10 right-11 z-50 hidden sm:block">
           <ItemsFloatingIsland />
         </div>
         <div className="fixed bottom-24 right-6 z-50 sm:hidden">

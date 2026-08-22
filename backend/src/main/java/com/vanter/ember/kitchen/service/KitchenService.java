@@ -111,9 +111,20 @@ public class KitchenService {
 
         item.setStatus(newStatus);
         item.setUpdatedAt(LocalDateTime.now());
+
+        boolean allDelivered = order.getItems().stream()
+                .allMatch(i -> i.getStatus() == OrderItemStatus.DELIVERED);
+        if (allDelivered) {
+            order.setActive(false);
+        }
+
         KitchenOrder saved = kitchenOrderRepository.save(order);
         eventPublisher.publishEvent(new KitchenItemUpdated(
                 TenantContextHolder.requireTenantId(), saved.getSessionId(), itemId, newStatus));
+        if (allDelivered) {
+            eventPublisher.publishEvent(
+                    new KitchenOrderRetired(saved.getTenantId(), saved.getSessionId()));
+        }
         return saved;
     }
 

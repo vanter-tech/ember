@@ -31,6 +31,7 @@ import { useUIStore } from '@/store/uiStore'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { loyaltyRewardService, type LoyaltyRewardResponse } from '@/lib/api'
 import { TIER_LABELS } from './types'
+import { useTranslation } from '@/lib/i18n'
 
 const editRewardSchema = z.object({
   name: z.string().min(2, 'El nombre debe tener al menos 2 caracteres').max(255),
@@ -42,6 +43,7 @@ const editRewardSchema = z.object({
 type EditRewardInputs = z.infer<typeof editRewardSchema>
 
 export const EditRewardModal = () => {
+  const { t } = useTranslation('admin')
   const { activeModal, modalPayload, closeModal } = useUIStore()
   const queryClient = useQueryClient()
   const reward = modalPayload as LoyaltyRewardResponse | null
@@ -76,7 +78,7 @@ export const EditRewardModal = () => {
       <DialogContent className="sm:max-w-md rounded-3xl p-6">
         <DialogHeader className="mb-4">
           <DialogTitle className="text-2xl font-bold text-zinc-800">
-            Editar recompensa
+            {t('editRewardTitle')}
           </DialogTitle>
         </DialogHeader>
 
@@ -90,7 +92,7 @@ export const EditRewardModal = () => {
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Nombre</FormLabel>
+                  <FormLabel>{t('nameLabel')}</FormLabel>
                   <FormControl>
                     <Input className="rounded-xl" {...field} />
                   </FormControl>
@@ -103,7 +105,7 @@ export const EditRewardModal = () => {
               name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Descripción</FormLabel>
+                  <FormLabel>{t('descriptionFieldLabel')}</FormLabel>
                   <FormControl>
                     <Textarea className="rounded-xl" {...field} />
                   </FormControl>
@@ -116,7 +118,7 @@ export const EditRewardModal = () => {
               name="requiredTier"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Nivel requerido</FormLabel>
+                  <FormLabel>{t('requiredTierLabel')}</FormLabel>
                   <Select value={field.value} onValueChange={field.onChange}>
                     <FormControl>
                       <SelectTrigger className="w-full rounded-xl">
@@ -140,7 +142,7 @@ export const EditRewardModal = () => {
               name="active"
               render={({ field }) => (
                 <FormItem className="flex flex-row items-center justify-between gap-3 rounded-lg border p-4">
-                  <FormLabel>Activa</FormLabel>
+                  <FormLabel>{t('activeRewardLabel')}</FormLabel>
                   <FormControl>
                     <Switch checked={field.value} onCheckedChange={field.onChange} />
                   </FormControl>
@@ -155,10 +157,10 @@ export const EditRewardModal = () => {
                 onClick={closeModal}
                 disabled={mutation.isPending}
               >
-                Cancelar
+                {t('cancelButton')}
               </Button>
               <Button type="submit" disabled={mutation.isPending}>
-                {mutation.isPending ? 'Guardando...' : 'Guardar cambios'}
+                {mutation.isPending ? t('savingEllipsisLabel') : t('saveChangesButton')}
               </Button>
             </DialogFooter>
           </form>

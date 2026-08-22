@@ -3,12 +3,14 @@ import { useNavigate } from 'react-router-dom'
 import { ArrowRight, MoreHorizontal, Receipt, Users } from 'lucide-react'
 import { useSessionStore } from '@/store/sessionStore'
 import { ParticipantsList } from './ParticipantsList'
+import { useTranslation } from '@/lib/i18n'
 
 export const MobileActionsIsland = () => {
   const { id: tableId, participants } = useSessionStore()
   const navigate = useNavigate()
   const [isOpen, setIsOpen] = useState(false)
   const [showParticipants, setShowParticipants] = useState(false)
+  const { t } = useTranslation('customer')
 
   if (!tableId) return null
 
@@ -32,7 +34,7 @@ export const MobileActionsIsland = () => {
               >
                 <Users className="h-4 w-4 text-zinc-500" />
                 <span className="text-sm font-medium text-zinc-700">
-                  Ver participantes
+                  {t('mobileActionsViewParticipants')}
                 </span>
               </button>
               <button
@@ -45,7 +47,7 @@ export const MobileActionsIsland = () => {
               >
                 <ArrowRight className="h-4 w-4 text-zinc-500" />
                 <span className="text-sm font-medium text-zinc-700">
-                  Ver comanda
+                  {t('mobileActionsViewComanda')}
                 </span>
               </button>
               <button
@@ -58,7 +60,7 @@ export const MobileActionsIsland = () => {
               >
                 <Receipt className="h-4 w-4 text-zinc-500" />
                 <span className="text-sm font-medium text-zinc-700">
-                  Ver cuenta
+                  {t('viewBillLabel')}
                 </span>
               </button>
             </div>
@@ -70,7 +72,7 @@ export const MobileActionsIsland = () => {
         type="button"
         className="flex h-14 w-14 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-600 shadow-2xl transition-colors hover:bg-zinc-50"
         onClick={() => (isOpen ? close() : setIsOpen(true))}
-        aria-label="Opciones de mesa"
+        aria-label={t('mobileActionsAriaLabel')}
       >
         <MoreHorizontal className="h-6 w-6" />
       </button>

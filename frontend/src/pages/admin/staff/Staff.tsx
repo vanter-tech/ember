@@ -10,9 +10,11 @@ import { StaffGrid } from './components/StaffGrid'
 import { StaffHeader } from './components/StaffHeader'
 import { StaffKpis } from './components/StaffKpis'
 import type { StaffFilter } from './types'
+import { useTranslation } from '@/lib/i18n'
 
 export const Staff = () => {
   const [roleFilter, setRoleFilter] = useState<StaffFilter>('ALL')
+  const { t } = useTranslation('admin')
   const searchTerm = useUIStore((state) => state.searchTerm)
   const openModal = useUIStore((state) => state.openModal)
 
@@ -38,12 +40,12 @@ export const Staff = () => {
       <StaffFilters active={roleFilter} onChange={setRoleFilter} />
       {isLoading && (
         <div className="flex items-center justify-center py-16 text-sm text-muted-foreground">
-          Cargando personal...
+          {t('loadingStaff')}
         </div>
       )}
       {isError && (
         <div className="flex items-center justify-center py-16 text-sm text-destructive">
-          Error al cargar el personal.
+          {t('loadingStaffError')}
         </div>
       )}
       {!isLoading && !isError && (

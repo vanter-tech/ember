@@ -24,10 +24,12 @@ import { useUIStore } from '@/store/uiStore'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { menuItemService } from '@/lib/api'
 import { Switch } from '@/components/ui/switch'
+import { useTranslation } from '@/lib/i18n'
 
 export const NewMenuModal = () => {
   const { activeModal, modalPayload, closeModal } = useUIStore()
   const queryClient = useQueryClient()
+  const { t } = useTranslation('admin')
   type menuItemsFormInputs = z.infer<typeof menuItemScheme>
 
   const menuItemScheme = z.object({
@@ -89,7 +91,7 @@ export const NewMenuModal = () => {
       <DialogContent className="sm:max-w-md rounded-3xl- p-6">
         <DialogHeader className="mb-4">
           <DialogTitle className="text-2xl font-bold text-zinc-800">
-            Nuevo platillo
+            {t('newDishDialogTitle')}
           </DialogTitle>
         </DialogHeader>
 
@@ -100,10 +102,10 @@ export const NewMenuModal = () => {
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Nombre</FormLabel>
+                  <FormLabel>{t('nameLabel')}</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="Ej. Pollo"
+                      placeholder={t('dishNamePlaceholder')}
                       className="rounded-xl focus-visible:ring[#8c1717]"
                       {...field}
                     />
@@ -117,10 +119,10 @@ export const NewMenuModal = () => {
               name="descriptions"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Descripcion</FormLabel>
+                  <FormLabel>{t('descriptionLabel')}</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="Ej. Pollo"
+                      placeholder={t('dishNamePlaceholder')}
                       className="resize-none h-24 rounded-xl focus-visible:ring[#8c1717]"
                       {...field}
                     />
@@ -134,10 +136,10 @@ export const NewMenuModal = () => {
               name="price"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Precio</FormLabel>
+                  <FormLabel>{t('priceLabel')}</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="Ej. 0C$"
+                      placeholder={t('pricePlaceholder')}
                       className="rounded-xl focus-visible:ring[#8c1717]"
                       {...field}
                       onChange={(e) => field.onChange(Number(e.target.value))}
@@ -152,7 +154,7 @@ export const NewMenuModal = () => {
               name="available"
               render={({ field }) => (
                 <FormItem className="flex flex-row items-center gap-3 rounded-lg border p-4">
-                  <FormLabel>Activar</FormLabel>
+                  <FormLabel>{t('activateLabel')}</FormLabel>
                   <FormControl>
                     <Switch
                       checked={field.value}
@@ -169,12 +171,12 @@ export const NewMenuModal = () => {
               name="image"
               render={({ field: { value, onChange, ...fieldProps } }) => (
                 <FormItem>
-                  <FormLabel>Imagen de portada</FormLabel>
+                  <FormLabel>{t('coverImageLabel')}</FormLabel>
                   <FormControl>
                     <Input
                       type="file"
                       accept="image/*"
-                      placeholder="Imagen de portada"
+                      placeholder={t('coverImageLabel')}
                       className="rounded-xl file:text-[#8c1717] file:font-semibold
                                             hover:file:cursor-pointer cursor-pointer"
                       onChange={(e) => {
@@ -195,11 +197,11 @@ export const NewMenuModal = () => {
                 onClick={closeModal}
                 disabled={mutation.isPending}
               >
-                Cancelar
+                {t('cancelButton')}
               </Button>
 
               <Button type="submit" disabled={mutation.isPending}>
-                {mutation.isPending ? 'Guardando' : 'Guardar'}
+                {mutation.isPending ? t('savingButton') : t('saveButton')}
               </Button>
             </DialogFooter>
           </form>

@@ -10,6 +10,7 @@ import com.vanter.ember.loyalty.model.LoyaltyTransaction;
 import com.vanter.ember.loyalty.repository.LoyaltyAccountRepository;
 import com.vanter.ember.loyalty.repository.LoyaltyRewardRepository;
 import com.vanter.ember.loyalty.repository.LoyaltyTransactionRepository;
+import com.vanter.ember.restaurant.repository.RestaurantRepository;
 import com.vanter.ember.settings.model.SettingsPayload;
 import com.vanter.ember.settings.service.SettingService;
 import java.math.BigDecimal;
@@ -34,6 +35,7 @@ public class LoyaltyAccountService {
     private final LoyaltyAccountRepository loyaltyAccountRepository;
     private final LoyaltyTransactionRepository loyaltyTransactionRepository;
     private final LoyaltyRewardRepository loyaltyRewardRepository;
+    private final RestaurantRepository restaurantRepository;
     private final SettingService settingService;
     private final LoyaltyService loyaltyService;
 
@@ -52,6 +54,10 @@ public class LoyaltyAccountService {
         LoyaltyTier nextTier = loyaltyService.nextTier(tier);
         Integer pointsToNextTier =
                 loyaltyService.pointsToNextTier(account.getTotalPoints(), nextTier, settings);
+        Integer tierProgressPercent = tierProgressPercent(account.getTotalPoints(), tier, nextTier, settings);
+        String restaurantName = restaurantRepository.findById(tenantId)
+                .map(restaurant -> restaurant.getName())
+                .orElse(null);
 
         var rewards = loyaltyRewardRepository.findByTenantIdAndActiveTrue(tenantId).stream()
                 .map(reward -> new RewardCatalogEntryResponse(
@@ -63,7 +69,28 @@ public class LoyaltyAccountService {
                 .toList();
 
         return new LoyaltyAccountResponse(
-                account.getTotalPoints(), tier, nextTier, pointsToNextTier, rewards);
+                account.getTotalPoints(),
+                tier,
+                nextTier,
+                pointsToNextTier,
+                tierProgressPercent,
+                restaurantName,
+                rewards);
+    }
+
+    /** Percent of the way from {@code tier}'s own floor to {@code nextTier}'s floor, clamped to
+     * [0, 100] — {@code null} once there's no next tier (already PLATINO). */
+    private Integer tierProgressPercent(
+            int totalPoints, LoyaltyTier tier, LoyaltyTier nextTier, SettingsPayload.LoyaltySettings settings) {
+        if (nextTier == null) {
+            return null;
+        }
+        int floor = loyaltyService.tierFloor(tier, settings);
+        int ceiling = loyaltyService.tierFloor(nextTier, settings);
+        int percent = ceiling > floor
+                ? Math.round((totalPoints - floor) * 100f / (ceiling - floor))
+                : 100;
+        return Math.min(100, Math.max(0, percent));
     }
 
     /**

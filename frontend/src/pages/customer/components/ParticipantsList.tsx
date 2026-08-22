@@ -1,16 +1,18 @@
 import { AvatarInitials, AvatarColors } from '@/components/AvatarInitials'
 import type { participantDTO } from '@/lib/api'
+import { useTranslation } from '@/lib/i18n'
 
 interface ParticipantsListProps {
   participants: participantDTO[]
 }
 
 export const ParticipantsList = ({ participants }: ParticipantsListProps) => {
+  const { t } = useTranslation('customer')
   return (
     <>
       <div className="px-2 pb-2 mb-2 border-b border-zinc-100 flex justify-between items-center">
         <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">
-          En la mesa
+          {t('participantsListTitle')}
         </span>
         <span className="text-xs font-medium text-zinc-500 bg-zinc-100 px-2 py-0.5 rounded-full">
           {participants.length}{' '}
@@ -28,7 +30,7 @@ export const ParticipantsList = ({ participants }: ParticipantsListProps) => {
               {AvatarInitials(participant.name?.toString() || '')}
             </div>
             <span className="text-sm font-medium text-zinc-700 truncate">
-              {participant.name || 'Invitado'}
+              {participant.name || t('participantsGuestFallback')}
             </span>
           </div>
         ))}

@@ -10,10 +10,12 @@ import { NewCategoryModal } from '@/pages/admin/components/NewCategoryModal'
 import { Link } from 'react-router-dom'
 import { GlobalDeleteModal } from '@/components/GlobalDeleteModal'
 import { PaginationControls } from '@/components/PaginationControls'
+import { useTranslation } from '@/lib/i18n'
 
 export const Category = () => {
   const { openModal } = useUIStore()
   const [page, setPage] = useState(0)
+  const { t } = useTranslation('admin')
 
   const {
     data: categoriesPage,
@@ -27,13 +29,13 @@ export const Category = () => {
 
   if (isLoading) {
     return (
-      <div className="p-6 text-zinc-500">Cargando categorías de Ember...</div>
+      <div className="p-6 text-zinc-500">{t('loadingCategories', { brand: 'Ember' })}</div>
     )
   }
 
   if (isError) {
     return (
-      <div className="p-6 text-red-500">Error al cargar las categorías.</div>
+      <div className="p-6 text-red-500">{t('loadingCategoriesError')}</div>
     )
   }
 
@@ -56,7 +58,7 @@ export const Category = () => {
                   className="absolute top-4 right-4 bg-white/90 px-3 py-1 text-xs
                 font-semibold text-green-700 rounded-full"
                 >
-                  Activo
+                  {t('activeStatus')}
                 </span>
               </div>
 
@@ -96,7 +98,7 @@ export const Category = () => {
 
               <p className="text-zinc-500 text-sm flex-1 m-4">
                 {Category.description ||
-                  'Placeholder, recuerda agregar esto al DTO en el backend'}
+                  t('categoryDescriptionPlaceholder')}
               </p>
 
               <div
@@ -107,7 +109,7 @@ export const Category = () => {
                   className="bg-zinc-100 text-zinc-600 text-xs px-3 py-1 rounded-full
                 font-medium"
                 >
-                  {Category.totalItems} Productos
+                  {t('productsCountLabel', { count: Category.totalItems ?? 0 })}
                 </span>
               </div>
             </div>

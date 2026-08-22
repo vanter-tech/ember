@@ -16,10 +16,12 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
+import { useTranslation } from '@/lib/i18n'
 
 type SettingsPayload = components['schemas']['SettingsPayload']
 
 export const BrandingSettings = () => {
+  const { t } = useTranslation('admin')
   const queryClient = useQueryClient()
   const { data: settings } = useQuery({
     queryKey: ['restaurantSettings'],
@@ -66,15 +68,15 @@ export const BrandingSettings = () => {
           <House className="w-6 h-6" />
         </div>
         <div>
-          <CardTitle className="text-xl">Configuración de Marca</CardTitle>
-          <CardDescription>Define tu marca</CardDescription>
+          <CardTitle className="text-xl">{t('brandingCardTitle')}</CardTitle>
+          <CardDescription>{t('brandingCardDescription')}</CardDescription>
         </div>
       </CardHeader>
       <div className="border-t w-full m-auto border-[#7a1315]/20"></div>
       <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6 p-6">
         <div className="flex flex-col space-y-6">
           <div className="space-y-2">
-            <Label>Nombre Comercial</Label>
+            <Label>{t('businessNameLabel')}</Label>
             <Input
               placeholder="Ember Fine Dining"
               id="businessName"
@@ -93,7 +95,7 @@ export const BrandingSettings = () => {
           </div>
 
           <div className="space-y-2">
-            <Label>Razón Social</Label>
+            <Label>{t('legalNameLabel')}</Label>
             <Input
               placeholder="Ember Gastronomía S.A. de C.V."
               value={
@@ -111,9 +113,9 @@ export const BrandingSettings = () => {
           {/* Sub-Grid para 2 campos en la misma fila */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>RUC / NIT</Label>
+              <Label>{t('taxIdLabel')}</Label>
               <Input
-                placeholder="800-123456-7"
+                placeholder={t('rucPlaceholder')}
                 value={draftBranding?.ruc ?? settings?.branding?.ruc ?? ''}
                 onChange={(e) =>
                   setDraftBranding({
@@ -124,9 +126,9 @@ export const BrandingSettings = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label>Teléfono</Label>
+              <Label>{t('phoneLabel')}</Label>
               <Input
-                placeholder="+52 55 1234 5678"
+                placeholder={t('phonePlaceholder')}
                 value={draftBranding?.phone ?? settings?.branding?.phone ?? ''}
                 onChange={(e) =>
                   setDraftBranding({
@@ -140,9 +142,9 @@ export const BrandingSettings = () => {
 
           {/* Campo Full Width */}
           <div className="space-y-2">
-            <Label>Dirección Fiscal</Label>
+            <Label>{t('taxAddressLabel')}</Label>
             <Input
-              placeholder="Av. Gastronómica 452"
+              placeholder={t('addressPlaceholder')}
               value={
                 draftBranding?.address ?? settings?.branding?.address ?? ''
               }
@@ -158,7 +160,7 @@ export const BrandingSettings = () => {
         <div className="flex flex-col space-y-6">
 
           <div className="space-y-2">
-            <Label>Horario de Atención</Label>
+            <Label>{t('businessHoursLabel')}</Label>
             <div className="flex items-center gap-3">
               <Input type="time" defaultValue="12:00"
               value={draftBranding?.openingTime ?? settings?.branding?.openingTime ?? ''}
@@ -167,10 +169,10 @@ export const BrandingSettings = () => {
                     ...draftBranding,
                     openingTime: e.target.value,
                 })
-              } 
+              }
               />
-              <span className="text-sm text-zinc-500 font-medium">a</span>
-              <Input type="time" defaultValue="23:00" 
+              <span className="text-sm text-zinc-500 font-medium">{t('timeRangeSeparator')}</span>
+              <Input type="time" defaultValue="23:00"
               value={draftBranding?.closingTime ?? settings?.branding?.closingTime ?? ''}
               onChange={(e) =>
                 setDraftBranding({
@@ -185,8 +187,8 @@ export const BrandingSettings = () => {
           <div className="space-y-2">
             
             <div className="grid grid-cols-1 gap-4">
-                <Label>WiFi Público (Nombre)</Label>
-              <Input placeholder="Ember_Guest" 
+                <Label>{t('wifiNameLabel')}</Label>
+              <Input placeholder="Ember_Guest"
               value={draftBranding?.wifiName ?? settings?.branding?.wifiName ?? ''}
               onChange={(e) =>
                 setDraftBranding({
@@ -194,8 +196,8 @@ export const BrandingSettings = () => {
                     wifiName: e.target.value,
                 })
               } />
-              <Label>Color primario</Label>
-              <Input placeholder="#fff" 
+              <Label>{t('primaryColorLabel')}</Label>
+              <Input placeholder={t('colorPlaceholder')}
               value={draftBranding?.primaryThemeColor ?? settings?.branding?.primaryThemeColor ?? ''}
               onChange={(e) =>
                 setDraftBranding({
@@ -216,7 +218,7 @@ export const BrandingSettings = () => {
           }
           className="text-zinc-700 hover:bg-zinc-100 p-4"
         >
-          Deshacer cambios
+          {t('undoChangesButton')}
         </Button>
         <Button
           onClick={handleSave}
@@ -228,10 +230,10 @@ export const BrandingSettings = () => {
           {updateSettingsMutation.isPending ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Guardando...
+              {t('savingEllipsisLabel')}
             </>
           ) : (
-            'Guardar Cambios'
+            t('saveSettingsButton')
           )}
         </Button>
       </CardFooter>

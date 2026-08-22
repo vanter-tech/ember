@@ -4,6 +4,8 @@ import { useAuthStore } from '../store/authStore'
 import { Search, Plus, Clock } from 'lucide-react'
 import { useUIStore, type ModalType } from '@/store/uiStore'
 import { settingStore } from '@/store/settingStore'
+import { LanguageSwitcher } from '@/components/LanguageSwitcher'
+import { useTranslation } from '@/lib/i18n'
 
 export const TopNav = () => {
   let actionType: ModalType | null = null
@@ -11,6 +13,7 @@ export const TopNav = () => {
   const role = useAuthStore((state) => state.role)
   const { settings } = settingStore()
   const { openModal, searchTerm, setSearchTerm } = useUIStore()
+  const { t, locale } = useTranslation('common')
 
   const location = useLocation()
   const path = location.pathname
@@ -38,22 +41,23 @@ export const TopNav = () => {
   if (!role || role === 'CUSTOMER') return null
   if (role === 'WAITER' && !allowedWaiterPaths.includes(path)) return null
 
-  let buttonText = 'Nuevo registro'
-  let searchPlaceholder = 'Buscar...'
+  let buttonText = t('defaultButtonText')
+  let searchPlaceholder = t('defaultSearchPlaceholder')
 
   if (isMenuItemRoute) {
-    buttonText = 'Nuevo platillo'
-    searchPlaceholder = 'Buscar platillos...'
+    buttonText = t('newMenuItemButton')
+    searchPlaceholder = t('searchMenuItemsPlaceholder')
     actionType = 'CREATE_ITEMS'
   } else if (isCategoryRoute) {
-    buttonText = 'Nueva categoria'
-    searchPlaceholder = 'Buscar categorias...'
+    buttonText = t('newCategoryButton')
+    searchPlaceholder = t('searchCategoriesPlaceholder')
     actionType = 'CREATE_CATEGORY'
   } else if (path.includes('/admin/employees')) {
-    buttonText = 'Nuevo empleado'
-    searchPlaceholder = 'Buscar empleados...'
+    buttonText = t('newEmployeeButton')
+    searchPlaceholder = t('searchEmployeesPlaceholder')
+    actionType = 'CREATE_STAFF'
   } else if (isWaiterRoute) {
-    searchPlaceholder = 'Buscar mesas...'
+    searchPlaceholder = t('searchTablesPlaceholder')
   }
 
   return (
@@ -61,13 +65,14 @@ export const TopNav = () => {
       className="w-full bg-white rounded-2xl shadows-sm border border-zinc-100 px-6
         py-3 flex items-center justify-between mb-6"
     >
-      <div className="flex items-center ">
+      <div className="flex items-center gap-3">
         <h1
           className="text-3xl font-bold
                 text-[#8c1717] tracking-tight"
         >
           {settings?.branding?.businessName || 'Ember'}
         </h1>
+        <LanguageSwitcher />
       </div>
       <div className="flex-1 max-w-md mx-8">
         <div
@@ -99,7 +104,7 @@ export const TopNav = () => {
             px-5 py-2.5 text-sm font-medium text-zinc-700"
         >
           <Clock size={18} strokeWidth={2} />
-          {now.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' })}
+          {now.toLocaleTimeString(locale === 'en' ? 'en-US' : 'es-MX', { hour: '2-digit', minute: '2-digit' })}
         </div>
       ) : (
         <button

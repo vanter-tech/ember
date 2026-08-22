@@ -12,10 +12,13 @@ import {
   ChefHat,
   Users,
   Banknote,
+  BookOpen,
 } from 'lucide-react'
 import { useSessionStore } from '@/store/sessionStore'
+import { useTranslation } from '@/lib/i18n'
 
 export const FloatingNav = () => {
+  const { t } = useTranslation('common')
   const role = useAuthStore((state) => state.role)
   const logout = useAuthStore((state) => state.logout)
   const navigate = useNavigate()
@@ -51,7 +54,7 @@ export const FloatingNav = () => {
         <Link
           to="/waiter/tables"
           className={navItemClass('/waiter/tables')}
-          title="mesas"
+          title={t('navTables')}
         >
           <LayoutDashboard strokeWidth={1.5} size={24} />
         </Link>
@@ -61,7 +64,7 @@ export const FloatingNav = () => {
         <Link
           to="/kitchen/orders"
           className={navItemClass('/kitchen/orders')}
-          title="kitchen"
+          title={t('navKitchen')}
         >
           <ChefHat strokeWidth={1.5} size={24} />
         </Link>
@@ -71,7 +74,7 @@ export const FloatingNav = () => {
         <Link
           to="/waiter/cash-register"
           className={navItemClass('/waiter/cash-register')}
-          title="Caja"
+          title={t('navCash')}
         >
           <Banknote strokeWidth={1.5} size={24} />
         </Link>
@@ -82,36 +85,36 @@ export const FloatingNav = () => {
           <Link
             to="/admin/categories"
             className={navItemClass('/admin/categories')}
-            title="Categorias"
+            title={t('navCategories')}
           >
             <Package strokeWidth={1.5} size={24} />
           </Link>
           <Link
             to="/admin/analytics"
             className={navItemClass('/admin/analytics')}
-            title="Analíticas"
+            title={t('navAnalytics')}
           >
             <BarChart3 strokeWidth={1.5} size={24} />
           </Link>
           <Link
             to="/admin/employees"
             className={navItemClass('/admin/employees')}
-            title="Personal"
+            title={t('navStaff')}
           >
             <Users strokeWidth={1.5} size={24} />
           </Link>
           <Link
             to="/admin/cash-register"
             className={navItemClass('/admin/cash-register')}
-            title="Caja"
+            title={t('navCash')}
           >
-            <Banknote strokeWidth={1.5} size={24} />
+            <BookOpen strokeWidth={1.5} size={24} />
           </Link>
           <div className="w-px h-8 bg-zinc-200 dark:bg-zinc-700 mx-2"></div>
           <Link
             to="/admin/settings"
             className={navItemClass('/admin/settings')}
-            title="Configuración"
+            title={t('navSettings')}
           >
             <Settings strokeWidth={1.5} size={24} />
           </Link>
@@ -123,7 +126,7 @@ export const FloatingNav = () => {
           <Link
             to="/customer/menu"
             className={navItemClass('/customer/menu')}
-            title="Home"
+            title={t('navHome')}
           >
             <Menu strokeWidth={1.5} size={24} />
           </Link>
@@ -134,7 +137,7 @@ export const FloatingNav = () => {
         <Link
           to="/customer/home"
           className={navItemClass('/customer/home')}
-          title="Home"
+          title={t('navHome')}
         >
           <Home strokeWidth={1.5} size={24} />
         </Link>
@@ -154,7 +157,7 @@ export const FloatingNav = () => {
           onClick={handleLogout}
           className="text-[#920703]
                 hover:text-red-600 transition-colors cursor-pointer"
-          title="Cerrar sesión"
+          title={t('navLogout')}
         >
           <LogOut strokeWidth={1.5} size={24} />
         </button>

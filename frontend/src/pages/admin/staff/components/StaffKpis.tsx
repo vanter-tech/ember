@@ -1,20 +1,22 @@
 import { Clock, UserCheck, Users } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import type { StaffMemberResponse } from '@/lib/api'
+import { useTranslation } from '@/lib/i18n'
 
 interface StaffKpisProps {
   members: StaffMemberResponse[]
 }
 
 export const StaffKpis = ({ members }: StaffKpisProps) => {
+  const { t } = useTranslation('admin')
   const totalStaff = members.length
   const activeNow = members.filter((member) => member.active).length
   const pendingHours = Math.round(members.reduce((sum, member) => sum + (member.pendingHours ?? 0), 0) * 100) / 100
 
   const cards = [
-    { label: 'Personal total', value: totalStaff, icon: Users },
-    { label: 'Activos ahora', value: activeNow, icon: UserCheck },
-    { label: 'Horas pendientes', value: `${pendingHours}h`, icon: Clock },
+    { label: t('totalStaffLabel'), value: totalStaff, icon: Users },
+    { label: t('activeNowLabel'), value: activeNow, icon: UserCheck },
+    { label: t('pendingHoursLabel'), value: `${pendingHours}h`, icon: Clock },
   ]
 
   return (
