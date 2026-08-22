@@ -6,6 +6,7 @@ import { SpacesSettings } from "./components/settings/SpaceSettings";
 import { MenuSettings } from "./components/settings/MenuSettings";
 import { BillingSettings } from "./components/settings/BillingSettings";
 import { PaymentGatewaySettings } from "./components/settings/PaymentGatewaySettings";
+import { TicketSettings } from "./components/settings/TicketSettings";
 import { BusinessHoursSettings } from "./components/settings/BusinessHoursSettings";
 import { HardwareSettings } from "./components/settings/HardwareSettings";
 import { LoyaltySettings } from "./components/settings/LoyaltySettings";
@@ -25,6 +26,8 @@ export const Settings = () => {
                 return <BillingSettings />;
             case 'PAYMENT_GATEWAY':
                 return <PaymentGatewaySettings />;
+            case 'TICKET':
+                return <TicketSettings />;
             case 'HARDWARE':
                 return <HardwareSettings />;
             case 'SPACE':

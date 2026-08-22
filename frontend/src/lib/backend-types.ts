@@ -1165,6 +1165,7 @@ export interface components {
             paymentGateway?: components["schemas"]["PaymentGatewaySettings"];
             businessHours?: components["schemas"]["BusinessHoursSettings"];
             loyalty?: components["schemas"]["LoyaltySettings"];
+            ticket?: components["schemas"]["TicketSettings"];
         };
         SpaceSettings: {
             /** Format: int32 */
@@ -1175,6 +1176,14 @@ export interface components {
             /** Format: double */
             rate?: number;
             includedInPrice?: boolean;
+        };
+        TicketSettings: {
+            headerMessage?: string;
+            footerMessage?: string;
+            /** @enum {string} */
+            paperWidth?: "MM_58" | "MM_80";
+            showTaxBreakdown?: boolean;
+            showTip?: boolean;
         };
         MenuItemRequest: {
             name: string;
@@ -1681,11 +1690,11 @@ export interface components {
             /** Format: int64 */
             offset?: number;
             sort?: components["schemas"]["SortObject"];
+            paged?: boolean;
             /** Format: int32 */
             pageNumber?: number;
             /** Format: int32 */
             pageSize?: number;
-            paged?: boolean;
             unpaged?: boolean;
         };
         SortObject: {

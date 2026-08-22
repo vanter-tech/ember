@@ -7,6 +7,7 @@ import {
   ConciergeBell,
   Receipt,
   CreditCard,
+  FileText,
   Printer,
   Clock,
   Gift,
@@ -19,7 +20,7 @@ import { useTranslation } from '@/lib/i18n'
 type SettingsGroup = 'BILLING' | 'FIDELIZACION'
 
 const GROUP_MEMBERS: Record<SettingsGroup, SettingsType[]> = {
-  BILLING: ['BILLING', 'PAYMENT_GATEWAY'],
+  BILLING: ['BILLING', 'PAYMENT_GATEWAY', 'TICKET'],
   FIDELIZACION: ['FIDELIZACION', 'LOYALTY_REWARDS'],
 }
 
@@ -104,6 +105,15 @@ export const SettingsBar = ({
                     >
                         <CreditCard className="mr-2 h-4 w-4" />
                         {t('paymentGatewayCardTitle')}
+                    </Button>
+                    <Button
+                        variant={activeSettings === 'TICKET' ? 'destructive' : 'ghost'}
+                        size="sm"
+                        onClick={() => openSettings('TICKET')}
+                        className="justify-start"
+                    >
+                        <FileText className="mr-2 h-4 w-4" />
+                        {t('ticketLabel')}
                     </Button>
                 </div>
             )}

@@ -20,6 +20,7 @@ public class SettingsPayload {
     private PaymentGatewaySettings paymentGateway = new PaymentGatewaySettings();
     private BusinessHoursSettings businessHours = new BusinessHoursSettings();
     private LoyaltySettings loyalty = new LoyaltySettings();
+    private TicketSettings ticket = new TicketSettings();
 
     @Data
     public static class BrandingSettings{
@@ -115,6 +116,20 @@ public class SettingsPayload {
     public static class HardwareSettings{
         private boolean autoPrintTickets;
         private boolean printCustomerReceipt;
+    }
+
+    @Data
+    public static class TicketSettings {
+        private String headerMessage;
+        private String footerMessage;
+        private PaperWidth paperWidth = PaperWidth.MM_80;
+        private boolean showTaxBreakdown = true;
+        private boolean showTip = true;
+    }
+
+    public enum PaperWidth {
+        MM_58,
+        MM_80
     }
 
     @Data
