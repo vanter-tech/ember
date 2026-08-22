@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -25,18 +26,20 @@ import {
   FormMessage,
 } from '../../components/ui/form'
 
-const registerSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  email: z.string().email('Invalid email address').min(1, 'Email is required'),
-  password: z.string().min(6, 'Password must be at least 6 characters long'),
-})
+const createRegisterSchema = (t: ReturnType<typeof useTranslation<'auth'>>['t']) =>
+  z.object({
+    name: z.string().min(1, t('nameRequired')),
+    email: z.string().email(t('invalidEmail')).min(1, t('emailRequired')),
+    password: z.string().min(6, t('passwordTooShort')),
+  })
 
-type RegisterFormInputs = z.infer<typeof registerSchema>
+type RegisterFormInputs = z.infer<ReturnType<typeof createRegisterSchema>>
 
 export const Register = () => {
   const navigate = useNavigate()
   const { setAuth } = useAuthStore()
   const { t: tAuth } = useTranslation('auth')
+  const registerSchema = useMemo(() => createRegisterSchema(tAuth), [tAuth])
 
   const form = useForm<RegisterFormInputs>({
     resolver: zodResolver(registerSchema),
@@ -51,13 +54,13 @@ export const Register = () => {
     try {
       const response = await authService.register(data)
       setAuth(response)
-      toast.success('Registration successful!')
+      toast.success(tAuth('registerSuccessToast'))
       navigate('/login', { replace: true })
     } catch (error) {
       if (axios.isAxiosError(error) && error.response?.status === 429) {
-        toast.error('Too many registration attempts. Please try again later.')
+        toast.error(tAuth('tooManyRegisterAttemptsToast'))
       } else {
-        toast.error('An error occurred during registration.')
+        toast.error(tAuth('registerErrorToast'))
       }
     }
   }

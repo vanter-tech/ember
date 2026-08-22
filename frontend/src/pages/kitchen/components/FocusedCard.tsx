@@ -20,7 +20,7 @@ export const FocusedCard = ({ order }: { order: kitchenOrders }) => {
       queryClient.invalidateQueries({ queryKey: ['kitchenOrders'] })
     },
     onError: () => {
-      toast.error('No se pudo actualizar el estado del plato')
+      toast.error(t('itemStatusUpdateErrorToast'))
     },
   })
 

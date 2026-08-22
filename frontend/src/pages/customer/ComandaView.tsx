@@ -94,11 +94,11 @@ export const ComandaView = () => {
 
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['deleteItem'] })
-      toast.success('Platillo eliminado')
+      toast.success(t('itemDeletedToast'))
     },
 
     onError: () => {
-      toast.error('Error al eliminar')
+      toast.error(t('itemDeleteErrorToast'))
     },
   })
 
@@ -112,11 +112,11 @@ export const ComandaView = () => {
     }) => SessionTableService.confirmMyOrders(sessionId, currentId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['confirmItem'] })
-      toast.success('Comanda enviada')
+      toast.success(t('comandaSentToast'))
     },
 
     onError: () => {
-      toast.error('Error al enviar comanda')
+      toast.error(t('comandaSendErrorToast'))
     },
   })
 

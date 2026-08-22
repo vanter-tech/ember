@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -24,23 +25,25 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { categoryService, type CategoryResponse } from '@/lib/api'
 import { useTranslation } from '@/lib/i18n'
 
-const categoryScheme = z.object({
-  name: z.string().min(2, 'Name must have at least 2 characters'),
-  description: z.string().min(10, 'Type your description here'),
-  image: z
-    .any()
-    .refine((file) => file instanceof File, 'You must choose an image')
-    .refine((file) => file?.size <= 5 * 1024 * 1024, 'Size should be 5MB MAX')
-    .optional(),
-})
+const createCategorySchema = (t: ReturnType<typeof useTranslation<'admin'>>['t']) =>
+  z.object({
+    name: z.string().min(2, t('categoryNameMinLengthError')),
+    description: z.string().min(10, t('categoryDescriptionMinLengthError')),
+    image: z
+      .any()
+      .refine((file) => file instanceof File, t('imageRequiredError'))
+      .refine((file) => file?.size <= 5 * 1024 * 1024, t('imageMaxSizeError'))
+      .optional(),
+  })
 
-type CategoryFormInputs = z.infer<typeof categoryScheme>
+type CategoryFormInputs = z.infer<ReturnType<typeof createCategorySchema>>
 
 export const EditCategoryModal = () => {
   const { activeModal, modalPayload, closeModal } = useUIStore()
   const { t } = useTranslation('admin')
   const queryClient = useQueryClient()
   const category = modalPayload as CategoryResponse | null
+  const categoryScheme = useMemo(() => createCategorySchema(t), [t])
 
   const form = useForm<CategoryFormInputs>({
     resolver: zodResolver(categoryScheme),
@@ -63,11 +66,11 @@ export const EditCategoryModal = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] })
-      toast.success('Category successful updated!.')
+      toast.success(t('categoryUpdatedToast'))
       closeModal()
     },
     onError: () => {
-      toast.error('An ERROR has occurred')
+      toast.error(t('genericErrorToast'))
     },
   })
 

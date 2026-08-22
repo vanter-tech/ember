@@ -65,7 +65,7 @@ export const TableInformation = () => {
 
   useEffect(() => {
     if (sessionData?.status === 'CLOSED') {
-      toast.success('Mesa pagada y cerrada.')
+      toast.success(t('tableClosedPaidToast'))
       navigate('/waiter/tables')
     }
   }, [sessionData?.status, navigate])
@@ -78,7 +78,7 @@ export const TableInformation = () => {
     mutationFn: SessionTableService.closeEmptySession,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sessionDetails'] })
-      toast.success('Mesa cerrada.')
+      toast.success(t('tableClosedToast'))
       navigate('/waiter/tables')
     },
   })
@@ -91,14 +91,14 @@ export const TableInformation = () => {
       participantName: string
       amount: number
     }) => billingService.registerPhysicalPayment(billData!.id, participantName, amount),
-    onSuccess: () => toast.success('Pago en efectivo registrado.'),
-    onError: () => toast.error('No se pudo registrar el pago. ¿Hay una caja abierta?'),
+    onSuccess: () => toast.success(t('cashPaymentRegisteredToast')),
+    onError: () => toast.error(t('cashPaymentErrorToast')),
   })
 
   const confirmDigitalPaymentMutation = useMutation({
     mutationFn: (paymentId: number) => billingService.confirmDigitalPayment(paymentId),
-    onSuccess: () => toast.success('Pago digital confirmado.'),
-    onError: () => toast.error('No se pudo confirmar el pago digital.'),
+    onSuccess: () => toast.success(t('digitalPaymentConfirmedToast')),
+    onError: () => toast.error(t('digitalPaymentErrorToast')),
   })
 
   if (isLoadingData) {

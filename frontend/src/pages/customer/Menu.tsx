@@ -43,10 +43,10 @@ export const Menu = () => {
       return SessionTableService.addItem(sessionId, itemId)
     },
     onSuccess: () => {
-      toast.success('Item added successfully!')
+      toast.success(t('itemAddedToast'))
     },
     onError: () => {
-      toast.error('Failed to add item. Please try again.')
+      toast.error(t('itemAddErrorToast'))
     },
   })
 

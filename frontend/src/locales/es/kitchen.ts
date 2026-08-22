@@ -11,4 +11,5 @@ export const kitchen = {
   entryTimeLabel: 'Ingreso: {{time}}',
   printButton: 'Imprimir',
   voidButton: 'Anular',
+  itemStatusUpdateErrorToast: 'No se pudo actualizar el estado del plato',
 }

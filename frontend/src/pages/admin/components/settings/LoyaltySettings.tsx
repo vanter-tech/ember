@@ -47,10 +47,10 @@ export const LoyaltySettings = () => {
     onSuccess: () => {
       setDraftLoyalty(undefined);
       queryClient.invalidateQueries({ queryKey: ['restaurantSettings'] });
-      toast.success("Configuración guardada con éxito");
+      toast.success(t('settingsSavedToast'));
     },
     onError: () => {
-      toast.error("Error al guardar la configuración");
+      toast.error(t('settingsSaveErrorToast'));
     }
   });
 

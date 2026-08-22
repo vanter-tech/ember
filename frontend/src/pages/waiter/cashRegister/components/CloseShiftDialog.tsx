@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { z } from 'zod'
@@ -19,11 +19,12 @@ import { cashShiftService, type CashShiftResponse } from '@/lib/api'
 import { formatCurrency } from '@/lib/format'
 import { useTranslation } from '@/lib/i18n'
 
-const closeShiftSchema = z.object({
-  countedCash: z.coerce.number().min(0, 'El monto contado no puede ser negativo'),
-})
+const createCloseShiftSchema = (t: ReturnType<typeof useTranslation<'waiter'>>['t']) =>
+  z.object({
+    countedCash: z.coerce.number().min(0, t('countedCashNegativeError')),
+  })
 
-type CloseShiftInputs = z.infer<typeof closeShiftSchema>
+type CloseShiftInputs = z.infer<ReturnType<typeof createCloseShiftSchema>>
 
 export const CloseShiftDialog = () => {
   const { t } = useTranslation('waiter')
@@ -31,6 +32,7 @@ export const CloseShiftDialog = () => {
   const queryClient = useQueryClient()
   const shiftId = modalPayload?.shiftId as number | undefined
   const [result, setResult] = useState<CashShiftResponse | null>(null)
+  const closeShiftSchema = useMemo(() => createCloseShiftSchema(t), [t])
 
   const form = useForm({
     resolver: zodResolver(closeShiftSchema),
@@ -44,7 +46,7 @@ export const CloseShiftDialog = () => {
       setResult(closed)
     },
     onError: () => {
-      toast.error('No se pudo cerrar la caja.')
+      toast.error(t('shiftCloseErrorToast'))
     },
   })
 

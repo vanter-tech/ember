@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { z } from 'zod'
@@ -17,16 +18,18 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { cashShiftService } from '@/lib/api'
 import { useTranslation } from '@/lib/i18n'
 
-const openShiftSchema = z.object({
-  openingFloat: z.coerce.number().min(0, 'El fondo inicial no puede ser negativo'),
-})
+const createOpenShiftSchema = (t: ReturnType<typeof useTranslation<'waiter'>>['t']) =>
+  z.object({
+    openingFloat: z.coerce.number().min(0, t('openingFloatNegativeError')),
+  })
 
-type OpenShiftInputs = z.infer<typeof openShiftSchema>
+type OpenShiftInputs = z.infer<ReturnType<typeof createOpenShiftSchema>>
 
 export const OpenShiftDialog = () => {
   const { t } = useTranslation('waiter')
   const { activeModal, closeModal } = useUIStore()
   const queryClient = useQueryClient()
+  const openShiftSchema = useMemo(() => createOpenShiftSchema(t), [t])
 
   const form = useForm({
     resolver: zodResolver(openShiftSchema),
@@ -37,12 +40,12 @@ export const OpenShiftDialog = () => {
     mutationFn: (data: OpenShiftInputs) => cashShiftService.open(data.openingFloat),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cashShiftCurrent'] })
-      toast.success('Caja abierta correctamente.')
+      toast.success(t('shiftOpenedToast'))
       form.reset()
       closeModal()
     },
     onError: () => {
-      toast.error('No se pudo abrir la caja.')
+      toast.error(t('shiftOpenErrorToast'))
     },
   })
 

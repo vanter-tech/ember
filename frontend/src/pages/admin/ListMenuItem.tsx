@@ -23,7 +23,7 @@ export const ListMenuItem = () => {
     mutationFn: menuItemService.toggleAvailability,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['menuItems'] })
-      toast.success('Items successful updated!.')
+      toast.success(t('menuItemUpdatedToast'))
     },
   })
 

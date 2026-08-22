@@ -33,17 +33,14 @@ export const NewMenuModal = () => {
   type menuItemsFormInputs = z.infer<typeof menuItemScheme>
 
   const menuItemScheme = z.object({
-    name: z.string().min(2, 'Namer must have at least 2 characters'),
-    descriptions: z.string().min(10, 'Type your description here'),
-    price: z.number().min(0, "Type the product's price"),
+    name: z.string().min(2, t('dishNameMinLengthError')),
+    descriptions: z.string().min(10, t('dishDescriptionMinLengthError')),
+    price: z.number().min(0, t('dishPriceRequiredError')),
     available: z.boolean(),
     image: z
       .any()
-      .refine((file) => file instanceof File, 'You must choose an image')
-      .refine(
-        (file) => file?.size <= 5 * 1024 * 1024,
-        'Size should be 5MB MAX'
-      ),
+      .refine((file) => file instanceof File, t('imageRequiredError'))
+      .refine((file) => file?.size <= 5 * 1024 * 1024, t('imageMaxSizeError')),
     categoryId: z.number().int(),
   })
 
@@ -63,12 +60,12 @@ export const NewMenuModal = () => {
     mutationFn: menuItemService.create,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['menuItems'] })
-      toast.success('Items successful created!.')
+      toast.success(t('menuItemCreatedToast'))
       form.reset()
       closeModal()
     },
     onError: () => {
-      toast.error('An ERROR has occurred')
+      toast.error(t('genericErrorToast'))
     },
   })
 

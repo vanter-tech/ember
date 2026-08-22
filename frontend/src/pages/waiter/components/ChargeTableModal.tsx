@@ -29,11 +29,11 @@ export const ChargeTableModal = () => {
         splitMethod === 'EQUAL_PARTS' ? modalPayload.participantCount : undefined
       ),
     onSuccess: () => {
-      toast.success('Cuenta solicitada.')
+      toast.success(t('billRequestedToast'))
       handleClose()
     },
     onError: () => {
-      toast.error('No se pudo calcular la cuenta.')
+      toast.error(t('billCalculateErrorToast'))
     },
   })
 

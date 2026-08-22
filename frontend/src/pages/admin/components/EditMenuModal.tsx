@@ -33,14 +33,14 @@ export const EditMenuModal = () => {
   type menuItemsFormInputs = z.infer<typeof menuItemScheme>
 
   const menuItemScheme = z.object({
-    name: z.string().min(2, 'Name must have at least 2 characters'),
-    description: z.string().min(10, 'Type your descriptions here'),
-    price: z.number().min(0, "Type the product's price"),
+    name: z.string().min(2, t('dishNameMinLengthError')),
+    description: z.string().min(10, t('dishDescriptionMinLengthError')),
+    price: z.number().min(0, t('dishPriceRequiredError')),
     available: z.boolean(),
     image: z
       .any()
-      .refine((file) => file instanceof File, 'You must choose an image')
-      .refine((file) => file?.size <= 5 * 1024 * 1024, 'Size should be 5MB MAX')
+      .refine((file) => file instanceof File, t('imageRequiredError'))
+      .refine((file) => file?.size <= 5 * 1024 * 1024, t('imageMaxSizeError'))
       .optional(),
     categoryId: z.number().int(),
   })
@@ -71,12 +71,12 @@ export const EditMenuModal = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['menuItems'] })
-      toast.success('Items sucessful updated!.')
+      toast.success(t('menuItemUpdatedToast'))
       form.reset()
       closeModal()
     },
     onError: () => {
-      toast.error('An ERROR has occurred')
+      toast.error(t('genericErrorToast'))
     },
   })
 

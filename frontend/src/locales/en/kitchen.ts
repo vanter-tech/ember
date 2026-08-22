@@ -13,4 +13,5 @@ export const kitchen = {
   entryTimeLabel: 'Entry: {{time}}',
   printButton: 'Print',
   voidButton: 'Void',
+  itemStatusUpdateErrorToast: 'Could not update the dish status',
 } satisfies typeof esKitchen

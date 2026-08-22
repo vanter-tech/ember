@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -33,20 +34,22 @@ import { loyaltyRewardService, type LoyaltyRewardResponse } from '@/lib/api'
 import { TIER_LABELS } from './types'
 import { useTranslation } from '@/lib/i18n'
 
-const editRewardSchema = z.object({
-  name: z.string().min(2, 'El nombre debe tener al menos 2 caracteres').max(255),
-  description: z.string().max(1000).optional(),
-  requiredTier: z.enum(['BRONCE', 'PLATA', 'ORO', 'PLATINO']),
-  active: z.boolean(),
-})
+const editRewardSchemaFactory = (t: ReturnType<typeof useTranslation<'admin'>>['t']) =>
+  z.object({
+    name: z.string().min(2, t('rewardNameMinLengthError')).max(255),
+    description: z.string().max(1000).optional(),
+    requiredTier: z.enum(['BRONCE', 'PLATA', 'ORO', 'PLATINO']),
+    active: z.boolean(),
+  })
 
-type EditRewardInputs = z.infer<typeof editRewardSchema>
+type EditRewardInputs = z.infer<ReturnType<typeof editRewardSchemaFactory>>
 
 export const EditRewardModal = () => {
   const { t } = useTranslation('admin')
   const { activeModal, modalPayload, closeModal } = useUIStore()
   const queryClient = useQueryClient()
   const reward = modalPayload as LoyaltyRewardResponse | null
+  const editRewardSchema = useMemo(() => editRewardSchemaFactory(t), [t])
 
   const form = useForm<EditRewardInputs>({
     resolver: zodResolver(editRewardSchema),
@@ -62,11 +65,11 @@ export const EditRewardModal = () => {
     mutationFn: (data: EditRewardInputs) => loyaltyRewardService.update(reward!.id!, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['loyaltyRewards'] })
-      toast.success('Recompensa actualizada.')
+      toast.success(t('rewardUpdatedToast'))
       closeModal()
     },
     onError: () => {
-      toast.error('No se pudo actualizar la recompensa.')
+      toast.error(t('rewardUpdateErrorToast'))
     },
   })
 
