@@ -12,6 +12,7 @@ import {
   ChefHat,
   Users,
   Banknote,
+  BookOpen,
 } from 'lucide-react'
 import { useSessionStore } from '@/store/sessionStore'
 import { useTranslation } from '@/lib/i18n'
@@ -107,7 +108,7 @@ export const FloatingNav = () => {
             className={navItemClass('/admin/cash-register')}
             title={t('navCash')}
           >
-            <Banknote strokeWidth={1.5} size={24} />
+            <BookOpen strokeWidth={1.5} size={24} />
           </Link>
           <div className="w-px h-8 bg-zinc-200 dark:bg-zinc-700 mx-2"></div>
           <Link
