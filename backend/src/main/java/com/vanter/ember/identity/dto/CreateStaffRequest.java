@@ -19,4 +19,8 @@ public record CreateStaffRequest(
                         message = "Password must contain at least one uppercase letter, one lowercase letter, "
                                 + "one digit, and one special character")
                 String password,
-        @NotNull(message = "Role is required") Role role) {}
+        @NotNull(message = "Role is required") Role role,
+        @NotBlank(message = "Job title is required") @Size(max = 255) String jobTitle,
+        @NotBlank(message = "Shift is required") @Size(max = 255) String shift,
+        @NotBlank(message = "Contract type is required") @Size(max = 255) String contractType,
+        @NotBlank(message = "Location is required") @Size(max = 255) String location) {}

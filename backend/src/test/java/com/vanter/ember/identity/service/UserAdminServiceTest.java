@@ -63,7 +63,9 @@ class UserAdminServiceTest {
         });
 
         var result = userAdminService.create(
-                TENANT_A, new CreateStaffRequest("Ana", "ana@test.com", "Sup3r$ecret", Role.WAITER));
+                TENANT_A, new CreateStaffRequest(
+                        "Ana", "ana@test.com", "Sup3r$ecret", Role.WAITER,
+                        "Mesera", "Mañana", "Tiempo completo", "Sucursal Centro"));
 
         ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
         verify(userRepository).save(captor.capture());
@@ -78,7 +80,9 @@ class UserAdminServiceTest {
     @Test
     void create_throwsWhenRoleIsCustomer() {
         assertThatThrownBy(() -> userAdminService.create(
-                TENANT_A, new CreateStaffRequest("Ana", "ana@test.com", "Sup3r$ecret", Role.CUSTOMER)))
+                TENANT_A, new CreateStaffRequest(
+                        "Ana", "ana@test.com", "Sup3r$ecret", Role.CUSTOMER,
+                        "Mesera", "Mañana", "Tiempo completo", "Sucursal Centro")))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("CUSTOMER");
     }
@@ -88,7 +92,9 @@ class UserAdminServiceTest {
         when(userRepository.existsByEmail("ana@test.com")).thenReturn(true);
 
         assertThatThrownBy(() -> userAdminService.create(
-                TENANT_A, new CreateStaffRequest("Ana", "ana@test.com", "Sup3r$ecret", Role.WAITER)))
+                TENANT_A, new CreateStaffRequest(
+                        "Ana", "ana@test.com", "Sup3r$ecret", Role.WAITER,
+                        "Mesera", "Mañana", "Tiempo completo", "Sucursal Centro")))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Email already in use");
     }
@@ -99,7 +105,9 @@ class UserAdminServiceTest {
         when(restaurantRepository.findById(TENANT_A)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> userAdminService.create(
-                TENANT_A, new CreateStaffRequest("Ana", "ana@test.com", "Sup3r$ecret", Role.WAITER)))
+                TENANT_A, new CreateStaffRequest(
+                        "Ana", "ana@test.com", "Sup3r$ecret", Role.WAITER,
+                        "Mesera", "Mañana", "Tiempo completo", "Sucursal Centro")))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 

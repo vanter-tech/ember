@@ -55,6 +55,7 @@ export const TopNav = () => {
   } else if (path.includes('/admin/employees')) {
     buttonText = t('newEmployeeButton')
     searchPlaceholder = t('searchEmployeesPlaceholder')
+    actionType = 'CREATE_STAFF'
   } else if (isWaiterRoute) {
     searchPlaceholder = t('searchTablesPlaceholder')
   }

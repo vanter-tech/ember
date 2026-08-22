@@ -72,7 +72,7 @@ export const EditStaffModal = () => {
       open={activeModal === 'EDIT_STAFF'}
       onOpenChange={(isOpen) => !isOpen && closeModal()}
     >
-      <DialogContent className="sm:max-w-md rounded-3xl p-6">
+      <DialogContent className="sm:max-w-xl rounded-3xl p-6">
         <DialogHeader className="mb-4">
           <DialogTitle className="text-2xl font-bold text-zinc-800">
             {t('editEmployeeTitle')}
@@ -82,7 +82,7 @@ export const EditStaffModal = () => {
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit((data) => mutation.mutate(data))}
-            className="space-y-5"
+            className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-5"
           >
             <FormField
               control={form.control}
@@ -182,7 +182,7 @@ export const EditStaffModal = () => {
               control={form.control}
               name="active"
               render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between gap-3 rounded-lg border p-4">
+                <FormItem className="sm:col-span-2 flex flex-row items-center justify-between gap-3 rounded-lg border p-4">
                   <FormLabel>{t('activeStatus')}</FormLabel>
                   <FormControl>
                     <Switch checked={field.value} onCheckedChange={field.onChange} />
@@ -191,7 +191,7 @@ export const EditStaffModal = () => {
               )}
             />
 
-            <DialogFooter>
+            <DialogFooter className="sm:col-span-2">
               <Button
                 type="button"
                 variant="outline"
