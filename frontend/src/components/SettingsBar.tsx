@@ -9,6 +9,7 @@ import {
   CreditCard,
   FileText,
   Printer,
+  Server,
   Clock,
   Gift,
   Award,
@@ -20,7 +21,7 @@ import { useTranslation } from '@/lib/i18n'
 type SettingsGroup = 'BILLING' | 'FIDELIZACION'
 
 const GROUP_MEMBERS: Record<SettingsGroup, SettingsType[]> = {
-  BILLING: ['BILLING', 'PAYMENT_GATEWAY', 'TICKET'],
+  BILLING: ['BILLING', 'PAYMENT_GATEWAY', 'TICKET', 'PRINTING'],
   FIDELIZACION: ['FIDELIZACION', 'LOYALTY_REWARDS'],
 }
 
@@ -114,6 +115,15 @@ export const SettingsBar = ({
                     >
                         <FileText className="mr-2 h-4 w-4" />
                         {t('ticketLabel')}
+                    </Button>
+                    <Button
+                        variant={activeSettings === 'PRINTING' ? 'destructive' : 'ghost'}
+                        size="sm"
+                        onClick={() => openSettings('PRINTING')}
+                        className="justify-start"
+                    >
+                        <Server className="mr-2 h-4 w-4" />
+                        {t('printingLabel')}
                     </Button>
                 </div>
             )}
