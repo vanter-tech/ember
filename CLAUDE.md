@@ -99,7 +99,7 @@ The agent MUST maintain `PROGRESS.md` at the project root (`ember/PROGRESS.md`) 
 3. **Task Queue Status:** Checkbox list of task IDs and brief descriptions.
 
 ### Strict Maintenance Policies
-- **Size Limit:** Keep `PROGRESS.md` under 60 lines. Overwrite obsolete context notes as tasks progress.
+- **Size Limit:** Keep `PROGRESS.md` under 180 lines. Overwrite obsolete context notes as tasks progress.
 - **Update Timing:** Read `PROGRESS.md` upon session start; update `PROGRESS.md` immediately upon task completion.
 
 ---
