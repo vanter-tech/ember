@@ -1,0 +1,4 @@
+target/
+!**/src/main/**/target/
+!**/src/test/**/target/
+agent.properties
