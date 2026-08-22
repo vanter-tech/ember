@@ -3,7 +3,7 @@ import { Printer, RotateCcw } from 'lucide-react'
 import { printingService } from '@/lib/api'
 import { useUIStore } from '@/store/uiStore'
 import { useTranslation } from '@/lib/i18n'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { CreateAgentModal } from './printing/CreateAgentModal'
 import { AddPrinterModal } from './printing/AddPrinterModal'
@@ -30,12 +30,19 @@ export const PrintingSettings = () => {
 
   return (
     <div className="p-6 space-y-6">
+      <div className="flex items-center gap-4">
+        <div className="w-12 h-12 bg-red-50 text-[#7a1315] rounded-full flex items-center justify-center shrink-0">
+          <Printer className="w-6 h-6" />
+        </div>
+        <div>
+          <h2 className="text-xl font-semibold text-zinc-800">{t('printingLabel')}</h2>
+          <p className="text-sm text-muted-foreground">{t('printingPageDescription')}</p>
+        </div>
+      </div>
+
       <Card className="rounded-2xl border-zinc-200">
         <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle>{t('printingAgentsTitle')}</CardTitle>
-            <CardDescription>{t('printingLabel')}</CardDescription>
-          </div>
+          <CardTitle>{t('printingAgentsTitle')}</CardTitle>
           <Button onClick={() => openModal('CREATE_PRINT_AGENT')} className="rounded-xl">
             {t('printingGenerateAgentButton')}
           </Button>

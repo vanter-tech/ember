@@ -18,10 +18,11 @@ import {
 } from 'lucide-react';
 import { useTranslation } from '@/lib/i18n'
 
-type SettingsGroup = 'BILLING' | 'FIDELIZACION'
+type SettingsGroup = 'BILLING' | 'HARDWARE' | 'FIDELIZACION'
 
 const GROUP_MEMBERS: Record<SettingsGroup, SettingsType[]> = {
-  BILLING: ['BILLING', 'PAYMENT_GATEWAY', 'TICKET', 'PRINTING'],
+  BILLING: ['BILLING', 'PAYMENT_GATEWAY', 'TICKET'],
+  HARDWARE: ['HARDWARE', 'PRINTING'],
   FIDELIZACION: ['FIDELIZACION', 'LOYALTY_REWARDS'],
 }
 
@@ -53,6 +54,7 @@ export const SettingsBar = ({
     }
 
     const billingGroupActive = GROUP_MEMBERS.BILLING.includes(activeSettings)
+    const hardwareGroupActive = GROUP_MEMBERS.HARDWARE.includes(activeSettings)
     const loyaltyGroupActive = GROUP_MEMBERS.FIDELIZACION.includes(activeSettings)
 
     return (
@@ -116,6 +118,29 @@ export const SettingsBar = ({
                         <FileText className="mr-2 h-4 w-4" />
                         {t('ticketLabel')}
                     </Button>
+                </div>
+            )}
+
+            <Button
+                variant={hardwareGroupActive ? 'default' : 'ghost'}
+                className={collapsed ? 'justify-center px-2' : 'justify-start'}
+                title={collapsed ? t('hardwareLabel') : undefined}
+                onClick={() => handleGroupClick('HARDWARE')}
+            >
+                <Printer className={collapsed ? 'h-4 w-4' : 'mr-2 h-4 w-4'} />
+                {!collapsed && t('hardwareLabel')}
+            </Button>
+            {!collapsed && expandedGroup === 'HARDWARE' && (
+                <div className="flex flex-col gap-1 pl-6">
+                    <Button
+                        variant={activeSettings === 'HARDWARE' ? 'destructive' : 'ghost'}
+                        size="sm"
+                        onClick={() => openSettings('HARDWARE')}
+                        className="justify-start"
+                    >
+                        <Printer className="mr-2 h-4 w-4" />
+                        {t('hardwareGeneralLabel')}
+                    </Button>
                     <Button
                         variant={activeSettings === 'PRINTING' ? 'destructive' : 'ghost'}
                         size="sm"
@@ -127,17 +152,6 @@ export const SettingsBar = ({
                     </Button>
                 </div>
             )}
-
-            <Button
-                variant={activeSettings === 'HARDWARE' ?
-                    'default' : 'ghost'}
-                onClick={() => handleFlatClick('HARDWARE')}
-                className={collapsed ? 'justify-center px-2' : 'justify-start'}
-                title={collapsed ? t('hardwareLabel') : undefined}
-            >
-                <Printer className={collapsed ? 'h-4 w-4' : 'mr-2 h-4 w-4'} />
-                {!collapsed && t('hardwareLabel')}
-            </Button>
             <Button
                 variant={activeSettings === 'SPACE' ?
                     'default' : 'ghost'}
