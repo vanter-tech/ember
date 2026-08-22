@@ -67,7 +67,7 @@ printing/
   package-info.java
 ```
 
-### 3.2 Entities & migration (`V11__printing.sql`)
+### 3.2 Entities & migration (`V12__printing.sql`)
 
 **`print_agents`**
 
