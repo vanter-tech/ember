@@ -509,6 +509,58 @@ export const cashShiftService = {
   },
 }
 
+export type PrintAgentResponse = components['schemas']['PrintAgentResponse']
+export type CreatedPrintAgentResponse = components['schemas']['CreatedPrintAgentResponse']
+export type PrinterConfigResponse = components['schemas']['PrinterConfigResponse']
+export type PrintJobResponse = components['schemas']['PrintJobResponse']
+
+export const printingService = {
+  listAgents: async (): Promise<PrintAgentResponse[]> => {
+    const { data } = await api.get<PrintAgentResponse[]>('/printing/admin/agents')
+    return data
+  },
+  createAgent: async (name: string): Promise<CreatedPrintAgentResponse> => {
+    const { data } = await api.post<CreatedPrintAgentResponse>('/printing/admin/agents', { name })
+    return data
+  },
+  renameAgent: async (id: string, name: string): Promise<PrintAgentResponse> => {
+    const { data } = await api.patch<PrintAgentResponse>(`/printing/admin/agents/${id}`, { name })
+    return data
+  },
+  regenerateKey: async (id: string): Promise<CreatedPrintAgentResponse> => {
+    const { data } = await api.post<CreatedPrintAgentResponse>(`/printing/admin/agents/${id}/regenerate-key`)
+    return data
+  },
+  revokeAgent: async (id: string): Promise<void> => {
+    await api.delete(`/printing/admin/agents/${id}`)
+  },
+  listPrinters: async (agentId: string): Promise<PrinterConfigResponse[]> => {
+    const { data } = await api.get<PrinterConfigResponse[]>(`/printing/admin/agents/${agentId}/printers`)
+    return data
+  },
+  addPrinter: async (
+    agentId: string,
+    request: { role: string; connectionType: string; host?: string; port?: number; comPort?: string; label: string }
+  ): Promise<PrinterConfigResponse> => {
+    const { data } = await api.post<PrinterConfigResponse>(`/printing/admin/agents/${agentId}/printers`, request)
+    return data
+  },
+  updatePrinter: async (
+    printerId: string,
+    request: Partial<{ host: string; port: number; comPort: string; label: string; active: boolean }>
+  ): Promise<PrinterConfigResponse> => {
+    const { data } = await api.patch<PrinterConfigResponse>(`/printing/admin/agents/printers/${printerId}`, request)
+    return data
+  },
+  listJobs: async (status?: string): Promise<PrintJobResponse[]> => {
+    const { data } = await api.get<{ content: PrintJobResponse[] }>('/printing/jobs', { params: { status } })
+    return data.content
+  },
+  retryJob: async (jobId: string): Promise<void> => {
+    await api.post(`/printing/jobs/${jobId}/retry`)
+  },
+}
+
 export const billingService = {
   requestBilling: async (
     sessionId: string,
