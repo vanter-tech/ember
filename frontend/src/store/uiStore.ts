@@ -5,9 +5,10 @@ export type ModalType = 'CREATE_CATEGORY' | 'EDIT_CATEGORY' | 'DELETE_CATEGORY' 
                          'PARTICIPANTS_QR' | 'JOIN_TABLE' | 'TENANT_SUSPENDED' |
                          'OPEN_SHIFT' | 'CASH_MOVEMENT' | 'CLOSE_SHIFT' |
                          'CHARGE_TABLE' | 'CREATE_STAFF' | 'EDIT_STAFF' | 'DELETE_STAFF' |
-                         'VOID_BILL' | 'REFUND_PAYMENT' | 'CREATE_REWARD' | 'EDIT_REWARD' | null;
+                         'VOID_BILL' | 'REFUND_PAYMENT' | 'CREATE_REWARD' | 'EDIT_REWARD' |
+                         'CREATE_PRINT_AGENT' | 'ADD_PRINTER' | null;
 
-export type SettingsType = 'BRANDING' | 'MENU' | 'BILLING' | 'PAYMENT_GATEWAY' | 'TICKET' | 'HARDWARE'|
+export type SettingsType = 'BRANDING' | 'MENU' | 'BILLING' | 'PAYMENT_GATEWAY' | 'TICKET' | 'PRINTING' | 'HARDWARE'|
                             'SPACE'| 'HORARIO'| 'FIDELIZACION' | 'LOYALTY_REWARDS'| null;
 
 interface UIState {

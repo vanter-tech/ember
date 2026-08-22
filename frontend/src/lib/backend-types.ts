@@ -143,6 +143,86 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/printing/jobs/{id}/retry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["retry"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/printing/agents/token": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["token"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/printing/admin/agents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list"];
+        put?: never;
+        post: operations["create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/printing/admin/agents/{id}/regenerate-key": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["regenerateKey"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/printing/admin/agents/{agentId}/printers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listPrinters"];
+        put?: never;
+        post: operations["addPrinter"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/platform/restaurants": {
         parameters: {
             query?: never;
@@ -154,7 +234,7 @@ export interface paths {
         get: operations["getAll"];
         put?: never;
         /** Operator-driven tenant onboarding: creates the restaurant and its initial ADMIN user */
-        post: operations["create"];
+        post: operations["create_1"];
         delete?: never;
         options?: never;
         head?: never;
@@ -186,10 +266,10 @@ export interface paths {
             cookie?: never;
         };
         /** List all rewards for the current tenant, including inactive (ADMIN) */
-        get: operations["list"];
+        get: operations["list_1"];
         put?: never;
         /** Create a reward catalog entry (ADMIN) */
-        post: operations["create_1"];
+        post: operations["create_2"];
         delete?: never;
         options?: never;
         head?: never;
@@ -207,7 +287,7 @@ export interface paths {
         get: operations["getAll_1"];
         put?: never;
         /** Create a menu item (ADMIN) */
-        post: operations["create_2"];
+        post: operations["create_3"];
         delete?: never;
         options?: never;
         head?: never;
@@ -225,7 +305,7 @@ export interface paths {
         get: operations["getAll_2"];
         put?: never;
         /** Create a category (ADMIN) */
-        post: operations["create_3"];
+        post: operations["create_4"];
         delete?: never;
         options?: never;
         head?: never;
@@ -488,6 +568,38 @@ export interface paths {
         patch: operations["expandCapacity"];
         trace?: never;
     };
+    "/printing/admin/agents/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["revoke"];
+        options?: never;
+        head?: never;
+        patch: operations["rename"];
+        trace?: never;
+    };
+    "/printing/admin/agents/printers/{printerId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["updatePrinter"];
+        trace?: never;
+    };
     "/platform/restaurants/{id}/status": {
         parameters: {
             query?: never;
@@ -684,6 +796,22 @@ export interface paths {
         };
         /** Pre-login branding for a tenant landing page, by slug */
         get: operations["getBranding"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/printing/jobs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list_2"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1290,6 +1418,46 @@ export interface components {
         JoinSessionCodeRequest: {
             joinCode: string;
         };
+        AgentTokenRequest: {
+            apiKey: string;
+        };
+        AgentTokenResponse: {
+            token?: string;
+            /** Format: int64 */
+            expiresInSeconds?: number;
+        };
+        CreatePrintAgentRequest: {
+            name: string;
+        };
+        CreatedPrintAgentResponse: {
+            /** Format: uuid */
+            id?: string;
+            name?: string;
+            apiKey?: string;
+        };
+        CreatePrinterConfigRequest: {
+            role: string;
+            connectionType: string;
+            host?: string;
+            /** Format: int32 */
+            port?: number;
+            comPort?: string;
+            label: string;
+        };
+        PrinterConfigResponse: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            agentId?: string;
+            role?: string;
+            connectionType?: string;
+            host?: string;
+            /** Format: int32 */
+            port?: number;
+            comPort?: string;
+            label?: string;
+            active?: boolean;
+        };
         PlatformRestaurantCreateRequest: {
             name: string;
             slug: string;
@@ -1523,6 +1691,23 @@ export interface components {
             /** Format: int32 */
             additional?: number;
         };
+        PrintAgentResponse: {
+            /** Format: uuid */
+            id?: string;
+            name?: string;
+            status?: string;
+            /** Format: date-time */
+            lastSeenAt?: string;
+            connected?: boolean;
+        };
+        UpdatePrinterConfigRequest: {
+            host?: string;
+            /** Format: int32 */
+            port?: number;
+            comPort?: string;
+            label?: string;
+            active?: boolean;
+        };
         PlatformRestaurantStatusUpdateRequest: {
             /** @enum {string} */
             status: "ACTIVE" | "SUSPENDED" | "INACTIVE";
@@ -1672,16 +1857,16 @@ export interface components {
             size?: number;
             sort?: string[];
         };
-        PagePlatformRestaurantSummaryResponse: {
-            /** Format: int64 */
-            totalElements?: number;
+        PagePrintJobResponse: {
             /** Format: int32 */
             totalPages?: number;
+            /** Format: int64 */
+            totalElements?: number;
             first?: boolean;
             last?: boolean;
             /** Format: int32 */
             size?: number;
-            content?: components["schemas"]["PlatformRestaurantSummaryResponse"][];
+            content?: components["schemas"]["PrintJobResponse"][];
             /** Format: int32 */
             number?: number;
             sort?: components["schemas"]["SortObject"];
@@ -1694,17 +1879,48 @@ export interface components {
             /** Format: int64 */
             offset?: number;
             sort?: components["schemas"]["SortObject"];
-            /** Format: int32 */
-            pageSize?: number;
+            paged?: boolean;
             /** Format: int32 */
             pageNumber?: number;
-            paged?: boolean;
+            /** Format: int32 */
+            pageSize?: number;
             unpaged?: boolean;
+        };
+        PrintJobResponse: {
+            /** Format: uuid */
+            id?: string;
+            role?: string;
+            sourceType?: string;
+            sourceId?: string;
+            status?: string;
+            /** Format: int32 */
+            attempts?: number;
+            lastError?: string;
+            /** Format: date-time */
+            createdAt?: string;
         };
         SortObject: {
             empty?: boolean;
             sorted?: boolean;
             unsorted?: boolean;
+        };
+        PagePlatformRestaurantSummaryResponse: {
+            /** Format: int32 */
+            totalPages?: number;
+            /** Format: int64 */
+            totalElements?: number;
+            first?: boolean;
+            last?: boolean;
+            /** Format: int32 */
+            size?: number;
+            content?: components["schemas"]["PlatformRestaurantSummaryResponse"][];
+            /** Format: int32 */
+            number?: number;
+            sort?: components["schemas"]["SortObject"];
+            /** Format: int32 */
+            numberOfElements?: number;
+            pageable?: components["schemas"]["PageableObject"];
+            empty?: boolean;
         };
         PlatformRestaurantAdminResponse: {
             id?: string;
@@ -1725,10 +1941,10 @@ export interface components {
             admins?: components["schemas"]["PlatformRestaurantAdminResponse"][];
         };
         PagePlatformAuditLogResponse: {
-            /** Format: int64 */
-            totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
+            /** Format: int64 */
+            totalElements?: number;
             first?: boolean;
             last?: boolean;
             /** Format: int32 */
@@ -1795,10 +2011,10 @@ export interface components {
             pointsEarned?: number;
         };
         PageKitchenOrder: {
-            /** Format: int64 */
-            totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
+            /** Format: int64 */
+            totalElements?: number;
             first?: boolean;
             last?: boolean;
             /** Format: int32 */
@@ -1834,10 +2050,10 @@ export interface components {
             currentSession?: components["schemas"]["ActiveSessionSummary"];
         };
         PageMenuItemResponse: {
-            /** Format: int64 */
-            totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
+            /** Format: int64 */
+            totalElements?: number;
             first?: boolean;
             last?: boolean;
             /** Format: int32 */
@@ -1852,10 +2068,10 @@ export interface components {
             empty?: boolean;
         };
         PageCategoryResponse: {
-            /** Format: int64 */
-            totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
+            /** Format: int64 */
+            totalElements?: number;
             first?: boolean;
             last?: boolean;
             /** Format: int32 */
@@ -1870,10 +2086,10 @@ export interface components {
             empty?: boolean;
         };
         PageCashShiftResponse: {
-            /** Format: int64 */
-            totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
+            /** Format: int64 */
+            totalElements?: number;
             first?: boolean;
             last?: boolean;
             /** Format: int32 */
@@ -2336,6 +2552,164 @@ export interface operations {
             };
         };
     };
+    retry: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    token: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgentTokenRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AgentTokenResponse"];
+                };
+            };
+        };
+    };
+    list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PrintAgentResponse"][];
+                };
+            };
+        };
+    };
+    create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreatePrintAgentRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CreatedPrintAgentResponse"];
+                };
+            };
+        };
+    };
+    regenerateKey: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CreatedPrintAgentResponse"];
+                };
+            };
+        };
+    };
+    listPrinters: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PrinterConfigResponse"][];
+                };
+            };
+        };
+    };
+    addPrinter: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreatePrinterConfigRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PrinterConfigResponse"];
+                };
+            };
+        };
+    };
     getAll: {
         parameters: {
             query: {
@@ -2358,7 +2732,7 @@ export interface operations {
             };
         };
     };
-    create: {
+    create_1: {
         parameters: {
             query?: never;
             header?: never;
@@ -2406,7 +2780,7 @@ export interface operations {
             };
         };
     };
-    list: {
+    list_1: {
         parameters: {
             query?: never;
             header?: never;
@@ -2426,7 +2800,7 @@ export interface operations {
             };
         };
     };
-    create_1: {
+    create_2: {
         parameters: {
             query?: never;
             header?: never;
@@ -2473,7 +2847,7 @@ export interface operations {
             };
         };
     };
-    create_2: {
+    create_3: {
         parameters: {
             query?: never;
             header?: never;
@@ -2523,7 +2897,7 @@ export interface operations {
             };
         };
     };
-    create_3: {
+    create_4: {
         parameters: {
             query?: never;
             header?: never;
@@ -2939,6 +3313,78 @@ export interface operations {
             };
         };
     };
+    revoke: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    rename: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreatePrintAgentRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PrintAgentResponse"];
+                };
+            };
+        };
+    };
+    updatePrinter: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                printerId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdatePrinterConfigRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PrinterConfigResponse"];
+                };
+            };
+        };
+    };
     updateStatus: {
         parameters: {
             query?: never;
@@ -3224,6 +3670,29 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["PublicBrandingResponse"];
+                };
+            };
+        };
+    };
+    list_2: {
+        parameters: {
+            query: {
+                status?: "PENDING" | "SENT" | "PRINTED" | "ERROR";
+                pageable: components["schemas"]["Pageable"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PagePrintJobResponse"];
                 };
             };
         };

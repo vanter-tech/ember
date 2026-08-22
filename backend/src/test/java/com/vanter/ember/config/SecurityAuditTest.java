@@ -75,7 +75,17 @@ class SecurityAuditTest {
         "GET,  /loyalty/rewards",
         "PATCH, /loyalty/rewards/1",
         "GET,  /loyalty/accounts/me",
-        "GET,  /loyalty/accounts/me/visits"
+        "GET,  /loyalty/accounts/me/visits",
+        "POST, /printing/admin/agents",
+        "GET,  /printing/admin/agents",
+        "PATCH, /printing/admin/agents/1",
+        "POST, /printing/admin/agents/1/regenerate-key",
+        "DELETE, /printing/admin/agents/1",
+        "POST, /printing/admin/agents/1/printers",
+        "GET,  /printing/admin/agents/1/printers",
+        "PATCH, /printing/admin/agents/printers/1",
+        "GET,  /printing/jobs",
+        "POST, /printing/jobs/1/retry"
     })
     void unauthenticated_returns401(String method, String path) throws Exception {
         var request = switch (method.trim()) {

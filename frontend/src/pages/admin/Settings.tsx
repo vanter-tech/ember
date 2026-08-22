@@ -7,6 +7,7 @@ import { MenuSettings } from "./components/settings/MenuSettings";
 import { BillingSettings } from "./components/settings/BillingSettings";
 import { PaymentGatewaySettings } from "./components/settings/PaymentGatewaySettings";
 import { TicketSettings } from "./components/settings/TicketSettings";
+import { PrintingSettings } from "./components/settings/PrintingSettings";
 import { BusinessHoursSettings } from "./components/settings/BusinessHoursSettings";
 import { HardwareSettings } from "./components/settings/HardwareSettings";
 import { LoyaltySettings } from "./components/settings/LoyaltySettings";
@@ -28,6 +29,8 @@ export const Settings = () => {
                 return <PaymentGatewaySettings />;
             case 'TICKET':
                 return <TicketSettings />;
+            case 'PRINTING':
+                return <PrintingSettings />;
             case 'HARDWARE':
                 return <HardwareSettings />;
             case 'SPACE':
