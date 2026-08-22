@@ -2,9 +2,11 @@ package com.vanter.ember.printing.config;
 
 import com.vanter.ember.config.TenantContextHolder;
 import com.vanter.ember.identity.service.JwtService;
+import com.vanter.ember.printing.event.PrintAgentConnected;
 import com.vanter.ember.printing.service.PrintAgentConnectionRegistry;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.MessageDeliveryException;
@@ -25,6 +27,7 @@ public class PrintAgentChannelInterceptor implements ChannelInterceptor {
 
     private final JwtService jwtService;
     private final PrintAgentConnectionRegistry connectionRegistry;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
@@ -61,6 +64,7 @@ public class PrintAgentChannelInterceptor implements ChannelInterceptor {
         UUID tenantId = jwtService.extractTenantId(token);
         connectionRegistry.markConnected(agentId, accessor.getSessionId());
         TenantContextHolder.setTenantId(tenantId);
+        eventPublisher.publishEvent(new PrintAgentConnected(agentId));
         return message;
     }
 }
