@@ -8,6 +8,9 @@ import static org.mockito.Mockito.when;
 
 import com.vanter.ember.config.ResourceNotFoundException;
 import com.vanter.ember.identity.dto.CreateStaffRequest;
+import static org.mockito.Mockito.when;
+
+import com.vanter.ember.config.ResourceNotFoundException;
 import com.vanter.ember.identity.dto.UpdateStaffProfileRequest;
 import com.vanter.ember.identity.model.Role;
 import com.vanter.ember.identity.model.User;
@@ -24,6 +27,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class UserAdminServiceTest {
