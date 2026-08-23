@@ -4,11 +4,15 @@ import com.vanter.ember.catalog.model.MenuItem;
 import com.vanter.ember.catalog.repository.MenuItemRepository;
 import com.vanter.ember.config.ResourceNotFoundException;
 import com.vanter.ember.config.TenantContextHolder;
+import com.vanter.ember.inventory.dto.InventoryItemRequest;
+import com.vanter.ember.inventory.dto.InventoryItemResponse;
+import com.vanter.ember.inventory.dto.InventoryItemUpdateRequest;
 import com.vanter.ember.inventory.dto.LowStockAlertMessage;
 import com.vanter.ember.inventory.model.InventoryItem;
 import com.vanter.ember.inventory.repository.InventoryItemRepository;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -29,6 +33,54 @@ public class InventoryService {
         InventoryItem item = findEntityById(inventoryItemId);
         applyStockSideEffects(item);
         return item;
+    }
+
+    public List<InventoryItemResponse> findAll() {
+        return inventoryItemRepository.findAll().stream()
+                .map(item -> InventoryItemResponse.from(item, requireMenuItem(item.getMenuItemId())))
+                .toList();
+    }
+
+    public InventoryItemResponse create(InventoryItemRequest request) {
+        MenuItem menuItem = requireMenuItem(request.getMenuItemId());
+        if (inventoryItemRepository.findByMenuItemId(request.getMenuItemId()).isPresent()) {
+            throw new IllegalArgumentException(
+                    "Menu item already has inventory tracking: " + request.getMenuItemId());
+        }
+
+        InventoryItem item = InventoryItem.builder()
+                .menuItemId(request.getMenuItemId())
+                .unit(request.getUnit())
+                .currentStock(request.getCurrentStock())
+                .lowStockThreshold(request.getLowStockThreshold())
+                .updatedAt(LocalDateTime.now())
+                .build();
+        InventoryItem saved = inventoryItemRepository.save(item);
+        applyStockSideEffects(saved);
+        return InventoryItemResponse.from(saved, requireMenuItem(saved.getMenuItemId()));
+    }
+
+    public InventoryItemResponse update(Long id, InventoryItemUpdateRequest request) {
+        InventoryItem item = findEntityById(id);
+        item.setUnit(request.getUnit());
+        item.setLowStockThreshold(request.getLowStockThreshold());
+        InventoryItem saved = inventoryItemRepository.save(item);
+        return InventoryItemResponse.from(saved, requireMenuItem(saved.getMenuItemId()));
+    }
+
+    public InventoryItemResponse restock(Long id, BigDecimal delta) {
+        InventoryItem item = applyDelta(id, delta);
+        return InventoryItemResponse.from(item, requireMenuItem(item.getMenuItemId()));
+    }
+
+    public void delete(Long id) {
+        InventoryItem item = findEntityById(id);
+        inventoryItemRepository.delete(item);
+    }
+
+    private MenuItem requireMenuItem(Long menuItemId) {
+        return menuItemRepository.findById(menuItemId)
+                .orElseThrow(() -> new ResourceNotFoundException("Menu item not found: " + menuItemId));
     }
 
     private void applyStockSideEffects(InventoryItem item) {

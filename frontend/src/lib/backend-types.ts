@@ -329,6 +329,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/catalog/inventory": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List all tracked inventory items */
+        get: operations["getAll_3"];
+        put?: never;
+        /** Start tracking inventory for a menu item */
+        post: operations["create_5"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/catalog/inventory/{id}/restock": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Restock (or correct) an item's current stock */
+        post: operations["restock"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/catalog/categories": {
         parameters: {
             query?: never;
@@ -337,10 +372,10 @@ export interface paths {
             cookie?: never;
         };
         /** List all categories */
-        get: operations["getAll_3"];
+        get: operations["getAll_4"];
         put?: never;
         /** Create a category (ADMIN) */
-        post: operations["create_5"];
+        post: operations["create_6"];
         delete?: never;
         options?: never;
         head?: never;
@@ -789,6 +824,24 @@ export interface paths {
         patch: operations["toggleAvailability"];
         trace?: never;
     };
+    "/catalog/inventory/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Stop tracking inventory for a menu item */
+        delete: operations["delete_2"];
+        options?: never;
+        head?: never;
+        /** Edit unit/low-stock threshold */
+        patch: operations["update_4"];
+        trace?: never;
+    };
     "/admin/users/{userId}/role": {
         parameters: {
             query?: never;
@@ -965,7 +1018,7 @@ export interface paths {
             cookie?: never;
         };
         /** List operator audit-log entries, paginated and optionally filtered by restaurantId */
-        get: operations["getAll_4"];
+        get: operations["getAll_5"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1667,6 +1720,29 @@ export interface components {
             name: string;
             priceDelta: number;
         };
+        InventoryItemRequest: {
+            /** Format: int64 */
+            menuItemId: number;
+            unit: string;
+            currentStock: number;
+            lowStockThreshold: number;
+        };
+        InventoryItemResponse: {
+            /** Format: int64 */
+            id?: number;
+            /** Format: int64 */
+            menuItemId?: number;
+            menuItemName?: string;
+            menuItemAvailable?: boolean;
+            unit?: string;
+            currentStock?: number;
+            lowStockThreshold?: number;
+            /** Format: date-time */
+            updatedAt?: string;
+        };
+        RestockRequest: {
+            delta: number;
+        };
         RecordMovementRequest: {
             /** @enum {string} */
             type: "CASH_IN" | "CASH_OUT";
@@ -1917,6 +1993,10 @@ export interface components {
             /** Format: int32 */
             displayOrder?: number;
         };
+        InventoryItemUpdateRequest: {
+            unit: string;
+            lowStockThreshold: number;
+        };
         UpdateUserRoleRequest: {
             /** @enum {string} */
             role: "CUSTOMER" | "WAITER" | "KITCHEN" | "ADMIN";
@@ -2049,9 +2129,9 @@ export interface components {
             /** Format: int64 */
             offset?: number;
             sort?: components["schemas"]["SortObject"];
-            paged?: boolean;
             /** Format: int32 */
             pageSize?: number;
+            paged?: boolean;
             /** Format: int32 */
             pageNumber?: number;
             unpaged?: boolean;
@@ -3117,6 +3197,76 @@ export interface operations {
     };
     getAll_3: {
         parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["InventoryItemResponse"][];
+                };
+            };
+        };
+    };
+    create_5: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InventoryItemRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["InventoryItemResponse"];
+                };
+            };
+        };
+    };
+    restock: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RestockRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["InventoryItemResponse"];
+                };
+            };
+        };
+    };
+    getAll_4: {
+        parameters: {
             query: {
                 pageable: components["schemas"]["Pageable"];
             };
@@ -3137,7 +3287,7 @@ export interface operations {
             };
         };
     };
-    create_5: {
+    create_6: {
         parameters: {
             query?: never;
             header?: never;
@@ -3876,6 +4026,52 @@ export interface operations {
             };
         };
     };
+    delete_2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    update_4: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InventoryItemUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["InventoryItemResponse"];
+                };
+            };
+        };
+    };
     updateRole: {
         parameters: {
             query?: never;
@@ -4109,7 +4305,7 @@ export interface operations {
             };
         };
     };
-    getAll_4: {
+    getAll_5: {
         parameters: {
             query: {
                 restaurantId?: string;
