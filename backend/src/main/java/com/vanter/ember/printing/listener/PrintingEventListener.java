@@ -77,6 +77,9 @@ public class PrintingEventListener {
         sb.append("Mesa ").append(event.tableNumber()).append('\n');
         for (OrderItem item : items) {
             sb.append("- ").append(item.getName()).append('\n');
+            for (var modifier : item.getModifiers()) {
+                sb.append("  · ").append(modifier.getOptionName()).append('\n');
+            }
         }
         return sb.toString();
     }

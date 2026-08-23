@@ -2,6 +2,7 @@ package com.vanter.ember.kitchen.model;
 
 import com.vanter.ember.session.model.OrderItemStatus;
 import java.time.LocalDateTime;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -18,4 +19,6 @@ public class KitchenItem {
     private String participantName;
     private OrderItemStatus status;
     private LocalDateTime updatedAt;
+    @Builder.Default
+    private List<String> modifiers = new java.util.ArrayList<>();
 }
