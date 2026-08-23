@@ -21,7 +21,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.messaging.converter.StringMessageConverter;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.messaging.simp.stomp.StompCommand;
+import org.springframework.messaging.simp.stomp.StompFrameHandler;
 import org.springframework.messaging.simp.stomp.StompHeaders;
 import org.springframework.messaging.simp.stomp.StompSession;
 import org.springframework.messaging.simp.stomp.StompSessionHandlerAdapter;
@@ -51,6 +54,7 @@ class WebSocketEndpointIsolationTest {
     @Autowired private RestaurantRepository restaurantRepository;
     @Autowired private PasswordEncoder passwordEncoder;
     @Autowired private ObjectMapper objectMapper;
+    @Autowired private SimpMessagingTemplate messagingTemplate;
 
     private static final String PASSWORD = "password123";
 
@@ -163,6 +167,74 @@ class WebSocketEndpointIsolationTest {
 
         StompSession session = connected.get(5, TimeUnit.SECONDS);
         assertThat(session.isConnected()).isTrue();
+        session.disconnect();
+    }
+
+    @Test
+    void topicBroadcast_isActuallyDeliveredToASubscriber() throws Exception {
+        // CONNECT/SUBSCRIBE succeeding (the two tests above) does not prove the simple broker is
+        // still routing "/topic/**" at all: PrintAgentWebSocketConfig.configureMessageBroker also
+        // gets merged onto the shared broker registry, and Spring's
+        // MessageBrokerRegistry#enableSimpleBroker REPLACES the previous registration rather than
+        // adding to it — if the print-agent config's call runs after WebSocketConfig's, the
+        // broker's destination prefixes silently become "/topic/print-agent" ONLY, and a genuine
+        // tenant broadcast like "/topic/session/{id}" is accepted by the broker (no error) but
+        // never delivered to any subscriber. This directly reproduces the reported symptom:
+        // CONNECT/SUBSCRIBE succeed, heartbeats keep flowing, but application messages never
+        // arrive client-side.
+        String token = login();
+
+        WebSocketStompClient stompClient = new WebSocketStompClient(new StandardWebSocketClient());
+        stompClient.setMessageConverter(new StringMessageConverter());
+
+        StompHeaders connectHeaders = new StompHeaders();
+        connectHeaders.add("Authorization", "Bearer " + token);
+
+        CompletableFuture<StompSession> connected = new CompletableFuture<>();
+        CompletableFuture<String> received = new CompletableFuture<>();
+        String destination = "/topic/ws-isolation-test-" + UUID.randomUUID();
+
+        StompSessionHandlerAdapter handler = new StompSessionHandlerAdapter() {
+            @Override
+            public void afterConnected(StompSession session, StompHeaders connectedHeaders) {
+                session.subscribe(destination, new StompFrameHandler() {
+                    @Override
+                    public java.lang.reflect.Type getPayloadType(StompHeaders headers) {
+                        return String.class;
+                    }
+
+                    @Override
+                    public void handleFrame(StompHeaders headers, Object payload) {
+                        received.complete((String) payload);
+                    }
+                });
+                connected.complete(session);
+            }
+
+            @Override
+            public void handleException(StompSession session, StompCommand command,
+                    StompHeaders headers, byte[] payload, Throwable exception) {
+                connected.completeExceptionally(exception);
+            }
+
+            @Override
+            public void handleTransportError(StompSession session, Throwable exception) {
+                connected.completeExceptionally(exception);
+            }
+        };
+
+        stompClient.connectAsync(
+                "ws://localhost:" + port + "/v1/ws/websocket",
+                new WebSocketHttpHeaders(), connectHeaders, handler);
+
+        StompSession session = connected.get(5, TimeUnit.SECONDS);
+        // Give the SUBSCRIBE frame time to actually register server-side before broadcasting.
+        Thread.sleep(300);
+
+        messagingTemplate.convertAndSend(destination, "hello-from-test");
+
+        String payload = received.get(5, TimeUnit.SECONDS);
+        assertThat(payload).isEqualTo("hello-from-test");
         session.disconnect();
     }
 }
