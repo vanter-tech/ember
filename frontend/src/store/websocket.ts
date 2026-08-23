@@ -6,6 +6,14 @@ import { useSessionStore } from "./sessionStore";
 import { queryClient } from "@/queryClient";
 import type { WaiterBillState } from "@/lib/api";
 
+interface LowStockAlert {
+    menuItemId: number
+    menuItemName: string
+    currentStock: number
+    unit: string
+    threshold: number
+}
+
 interface WebSocketState {
     stompClient: Client | null,
     isConnected: boolean,
@@ -16,6 +24,11 @@ interface WebSocketState {
     subscribeToWaiter:(tenantId: string) => void,
     subscribeToWaiterSession:(sessionId: string) => void,
     unsubscribeFromWaiterSession:() => void,
+    inventorySubscription: any | null,
+    lastLowStockAlert: LowStockAlert | null,
+    subscribeToInventory:(tenantId: string) => void,
+    unsubscribeFromInventory:() => void,
+    clearLowStockAlert:() => void,
     connect: () => void,
     disconnect: () => void
 }
@@ -27,6 +40,8 @@ export const useWebsocketStore = create<WebSocketState>((set, get) => ({
     isConnected: false,
     currentSubscription: null,
     waiterSessionSubscription: null,
+    inventorySubscription: null,
+    lastLowStockAlert: null,
 
     connect: () => {
         if (get().stompClient) return;
@@ -243,6 +258,50 @@ export const useWebsocketStore = create<WebSocketState>((set, get) => ({
         set({waiterSessionSubscription: null})
     },
 
+    subscribeToInventory: (tenantId: string) => {
+        const currentClient = get().stompClient
+
+        if(!currentClient || !currentClient.connected) {
+            return
+        }
+
+        const existingSub = get().inventorySubscription
+
+        if(existingSub) {
+            existingSub.unsubscribe()
+        }
+
+        const subscription = currentClient.subscribe(`/topic/inventory/${tenantId}`, (msg) => {
+            const eventData = JSON.parse(msg.body)
+            if(eventData.type === 'LOW_STOCK'){
+                queryClient.invalidateQueries({queryKey: ['inventoryItems']})
+                set({lastLowStockAlert: {
+                    menuItemId: eventData.menuItemId,
+                    menuItemName: eventData.menuItemName,
+                    currentStock: eventData.currentStock,
+                    unit: eventData.unit,
+                    threshold: eventData.threshold,
+                }})
+            }
+        })
+
+        set({inventorySubscription: subscription})
+    },
+
+    unsubscribeFromInventory: () => {
+        const existingSub = get().inventorySubscription
+
+        if(existingSub) {
+            existingSub.unsubscribe()
+        }
+
+        set({inventorySubscription: null})
+    },
+
+    clearLowStockAlert: () => {
+        set({lastLowStockAlert: null})
+    },
+
     subscribeToWaiter: (tenantId: string) => {
         const currentClient = get().stompClient
 
@@ -265,7 +324,7 @@ export const useWebsocketStore = create<WebSocketState>((set, get) => ({
 
     disconnect:() => {
 
-        const { stompClient, currentSubscription, waiterSessionSubscription } = get()
+        const { stompClient, currentSubscription, waiterSessionSubscription, inventorySubscription } = get()
 
         if(currentSubscription) {
             currentSubscription.unsubscribe()
@@ -273,11 +332,14 @@ export const useWebsocketStore = create<WebSocketState>((set, get) => ({
         if(waiterSessionSubscription) {
             waiterSessionSubscription.unsubscribe()
         }
+        if(inventorySubscription) {
+            inventorySubscription.unsubscribe()
+        }
         if(stompClient) {
             stompClient.deactivate()
         }
 
-        set({stompClient: null, isConnected: false, currentSubscription: null, waiterSessionSubscription: null})
+        set({stompClient: null, isConnected: false, currentSubscription: null, waiterSessionSubscription: null, inventorySubscription: null})
 
     }
 
