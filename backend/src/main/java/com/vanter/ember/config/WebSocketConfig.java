@@ -21,8 +21,16 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry registry) {
-        registry.enableSimpleBroker("/topic", "/user");
-        registry.setApplicationDestinationPrefixes("/app");
+        // Owns the ONLY `enableSimpleBroker`/`setApplicationDestinationPrefixes` call in the app:
+        // every WebSocketMessageBrokerConfigurer bean's configureMessageBroker(...) runs against
+        // this SAME shared MessageBrokerRegistry (Spring merges all of them, regardless of how
+        // many separate @EnableWebSocketMessageBroker config classes exist), and
+        // MessageBrokerRegistry#enableSimpleBroker REPLACES the previous registration rather than
+        // adding to it. PrintAgentWebSocketConfig deliberately does NOT override this method — its
+        // "/topic/print-agent"/"/app/print-agent" prefixes are registered here instead, so a
+        // second call elsewhere can never silently wipe out tenant-facing routing again.
+        registry.enableSimpleBroker("/topic", "/user", "/topic/print-agent");
+        registry.setApplicationDestinationPrefixes("/app", "/app/print-agent");
     }
 
     @Override
