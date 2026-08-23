@@ -13,6 +13,7 @@ import {
   Users,
   Banknote,
   BookOpen,
+  SlidersHorizontal,
 } from 'lucide-react'
 import { useSessionStore } from '@/store/sessionStore'
 import { useTranslation } from '@/lib/i18n'
@@ -88,6 +89,13 @@ export const FloatingNav = () => {
             title={t('navCategories')}
           >
             <Package strokeWidth={1.5} size={24} />
+          </Link>
+          <Link
+            to="/admin/modifier-groups"
+            className={navItemClass('/admin/modifier-groups')}
+            title={t('navModifiers')}
+          >
+            <SlidersHorizontal strokeWidth={1.5} size={24} />
           </Link>
           <Link
             to="/admin/analytics"

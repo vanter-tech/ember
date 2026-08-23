@@ -8,6 +8,9 @@ export type CategoryResponse = components['schemas']['CategoryResponse']
 export type CategoryRequest = components['schemas']['CategoryRequest']
 export type MenuItemResponse = components['schemas']['MenuItemResponse']
 export type MenuItemRequest = components['schemas']['MenuItemRequest']
+export type ModifierGroupResponse = components['schemas']['ModifierGroupResponse']
+export type ModifierGroupRequest = components['schemas']['ModifierGroupRequest']
+export type ModifierOptionRequest = components['schemas']['ModifierOptionRequest']
 export type SettingsResponse = components['schemas']['SettingsPayload']
 export type DashboardResponse = components['schemas']['TableStatusResponse']
 export type CreateSession = components['schemas']['SessionCreatedResponse']
@@ -267,6 +270,40 @@ export const menuItemService = {
   },
   delete: async (id: number): Promise<void> => {
     await api.delete<void>(`/catalog/items/${id}`)
+  },
+}
+
+export const modifierGroupService = {
+  getAll: async (): Promise<ModifierGroupResponse[]> => {
+    const { data } = await api.get<ModifierGroupResponse[]>('/catalog/modifier-groups')
+    return data
+  },
+  create: async (details: ModifierGroupRequest): Promise<ModifierGroupResponse> => {
+    const { data } = await api.post<ModifierGroupResponse>('/catalog/modifier-groups', details)
+    return data
+  },
+  update: async (id: number, details: ModifierGroupRequest): Promise<ModifierGroupResponse> => {
+    const { data } = await api.patch<ModifierGroupResponse>(`/catalog/modifier-groups/${id}`, details)
+    return data
+  },
+  setActive: async (id: number, active: boolean): Promise<ModifierGroupResponse> => {
+    const { data } = await api.patch<ModifierGroupResponse>(`/catalog/modifier-groups/${id}/active`, active)
+    return data
+  },
+  addOption: async (id: number, details: ModifierOptionRequest): Promise<ModifierGroupResponse> => {
+    const { data } = await api.post<ModifierGroupResponse>(`/catalog/modifier-groups/${id}/options`, details)
+    return data
+  },
+  updateOption: async (id: number, optionId: number, details: ModifierOptionRequest): Promise<ModifierGroupResponse> => {
+    const { data } = await api.patch<ModifierGroupResponse>(`/catalog/modifier-groups/${id}/options/${optionId}`, details)
+    return data
+  },
+  deactivateOption: async (id: number, optionId: number): Promise<ModifierGroupResponse> => {
+    const { data } = await api.delete<ModifierGroupResponse>(`/catalog/modifier-groups/${id}/options/${optionId}`)
+    return data
+  },
+  assignToMenuItem: async (menuItemId: number, assignments: { groupId: number; displayOrder: number }[]): Promise<void> => {
+    await api.patch(`/catalog/items/${menuItemId}/modifier-groups`, assignments)
   },
 }
 

@@ -5,6 +5,7 @@ import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'react-hot-toast'
+import { useState, useEffect } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -22,14 +23,26 @@ import {
 
 import { useUIStore } from '@/store/uiStore'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { menuItemService } from '@/lib/api'
+import { menuItemService, modifierGroupService } from '@/lib/api'
 import { Switch } from '@/components/ui/switch'
 import { useTranslation } from '@/lib/i18n'
+import { ModifierGroupAssignmentField, type ModifierGroupAssignment } from './ModifierGroupAssignmentField'
 
 export const EditMenuModal = () => {
   const { activeModal, modalPayload, closeModal } = useUIStore()
   const queryClient = useQueryClient()
   const { t } = useTranslation('admin')
+  const [modifierGroups, setModifierGroups] = useState<ModifierGroupAssignment[]>([])
+
+  useEffect(() => {
+    setModifierGroups(
+      (modalPayload?.modifierGroups ?? []).map((g: { id: number }, index: number) => ({
+        groupId: g.id,
+        displayOrder: index,
+      }))
+    )
+  }, [modalPayload])
+
   type menuItemsFormInputs = z.infer<typeof menuItemScheme>
 
   const menuItemScheme = z.object({
@@ -69,7 +82,8 @@ export const EditMenuModal = () => {
     mutationFn: ({ id, formData }: { id: number; formData: FormData }) => {
       return menuItemService.update(id, formData)
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      await modifierGroupService.assignToMenuItem(modalPayload.id, modifierGroups)
       queryClient.invalidateQueries({ queryKey: ['menuItems'] })
       toast.success(t('menuItemUpdatedToast'))
       form.reset()
@@ -205,6 +219,8 @@ export const EditMenuModal = () => {
                 </FormItem>
               )}
             />
+
+            <ModifierGroupAssignmentField value={modifierGroups} onChange={setModifierGroups} />
 
             <DialogFooter className="sm:col-span-2">
               <Button
