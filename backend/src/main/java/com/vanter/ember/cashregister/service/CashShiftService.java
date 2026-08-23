@@ -20,6 +20,8 @@ import com.vanter.ember.cashregister.repository.CashShiftRepository;
 import com.vanter.ember.config.ResourceNotFoundException;
 import com.vanter.ember.identity.model.User;
 import com.vanter.ember.identity.repository.UserRepository;
+import com.vanter.ember.session.model.SessionStatus;
+import com.vanter.ember.session.repository.SessionRepository;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -49,6 +51,7 @@ public class CashShiftService {
     private final CashMovementRepository cashMovementRepository;
     private final PaymentRepository paymentRepository;
     private final UserRepository userRepository;
+    private final SessionRepository sessionRepository;
     private final ApplicationEventPublisher eventPublisher;
     private final PaymentService paymentService;
 
@@ -105,6 +108,12 @@ public class CashShiftService {
                 .orElseThrow(() -> new ResourceNotFoundException("Cash shift not found: " + shiftId));
         if (shift.getStatus() != CashShiftStatus.OPEN) {
             throw new IllegalStateException("Cash shift is not open: " + shiftId);
+        }
+
+        long activeTables = sessionRepository.countByTenantIdAndStatus(shift.getTenantId(), SessionStatus.OPEN);
+        if (activeTables > 0) {
+            throw new IllegalStateException(
+                    "Cannot close cash shift: " + activeTables + " table(s) still have an open session");
         }
 
         BigDecimal cashIn = cashMovementRepository.sumCashIn(shiftId);
