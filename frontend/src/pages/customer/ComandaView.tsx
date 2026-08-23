@@ -211,9 +211,20 @@ export const ComandaView = () => {
                       </div>
 
                       {item.modifiers && item.modifiers.length > 0 && (
-                        <span className="text-xs text-gray-500">
-                          {item.modifiers.map((m) => m.optionName).join(', ')}
-                        </span>
+                        <div className="w-full rounded-md bg-[#8c1717] px-3 py-2 flex flex-col gap-1">
+                          {item.modifiers.map((modifier, modifierIndex) => (
+                            <div
+                              key={modifierIndex}
+                              className="flex justify-between text-xs text-white"
+                            >
+                              <span>{modifier.optionName}</span>
+
+                              {!!modifier.priceDelta && modifier.priceDelta > 0 && (
+                                <span>+${modifier.priceDelta.toFixed(2)}</span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
                       )}
 
                       <div className="flex justify-between">
@@ -289,9 +300,20 @@ export const ComandaView = () => {
                           <span>${item.price?.toFixed(2)}</span>
                         </div>
                         {item.modifiers && item.modifiers.length > 0 && (
-                          <span className="text-xs text-gray-400">
-                            {item.modifiers.map((m) => m.optionName).join(', ')}
-                          </span>
+                          <div className="w-full rounded-md bg-[#8c1717] px-3 py-2 flex flex-col gap-1">
+                            {item.modifiers.map((modifier, modifierIndex) => (
+                              <div
+                                key={modifierIndex}
+                                className="flex justify-between text-xs text-white"
+                              >
+                                <span>{modifier.optionName}</span>
+
+                                {!!modifier.priceDelta && modifier.priceDelta > 0 && (
+                                  <span>+${modifier.priceDelta.toFixed(2)}</span>
+                                )}
+                              </div>
+                            ))}
+                          </div>
                         )}
                       </div>
                     )
