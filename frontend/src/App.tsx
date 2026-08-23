@@ -52,6 +52,7 @@ export default function App() {
     <QueryClientProvider client={queryClient}>
     <BrowserRouter>
       <Toaster
+        position="top-right"
         toastOptions={{
           duration: 4000,
           style: {
@@ -65,9 +66,11 @@ export default function App() {
           },
           success: {
             iconTheme: { primary: '#16a34a', secondary: 'var(--card)' },
+            style: { borderRight: '4px solid #16a34a' },
           },
           error: {
             iconTheme: { primary: 'var(--destructive)', secondary: 'var(--card)' },
+            style: { borderRight: '4px solid var(--destructive)' },
           },
         }}
       />
