@@ -1517,12 +1517,18 @@ export interface components {
             participantName?: string;
             /** @enum {string} */
             status?: "DRAFT" | "PENDING" | "PREPARING" | "READY" | "DELIVERED";
+            modifiers?: components["schemas"]["SelectedModifier"][];
             /** Format: date-time */
             addedAt?: string;
         };
         Participant: {
             userId?: string;
             name?: string;
+        };
+        SelectedModifier: {
+            groupName?: string;
+            optionName?: string;
+            priceDelta?: number;
         };
         Session: {
             id?: string;
@@ -1555,6 +1561,7 @@ export interface components {
         AddItemRequest: {
             /** Format: int64 */
             menuItemId: number;
+            selectedOptionIds?: number[];
         };
         JoinSessionCodeRequest: {
             joinCode: string;
@@ -1967,6 +1974,7 @@ export interface components {
             participantId?: string;
             /** @enum {string} */
             status?: "DRAFT" | "PENDING" | "PREPARING" | "READY" | "DELIVERED";
+            modifiers?: components["schemas"]["SelectedModifier"][];
             /** Format: date-time */
             addedAt?: string;
         };
@@ -2023,6 +2031,8 @@ export interface components {
             totalPages?: number;
             /** Format: int64 */
             totalElements?: number;
+            first?: boolean;
+            last?: boolean;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["PrintJobResponse"][];
@@ -2032,17 +2042,15 @@ export interface components {
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
-            first?: boolean;
-            last?: boolean;
             empty?: boolean;
         };
         PageableObject: {
             /** Format: int64 */
             offset?: number;
             sort?: components["schemas"]["SortObject"];
-            paged?: boolean;
             /** Format: int32 */
             pageNumber?: number;
+            paged?: boolean;
             /** Format: int32 */
             pageSize?: number;
             unpaged?: boolean;
@@ -2070,6 +2078,8 @@ export interface components {
             totalPages?: number;
             /** Format: int64 */
             totalElements?: number;
+            first?: boolean;
+            last?: boolean;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["PlatformRestaurantSummaryResponse"][];
@@ -2079,8 +2089,6 @@ export interface components {
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
-            first?: boolean;
-            last?: boolean;
             empty?: boolean;
         };
         PlatformRestaurantAdminResponse: {
@@ -2106,6 +2114,8 @@ export interface components {
             totalPages?: number;
             /** Format: int64 */
             totalElements?: number;
+            first?: boolean;
+            last?: boolean;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["PlatformAuditLogResponse"][];
@@ -2115,8 +2125,6 @@ export interface components {
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
-            first?: boolean;
-            last?: boolean;
             empty?: boolean;
         };
         PlatformAuditLogResponse: {
@@ -2176,6 +2184,8 @@ export interface components {
             totalPages?: number;
             /** Format: int64 */
             totalElements?: number;
+            first?: boolean;
+            last?: boolean;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["KitchenOrder"][];
@@ -2185,8 +2195,6 @@ export interface components {
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
-            first?: boolean;
-            last?: boolean;
             empty?: boolean;
         };
         KitchenDisplayEntry: {
@@ -2215,6 +2223,8 @@ export interface components {
             totalPages?: number;
             /** Format: int64 */
             totalElements?: number;
+            first?: boolean;
+            last?: boolean;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["MenuItemResponse"][];
@@ -2224,8 +2234,6 @@ export interface components {
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
-            first?: boolean;
-            last?: boolean;
             empty?: boolean;
         };
         PageCategoryResponse: {
@@ -2233,6 +2241,8 @@ export interface components {
             totalPages?: number;
             /** Format: int64 */
             totalElements?: number;
+            first?: boolean;
+            last?: boolean;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["CategoryResponse"][];
@@ -2242,8 +2252,6 @@ export interface components {
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
-            first?: boolean;
-            last?: boolean;
             empty?: boolean;
         };
         PageCashShiftResponse: {
@@ -2251,6 +2259,8 @@ export interface components {
             totalPages?: number;
             /** Format: int64 */
             totalElements?: number;
+            first?: boolean;
+            last?: boolean;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["CashShiftResponse"][];
@@ -2260,8 +2270,6 @@ export interface components {
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
-            first?: boolean;
-            last?: boolean;
             empty?: boolean;
         };
         CashShiftDetailResponse: {

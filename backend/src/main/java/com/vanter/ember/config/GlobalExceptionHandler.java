@@ -45,6 +45,12 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return problem(HttpStatus.CONFLICT, ex.getMessage(), request.getRequestURI());
     }
 
+    @ExceptionHandler(com.vanter.ember.session.exception.InvalidModifierSelectionException.class)
+    public ProblemDetail handleInvalidModifierSelection(
+            com.vanter.ember.session.exception.InvalidModifierSelectionException ex, HttpServletRequest request) {
+        return problem(HttpStatus.BAD_REQUEST, ex.getMessage(), request.getRequestURI());
+    }
+
     @ExceptionHandler(IllegalArgumentException.class)
     public ProblemDetail handleIllegalArgument(IllegalArgumentException ex, HttpServletRequest request) {
         return problem(HttpStatus.CONFLICT, ex.getMessage(), request.getRequestURI());

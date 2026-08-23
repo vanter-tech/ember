@@ -277,12 +277,12 @@ class SessionControllerTest {
     @Test
     @WithMockUser(username = "customer@test.com", roles = "CUSTOMER")
     void addItem_returnsUpdatedSession() throws Exception {
-        when(sessionService.addItem("sess-1", "customer@test.com", 10L))
+        when(sessionService.addItem("sess-1", "customer@test.com", 10L, List.of()))
                 .thenReturn(sampleSession());
 
         mockMvc.perform(post("/sessions/sess-1/items")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new AddItemRequest(10L))))
+                        .content(objectMapper.writeValueAsString(new AddItemRequest(10L, null))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value("sess-1"));
     }
@@ -292,7 +292,7 @@ class SessionControllerTest {
     void addItem_forbiddenForWaiter() throws Exception {
         mockMvc.perform(post("/sessions/sess-1/items")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new AddItemRequest(10L))))
+                        .content(objectMapper.writeValueAsString(new AddItemRequest(10L, null))))
                 .andExpect(status().isForbidden());
     }
 
@@ -300,7 +300,7 @@ class SessionControllerTest {
     void addItem_unauthenticatedReturns401() throws Exception {
         mockMvc.perform(post("/sessions/sess-1/items")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new AddItemRequest(10L))))
+                        .content(objectMapper.writeValueAsString(new AddItemRequest(10L, null))))
                 .andExpect(status().isUnauthorized());
     }
 

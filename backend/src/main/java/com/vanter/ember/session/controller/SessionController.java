@@ -137,7 +137,7 @@ public class SessionController {
     public Session addItem(@PathVariable String id,
                            @Valid @RequestBody AddItemRequest request,
                            Authentication authentication) {
-        return sessionService.addItem(id, authentication.getName(), request.menuItemId());
+        return sessionService.addItem(id, authentication.getName(), request.menuItemId(), request.selectedOptionIds());
     }
 
     @Operation(summary = "Send item to KITCHEN")
