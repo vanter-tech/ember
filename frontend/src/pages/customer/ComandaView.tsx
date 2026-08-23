@@ -210,6 +210,12 @@ export const ComandaView = () => {
                         </span>
                       </div>
 
+                      {item.modifiers && item.modifiers.length > 0 && (
+                        <span className="text-xs text-gray-500">
+                          {item.modifiers.map((m) => m.optionName).join(', ')}
+                        </span>
+                      )}
+
                       <div className="flex justify-between">
                         <div className='className="  flex items-center gap-3 pb-2'>
                           <Button
@@ -274,12 +280,19 @@ export const ComandaView = () => {
                     (item: (typeof items)[0] & { cantidad: number }) => (
                       <div
                         key={item.id}
-                        className="flex justify-between text-sm text-gray-600"
+                        className="flex flex-col gap-0.5 text-sm text-gray-600"
                       >
-                        <span>
-                          {item.cantidad}x {item.name}
-                        </span>
-                        <span>${item.price?.toFixed(2)}</span>
+                        <div className="flex justify-between">
+                          <span>
+                            {item.cantidad}x {item.name}
+                          </span>
+                          <span>${item.price?.toFixed(2)}</span>
+                        </div>
+                        {item.modifiers && item.modifiers.length > 0 && (
+                          <span className="text-xs text-gray-400">
+                            {item.modifiers.map((m) => m.optionName).join(', ')}
+                          </span>
+                        )}
                       </div>
                     )
                   )}
