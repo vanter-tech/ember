@@ -36,6 +36,7 @@ class MenuItemServiceTest {
     @Mock CategoryRepository categoryRepository;
     @Mock ImageUploadService imageUploadService;
     @Mock MinioProperties minioProperties;
+    @Mock ModifierGroupService modifierGroupService;
     @InjectMocks MenuItemService menuItemService;
 
     private MenuItemRequest burgerRequest() {
@@ -59,6 +60,7 @@ class MenuItemServiceTest {
             item.setId(1L);
             return item;
         });
+        when(modifierGroupService.findActiveGroupsForMenuItem(any())).thenReturn(List.of());
 
         MenuItemResponse result = menuItemService.create(burgerRequest(), null);
 
@@ -77,6 +79,7 @@ class MenuItemServiceTest {
         when(imageUploadService.uploadImage(any(), eq("ember-media")))
                 .thenReturn("http://localhost:9000/ember-media/uuid.jpg");
         when(menuItemRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(modifierGroupService.findActiveGroupsForMenuItem(any())).thenReturn(List.of());
 
         MenuItemResponse result = menuItemService.create(burgerRequest(), image);
 
@@ -96,6 +99,7 @@ class MenuItemServiceTest {
         PageRequest pageable = PageRequest.of(0, 20);
         when(menuItemRepository.findAll(pageable)).thenReturn(
                 new PageImpl<>(List.of(MenuItem.builder().id(1L).name("Burger").build())));
+        when(modifierGroupService.findActiveGroupsForMenuItem(any())).thenReturn(List.of());
 
         assertThat(menuItemService.findAll(null, pageable).getContent()).hasSize(1);
     }
@@ -105,6 +109,7 @@ class MenuItemServiceTest {
         PageRequest pageable = PageRequest.of(0, 20);
         when(menuItemRepository.findByCategoryId(1L, pageable)).thenReturn(
                 new PageImpl<>(List.of(MenuItem.builder().id(1L).name("Burger").build())));
+        when(modifierGroupService.findActiveGroupsForMenuItem(any())).thenReturn(List.of());
 
         assertThat(menuItemService.findAll(1L, pageable).getContent()).hasSize(1);
         verify(menuItemRepository, never()).findAll(any(PageRequest.class));
@@ -114,6 +119,7 @@ class MenuItemServiceTest {
     void findById_returnsItem() {
         when(menuItemRepository.findById(1L)).thenReturn(
                 Optional.of(MenuItem.builder().id(1L).name("Burger").build()));
+        when(modifierGroupService.findActiveGroupsForMenuItem(any())).thenReturn(List.of());
 
         assertThat(menuItemService.findById(1L).getName()).isEqualTo("Burger");
     }
@@ -133,6 +139,7 @@ class MenuItemServiceTest {
         when(menuItemRepository.findById(1L)).thenReturn(Optional.of(existing));
         when(categoryRepository.findById(1L)).thenReturn(Optional.of(burgersCategory()));
         when(menuItemRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(modifierGroupService.findActiveGroupsForMenuItem(any())).thenReturn(List.of());
 
         MenuItemResponse result = menuItemService.update(1L, burgerRequest());
 
@@ -154,6 +161,7 @@ class MenuItemServiceTest {
         when(imageUploadService.uploadImage(any(), eq("ember-media")))
                 .thenReturn("http://localhost:9000/ember-media/new.jpg");
         when(menuItemRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(modifierGroupService.findActiveGroupsForMenuItem(any())).thenReturn(List.of());
         MenuItemRequest req = burgerRequest();
         req.setImageUrl(newImage);
         MenuItemResponse result = menuItemService.update(1L, req);
@@ -167,6 +175,7 @@ class MenuItemServiceTest {
         MenuItem item = MenuItem.builder().id(1L).name("Burger").available(true).build();
         when(menuItemRepository.findById(1L)).thenReturn(Optional.of(item));
         when(menuItemRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(modifierGroupService.findActiveGroupsForMenuItem(any())).thenReturn(List.of());
 
         assertThat(menuItemService.toggleAvailability(1L).isAvailable()).isFalse();
     }
