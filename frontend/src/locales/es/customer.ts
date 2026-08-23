@@ -93,4 +93,10 @@ export const customer = {
   genericErrorToast: 'Ocurrió un error.',
   itemAddedToast: '¡Producto agregado exitosamente!',
   itemAddErrorToast: 'No se pudo agregar el producto. Intenta de nuevo.',
+
+  // SelectModifiersModal
+  selectModifiersDialogTitle: 'Personaliza tu pedido',
+  addToCartButton: 'Agregar (${{price}})',
+  requiredSelectionHint: 'Selecciona una opción',
+  limitedSelectionHint: 'Selecciona entre {{min}} y {{max}}',
 }

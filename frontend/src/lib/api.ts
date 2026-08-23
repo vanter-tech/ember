@@ -375,10 +375,10 @@ export const SessionTableService = {
     return data
   },
 
-  addItem: async (sessionId: string, itemId: number): Promise<orderItemDTO> => {
+  addItem: async (sessionId: string, itemId: number, selectedOptionIds: number[] = []): Promise<orderItemDTO> => {
     const { data } = await api.post<orderItemDTO>(
       `/sessions/${sessionId}/items`,
-      { menuItemId: itemId }
+      { menuItemId: itemId, selectedOptionIds }
     )
     return data
   },

@@ -95,4 +95,10 @@ export const customer = {
   genericErrorToast: 'An error occurred.',
   itemAddedToast: 'Item added successfully!',
   itemAddErrorToast: 'Failed to add item. Please try again.',
+
+  // SelectModifiersModal
+  selectModifiersDialogTitle: 'Customize your order',
+  addToCartButton: 'Add (${{price}})',
+  requiredSelectionHint: 'Select one option',
+  limitedSelectionHint: 'Select between {{min}} and {{max}}',
 } satisfies typeof esCustomer
