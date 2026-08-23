@@ -142,6 +142,21 @@ class JwtChannelInterceptorTest {
     }
 
     @Test
+    void connect_printAgentEndpoint_skipsTenantValidation() {
+        // The client inbound channel is shared with the print-agent-only /ws/print-agent
+        // endpoint (Spring merges every WebSocketMessageBrokerConfigurer's interceptors onto one
+        // channel) — a session tagged as print-agent must never be run through tenant-user JWT
+        // validation, even with no Authorization header at all.
+        Map<String, Object> sessionAttributes = new HashMap<>();
+        sessionAttributes.put(WebSocketSessionAttributes.ENDPOINT_ATTRIBUTE, WebSocketSessionAttributes.PRINT_AGENT_ENDPOINT);
+
+        Message<?> result = interceptor.preSend(connectMessage(null, sessionAttributes), channel);
+
+        assertThat(result).isNotNull();
+        verify(jwtService, never()).isTokenValid(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
     void afterSendCompletion_clearsTenant() {
         TenantContextHolder.setTenantId(UUID.randomUUID());
 

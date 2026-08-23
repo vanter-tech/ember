@@ -35,6 +35,14 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
             return message;
         }
 
+        // The client inbound channel is shared with the print-agent-only /ws/print-agent
+        // endpoint (Spring merges every WebSocketMessageBrokerConfigurer's interceptors onto one
+        // channel) — a print-agent session authenticates via PrintAgentChannelInterceptor
+        // instead, never through this tenant-user path.
+        if (isPrintAgentEndpoint(accessor)) {
+            return message;
+        }
+
         if (!StompCommand.CONNECT.equals(accessor.getCommand())) {
             bindTenantFromSession(accessor);
             return message;
@@ -80,5 +88,12 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
         if (tenantId instanceof UUID uuid) {
             TenantContextHolder.setTenantId(uuid);
         }
+    }
+
+    private static boolean isPrintAgentEndpoint(StompHeaderAccessor accessor) {
+        Map<String, Object> sessionAttributes = accessor.getSessionAttributes();
+        return sessionAttributes != null
+                && WebSocketSessionAttributes.PRINT_AGENT_ENDPOINT.equals(
+                        sessionAttributes.get(WebSocketSessionAttributes.ENDPOINT_ATTRIBUTE));
     }
 }
