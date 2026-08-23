@@ -9,6 +9,7 @@ import com.vanter.ember.identity.model.dto.LoginRequest;
 import com.vanter.ember.identity.repository.UserRepository;
 import com.vanter.ember.restaurant.model.Restaurant;
 import com.vanter.ember.restaurant.repository.RestaurantRepository;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -28,6 +29,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.socket.WebSocketHttpHeaders;
 import org.springframework.web.socket.client.standard.StandardWebSocketClient;
 import org.springframework.web.socket.messaging.WebSocketStompClient;
+import org.springframework.web.socket.sockjs.client.SockJsClient;
+import org.springframework.web.socket.sockjs.client.Transport;
+import org.springframework.web.socket.sockjs.client.WebSocketTransport;
 
 /**
  * Reproduces the bug where a tenant-facing STOMP CONNECT (customer/waiter/kitchen/admin, via
@@ -114,6 +118,47 @@ class WebSocketEndpointIsolationTest {
 
         stompClient.connectAsync(
                 "ws://localhost:" + port + "/v1/ws/websocket",
+                new WebSocketHttpHeaders(), connectHeaders, handler);
+
+        StompSession session = connected.get(5, TimeUnit.SECONDS);
+        assertThat(session.isConnected()).isTrue();
+        session.disconnect();
+    }
+
+    @Test
+    void tenantClient_canConnectViaSockJs_matchingWhatTheBrowserActuallyDoes() throws Exception {
+        // frontend/src/store/websocket.ts connects with `new SockJS(wsUrl)`, not a raw WebSocket —
+        // this negotiates transports (info/websocket) instead of hitting /ws/websocket directly,
+        // so it is the more faithful reproduction of what a real browser session does.
+        String token = login();
+
+        List<Transport> transports = List.of(new WebSocketTransport(new StandardWebSocketClient()));
+        WebSocketStompClient stompClient = new WebSocketStompClient(new SockJsClient(transports));
+
+        StompHeaders connectHeaders = new StompHeaders();
+        connectHeaders.add("Authorization", "Bearer " + token);
+
+        CompletableFuture<StompSession> connected = new CompletableFuture<>();
+        StompSessionHandlerAdapter handler = new StompSessionHandlerAdapter() {
+            @Override
+            public void afterConnected(StompSession session, StompHeaders connectedHeaders) {
+                connected.complete(session);
+            }
+
+            @Override
+            public void handleException(StompSession session, StompCommand command,
+                    StompHeaders headers, byte[] payload, Throwable exception) {
+                connected.completeExceptionally(exception);
+            }
+
+            @Override
+            public void handleTransportError(StompSession session, Throwable exception) {
+                connected.completeExceptionally(exception);
+            }
+        };
+
+        stompClient.connectAsync(
+                "http://localhost:" + port + "/v1/ws",
                 new WebSocketHttpHeaders(), connectHeaders, handler);
 
         StompSession session = connected.get(5, TimeUnit.SECONDS);
