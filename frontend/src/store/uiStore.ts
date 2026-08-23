@@ -7,7 +7,8 @@ export type ModalType = 'CREATE_CATEGORY' | 'EDIT_CATEGORY' | 'DELETE_CATEGORY' 
                          'CHARGE_TABLE' | 'CREATE_STAFF' | 'EDIT_STAFF' | 'DELETE_STAFF' |
                          'VOID_BILL' | 'REFUND_PAYMENT' | 'CREATE_REWARD' | 'EDIT_REWARD' |
                          'CREATE_PRINT_AGENT' | 'ADD_PRINTER' |
-                         'CREATE_MODIFIER_GROUP' | 'EDIT_MODIFIER_GROUP' | null;
+                         'CREATE_MODIFIER_GROUP' | 'EDIT_MODIFIER_GROUP' |
+                         'CREATE_INVENTORY_ITEM' | 'EDIT_INVENTORY_ITEM' | null;
 
 export type SettingsType = 'BRANDING' | 'MENU' | 'BILLING' | 'PAYMENT_GATEWAY' | 'TICKET' | 'PRINTING' | 'HARDWARE'|
                             'SPACE'| 'HORARIO'| 'FIDELIZACION' | 'LOYALTY_REWARDS'| null;

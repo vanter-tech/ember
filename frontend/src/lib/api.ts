@@ -307,6 +307,41 @@ export const modifierGroupService = {
   },
 }
 
+export type InventoryItemResponse = components['schemas']['InventoryItemResponse']
+export type InventoryItemRequest = components['schemas']['InventoryItemRequest']
+export type InventoryItemUpdateRequest = components['schemas']['InventoryItemUpdateRequest']
+
+export const inventoryService = {
+  getAll: async (): Promise<InventoryItemResponse[]> => {
+    const { data } = await api.get<InventoryItemResponse[]>('/catalog/inventory')
+    return data
+  },
+  create: async (details: InventoryItemRequest): Promise<InventoryItemResponse> => {
+    const { data } = await api.post<InventoryItemResponse>('/catalog/inventory', details)
+    return data
+  },
+  update: async (id: number, details: InventoryItemUpdateRequest): Promise<InventoryItemResponse> => {
+    const { data } = await api.patch<InventoryItemResponse>(`/catalog/inventory/${id}`, details)
+    return data
+  },
+  restock: async (id: number, delta: number): Promise<InventoryItemResponse> => {
+    const { data } = await api.post<InventoryItemResponse>(`/catalog/inventory/${id}/restock`, { delta })
+    return data
+  },
+  remove: async (id: number): Promise<void> => {
+    await api.delete(`/catalog/inventory/${id}`)
+  },
+}
+
+const listAllMenuItems = async (): Promise<MenuItemResponse[]> => {
+  const { data } = await api.get<Page<MenuItemResponse>>('/catalog/items', { params: { size: 500 } })
+  return data.content
+}
+
+export const inventoryMenuItemService = {
+  listAll: listAllMenuItems,
+}
+
 export const SettingsService = {
   getSettings: async (): Promise<SettingsResponse> => {
     const { data } = await api.get<SettingsResponse>('/settings')

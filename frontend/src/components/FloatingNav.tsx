@@ -14,6 +14,7 @@ import {
   Banknote,
   BookOpen,
   SlidersHorizontal,
+  Warehouse,
 } from 'lucide-react'
 import { useSessionStore } from '@/store/sessionStore'
 import { useTranslation } from '@/lib/i18n'
@@ -96,6 +97,13 @@ export const FloatingNav = () => {
             title={t('navModifiers')}
           >
             <SlidersHorizontal strokeWidth={1.5} size={24} />
+          </Link>
+          <Link
+            to="/admin/inventory"
+            className={navItemClass('/admin/inventory')}
+            title={t('navInventory')}
+          >
+            <Warehouse strokeWidth={1.5} size={24} />
           </Link>
           <Link
             to="/admin/analytics"
