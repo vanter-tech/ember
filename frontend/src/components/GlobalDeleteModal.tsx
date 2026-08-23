@@ -32,20 +32,20 @@ export const GlobalDeleteModal = () => {
     onSuccess: () => {
       if (activeModal === 'DELETE_CATEGORY') {
         queryClient.invalidateQueries({ queryKey: ['categories'] })
-        toast.success('Categoría eliminada.')
+        toast.success(t('categoryDeletedToast'))
       }
       if (activeModal === 'DELETE_ITEMS') {
         queryClient.invalidateQueries({ queryKey: ['sessionDetails'] })
-        toast.success('Platillo eliminado.')
+        toast.success(t('menuItemDeletedToast'))
       }
       if (activeModal === 'DELETE_STAFF') {
         queryClient.invalidateQueries({ queryKey: ['staff'] })
-        toast.success('Empleado desactivado.')
+        toast.success(t('staffDeactivatedToast'))
       }
       closeModal()
     },
     onError: () => {
-      toast.error('Error al eliminar el registro.')
+      toast.error(t('deleteErrorToast'))
     }
   })
 

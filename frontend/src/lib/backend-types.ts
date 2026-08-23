@@ -276,6 +276,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/catalog/modifier-groups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List all modifier groups, including inactive */
+        get: operations["getAll_1"];
+        put?: never;
+        /** Create a modifier group with its options (ADMIN) */
+        post: operations["create_3"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/catalog/modifier-groups/{id}/options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add an option to a modifier group (ADMIN) */
+        post: operations["addOption"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/catalog/items": {
         parameters: {
             query?: never;
@@ -284,10 +319,45 @@ export interface paths {
             cookie?: never;
         };
         /** List all menu items by category */
-        get: operations["getAll_1"];
+        get: operations["getAll_2"];
         put?: never;
         /** Create a menu item (ADMIN) */
-        post: operations["create_3"];
+        post: operations["create_4"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/catalog/inventory": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List all tracked inventory items */
+        get: operations["getAll_3"];
+        put?: never;
+        /** Start tracking inventory for a menu item */
+        post: operations["create_5"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/catalog/inventory/{id}/restock": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Restock (or correct) an item's current stock */
+        post: operations["restock"];
         delete?: never;
         options?: never;
         head?: never;
@@ -302,10 +372,10 @@ export interface paths {
             cookie?: never;
         };
         /** List all categories */
-        get: operations["getAll_2"];
+        get: operations["getAll_4"];
         put?: never;
         /** Create a category (ADMIN) */
-        post: operations["create_4"];
+        post: operations["create_6"];
         delete?: never;
         options?: never;
         head?: never;
@@ -668,6 +738,75 @@ export interface paths {
         patch: operations["updateItemStatus"];
         trace?: never;
     };
+    "/catalog/modifier-groups/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update a modifier group (ADMIN) */
+        patch: operations["update_3"];
+        trace?: never;
+    };
+    "/catalog/modifier-groups/{id}/options/{optionId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Deactivate a modifier option, never hard-deleted (ADMIN) */
+        delete: operations["deactivateOption"];
+        options?: never;
+        head?: never;
+        /** Update a modifier option (ADMIN) */
+        patch: operations["updateOption"];
+        trace?: never;
+    };
+    "/catalog/modifier-groups/{id}/active": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Activate/deactivate a modifier group (ADMIN) */
+        patch: operations["setActive"];
+        trace?: never;
+    };
+    "/catalog/items/{id}/modifier-groups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Replace the modifier groups assigned to a menu item (ADMIN) */
+        patch: operations["assignModifierGroups"];
+        trace?: never;
+    };
     "/catalog/items/{id}/availability": {
         parameters: {
             query?: never;
@@ -683,6 +822,24 @@ export interface paths {
         head?: never;
         /** Toggle availability (ADMIN) */
         patch: operations["toggleAvailability"];
+        trace?: never;
+    };
+    "/catalog/inventory/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Stop tracking inventory for a menu item */
+        delete: operations["delete_2"];
+        options?: never;
+        head?: never;
+        /** Edit unit/low-stock threshold */
+        patch: operations["update_4"];
         trace?: never;
     };
     "/admin/users/{userId}/role": {
@@ -820,6 +977,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/printing/agents/me/printers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["myPrinters"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/platform/restaurants/{id}": {
         parameters: {
             query?: never;
@@ -845,7 +1018,7 @@ export interface paths {
             cookie?: never;
         };
         /** List operator audit-log entries, paginated and optionally filtered by restaurantId */
-        get: operations["getAll_3"];
+        get: operations["getAll_5"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1341,6 +1514,27 @@ export interface components {
             available?: boolean;
             imageUrl?: string;
             category?: components["schemas"]["CategoryResponse"];
+            modifierGroups?: components["schemas"]["ModifierGroupResponse"][];
+        };
+        ModifierGroupResponse: {
+            /** Format: int64 */
+            id?: number;
+            name?: string;
+            /** @enum {string} */
+            selectionType?: "SINGLE_REQUIRED" | "MULTI_OPTIONAL" | "MULTI_LIMITED";
+            /** Format: int32 */
+            minSelections?: number;
+            /** Format: int32 */
+            maxSelections?: number;
+            active?: boolean;
+            options?: components["schemas"]["ModifierOptionResponse"][];
+        };
+        ModifierOptionResponse: {
+            /** Format: int64 */
+            id?: number;
+            name?: string;
+            priceDelta?: number;
+            active?: boolean;
         };
         CategoryRequest: {
             name: string;
@@ -1376,12 +1570,18 @@ export interface components {
             participantName?: string;
             /** @enum {string} */
             status?: "DRAFT" | "PENDING" | "PREPARING" | "READY" | "DELIVERED";
+            modifiers?: components["schemas"]["SelectedModifier"][];
             /** Format: date-time */
             addedAt?: string;
         };
         Participant: {
             userId?: string;
             name?: string;
+        };
+        SelectedModifier: {
+            groupName?: string;
+            optionName?: string;
+            priceDelta?: number;
         };
         Session: {
             id?: string;
@@ -1414,6 +1614,7 @@ export interface components {
         AddItemRequest: {
             /** Format: int64 */
             menuItemId: number;
+            selectedOptionIds?: number[];
         };
         JoinSessionCodeRequest: {
             joinCode: string;
@@ -1504,6 +1705,43 @@ export interface components {
             active?: boolean;
             /** Format: date-time */
             createdAt?: string;
+        };
+        ModifierGroupRequest: {
+            name: string;
+            /** @enum {string} */
+            selectionType: "SINGLE_REQUIRED" | "MULTI_OPTIONAL" | "MULTI_LIMITED";
+            /** Format: int32 */
+            minSelections?: number;
+            /** Format: int32 */
+            maxSelections?: number;
+            options: components["schemas"]["ModifierOptionRequest"][];
+        };
+        ModifierOptionRequest: {
+            name: string;
+            priceDelta: number;
+        };
+        InventoryItemRequest: {
+            /** Format: int64 */
+            menuItemId: number;
+            unit: string;
+            currentStock: number;
+            lowStockThreshold: number;
+        };
+        InventoryItemResponse: {
+            /** Format: int64 */
+            id?: number;
+            /** Format: int64 */
+            menuItemId?: number;
+            menuItemName?: string;
+            menuItemAvailable?: boolean;
+            unit?: string;
+            currentStock?: number;
+            lowStockThreshold?: number;
+            /** Format: date-time */
+            updatedAt?: string;
+        };
+        RestockRequest: {
+            delta: number;
         };
         RecordMovementRequest: {
             /** @enum {string} */
@@ -1735,6 +1973,7 @@ export interface components {
             status?: "DRAFT" | "PENDING" | "PREPARING" | "READY" | "DELIVERED";
             /** Format: date-time */
             updatedAt?: string;
+            modifiers?: string[];
         };
         KitchenOrder: {
             id?: string;
@@ -1747,6 +1986,16 @@ export interface components {
             createdAt?: string;
             items?: components["schemas"]["KitchenItem"][];
             active?: boolean;
+        };
+        ModifierGroupAssignment: {
+            /** Format: int64 */
+            groupId: number;
+            /** Format: int32 */
+            displayOrder?: number;
+        };
+        InventoryItemUpdateRequest: {
+            unit: string;
+            lowStockThreshold: number;
         };
         UpdateUserRoleRequest: {
             /** @enum {string} */
@@ -1806,6 +2055,7 @@ export interface components {
             participantId?: string;
             /** @enum {string} */
             status?: "DRAFT" | "PENDING" | "PREPARING" | "READY" | "DELIVERED";
+            modifiers?: components["schemas"]["SelectedModifier"][];
             /** Format: date-time */
             addedAt?: string;
         };
@@ -1862,14 +2112,14 @@ export interface components {
             totalPages?: number;
             /** Format: int64 */
             totalElements?: number;
-            first?: boolean;
-            last?: boolean;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["PrintJobResponse"][];
             /** Format: int32 */
             number?: number;
             sort?: components["schemas"]["SortObject"];
+            first?: boolean;
+            last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
@@ -1879,11 +2129,11 @@ export interface components {
             /** Format: int64 */
             offset?: number;
             sort?: components["schemas"]["SortObject"];
+            /** Format: int32 */
+            pageSize?: number;
             paged?: boolean;
             /** Format: int32 */
             pageNumber?: number;
-            /** Format: int32 */
-            pageSize?: number;
             unpaged?: boolean;
         };
         PrintJobResponse: {
@@ -1909,14 +2159,14 @@ export interface components {
             totalPages?: number;
             /** Format: int64 */
             totalElements?: number;
-            first?: boolean;
-            last?: boolean;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["PlatformRestaurantSummaryResponse"][];
             /** Format: int32 */
             number?: number;
             sort?: components["schemas"]["SortObject"];
+            first?: boolean;
+            last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
@@ -1945,14 +2195,14 @@ export interface components {
             totalPages?: number;
             /** Format: int64 */
             totalElements?: number;
-            first?: boolean;
-            last?: boolean;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["PlatformAuditLogResponse"][];
             /** Format: int32 */
             number?: number;
             sort?: components["schemas"]["SortObject"];
+            first?: boolean;
+            last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
@@ -2015,14 +2265,14 @@ export interface components {
             totalPages?: number;
             /** Format: int64 */
             totalElements?: number;
-            first?: boolean;
-            last?: boolean;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["KitchenOrder"][];
             /** Format: int32 */
             number?: number;
             sort?: components["schemas"]["SortObject"];
+            first?: boolean;
+            last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
@@ -2054,14 +2304,14 @@ export interface components {
             totalPages?: number;
             /** Format: int64 */
             totalElements?: number;
-            first?: boolean;
-            last?: boolean;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["MenuItemResponse"][];
             /** Format: int32 */
             number?: number;
             sort?: components["schemas"]["SortObject"];
+            first?: boolean;
+            last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
@@ -2072,14 +2322,14 @@ export interface components {
             totalPages?: number;
             /** Format: int64 */
             totalElements?: number;
-            first?: boolean;
-            last?: boolean;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["CategoryResponse"][];
             /** Format: int32 */
             number?: number;
             sort?: components["schemas"]["SortObject"];
+            first?: boolean;
+            last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
@@ -2090,14 +2340,14 @@ export interface components {
             totalPages?: number;
             /** Format: int64 */
             totalElements?: number;
-            first?: boolean;
-            last?: boolean;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["CashShiftResponse"][];
             /** Format: int32 */
             number?: number;
             sort?: components["schemas"]["SortObject"];
+            first?: boolean;
+            last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
@@ -2826,6 +3076,76 @@ export interface operations {
     };
     getAll_1: {
         parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ModifierGroupResponse"][];
+                };
+            };
+        };
+    };
+    create_3: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ModifierGroupRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ModifierGroupResponse"];
+                };
+            };
+        };
+    };
+    addOption: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ModifierOptionRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ModifierGroupResponse"];
+                };
+            };
+        };
+    };
+    getAll_2: {
+        parameters: {
             query: {
                 id?: number;
                 pageable: components["schemas"]["Pageable"];
@@ -2847,7 +3167,7 @@ export interface operations {
             };
         };
     };
-    create_3: {
+    create_4: {
         parameters: {
             query?: never;
             header?: never;
@@ -2875,7 +3195,77 @@ export interface operations {
             };
         };
     };
-    getAll_2: {
+    getAll_3: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["InventoryItemResponse"][];
+                };
+            };
+        };
+    };
+    create_5: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InventoryItemRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["InventoryItemResponse"];
+                };
+            };
+        };
+    };
+    restock: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RestockRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["InventoryItemResponse"];
+                };
+            };
+        };
+    };
+    getAll_4: {
         parameters: {
             query: {
                 pageable: components["schemas"]["Pageable"];
@@ -2897,7 +3287,7 @@ export interface operations {
             };
         };
     };
-    create_4: {
+    create_6: {
         parameters: {
             query?: never;
             header?: never;
@@ -3486,6 +3876,134 @@ export interface operations {
             };
         };
     };
+    update_3: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ModifierGroupRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ModifierGroupResponse"];
+                };
+            };
+        };
+    };
+    deactivateOption: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+                optionId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ModifierGroupResponse"];
+                };
+            };
+        };
+    };
+    updateOption: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+                optionId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ModifierOptionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ModifierGroupResponse"];
+                };
+            };
+        };
+    };
+    setActive: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": boolean;
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ModifierGroupResponse"];
+                };
+            };
+        };
+    };
+    assignModifierGroups: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ModifierGroupAssignment"][];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MenuItemResponse"];
+                };
+            };
+        };
+    };
     toggleAvailability: {
         parameters: {
             query?: never;
@@ -3504,6 +4022,52 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["MenuItemResponse"];
+                };
+            };
+        };
+    };
+    delete_2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    update_4: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InventoryItemUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["InventoryItemResponse"];
                 };
             };
         };
@@ -3697,6 +4261,28 @@ export interface operations {
             };
         };
     };
+    myPrinters: {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PrinterConfigResponse"][];
+                };
+            };
+        };
+    };
     getById_2: {
         parameters: {
             query?: never;
@@ -3719,7 +4305,7 @@ export interface operations {
             };
         };
     };
-    getAll_3: {
+    getAll_5: {
         parameters: {
             query: {
                 restaurantId?: string;

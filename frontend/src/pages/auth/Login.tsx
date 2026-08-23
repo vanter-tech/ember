@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -26,18 +27,20 @@ import {
   FormMessage,
 } from '../../components/ui/form'
 
-const loginSchema = z.object({
-  email: z.string().email('Invalid email address').min(1, 'Email is required'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
-})
+const createLoginSchema = (t: ReturnType<typeof useTranslation<'auth'>>['t']) =>
+  z.object({
+    email: z.string().email(t('invalidEmail')).min(1, t('emailRequired')),
+    password: z.string().min(6, t('passwordTooShort')),
+  })
 
-type LoginFormInputs = z.infer<typeof loginSchema>
+type LoginFormInputs = z.infer<ReturnType<typeof createLoginSchema>>
 
 export const Login = () => {
   const navigate = useNavigate()
   const { setAuth } = useAuthStore()
   const { t: tAuth } = useTranslation('auth')
   const { t: tCommon } = useTranslation('common')
+  const loginSchema = useMemo(() => createLoginSchema(tAuth), [tAuth])
 
   const form = useForm<LoginFormInputs>({
     resolver: zodResolver(loginSchema),
@@ -51,7 +54,7 @@ export const Login = () => {
     try {
       const response = await authService.login(data)
       setAuth(response)
-      toast.success('Login successful!')
+      toast.success(tAuth('loginSuccessToast'))
       switch (response.role) {
         case 'ADMIN':
           navigate('/admin', { replace: true })
@@ -70,17 +73,17 @@ export const Login = () => {
       }
     } catch (error) {
       if (axios.isAxiosError(error) && error.response?.status === 401) {
-        toast.error('Unauthorized', {
+        toast.error(tAuth('unauthorizedToast'), {
           id: 'login-error',
           duration: 3000,
         })
       } else if (axios.isAxiosError(error) && error.response?.status === 429) {
-        toast.error('Too many login attempts. Please try again later.', {
+        toast.error(tAuth('tooManyLoginAttemptsToast'), {
           id: 'login-error',
           duration: 3000,
         })
       } else {
-        toast.error('Login failed', {
+        toast.error(tAuth('loginFailedToast'), {
           id: 'login-error',
           duration: 3000,
         })

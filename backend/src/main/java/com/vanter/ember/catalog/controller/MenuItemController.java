@@ -2,10 +2,12 @@ package com.vanter.ember.catalog.controller;
 
 import com.vanter.ember.catalog.model.dto.MenuItemRequest;
 import com.vanter.ember.catalog.model.dto.MenuItemResponse;
+import com.vanter.ember.catalog.model.dto.ModifierGroupAssignment;
 import com.vanter.ember.catalog.service.MenuItemService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -19,6 +21,7 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
@@ -78,5 +81,13 @@ public class MenuItemController {
     @PreAuthorize("hasRole('ADMIN')")
     public void delete(@PathVariable Long id) {
         menuItemService.delete(id);
+    }
+
+    @Operation(summary = "Replace the modifier groups assigned to a menu item (ADMIN)")
+    @PatchMapping("/{id}/modifier-groups")
+    @PreAuthorize("hasRole('ADMIN')")
+    public MenuItemResponse assignModifierGroups(
+            @PathVariable Long id, @RequestBody List<ModifierGroupAssignment> assignments) {
+        return menuItemService.assignModifierGroups(id, assignments);
     }
 }

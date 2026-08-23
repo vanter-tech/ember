@@ -11,6 +11,8 @@ import { Toaster } from 'react-hot-toast'
 import { AdminLayout } from './layouts/AdminLayout'
 import { Category } from './pages/admin/Category'
 import { ListMenuItem } from './pages/admin/ListMenuItem'
+import { ModifierGroups } from './pages/admin/ModifierGroups'
+import { Inventory } from './pages/admin/Inventory'
 import { Tables } from '@/pages/waiter/Tables'
 import { CashRegister as WaiterCashRegister } from '@/pages/waiter/cashRegister/CashRegister'
 import { WaiterLayout } from '@/layouts/WaiterLayout'
@@ -79,6 +81,8 @@ export default function App() {
           <Route path="/admin" element={<AdminLayout />}>
             <Route path="categories" element={<Category />} />
             <Route path="categories/:id/items" element={<ListMenuItem />} />
+            <Route path="modifier-groups" element={<ModifierGroups />} />
+            <Route path="inventory" element={<Inventory />} />
             <Route path="settings" element={<Settings />} />
             <Route path="analytics" element={<Analytics />} />
             <Route path="employees" element={<Staff />} />

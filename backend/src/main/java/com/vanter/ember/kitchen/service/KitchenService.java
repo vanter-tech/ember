@@ -87,6 +87,9 @@ public class KitchenService {
                     .participantName(item.getParticipantName())
                     .status(OrderItemStatus.PENDING)
                     .updatedAt(LocalDateTime.now())
+                    .modifiers(item.getModifiers().stream()
+                            .map(com.vanter.ember.session.model.SelectedModifier::getOptionName)
+                            .toList())
                     .build()
             );
         });

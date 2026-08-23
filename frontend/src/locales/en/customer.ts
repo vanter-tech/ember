@@ -84,4 +84,21 @@ export const customer = {
   mobileActionsViewParticipants: 'View participants',
   mobileActionsViewComanda: 'View order',
   mobileActionsAriaLabel: 'Table options',
+  billPaymentSentToast: 'Payment sent. Wait for the waiter to confirm.',
+  billPaymentErrorToast: 'Could not start the payment.',
+  itemDeletedToast: 'Dish removed',
+  itemDeleteErrorToast: 'Error removing the dish',
+  comandaSentToast: 'Order sent',
+  comandaSendErrorToast: 'Error sending the order',
+  joinSuccessToast: 'Joined successfully!',
+  joinCodeInvalidToast: 'Invalid code, try another one.',
+  genericErrorToast: 'An error occurred.',
+  itemAddedToast: 'Item added successfully!',
+  itemAddErrorToast: 'Failed to add item. Please try again.',
+
+  // SelectModifiersModal
+  selectModifiersDialogTitle: 'Customize your order',
+  addToCartButton: 'Add (${{price}})',
+  requiredSelectionHint: 'Select one option',
+  limitedSelectionHint: 'Select between {{min}} and {{max}}',
 } satisfies typeof esCustomer

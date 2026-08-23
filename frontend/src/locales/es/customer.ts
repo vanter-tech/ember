@@ -82,4 +82,21 @@ export const customer = {
   mobileActionsViewParticipants: 'Ver participantes',
   mobileActionsViewComanda: 'Ver comanda',
   mobileActionsAriaLabel: 'Opciones de mesa',
+  billPaymentSentToast: 'Pago enviado. Espera la confirmación del mesero.',
+  billPaymentErrorToast: 'No se pudo iniciar el pago.',
+  itemDeletedToast: 'Platillo eliminado',
+  itemDeleteErrorToast: 'Error al eliminar',
+  comandaSentToast: 'Comanda enviada',
+  comandaSendErrorToast: 'Error al enviar comanda',
+  joinSuccessToast: '¡Te uniste correctamente!',
+  joinCodeInvalidToast: 'Código no válido, intenta con otro.',
+  genericErrorToast: 'Ocurrió un error.',
+  itemAddedToast: '¡Producto agregado exitosamente!',
+  itemAddErrorToast: 'No se pudo agregar el producto. Intenta de nuevo.',
+
+  // SelectModifiersModal
+  selectModifiersDialogTitle: 'Personaliza tu pedido',
+  addToCartButton: 'Agregar (${{price}})',
+  requiredSelectionHint: 'Selecciona una opción',
+  limitedSelectionHint: 'Selecciona entre {{min}} y {{max}}',
 }

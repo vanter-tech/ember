@@ -189,7 +189,7 @@ class E2EOrderFlowTest {
         MvcResult addItemResult = mockMvc.perform(post("/sessions/" + sessionId + "/items")
                         .header("Authorization", bearer(customerToken))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new AddItemRequest(menuItemId))))
+                        .content(objectMapper.writeValueAsString(new AddItemRequest(menuItemId, null))))
                 .andExpect(status().isOk())
                 .andReturn();
         String orderItemId = objectMapper.readTree(

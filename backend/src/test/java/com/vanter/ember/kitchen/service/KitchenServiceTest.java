@@ -11,6 +11,7 @@ import com.vanter.ember.kitchen.repository.KitchenOrderRepository;
 import com.vanter.ember.session.event.KitchenItemsConfirmed;
 import com.vanter.ember.session.event.SessionClosed;
 import com.vanter.ember.session.model.OrderItem;
+import com.vanter.ember.session.model.SelectedModifier;
 import com.vanter.ember.session.model.SessionStatus;
 import com.vanter.ember.session.model.OrderItemStatus;
 import org.springframework.context.ApplicationEventPublisher;
@@ -125,6 +126,30 @@ class KitchenServiceTest {
         verify(kitchenOrderRepository).save(captor.capture());
         assertThat(captor.getValue().getId()).isEqualTo("ko-1");
         assertThat(captor.getValue().getItems()).hasSize(1);
+    }
+
+    @Test
+    void handleOrderItemAdded_copiesSelectedModifierOptionNames() {
+        OrderItem item = OrderItem.builder()
+                .id("order-item-9").itemId(1L).name("Hamburguesa").price(new BigDecimal("12.50"))
+                .participantId("p-1").participantName("Alice")
+                .status(OrderItemStatus.PENDING).addedAt(LocalDateTime.now())
+                .modifiers(List.of(
+                        SelectedModifier.builder().groupName("Término").optionName("Término medio")
+                                .priceDelta(BigDecimal.ZERO).build(),
+                        SelectedModifier.builder().groupName("Extras").optionName("Queso extra")
+                                .priceDelta(new BigDecimal("1.00")).build()))
+                .build();
+        KitchenItemsConfirmed event = new KitchenItemsConfirmed(TENANT_ID, "sess-9", 3, List.of(item));
+        when(kitchenOrderRepository.findByTenantIdAndSessionId(TENANT_ID, "sess-9")).thenReturn(Optional.empty());
+        when(kitchenOrderRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        kitchenService.handleOrderItemAdded(event);
+
+        ArgumentCaptor<KitchenOrder> captor = ArgumentCaptor.forClass(KitchenOrder.class);
+        verify(kitchenOrderRepository).save(captor.capture());
+        assertThat(captor.getValue().getItems().get(0).getModifiers())
+                .containsExactly("Término medio", "Queso extra");
     }
 
     @Test

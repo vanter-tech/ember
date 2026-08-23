@@ -20,5 +20,7 @@ public class OrderItem {
     private String participantId;
     private String participantName;
     private OrderItemStatus status;
+    @Builder.Default
+    private java.util.List<SelectedModifier> modifiers = new java.util.ArrayList<>();
     private LocalDateTime addedAt;
 }

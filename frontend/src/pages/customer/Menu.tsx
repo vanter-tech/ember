@@ -19,10 +19,13 @@ import { useSessionStore } from '@/store/sessionStore'
 import { ParticipantsPopUp } from '@/pages/customer/components/ParticipantsPopUp'
 import { ItemsFloatingIsland } from './components/ItemsFloatingIsland'
 import { MobileActionsIsland } from './components/MobileActionsIsland'
+import { SelectModifiersModal } from './components/SelectModifiersModal'
 import { useNavigate } from 'react-router-dom'
+import type { MenuItemResponse } from '@/lib/api'
 
 export const Menu = () => {
   const [activeCategory, setActiveCategory] = useState<Number | undefined>()
+  const [selectingItem, setSelectingItem] = useState<MenuItemResponse | null>(null)
   const { connect, isConnected, subscribeToSession, stompClient } =
     useWebsocketStore()
   const sessionId = useSessionStore((state) => state.id)
@@ -35,18 +38,21 @@ export const Menu = () => {
     mutationFn: async ({
       sessionId,
       itemId,
+      selectedOptionIds,
     }: {
       sessionId: string
       itemId: number
+      selectedOptionIds?: number[]
     }) => {
       if (!sessionId) throw new Error('No session ID available')
-      return SessionTableService.addItem(sessionId, itemId)
+      return SessionTableService.addItem(sessionId, itemId, selectedOptionIds)
     },
     onSuccess: () => {
-      toast.success('Item added successfully!')
+      toast.success(t('itemAddedToast'))
+      setSelectingItem(null)
     },
     onError: () => {
-      toast.error('Failed to add item. Please try again.')
+      toast.error(t('itemAddErrorToast'))
     },
   })
 
@@ -179,12 +185,13 @@ export const Menu = () => {
                 <CardContent className="flex flex-col items-end gap-2 p-0">
                   <Button
                     className="bg-[#8c1717] hover:bg-[#8c1717]/90 text-white p-7 rounded-full shadow-md"
-                    onClick={() =>
-                      mutation.mutate({
-                        sessionId: sessionId ?? '',
-                        itemId: item.id ?? 0,
-                      })
-                    }
+                    onClick={() => {
+                      if (item.modifierGroups && item.modifierGroups.length > 0) {
+                        setSelectingItem(item)
+                      } else {
+                        mutation.mutate({ sessionId: sessionId ?? '', itemId: item.id ?? 0 })
+                      }
+                    }}
                   >
                     <Plus className="w-5 h-5" />
                   </Button>
@@ -202,6 +209,17 @@ export const Menu = () => {
         <div className="fixed bottom-24 right-6 z-50 sm:hidden">
           <MobileActionsIsland />
         </div>
+        {selectingItem && (
+          <SelectModifiersModal
+            item={selectingItem}
+            open={!!selectingItem}
+            onOpenChange={(open) => !open && setSelectingItem(null)}
+            isPending={mutation.isPending}
+            onConfirm={(selectedOptionIds) =>
+              mutation.mutate({ sessionId: sessionId ?? '', itemId: selectingItem.id ?? 0, selectedOptionIds })
+            }
+          />
+        )}
       </div>
     </>
   )

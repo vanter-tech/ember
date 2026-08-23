@@ -3,12 +3,14 @@ package com.vanter.ember.catalog.service;
 import com.vanter.ember.catalog.model.MenuItem;
 import com.vanter.ember.catalog.model.dto.MenuItemRequest;
 import com.vanter.ember.catalog.model.dto.MenuItemResponse;
+import com.vanter.ember.catalog.model.dto.ModifierGroupAssignment;
 import com.vanter.ember.catalog.repository.CategoryRepository;
 import com.vanter.ember.catalog.repository.MenuItemRepository;
 import com.vanter.ember.config.MinioProperties;
 import com.vanter.ember.config.ResourceNotFoundException;
 
 import io.minio.messages.Item;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -24,6 +26,7 @@ public class MenuItemService {
     private final CategoryRepository categoryRepository;
     private final ImageUploadService imageUploadService;
     private final MinioProperties minioProperties;
+    private final ModifierGroupService modifierGroupService;
 
     public MenuItemResponse create(MenuItemRequest request, MultipartFile image) {
         var category = categoryRepository.findById(request.getCategoryId())
@@ -42,18 +45,20 @@ public class MenuItemService {
             item.setImageUrl(imageUploadService.uploadImage(image, minioProperties.getBucket()));
         }
 
-        return MenuItemResponse.from(menuItemRepository.save(item));
+        MenuItem saved = menuItemRepository.save(item);
+        return MenuItemResponse.from(saved, modifierGroupService.findActiveGroupsForMenuItem(saved.getId()));
     }
 
     public Page<MenuItemResponse> findAll(Long id, Pageable pageable) {
         Page<MenuItem> items = id != null
                 ? menuItemRepository.findByCategoryId(id, pageable)
                 : menuItemRepository.findAll(pageable);
-        return items.map(MenuItemResponse::from);
+        return items.map(item -> MenuItemResponse.from(item, modifierGroupService.findActiveGroupsForMenuItem(item.getId())));
     }
 
     public MenuItemResponse findById(Long id) {
-        return MenuItemResponse.from(findEntityById(id));
+        MenuItem item = findEntityById(id);
+        return MenuItemResponse.from(item, modifierGroupService.findActiveGroupsForMenuItem(item.getId()));
     }
 
     public MenuItemResponse update(Long id, MenuItemRequest request) {
@@ -76,13 +81,15 @@ public class MenuItemService {
             }
         }
 
-        return MenuItemResponse.from(menuItemRepository.save(item));
+        MenuItem saved = menuItemRepository.save(item);
+        return MenuItemResponse.from(saved, modifierGroupService.findActiveGroupsForMenuItem(saved.getId()));
     }
 
     public MenuItemResponse toggleAvailability(Long id) {
         var item = findEntityById(id);
         item.setAvailable(!item.isAvailable());
-        return MenuItemResponse.from(menuItemRepository.save(item));
+        MenuItem saved = menuItemRepository.save(item);
+        return MenuItemResponse.from(saved, modifierGroupService.findActiveGroupsForMenuItem(saved.getId()));
     }
 
     public void delete(Long id) {
@@ -91,6 +98,12 @@ public class MenuItemService {
             imageUploadService.deleteImage(item.getImageUrl());
         }
         menuItemRepository.deleteById(id);
+    }
+
+    public MenuItemResponse assignModifierGroups(Long id, List<ModifierGroupAssignment> assignments) {
+        MenuItem item = findEntityById(id);
+        modifierGroupService.replaceMenuItemAssignments(id, assignments);
+        return MenuItemResponse.from(item, modifierGroupService.findActiveGroupsForMenuItem(id));
     }
 
     private MenuItem findEntityById(Long id) {

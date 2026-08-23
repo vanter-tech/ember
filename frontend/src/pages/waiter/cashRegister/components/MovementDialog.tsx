@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -19,19 +20,21 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { cashShiftService } from '@/lib/api'
 import { useTranslation } from '@/lib/i18n'
 
-const movementSchema = z.object({
-  type: z.enum(['CASH_IN', 'CASH_OUT']),
-  amount: z.coerce.number().positive('El monto debe ser mayor a cero'),
-  reason: z.string().min(3, 'Escribe un motivo'),
-})
+const createMovementSchema = (t: ReturnType<typeof useTranslation<'waiter'>>['t']) =>
+  z.object({
+    type: z.enum(['CASH_IN', 'CASH_OUT']),
+    amount: z.coerce.number().positive(t('movementAmountPositiveError')),
+    reason: z.string().min(3, t('movementReasonRequiredError')),
+  })
 
-type MovementInputs = z.infer<typeof movementSchema>
+type MovementInputs = z.infer<ReturnType<typeof createMovementSchema>>
 
 export const MovementDialog = () => {
   const { t } = useTranslation('waiter')
   const { activeModal, modalPayload, closeModal } = useUIStore()
   const queryClient = useQueryClient()
   const shiftId = modalPayload?.shiftId as number | undefined
+  const movementSchema = useMemo(() => createMovementSchema(t), [t])
 
   const form = useForm({
     resolver: zodResolver(movementSchema),
@@ -42,12 +45,12 @@ export const MovementDialog = () => {
     mutationFn: (data: MovementInputs) => cashShiftService.recordMovement(shiftId!, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cashShiftDetail', shiftId] })
-      toast.success('Movimiento registrado.')
+      toast.success(t('movementRegisteredToast'))
       form.reset()
       closeModal()
     },
     onError: () => {
-      toast.error('No se pudo registrar el movimiento.')
+      toast.error(t('movementErrorToast'))
     },
   })
 

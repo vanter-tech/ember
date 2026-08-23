@@ -22,6 +22,7 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 public class PrintAgentWebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     private final PrintAgentChannelInterceptor printAgentChannelInterceptor;
+    private final PrintAgentHandshakeInterceptor printAgentHandshakeInterceptor;
     private final CorsProperties corsProperties;
 
     @Override
@@ -40,6 +41,7 @@ public class PrintAgentWebSocketConfig implements WebSocketMessageBrokerConfigur
         registry.addEndpoint("/ws/print-agent")
                 .setAllowedOrigins(toArray(corsProperties.getAllowedOrigins()))
                 .setAllowedOriginPatterns(toArray(corsProperties.getAllowedOriginPatterns()))
+                .addInterceptors(printAgentHandshakeInterceptor)
                 .withSockJS();
     }
 

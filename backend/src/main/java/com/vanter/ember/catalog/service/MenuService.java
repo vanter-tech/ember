@@ -19,6 +19,7 @@ public class MenuService {
 
     private final CategoryRepository categoryRepository;
     private final MenuItemRepository menuItemRepository;
+    private final ModifierGroupService modifierGroupService;
 
     public List<MenuDTO> getMenu() {
         var categories = categoryRepository.findAll();
@@ -31,7 +32,7 @@ public class MenuService {
 
             List<MenuItem> rawItems = itemsByCategory.getOrDefault(category.getId(), Collections.emptyList());
             List<MenuItemResponse> itemResponses = rawItems.stream()
-                    .map(MenuItemResponse::from)
+                    .map(item -> MenuItemResponse.from(item, modifierGroupService.findActiveGroupsForMenuItem(item.getId())))
                     .toList();
 
             return MenuDTO.builder()

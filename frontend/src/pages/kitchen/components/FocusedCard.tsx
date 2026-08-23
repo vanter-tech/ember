@@ -20,7 +20,7 @@ export const FocusedCard = ({ order }: { order: kitchenOrders }) => {
       queryClient.invalidateQueries({ queryKey: ['kitchenOrders'] })
     },
     onError: () => {
-      toast.error('No se pudo actualizar el estado del plato')
+      toast.error(t('itemStatusUpdateErrorToast'))
     },
   })
 
@@ -70,6 +70,11 @@ export const FocusedCard = ({ order }: { order: kitchenOrders }) => {
                       <span className="text-sm font-semibold text-gray-800">
                         {item.name}
                       </span>
+                      {item.modifiers && item.modifiers.length > 0 && (
+                        <span className="text-xs text-gray-500">
+                          {item.modifiers.join(', ')}
+                        </span>
+                      )}
                       <Badge variant="outline" className="w-fit">
                         {STATUS_LABEL[status]}
                       </Badge>

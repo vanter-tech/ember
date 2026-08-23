@@ -2,6 +2,8 @@ package com.vanter.ember.session.service;
 
 import com.vanter.ember.catalog.model.MenuItem;
 import com.vanter.ember.catalog.model.dto.MenuItemResponse;
+import com.vanter.ember.catalog.model.dto.ModifierGroupResponse;
+import com.vanter.ember.catalog.model.dto.ModifierOptionResponse;
 import com.vanter.ember.catalog.repository.MenuItemRepository;
 import com.vanter.ember.catalog.service.MenuItemService;
 import com.vanter.ember.config.ResourceNotFoundException;
@@ -16,19 +18,25 @@ import com.vanter.ember.session.dto.ParticipantDto;
 import com.vanter.ember.session.dto.SessionActivityDto;
 import com.vanter.ember.session.dto.SessionDetailResponseDto;
 import com.vanter.ember.session.event.*;
+import com.vanter.ember.session.exception.InvalidModifierSelectionException;
 import com.vanter.ember.session.exception.TooManyParticipantsException;
 import com.vanter.ember.session.model.OrderItem;
 import com.vanter.ember.session.model.OrderItemStatus;
 import com.vanter.ember.session.model.Participant;
+import com.vanter.ember.session.model.SelectedModifier;
 import com.vanter.ember.session.model.Session;
 import com.vanter.ember.session.model.SessionActivity;
 import com.vanter.ember.session.model.SessionStatus;
 import com.vanter.ember.session.repository.SessionRepository;
 
+import java.math.BigDecimal;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import com.vanter.ember.settings.model.DiningTables;
 import com.vanter.ember.settings.repository.DiningTableRepository;
@@ -83,6 +91,7 @@ public class SessionService {
                         i.getParticipantName(),
                         i.getParticipantId(),
                         i.getStatus(),
+                        i.getModifiers(),
                         i.getAddedAt()
                 ))
         ).toList();
@@ -247,7 +256,7 @@ public class SessionService {
 
     private static final int SESSION_TIMEOUT_HOURS = 8;
 
-    public Session addItem(String sessionId, String participantId, Long menuItemId) {
+    public Session addItem(String sessionId, String participantId, Long menuItemId, List<Long> selectedOptionIds) {
         Session session = findById(sessionId);
 
         if (session.getStatus() == SessionStatus.CLOSED) {
@@ -273,14 +282,20 @@ public class SessionService {
             throw new IllegalStateException("Menu item " + menuItemId + " is not available");
         }
 
+        List<SelectedModifier> selectedModifiers = resolveSelectedModifiers(menuItem, selectedOptionIds);
+        BigDecimal totalPrice = menuItem.getPrice().add(selectedModifiers.stream()
+                .map(SelectedModifier::getPriceDelta)
+                .reduce(BigDecimal.ZERO, BigDecimal::add));
+
         OrderItem newItem = OrderItem.builder()
                 .id(UUID.randomUUID().toString())
                 .itemId(menuItem.getId())
                 .name(menuItem.getName())
-                .price(menuItem.getPrice())
+                .price(totalPrice)
                 .participantId(participant.getUserId())
                 .participantName(participant.getName())
                 .status(OrderItemStatus.DRAFT)
+                .modifiers(selectedModifiers)
                 .addedAt(LocalDateTime.now())
                 .build();
         session.getItems().add(newItem);
@@ -296,6 +311,47 @@ public class SessionService {
                 saved.getItems()));
 
         return saved;
+    }
+
+    private List<SelectedModifier> resolveSelectedModifiers(MenuItemResponse menuItem, List<Long> selectedOptionIds) {
+        List<ModifierGroupResponse> assignedGroups =
+                menuItem.getModifierGroups() != null ? menuItem.getModifierGroups() : List.of();
+
+        Map<Long, ModifierOptionResponse> optionsById = assignedGroups.stream()
+                .flatMap(g -> g.getOptions().stream())
+                .collect(Collectors.toMap(ModifierOptionResponse::getId, o -> o));
+
+        for (Long optionId : selectedOptionIds) {
+            if (!optionsById.containsKey(optionId)) {
+                throw new InvalidModifierSelectionException(
+                        "Option " + optionId + " does not belong to an active modifier group of menu item "
+                                + menuItem.getId());
+            }
+        }
+
+        List<SelectedModifier> resolved = new ArrayList<>();
+        for (ModifierGroupResponse group : assignedGroups) {
+            long selectedInGroup = group.getOptions().stream()
+                    .filter(o -> selectedOptionIds.contains(o.getId()))
+                    .count();
+
+            if (selectedInGroup < group.getMinSelections()
+                    || (group.getMaxSelections() != null && selectedInGroup > group.getMaxSelections())) {
+                throw new InvalidModifierSelectionException(
+                        "Group \"" + group.getName() + "\" requires between " + group.getMinSelections()
+                                + " and " + (group.getMaxSelections() == null ? "unlimited" : group.getMaxSelections())
+                                + " selections, got " + selectedInGroup);
+            }
+
+            group.getOptions().stream()
+                    .filter(o -> selectedOptionIds.contains(o.getId()))
+                    .forEach(o -> resolved.add(SelectedModifier.builder()
+                            .groupName(group.getName())
+                            .optionName(o.getName())
+                            .priceDelta(o.getPriceDelta())
+                            .build()));
+        }
+        return resolved;
     }
 
     @EventListener

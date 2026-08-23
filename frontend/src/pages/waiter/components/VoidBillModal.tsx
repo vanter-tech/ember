@@ -27,10 +27,10 @@ export const VoidBillModal = () => {
     mutationFn: () => billingService.voidBill(modalPayload.billId, reason),
     onSuccess: () => {
       queryClient.removeQueries({ queryKey: ['bill', modalPayload.sessionId] })
-      toast.success('Cuenta anulada.')
+      toast.success(t('billVoidedToast'))
       handleClose()
     },
-    onError: () => toast.error('No se pudo anular la cuenta.'),
+    onError: () => toast.error(t('billVoidErrorToast')),
   })
 
   const handleClose = () => {

@@ -60,10 +60,10 @@ export const RefundPaymentModal = () => {
       // doesn't know the id for, and which has no WebSocket subscription to self-update. Invalidate
       // the whole family by key prefix so that page's payments list refetches too.
       queryClient.invalidateQueries({ queryKey: ['cashShiftDetail'] })
-      toast.success('Reembolso registrado.')
+      toast.success(t('refundRegisteredToast'))
       handleClose()
     },
-    onError: () => toast.error('No se pudo registrar el reembolso. ¿Hay una caja abierta?'),
+    onError: () => toast.error(t('refundErrorToast')),
   })
 
   const handleClose = () => {

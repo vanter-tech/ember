@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -34,29 +35,28 @@ import { useTranslation } from '@/lib/i18n'
 
 const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).+$/
 
-const createStaffSchema = z.object({
-  name: z.string().min(2, 'El nombre debe tener al menos 2 caracteres'),
-  email: z.string().email('Correo inválido'),
-  password: z
-    .string()
-    .min(8, 'La contraseña debe tener al menos 8 caracteres')
-    .regex(
-      PASSWORD_REGEX,
-      'Debe incluir mayúscula, minúscula, número y carácter especial'
-    ),
-  role: z.enum(['WAITER', 'KITCHEN', 'ADMIN']),
-  jobTitle: z.string().min(1, 'El puesto es obligatorio'),
-  shift: z.string().min(1, 'El turno es obligatorio'),
-  contractType: z.string().min(1, 'El tipo de contrato es obligatorio'),
-  location: z.string().min(1, 'La ubicación es obligatoria'),
-})
+const createStaffSchemaFactory = (t: ReturnType<typeof useTranslation<'admin'>>['t']) =>
+  z.object({
+    name: z.string().min(2, t('staffNameMinLengthError')),
+    email: z.string().email(t('staffEmailInvalidError')),
+    password: z
+      .string()
+      .min(8, t('staffPasswordMinLengthError'))
+      .regex(PASSWORD_REGEX, t('staffPasswordComplexityError')),
+    role: z.enum(['WAITER', 'KITCHEN', 'ADMIN']),
+    jobTitle: z.string().min(1, t('staffJobTitleRequiredError')),
+    shift: z.string().min(1, t('staffShiftRequiredError')),
+    contractType: z.string().min(1, t('staffContractTypeRequiredError')),
+    location: z.string().min(1, t('staffLocationRequiredError')),
+  })
 
-type CreateStaffInputs = z.infer<typeof createStaffSchema>
+type CreateStaffInputs = z.infer<ReturnType<typeof createStaffSchemaFactory>>
 
 export const CreateStaffModal = () => {
   const { activeModal, closeModal } = useUIStore()
   const queryClient = useQueryClient()
   const { t } = useTranslation('admin')
+  const createStaffSchema = useMemo(() => createStaffSchemaFactory(t), [t])
 
   const form = useForm<CreateStaffInputs>({
     resolver: zodResolver(createStaffSchema),
@@ -76,12 +76,12 @@ export const CreateStaffModal = () => {
     mutationFn: staffService.create,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['staff'] })
-      toast.success('Empleado agregado.')
+      toast.success(t('staffCreatedToast'))
       form.reset()
       closeModal()
     },
     onError: () => {
-      toast.error('No se pudo agregar el empleado.')
+      toast.error(t('staffCreateErrorToast'))
     },
   })
 

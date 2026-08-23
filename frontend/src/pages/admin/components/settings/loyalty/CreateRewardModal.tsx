@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -33,18 +34,20 @@ import { loyaltyRewardService } from '@/lib/api'
 import { TIER_LABELS } from './types'
 import { useTranslation } from '@/lib/i18n'
 
-const createRewardSchema = z.object({
-  name: z.string().min(2, 'El nombre debe tener al menos 2 caracteres').max(255),
-  description: z.string().max(1000).optional(),
-  requiredTier: z.enum(['BRONCE', 'PLATA', 'ORO', 'PLATINO']),
-})
+const createRewardSchemaFactory = (t: ReturnType<typeof useTranslation<'admin'>>['t']) =>
+  z.object({
+    name: z.string().min(2, t('rewardNameMinLengthError')).max(255),
+    description: z.string().max(1000).optional(),
+    requiredTier: z.enum(['BRONCE', 'PLATA', 'ORO', 'PLATINO']),
+  })
 
-type CreateRewardInputs = z.infer<typeof createRewardSchema>
+type CreateRewardInputs = z.infer<ReturnType<typeof createRewardSchemaFactory>>
 
 export const CreateRewardModal = () => {
   const { t } = useTranslation('admin')
   const { activeModal, closeModal } = useUIStore()
   const queryClient = useQueryClient()
+  const createRewardSchema = useMemo(() => createRewardSchemaFactory(t), [t])
 
   const form = useForm<CreateRewardInputs>({
     resolver: zodResolver(createRewardSchema),
@@ -55,12 +58,12 @@ export const CreateRewardModal = () => {
     mutationFn: loyaltyRewardService.create,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['loyaltyRewards'] })
-      toast.success('Recompensa creada.')
+      toast.success(t('rewardCreatedToast'))
       form.reset()
       closeModal()
     },
     onError: () => {
-      toast.error('No se pudo crear la recompensa.')
+      toast.error(t('rewardCreateErrorToast'))
     },
   })
 

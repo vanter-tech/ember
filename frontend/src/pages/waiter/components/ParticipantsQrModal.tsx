@@ -49,7 +49,7 @@ export const ParticipantQrModal = () => {
       setQrToken(data.qrToken)
       setJoinCode(data.joinCode ?? '')
       queryClient.invalidateQueries({ queryKey: ['dashboardData'] })
-      toast.success('Mesa abierta con exito')
+      toast.success(t('tableOpenedToast'))
     },
   })
 

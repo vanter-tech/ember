@@ -32,9 +32,9 @@ export const Bill = () => {
     mutationFn: () =>
       billingService.initiateDigitalPayment(bill!.id!, myName!, mySplit!.amount!),
     onSuccess: () => {
-      toast.success('Pago enviado. Espera la confirmación del mesero.')
+      toast.success(t('billPaymentSentToast'))
     },
-    onError: () => toast.error('No se pudo iniciar el pago.'),
+    onError: () => toast.error(t('billPaymentErrorToast')),
   })
 
   const paymentRequested = payMutation.isSuccess

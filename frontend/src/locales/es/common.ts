@@ -16,6 +16,8 @@ export const common = {
   navKitchen: 'kitchen',
   navCash: 'Caja',
   navCategories: 'Categorias',
+  navModifiers: 'Modificadores',
+  navInventory: 'Inventario',
   navAnalytics: 'Analíticas',
   navStaff: 'Personal',
   navSettings: 'Configuración',

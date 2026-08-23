@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { z } from 'zod'
@@ -24,23 +25,25 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { staffService, type StaffMemberResponse } from '@/lib/api'
 import { useTranslation } from '@/lib/i18n'
 
-const editStaffSchema = z.object({
-  name: z.string().min(2, 'El nombre debe tener al menos 2 caracteres'),
-  email: z.string().email('Correo inválido'),
-  jobTitle: z.string(),
-  shift: z.string(),
-  contractType: z.string(),
-  location: z.string(),
-  active: z.boolean(),
-})
+const editStaffSchemaFactory = (t: ReturnType<typeof useTranslation<'admin'>>['t']) =>
+  z.object({
+    name: z.string().min(2, t('staffNameMinLengthError')),
+    email: z.string().email(t('staffEmailInvalidError')),
+    jobTitle: z.string(),
+    shift: z.string(),
+    contractType: z.string(),
+    location: z.string(),
+    active: z.boolean(),
+  })
 
-type EditStaffInputs = z.infer<typeof editStaffSchema>
+type EditStaffInputs = z.infer<ReturnType<typeof editStaffSchemaFactory>>
 
 export const EditStaffModal = () => {
   const { activeModal, modalPayload, closeModal } = useUIStore()
   const queryClient = useQueryClient()
   const { t } = useTranslation('admin')
   const member = modalPayload as StaffMemberResponse | null
+  const editStaffSchema = useMemo(() => editStaffSchemaFactory(t), [t])
 
   const form = useForm<EditStaffInputs>({
     resolver: zodResolver(editStaffSchema),
@@ -59,11 +62,11 @@ export const EditStaffModal = () => {
     mutationFn: (data: EditStaffInputs) => staffService.updateProfile(member!.id!, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['staff'] })
-      toast.success('Empleado actualizado.')
+      toast.success(t('staffUpdatedToast'))
       closeModal()
     },
     onError: () => {
-      toast.error('No se pudo actualizar el empleado.')
+      toast.error(t('staffUpdateErrorToast'))
     },
   })
 

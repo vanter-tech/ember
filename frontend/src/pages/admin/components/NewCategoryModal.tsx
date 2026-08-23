@@ -32,15 +32,12 @@ export const NewCategoryModal = () => {
   type CategoryFormInputs = z.infer<typeof categoryScheme>
 
   const categoryScheme = z.object({
-    name: z.string().min(2, 'Name must have at least 2 characters'),
-    description: z.string().min(10, 'Type your description here'),
+    name: z.string().min(2, t('categoryNameMinLengthError')),
+    description: z.string().min(10, t('categoryDescriptionMinLengthError')),
     image: z
       .any()
-      .refine((file) => file instanceof File, 'You must choose an image')
-      .refine(
-        (file) => file?.size <= 5 * 1024 * 1024,
-        'Size should be 5MB MAX'
-      ),
+      .refine((file) => file instanceof File, t('imageRequiredError'))
+      .refine((file) => file?.size <= 5 * 1024 * 1024, t('imageMaxSizeError')),
   })
 
   const form = useForm<CategoryFormInputs>({
@@ -56,12 +53,12 @@ export const NewCategoryModal = () => {
     mutationFn: categoryService.create,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] })
-      toast.success('Category successful created!.')
+      toast.success(t('categoryCreatedToast'))
       form.reset()
       closeModal()
     },
     onError: () => {
-      toast.error('An ERROR has occurred')
+      toast.error(t('genericErrorToast'))
     },
   })
 

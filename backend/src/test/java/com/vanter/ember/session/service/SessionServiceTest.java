@@ -401,7 +401,7 @@ class SessionServiceTest {
         when(menuItemService.findById(10L)).thenReturn(availableMenuItem());
         when(sessionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        Session result = sessionService.addItem("sess-1", "user-1", 10L);
+        Session result = sessionService.addItem("sess-1", "user-1", 10L, List.of());
 
         assertThat(result.getItems()).hasSize(1);
         OrderItem item = result.getItems().get(0);
@@ -420,7 +420,7 @@ class SessionServiceTest {
         when(sessionRepository.findByIdAndTenantId("sess-1", RESTAURANT_ID)).thenReturn(Optional.of(session));
         when(userRepository.findByEmail("user-99")).thenReturn(Optional.of(user("user-99")));
 
-        assertThatThrownBy(() -> sessionService.addItem("sess-1", "user-99", 10L))
+        assertThatThrownBy(() -> sessionService.addItem("sess-1", "user-99", 10L, List.of()))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("not a participant");
     }
@@ -431,7 +431,7 @@ class SessionServiceTest {
         session.setStatus(SessionStatus.CLOSED);
         when(sessionRepository.findByIdAndTenantId("sess-1", RESTAURANT_ID)).thenReturn(Optional.of(session));
 
-        assertThatThrownBy(() -> sessionService.addItem("sess-1", "user-1", 10L))
+        assertThatThrownBy(() -> sessionService.addItem("sess-1", "user-1", 10L, List.of()))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("closed");
     }
@@ -445,7 +445,7 @@ class SessionServiceTest {
         when(userRepository.findByEmail("user-1")).thenReturn(Optional.of(user("user-1")));
         when(menuItemService.findById(10L)).thenReturn(unavailable);
 
-        assertThatThrownBy(() -> sessionService.addItem("sess-1", "user-1", 10L))
+        assertThatThrownBy(() -> sessionService.addItem("sess-1", "user-1", 10L, List.of()))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("not available");
     }
@@ -458,7 +458,7 @@ class SessionServiceTest {
         when(menuItemService.findById(10L)).thenReturn(availableMenuItem());
         when(sessionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        sessionService.addItem("sess-1", "user-1", 10L);
+        sessionService.addItem("sess-1", "user-1", 10L, List.of());
 
         ArgumentCaptor<ItemAdded> captor = ArgumentCaptor.forClass(ItemAdded.class);
         verify(eventPublisher).publishEvent(captor.capture());
@@ -477,8 +477,72 @@ class SessionServiceTest {
         when(menuItemService.findById(99L))
                 .thenThrow(new ResourceNotFoundException("Menu item not found: 99"));
 
-        assertThatThrownBy(() -> sessionService.addItem("sess-1", "user-1", 99L))
+        assertThatThrownBy(() -> sessionService.addItem("sess-1", "user-1", 99L, List.of()))
                 .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    private MenuItemResponse menuItemWithModifierGroup() {
+        var option = com.vanter.ember.catalog.model.dto.ModifierOptionResponse.builder()
+                .id(100L).name("Término medio").priceDelta(java.math.BigDecimal.ZERO).active(true).build();
+        var group = com.vanter.ember.catalog.model.dto.ModifierGroupResponse.builder()
+                .id(1L).name("Término de cocción")
+                .selectionType(com.vanter.ember.catalog.model.SelectionType.SINGLE_REQUIRED)
+                .minSelections(1).maxSelections(1).active(true)
+                .options(List.of(option))
+                .build();
+        return MenuItemResponse.builder()
+                .id(10L).name("Tacos").price(new java.math.BigDecimal("12.50"))
+                .available(true).modifierGroups(List.of(group)).build();
+    }
+
+    @Test
+    void addItem_throwsWhenRequiredModifierGroupNotSelected() {
+        Session session = openSessionWithParticipant("user-1");
+        when(sessionRepository.findByIdAndTenantId("sess-1", RESTAURANT_ID)).thenReturn(Optional.of(session));
+        when(userRepository.findByEmail("user-1")).thenReturn(Optional.of(user("user-1")));
+        when(menuItemService.findById(10L)).thenReturn(menuItemWithModifierGroup());
+
+        assertThatThrownBy(() -> sessionService.addItem("sess-1", "user-1", 10L, List.of()))
+                .isInstanceOf(com.vanter.ember.session.exception.InvalidModifierSelectionException.class)
+                .hasMessageContaining("Término de cocción");
+    }
+
+    @Test
+    void addItem_throwsWhenOptionNotAssignedToMenuItem() {
+        Session session = openSessionWithParticipant("user-1");
+        when(sessionRepository.findByIdAndTenantId("sess-1", RESTAURANT_ID)).thenReturn(Optional.of(session));
+        when(userRepository.findByEmail("user-1")).thenReturn(Optional.of(user("user-1")));
+        when(menuItemService.findById(10L)).thenReturn(menuItemWithModifierGroup());
+
+        assertThatThrownBy(() -> sessionService.addItem("sess-1", "user-1", 10L, List.of(999L)))
+                .isInstanceOf(com.vanter.ember.session.exception.InvalidModifierSelectionException.class);
+    }
+
+    @Test
+    void addItem_computesPriceWithModifierDelta() {
+        Session session = openSessionWithParticipant("user-1");
+        var option = com.vanter.ember.catalog.model.dto.ModifierOptionResponse.builder()
+                .id(100L).name("Extra queso").priceDelta(new java.math.BigDecimal("1.50")).active(true).build();
+        var group = com.vanter.ember.catalog.model.dto.ModifierGroupResponse.builder()
+                .id(2L).name("Extras")
+                .selectionType(com.vanter.ember.catalog.model.SelectionType.MULTI_OPTIONAL)
+                .minSelections(0).maxSelections(null).active(true)
+                .options(List.of(option))
+                .build();
+        MenuItemResponse menuItem = MenuItemResponse.builder()
+                .id(10L).name("Tacos").price(new java.math.BigDecimal("12.50"))
+                .available(true).modifierGroups(List.of(group)).build();
+
+        when(sessionRepository.findByIdAndTenantId("sess-1", RESTAURANT_ID)).thenReturn(Optional.of(session));
+        when(userRepository.findByEmail("user-1")).thenReturn(Optional.of(user("user-1")));
+        when(menuItemService.findById(10L)).thenReturn(menuItem);
+        when(sessionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        Session result = sessionService.addItem("sess-1", "user-1", 10L, List.of(100L));
+
+        assertThat(result.getItems().get(0).getPrice()).isEqualByComparingTo("14.00");
+        assertThat(result.getItems().get(0).getModifiers()).hasSize(1);
+        assertThat(result.getItems().get(0).getModifiers().get(0).getOptionName()).isEqualTo("Extra queso");
     }
 
     // --- removeItem tests ---

@@ -33,7 +33,7 @@ export const JoinTableModal = () => {
       return await SessionTableService.joinSessionViaCode(joinCode)
     },
     onSuccess(data) {
-      toast.success('Join successfully!.')
+      toast.success(t('joinSuccessToast'))
       // Joining is what tells the backend which restaurant this customer is at, so it hands
       // back a token scoped to it — every later call (menu, items, confirm) needs that one.
       if (data.token) {
@@ -48,11 +48,11 @@ export const JoinTableModal = () => {
     onError(error) {
       if (isAxiosError(error)) {
         if (error.response?.status === 404) {
-          toast.error('Code not valid, try again with another one.')
+          toast.error(t('joinCodeInvalidToast'))
           return
         }
       }
-      toast.error('An ERROR has occurred')
+      toast.error(t('genericErrorToast'))
     },
   })
 

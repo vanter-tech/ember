@@ -1,9 +1,11 @@
 package com.vanter.ember.printing.config;
 
 import com.vanter.ember.config.TenantContextHolder;
+import com.vanter.ember.config.WebSocketSessionAttributes;
 import com.vanter.ember.identity.service.JwtService;
 import com.vanter.ember.printing.event.PrintAgentConnected;
 import com.vanter.ember.printing.service.PrintAgentConnectionRegistry;
+import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
@@ -33,6 +35,13 @@ public class PrintAgentChannelInterceptor implements ChannelInterceptor {
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
         StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
         if (accessor == null) {
+            return message;
+        }
+
+        // The client inbound channel is shared with the tenant-facing /ws endpoint (Spring
+        // merges every WebSocketMessageBrokerConfigurer's interceptors onto one channel) — only
+        // enforce print-agent auth for sessions actually opened through /ws/print-agent.
+        if (!isPrintAgentEndpoint(accessor)) {
             return message;
         }
 
@@ -66,5 +75,12 @@ public class PrintAgentChannelInterceptor implements ChannelInterceptor {
         TenantContextHolder.setTenantId(tenantId);
         eventPublisher.publishEvent(new PrintAgentConnected(agentId));
         return message;
+    }
+
+    private static boolean isPrintAgentEndpoint(StompHeaderAccessor accessor) {
+        Map<String, Object> sessionAttributes = accessor.getSessionAttributes();
+        return sessionAttributes != null
+                && WebSocketSessionAttributes.PRINT_AGENT_ENDPOINT.equals(
+                        sessionAttributes.get(WebSocketSessionAttributes.ENDPOINT_ATTRIBUTE));
     }
 }

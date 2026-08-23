@@ -8,6 +8,9 @@ export type CategoryResponse = components['schemas']['CategoryResponse']
 export type CategoryRequest = components['schemas']['CategoryRequest']
 export type MenuItemResponse = components['schemas']['MenuItemResponse']
 export type MenuItemRequest = components['schemas']['MenuItemRequest']
+export type ModifierGroupResponse = components['schemas']['ModifierGroupResponse']
+export type ModifierGroupRequest = components['schemas']['ModifierGroupRequest']
+export type ModifierOptionRequest = components['schemas']['ModifierOptionRequest']
 export type SettingsResponse = components['schemas']['SettingsPayload']
 export type DashboardResponse = components['schemas']['TableStatusResponse']
 export type CreateSession = components['schemas']['SessionCreatedResponse']
@@ -270,6 +273,75 @@ export const menuItemService = {
   },
 }
 
+export const modifierGroupService = {
+  getAll: async (): Promise<ModifierGroupResponse[]> => {
+    const { data } = await api.get<ModifierGroupResponse[]>('/catalog/modifier-groups')
+    return data
+  },
+  create: async (details: ModifierGroupRequest): Promise<ModifierGroupResponse> => {
+    const { data } = await api.post<ModifierGroupResponse>('/catalog/modifier-groups', details)
+    return data
+  },
+  update: async (id: number, details: ModifierGroupRequest): Promise<ModifierGroupResponse> => {
+    const { data } = await api.patch<ModifierGroupResponse>(`/catalog/modifier-groups/${id}`, details)
+    return data
+  },
+  setActive: async (id: number, active: boolean): Promise<ModifierGroupResponse> => {
+    const { data } = await api.patch<ModifierGroupResponse>(`/catalog/modifier-groups/${id}/active`, active)
+    return data
+  },
+  addOption: async (id: number, details: ModifierOptionRequest): Promise<ModifierGroupResponse> => {
+    const { data } = await api.post<ModifierGroupResponse>(`/catalog/modifier-groups/${id}/options`, details)
+    return data
+  },
+  updateOption: async (id: number, optionId: number, details: ModifierOptionRequest): Promise<ModifierGroupResponse> => {
+    const { data } = await api.patch<ModifierGroupResponse>(`/catalog/modifier-groups/${id}/options/${optionId}`, details)
+    return data
+  },
+  deactivateOption: async (id: number, optionId: number): Promise<ModifierGroupResponse> => {
+    const { data } = await api.delete<ModifierGroupResponse>(`/catalog/modifier-groups/${id}/options/${optionId}`)
+    return data
+  },
+  assignToMenuItem: async (menuItemId: number, assignments: { groupId: number; displayOrder: number }[]): Promise<void> => {
+    await api.patch(`/catalog/items/${menuItemId}/modifier-groups`, assignments)
+  },
+}
+
+export type InventoryItemResponse = components['schemas']['InventoryItemResponse']
+export type InventoryItemRequest = components['schemas']['InventoryItemRequest']
+export type InventoryItemUpdateRequest = components['schemas']['InventoryItemUpdateRequest']
+
+export const inventoryService = {
+  getAll: async (): Promise<InventoryItemResponse[]> => {
+    const { data } = await api.get<InventoryItemResponse[]>('/catalog/inventory')
+    return data
+  },
+  create: async (details: InventoryItemRequest): Promise<InventoryItemResponse> => {
+    const { data } = await api.post<InventoryItemResponse>('/catalog/inventory', details)
+    return data
+  },
+  update: async (id: number, details: InventoryItemUpdateRequest): Promise<InventoryItemResponse> => {
+    const { data } = await api.patch<InventoryItemResponse>(`/catalog/inventory/${id}`, details)
+    return data
+  },
+  restock: async (id: number, delta: number): Promise<InventoryItemResponse> => {
+    const { data } = await api.post<InventoryItemResponse>(`/catalog/inventory/${id}/restock`, { delta })
+    return data
+  },
+  remove: async (id: number): Promise<void> => {
+    await api.delete(`/catalog/inventory/${id}`)
+  },
+}
+
+const listAllMenuItems = async (): Promise<MenuItemResponse[]> => {
+  const { data } = await api.get<Page<MenuItemResponse>>('/catalog/items', { params: { size: 500 } })
+  return data.content
+}
+
+export const inventoryMenuItemService = {
+  listAll: listAllMenuItems,
+}
+
 export const SettingsService = {
   getSettings: async (): Promise<SettingsResponse> => {
     const { data } = await api.get<SettingsResponse>('/settings')
@@ -338,10 +410,10 @@ export const SessionTableService = {
     return data
   },
 
-  addItem: async (sessionId: string, itemId: number): Promise<orderItemDTO> => {
+  addItem: async (sessionId: string, itemId: number, selectedOptionIds: number[] = []): Promise<orderItemDTO> => {
     const { data } = await api.post<orderItemDTO>(
       `/sessions/${sessionId}/items`,
-      { menuItemId: itemId }
+      { menuItemId: itemId, selectedOptionIds }
     )
     return data
   },
