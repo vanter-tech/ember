@@ -117,6 +117,7 @@ export const waiter = {
   movementErrorToast: 'Could not record the movement.',
   countedCashNegativeError: 'Counted cash cannot be negative',
   shiftCloseErrorToast: 'Could not close the shift.',
+  shiftCloseTablesOpenToast: 'Cannot close the shift: {{count}} table(s) still have an open session.',
   tableClosedPaidToast: 'Table paid and closed.',
   tableClosedToast: 'Table closed.',
   cashPaymentRegisteredToast: 'Cash payment recorded.',
