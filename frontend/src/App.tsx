@@ -51,7 +51,26 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
     <BrowserRouter>
-      <Toaster />
+      <Toaster
+        toastOptions={{
+          duration: 4000,
+          style: {
+            background: 'var(--card)',
+            color: 'var(--card-foreground)',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--radius-lg)',
+            padding: '12px 16px',
+            fontSize: '14px',
+            boxShadow: '0 4px 16px oklch(0 0 0 / 12%)',
+          },
+          success: {
+            iconTheme: { primary: '#16a34a', secondary: 'var(--card)' },
+          },
+          error: {
+            iconTheme: { primary: 'var(--destructive)', secondary: 'var(--card)' },
+          },
+        }}
+      />
       <TenantSuspendedModal />
       <Routes>
         <Route path="/" element={<RoleRedirect />} />
