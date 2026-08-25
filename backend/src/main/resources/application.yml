@@ -39,9 +39,6 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
     open-in-view: false
   data:
-    mongodb:
-      # No fallback: the URI embeds the Mongo credentials.
-      uri: ${SPRING_DATA_MONGODB_URI}
     web:
       pageable:
         default-page-size: 20

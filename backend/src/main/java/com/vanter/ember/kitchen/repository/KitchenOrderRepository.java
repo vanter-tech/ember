@@ -7,9 +7,9 @@ import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface KitchenOrderRepository extends MongoRepository<KitchenOrder, String> {
+public interface KitchenOrderRepository extends JpaRepository<KitchenOrder, String> {
 
     List<KitchenOrder> findByTenantId(UUID tenantId);
 
@@ -21,5 +21,13 @@ public interface KitchenOrderRepository extends MongoRepository<KitchenOrder, St
 
     Optional<KitchenOrder> findByTenantIdAndSessionId(UUID tenantId, String sessionId);
 
-    List<KitchenOrder> findByTenantIdAndItems_Status(UUID tenantId, OrderItemStatus status);
+    /**
+     * Filters the embedded {@code items} JSON in Java rather than in SQL — same portability
+     * reasoning as {@link com.vanter.ember.session.repository.SessionRepository#findByTenantIdAndParticipants_UserId}.
+     */
+    default List<KitchenOrder> findByTenantIdAndItems_Status(UUID tenantId, OrderItemStatus status) {
+        return findByTenantId(tenantId).stream()
+                .filter(o -> o.getItems().stream().anyMatch(i -> status == i.getStatus()))
+                .toList();
+    }
 }

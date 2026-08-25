@@ -202,9 +202,14 @@ class E2EOrderFlowTest {
                 .andExpect(status().isOk());
 
         // 5 — Kitchen finds the order and drives item to DELIVERED
+        // KitchenOrder carries @TenantId, resolved from TenantContextHolder — the mockMvc calls
+        // above ran (and cleared) it per-request via jwtAuthFilter, so this direct repository call
+        // (outside any HTTP request) needs it rebound, same as the @BeforeEach seeding above.
+        TenantContextHolder.setTenantId(restaurantId);
         KitchenOrder kitchenOrder = kitchenOrderRepository
                 .findByTenantIdAndSessionId(restaurantId, sessionId)
                 .orElseThrow();
+        TenantContextHolder.clear();
         String kitchenOrderId = kitchenOrder.getId();
 
         mockMvc.perform(patch("/kitchen/orders/" + kitchenOrderId + "/items/" + orderItemId + "/status")

@@ -484,7 +484,7 @@ class AnalyticsServiceTest {
     }
 
     @Test
-    void getProducts_withoutASettledBillReportsNothingAndNeverTouchesMongo() {
+    void getProducts_withoutASettledBillReportsNothingAndNeverTouchesSessionRepository() {
         when(billRepository.findPaidSessionIds(eq(TENANT_ID), any(), any())).thenReturn(List.of());
 
         AnalyticsProductsResponse products = analyticsService.getProducts(TENANT_ID, FROM, TO, null);
