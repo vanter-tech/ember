@@ -1,12 +1,14 @@
 package com.vanter.ember.session.repository;
 
+import com.vanter.ember.config.TenantIdentifierResolver;
 import com.vanter.ember.session.model.Participant;
 import com.vanter.ember.session.model.Session;
 import com.vanter.ember.session.model.SessionStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.context.annotation.Import;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -14,7 +16,15 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@DataMongoTest
+/**
+ * {@code @Import(TenantIdentifierResolver.class)}: {@code @DataJpaTest}'s entity scan isn't
+ * scoped to this package, so it also picks up every {@code @TenantId} entity project-wide
+ * (MenuItem, Category, ...) and Hibernate configures the whole SessionFactory for multi-tenancy
+ * as a result — it then requires a resolver bean regardless of whether {@link Session} itself
+ * uses {@code @TenantId} (it doesn't).
+ */
+@DataJpaTest
+@Import(TenantIdentifierResolver.class)
 class SessionRepositoryTest {
 
     private static final UUID TABLE_1_ID = UUID.randomUUID();

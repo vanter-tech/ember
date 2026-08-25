@@ -7,15 +7,27 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface SessionRepository extends MongoRepository<Session, String> {
+public interface SessionRepository extends JpaRepository<Session, String> {
 
     Optional<Session> findByIdAndTenantId(String id, UUID tenantId);
 
     List<Session> findByTenantIdAndTableIdAndStatus(UUID tenantId, UUID tableId, SessionStatus status);
 
-    List<Session> findByTenantIdAndParticipants_UserId(UUID tenantId, String userId);
+    List<Session> findByTenantId(UUID tenantId);
+
+    /**
+     * Filters the embedded {@code participants} JSON in Java rather than in SQL: Postgres's jsonb
+     * containment operators aren't portable to H2 (the test datasource), and this method has no
+     * production caller today. A tenant-first fetch is cheap at real-world scale (a few thousand
+     * sessions per tenant), so a portable in-memory filter beats a Postgres-only native query here.
+     */
+    default List<Session> findByTenantIdAndParticipants_UserId(UUID tenantId, String userId) {
+        return findByTenantId(tenantId).stream()
+                .filter(s -> s.getParticipants().stream().anyMatch(p -> userId.equals(p.getUserId())))
+                .toList();
+    }
 
     List<Session> findByTenantIdAndTableIdInAndStatus(
             UUID tenantId, List<UUID> tableIds, SessionStatus status);

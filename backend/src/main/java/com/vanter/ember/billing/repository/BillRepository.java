@@ -84,7 +84,7 @@ public interface BillRepository extends JpaRepository<Bill, Long> {
 
     /**
      * The sessions behind the {@code PAID} bills of {@link #findSalesTotals}. Product analytics has
-     * to cross stores — the line items live on the Mongo {@code Session} — so this hands back the
+     * to cross repositories — the line items live on {@code Session} — so this hands back the
      * settled session ids to look up there, keeping "a sale is a settled bill" the single rule every
      * analytics read shares. Carries the same deliberate {@code tenantId} predicate.
      */

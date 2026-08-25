@@ -188,8 +188,8 @@ public class AnalyticsService {
      * sessions whose bill settled ({@code PAID}) inside the window count, so an open table or an
      * abandoned cart never shows up as a top seller.
      *
-     * <p>This is the one analytics read that spans both stores — the line items live on the Mongo
-     * {@code Session}, the catalogue in Postgres — so the join happens here rather than in a query.
+     * <p>This is the one analytics read that spans two repositories — the line items live on
+     * {@code Session}, the catalogue on {@code MenuItem} — so the join happens here rather than in a query.
      * Items still in {@code DRAFT} when the table paid were never ordered and are skipped, and a
      * line item whose menu item has since been deleted keeps the name it was sold under instead of
      * being dropped.
@@ -293,7 +293,7 @@ public class AnalyticsService {
     /**
      * Table performance for the dashboard: turnover, revenue and average session duration per
      * table. {@code Bill} carries no {@code tableId} of its own and a session's open/settle
-     * instants only exist on the Mongo {@code Session}, so — like {@link #getProducts} — the join
+     * instants only exist on {@code Session}, so — like {@link #getProducts} — the join
      * happens here rather than in a query: the {@code PAID} bills in the window are matched back
      * to their session for its {@code tableId} and open time, then rolled up per table.
      *

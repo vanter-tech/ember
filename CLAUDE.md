@@ -22,9 +22,7 @@ Ember is a multi-tenant, modular monolith restaurant management platform designe
 ### Tech Stack & Persistence
 - **Backend:** Java 17, Spring Boot 3.5.14, Spring Security (JWT), WebSocket/STOMP.
 - **Frontend:** React 19, TypeScript, Vite, Tailwind CSS 4, Zustand 5, TanStack Query 5, shadcn/ui.
-- **Hybrid Persistence:**
-  - **PostgreSQL (JPA):** `identity`, `catalog`, `billing`, `settings`, `restaurant`.
-  - **MongoDB:** `session` (documents with embedded participants), `kitchen` (embedded orders and items).
+- **Persistence:** PostgreSQL (JPA) for every module — `identity`, `catalog`, `billing`, `settings`, `restaurant`, `session`, `kitchen`. `session`/`kitchen` moved off MongoDB in the `ember-postgress-migration` branch; their embedded arrays (participants, order items) now live in JSON columns via Hibernate's `@JdbcTypeCode(SqlTypes.JSON)`.
 - **Event Handling:** 100% internal synchronous communication via Spring `ApplicationEventPublisher` and `@EventListener`. **DO NOT use or configure Kafka** (the dependency in `pom.xml` should be ignored or removed).
 
 ---
@@ -50,7 +48,7 @@ The active granular task backlog is tracked dynamically in `PROGRESS.md`. Engine
 
 1. **Frontend Stability:** Zero-tolerance for TypeScript compilation errors (`tsc -b`) and linter failures (`pnpm run lint`).
 2. **Real-Time Synchronization:** Correct handling of STOMP/WebSocket connections and state cleanup on disconnect.
-3. **Backend Data Consistency:** Optimistic locking on MongoDB models (`@Version`), explicit `@Transactional` boundaries, and atomic race-condition prevention in billing/payments.
+3. **Backend Data Consistency:** Optimistic locking on JPA entities (`@Version`), explicit `@Transactional` boundaries, and atomic race-condition prevention in billing/payments.
 4. **Security & Identity:** Strict validation of authenticated JWT claims against request resources.
 
 ---
