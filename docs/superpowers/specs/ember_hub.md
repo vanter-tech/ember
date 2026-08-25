@@ -54,7 +54,13 @@ el panel admin central, las ventas se generan solo en el Hub.
 ### 2.2 Licenciamiento
 
 - **Hardware fingerprint** (CPU + placa madre): evita instalar la misma
-  licencia en más de una PC sin autorización.
+  licencia en más de una PC sin autorización. Librería: **OSHI** (Java puro
+  vía JNA, ya soporta Windows nativamente — aunque es multiplataforma,
+  v1 es **Windows-only** por decisión explícita del 2026-08-24: la ruta
+  técnica completa de 2.3 depende de mecanismos específicos de Windows
+  (`sc.exe`/Service Control Manager, instalador `.exe`), así que soporte
+  Mac/Linux queda fuera de alcance hasta que exista una razón de negocio
+  concreta para duplicar ese trabajo de empaquetado/recovery).
 - **Restaurant ID / tenant vinculado**: la licencia no es genérica, está
   atada a un restaurante específico del cliente. Permite:
   - Desactivación remota (próximo heartbeat bloquea el Hub de un cliente
@@ -78,6 +84,16 @@ usa únicamente herramientas del stack Java/Spring ya conocido:
 
 - **Empaquetado:** `jpackage` + `jlink` → JRE embebido, instalador `.exe`
   nativo de Windows. El cliente no instala Java por separado.
+- **Estructura de carpetas (2026-08-24):** `ember-hub/` en la raíz del
+  monolito es **solo empaquetado** — config de `jpackage`/`jlink`, los
+  binarios portátiles de Postgres, scripts de build del instalador — NO es
+  un módulo Maven separado (a diferencia de `printing-agent/`). El código
+  específico de Hub (licencia, sync client, bandeja del sistema) vive
+  DENTRO de `backend/` como un paquete nuevo (`com.vanter.ember.hub`),
+  activado por un perfil de Spring (`hub`). Consistente con que Hub es
+  literalmente el mismo JAR que el cloud, solo empaquetado distinto — no
+  una aplicación separada que reutilice el dominio vía librería
+  compartida.
 - **Proceso único:** el propio Spring Boot corre como el proceso principal;
   sin Rust, sin Tauri, sin watchdog externo.
 - **Bandeja del sistema:** `java.awt.SystemTray` dentro del mismo proceso
