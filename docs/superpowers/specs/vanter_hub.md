@@ -1,8 +1,10 @@
 # Vanter Hub — Diseño (en progreso)
 
 > Estado: **borrador de decisiones**, no es spec final. Arquitectura núcleo
-> (secciones 2.1–2.12) ya cerrada — retomada y completada el 2026-08-24. Queda
-> abierto el modelo de pagos digitales (sección 5), que se discute en su
+> (secciones 2.1–2.12) ya cerrada — retomada y completada el 2026-08-24. La
+> migración Mongo→Postgres que 2.3 daba por pendiente ya está hecha, mergeada
+> en `emb-i18n-08` (rama `ember-postgress-migration`) — ver 2.3 actualizada.
+> Queda abierto el modelo de pagos digitales (sección 5), que se discute en su
 > propia sesión antes de escribir el plan de implementación.
 
 ## 1. Motivación
@@ -84,12 +86,42 @@ usa únicamente herramientas del stack Java/Spring ya conocido:
   compilados; se abre el navegador por defecto automáticamente al iniciar.
 - **Persistencia:** Postgres portátil (binarios oficiales de EDB extraídos,
   sin instalador, iniciado localmente vía `pg_ctl`). Se mantiene el mismo
-  motor relacional que ya usa el backend (cero migración de JPA).
-  - Los dominios que hoy viven en MongoDB (`session`, `kitchen`) se migran a
-    tablas Postgres usando columnas `JSONB` para los arrays embebidos
-    (participants, order items) — conserva el modelo de "documento
-    embebido" sin correr dos motores de base de datos en la máquina del
-    cliente.
+  motor relacional que ya usa el backend.
+  - **YA HECHO (2026-08-24, no es trabajo pendiente de Hub):** `session`/
+    `kitchen` migraron de MongoDB a Postgres/JPA para **todo** el SaaS
+    (cloud incluido, no algo exclusivo de Hub) — sus arrays embebidos
+    (participants, order items) ahora son columnas `jsonb` vía
+    `@JdbcTypeCode(SqlTypes.JSON)`. Esto elimina el ítem de mayor
+    riesgo/costo que este documento tenía pendiente: el backend entero ya
+    corre sobre un solo motor de persistencia, sin ninguna rama de código
+    condicional entre cloud y Hub — es literalmente el mismo JAR apuntado
+    a un Postgres local en vez de uno en red. Detalle en
+    `PROGRESS.md` y `docs/superpowers/plans/2026-08-24-ember-postgres-migration.md`.
+  - **Riesgo nuevo descubierto por esta migración, con decisión tomada —
+    ver 2.3.1:** el `baseline-on-migrate` de Flyway asume un schema
+    preexistente (construido por `ddl-auto` antes de que Flyway existiera
+    en el proyecto) — no puede arrancar desde un Postgres genuinamente
+    vacío, que es exactamente el estado de cada instalación nueva de Hub.
+
+### 2.3.1 Bootstrap de schema en una instalación nueva (Postgres vacío)
+
+**Decisión:** consolidar un V1 real — un script SQL que construya el schema
+completo desde cero (equivalente a lo que hoy logran `ddl-auto` + V2–V15
+juntos), reemplazando el baseline no-reproducible actual. Se prefirió sobre
+un bootstrap especial solo-para-Hub porque el problema no es exclusivo de
+Hub: **cualquier** Postgres nuevo (un entorno de staging, la máquina de un
+futuro segundo desarrollador, un restore ante desastre) choca con el mismo
+`baseline-on-migrate` roto hoy. Confirmado empíricamente el 2026-08-24: al
+intentar recuperar la base de datos de desarrollo local tras un
+`flyway:clean` accidental, `V2` falló porque asumía tablas que solo
+`ddl-auto` había creado — no había manera de re-crear el schema desde cero
+usando únicamente las migraciones versionadas existentes.
+
+**Pendiente de implementación** (no bloqueante para seguir el resto de este
+diseño, pero sí bloqueante antes de escribir el plan de Hub): generar el
+V1 consolidado y verificar que un Postgres vacío arranca limpio con
+`ddl-auto=validate` desde cero — la misma verificación que ya se hace hoy
+sobre una base de datos con historial.
 - **Recuperación ante caídas:** registrar el proceso como servicio de
   Windows y usar `sc.exe failure` (recovery nativo del Service Control
   Manager) en vez de construir un watchdog custom.
@@ -218,7 +250,10 @@ cual está diseñado.
 ## 3. Riesgos identificados (documentados, no bloqueantes para v1)
 
 - GraalVM native-image + Spring AOT tiene fricción real con
-  Hibernate/Jackson/driver de Mongo/STOMP — por eso se excluyó de v1.
+  Hibernate/Jackson/STOMP — por eso se excluyó de v1. (Actualizado
+  2026-08-24: el driver de Mongo ya no es parte del árbol de dependencias
+  tras la migración a Postgres, así que esa fricción específica desapareció
+  — las demás siguen vigentes.)
 - La afirmación "binario cerrado, no descompilable" del plan original es
   una sobreestimación: un native-image sube la barrera de ingeniería
   inversa, pero no la elimina.
@@ -237,6 +272,12 @@ cual está diseñado.
 
 ## 4. Plan de pruebas
 
+- La capa de persistencia (2.3) ya está validada aguas arriba — 788 tests
+  de backend en verde más un arranque manual verificado contra un Postgres
+  real (`GET /actuator/health` → `UP`). El plan de pruebas de Hub no
+  necesita reprobar esto; se enfoca en lo específico de Hub: empaquetado
+  (`jpackage`/`jlink`), 2.3.1 (bootstrap en Postgres vacío), licencia, sync,
+  y hardware.
 - Se prueba primero con las impresoras Epson ya instaladas en el negocio
   del usuario (ver riesgo arriba sobre compatibilidad ESC-POS). Si no
   compilan como impresoras térmicas POS, PRINT-07 (prueba end-to-end con
