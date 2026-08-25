@@ -48,7 +48,7 @@ The active granular task backlog is tracked dynamically in `PROGRESS.md`. Engine
 
 1. **Frontend Stability:** Zero-tolerance for TypeScript compilation errors (`tsc -b`) and linter failures (`pnpm run lint`).
 2. **Real-Time Synchronization:** Correct handling of STOMP/WebSocket connections and state cleanup on disconnect.
-3. **Backend Data Consistency:** Optimistic locking on MongoDB models (`@Version`), explicit `@Transactional` boundaries, and atomic race-condition prevention in billing/payments.
+3. **Backend Data Consistency:** Optimistic locking on JPA entities (`@Version`), explicit `@Transactional` boundaries, and atomic race-condition prevention in billing/payments.
 4. **Security & Identity:** Strict validation of authenticated JWT claims against request resources.
 
 ---

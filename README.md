@@ -24,7 +24,7 @@
 
 ### Backend
 * **Language & Framework:** Java, Spring Boot, Spring Security
-* **Database:** MongoDB / Relational SQL
+* **Database:** PostgreSQL
 * **API Documentation:** OpenAPI / Swagger UI
 
 ### Frontend
