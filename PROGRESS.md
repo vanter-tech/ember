@@ -1,6 +1,22 @@
 # PROGRESS.md — Active Execution State
 
 ## Current Execution State
+- **Flyway V1 consolidated (2026-08-24, on `emb-i18n-08` directly, no branch):** `V2` couldn't
+  bootstrap a genuinely empty Postgres (it ALTERs tables only `ddl-auto` ever created, never a
+  runnable script) — surfaced by a `flyway:clean` recovery earlier the same day. Generated
+  `backend/src/main/resources/db/migration/V1__baseline_consolidated.sql` via `pg_dump
+  --schema-only` against the fully-migrated schema (stripped `flyway_schema_history` and the
+  psql-only `\restrict`/`\unrestrict` lines pg_dump 16.1+ emits; re-added V4's platform-operator
+  seed insert, schema-qualified as `public.platform_operators` since pg_dump's own header sets
+  `search_path` to empty). Archived V2–V15 to `backend/src/main/resources/db/migration-archive/`
+  (outside Flyway's scanned path, kept for their explanatory comments). Verified end-to-end
+  against a throwaway empty database: `V1` alone creates the full schema, `ddl-auto=validate`
+  passes with zero mismatches, full app boot + `/platform/auth/login` both work; the real dev DB
+  (already baselined at V15) correctly shows `V1` as `Below Baseline` and never re-runs it.
+  **Known cosmetic drift:** the dump was taken against a schema rebuilt via `ddl-auto=create`
+  during the earlier recovery, so a few constraints early migrations named explicitly (e.g.
+  `uk_platform_operators_email`) now carry Hibernate's generated name instead
+  (`platform_operators_email_key`) — no functional difference, documented in V1's own header.
 - **BRANCH EVENT 5 (2026-08-24, branch `ember-postgress-migration` off `emb-i18n-08`):** during Vanter Hub brainstorming, decided to unify persistence onto Postgres (no more Mongo) rather than build a dual-backend for the offline Hub — confirmed with the user there's no production data to protect. Executed the 13-task plan at `docs/superpowers/plans/2026-08-24-ember-postgres-migration.md` (see report/plan for the two mid-execution bugs it caught: `@DataJpaTest` needing `TenantIdentifierResolver` imported even for non-`@TenantId` entities, and Hibernate's `@TenantId` filter resolving once per Hibernate session rather than per repository call). `session`/`kitchen` are now JPA/Postgres, not MongoDB — see Active Context bullet below. Vanter Hub planning (`docs/superpowers/specs/vanter_hub.md`) is paused pending this migration landing on `main`.
 - **BRANCH EVENT 4:** PR #45 (`feature/kitchen-view` → `main`) merged on GitHub as `22d3039`. Local `main` fast-forwarded to match. `feature/kitchen-view` is now fully integrated and retired (kept locally, no longer the active branch — it covered far more than its name by the end: loyalty, i18n, settings sidebar, ticket settings, staff consolidation). New work now happens on `refactor/admin-modals-grid`, branched off the updated `main`.
 - **BRANCH EVENT 3:** `main` had carried `70c1c80` (a squashed copy of this branch's earlier EMB-CLP/CLH work) plus its own independently-applied bill-PAID hotfix (`df91b8f`). Merged into `feature/kitchen-view` before the PR — see report 178 for the full file-by-file conflict resolution (treated the unsquashed branch history as canonical wherever it was a verified superset).

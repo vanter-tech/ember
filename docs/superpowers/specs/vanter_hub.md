@@ -97,31 +97,12 @@ usa únicamente herramientas del stack Java/Spring ya conocido:
     condicional entre cloud y Hub — es literalmente el mismo JAR apuntado
     a un Postgres local en vez de uno en red. Detalle en
     `PROGRESS.md` y `docs/superpowers/plans/2026-08-24-ember-postgres-migration.md`.
-  - **Riesgo nuevo descubierto por esta migración, con decisión tomada —
-    ver 2.3.1:** el `baseline-on-migrate` de Flyway asume un schema
-    preexistente (construido por `ddl-auto` antes de que Flyway existiera
-    en el proyecto) — no puede arrancar desde un Postgres genuinamente
-    vacío, que es exactamente el estado de cada instalación nueva de Hub.
-
-### 2.3.1 Bootstrap de schema en una instalación nueva (Postgres vacío)
-
-**Decisión:** consolidar un V1 real — un script SQL que construya el schema
-completo desde cero (equivalente a lo que hoy logran `ddl-auto` + V2–V15
-juntos), reemplazando el baseline no-reproducible actual. Se prefirió sobre
-un bootstrap especial solo-para-Hub porque el problema no es exclusivo de
-Hub: **cualquier** Postgres nuevo (un entorno de staging, la máquina de un
-futuro segundo desarrollador, un restore ante desastre) choca con el mismo
-`baseline-on-migrate` roto hoy. Confirmado empíricamente el 2026-08-24: al
-intentar recuperar la base de datos de desarrollo local tras un
-`flyway:clean` accidental, `V2` falló porque asumía tablas que solo
-`ddl-auto` había creado — no había manera de re-crear el schema desde cero
-usando únicamente las migraciones versionadas existentes.
-
-**Pendiente de implementación** (no bloqueante para seguir el resto de este
-diseño, pero sí bloqueante antes de escribir el plan de Hub): generar el
-V1 consolidado y verificar que un Postgres vacío arranca limpio con
-`ddl-auto=validate` desde cero — la misma verificación que ya se hace hoy
-sobre una base de datos con historial.
+  - **Riesgo nuevo descubierto por esta migración, con decisión tomada y
+    ya implementada — ver 2.3.1:** el `baseline-on-migrate` de Flyway
+    asumía un schema preexistente (construido por `ddl-auto` antes de que
+    Flyway existiera en el proyecto) — no podía arrancar desde un Postgres
+    genuinamente vacío, que es exactamente el estado de cada instalación
+    nueva de Hub.
 - **Recuperación ante caídas:** registrar el proceso como servicio de
   Windows y usar `sc.exe failure` (recovery nativo del Service Control
   Manager) en vez de construir un watchdog custom.
@@ -136,6 +117,43 @@ sobre una base de datos con historial.
   offline esté validado comercialmente y la protección de IP contra
   clonación importe a mayor escala (más clientes = más incentivo de
   ingeniería inversa).
+
+### 2.3.1 Bootstrap de schema en una instalación nueva (Postgres vacío)
+
+**COMPLETO (2026-08-24).** Se consolidó un V1 real — un script SQL
+(`backend/src/main/resources/db/migration/V1__baseline_consolidated.sql`,
+generado vía `pg_dump --schema-only` sobre el schema ya completamente
+migrado, más el seed del operador de plataforma que V4 sembraba) que
+construye el schema completo desde cero, reemplazando el baseline
+no-reproducible anterior. V2–V15 originales se preservaron por su valor
+histórico/explicativo en `backend/src/main/resources/db/migration-archive/`
+(fuera del `classpath:db/migration` que Flyway escanea, así que nunca se
+re-aplican).
+
+Se prefirió consolidar sobre un bootstrap especial solo-para-Hub porque el
+problema no era exclusivo de Hub: **cualquier** Postgres nuevo (un entorno
+de staging, la máquina de un futuro segundo desarrollador, un restore ante
+desastre) chocaba con el mismo `baseline-on-migrate` roto. Confirmado
+empíricamente el 2026-08-24: al intentar recuperar la base de datos de
+desarrollo local tras un `flyway:clean` accidental, `V2` falló porque
+asumía tablas que solo `ddl-auto` había creado — no había manera de
+re-crear el schema desde cero usando únicamente las migraciones
+versionadas existentes.
+
+**Verificado de punta a punta** contra un Postgres genuinamente vacío: `V1`
+solo (sin `baseline-on-migrate`) crea el schema completo, `ddl-auto=validate`
+pasa sin discrepancias contra el modelo de entidades actual, el arranque
+completo de la app funciona (`GET /actuator/health` → `UP`), y el login del
+operador de plataforma sembrado funciona (`POST /platform/auth/login` →
+200). La base de datos de desarrollo existente (ya baselineada en V15)
+ignora `V1` correctamente (`Below Baseline`) — sin riesgo de reejecución.
+
+**Drift cosmético conocido:** el dump se tomó contra un schema reconstruido
+vía `ddl-auto=create` (ver nota de recuperación en `PROGRESS.md`), así que
+algunos constraints que las migraciones originales nombraron a mano ahora
+llevan el nombre genérico que autogenera Hibernate (ej.
+`uk_platform_operators_email` → `platform_operators_email_key`). Sin efecto
+funcional; documentado en el propio header del script V1.
 
 ### 2.4 Puente de impresión (reutilizable entre cloud y Hub)
 
