@@ -1,4 +1,4 @@
-# Vanter Hub — Diseño (en progreso)
+# Ember Hub — Diseño (en progreso)
 
 > Estado: **borrador de decisiones**, no es spec final. Arquitectura núcleo
 > (secciones 2.1–2.12) ya cerrada — retomada y completada el 2026-08-24. La
@@ -9,7 +9,7 @@
 
 ## 1. Motivación
 
-Vanter Hub es la variante on-premise/offline de Ember, pensada para
+Ember Hub es la variante on-premise/offline de Ember, pensada para
 restaurantes clientes que prefieren operar de forma local en vez de
 contratar la versión alojada en la nube. No es un producto nuevo: es el
 mismo SaaS (Ember), reempaquetado para correr en la PC del restaurante sin
@@ -162,8 +162,8 @@ la nube requiere un agente local con conexión saliente (WebSocket) porque
 el servidor cloud no puede alcanzar impresoras dentro de la LAN del
 restaurante. Se decidió que este mismo componente de "Hardware Bridge" sea
 el único mecanismo de impresión, tanto para el modo cloud puro como para
-Vanter Hub — evita mantener dos soluciones de impresión distintas. Un
-cliente cloud puro no necesita instalar Vanter Hub completo solo para
+Ember Hub — evita mantener dos soluciones de impresión distintas. Un
+cliente cloud puro no necesita instalar Ember Hub completo solo para
 imprimir: instala únicamente el agente liviano (`printing-agent/`, ya
 construido en EMB-PRINT). Ver 2.11 para su ampliación a otros periféricos.
 
@@ -317,7 +317,7 @@ cual está diseñado.
   un modelo de depósito bancario — se despliega la cuenta bancaria del
   restaurante al cliente para que pague desde su app bancaria, y el
   mesero concilia los depósitos contra las cuentas por cobrar (posiblemente
-  vía scraping del banco). Afecta por igual al SaaS cloud y a Vanter Hub
+  vía scraping del banco). Afecta por igual al SaaS cloud y a Ember Hub
   (no es específico de uno u otro), y probablemente reemplaza/redefine
   GATEWAY-01 en vez de solo resolverlo. Se **parqueó deliberadamente**
   fuera de esta sesión para no repetir la pausa anterior — requiere su
