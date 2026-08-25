@@ -20,6 +20,8 @@ import com.vanter.ember.cashregister.repository.CashShiftRepository;
 import com.vanter.ember.billing.repository.PaymentRepository;
 import com.vanter.ember.config.ResourceNotFoundException;
 import com.vanter.ember.identity.repository.UserRepository;
+import com.vanter.ember.session.model.SessionStatus;
+import com.vanter.ember.session.repository.SessionRepository;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -39,6 +41,7 @@ class CashShiftServiceTest {
     @Mock CashMovementRepository cashMovementRepository;
     @Mock PaymentRepository paymentRepository;
     @Mock UserRepository userRepository;
+    @Mock SessionRepository sessionRepository;
     @Mock ApplicationEventPublisher eventPublisher;
     @Mock PaymentService paymentService;
     @InjectMocks CashShiftService cashShiftService;
@@ -107,6 +110,7 @@ class CashShiftServiceTest {
     void closeShift_computesExpectedCashAndVariance() {
         CashShift shift = openShift();
         when(cashShiftRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(shift));
+        when(sessionRepository.countByTenantIdAndStatus(TENANT_ID, SessionStatus.OPEN)).thenReturn(0L);
         when(cashMovementRepository.sumCashIn(1L)).thenReturn(new BigDecimal("20.00"));
         when(cashMovementRepository.sumCashOut(1L)).thenReturn(new BigDecimal("5.00"));
         when(paymentRepository.sumConfirmedPhysicalForShift(TENANT_ID, 1L))
@@ -124,6 +128,16 @@ class CashShiftServiceTest {
         assertThat(closed.getTotalDigitalSales()).isEqualByComparingTo("40.00");
         assertThat(closed.getStatus()).isEqualTo(CashShiftStatus.CLOSED);
         assertThat(closed.getClosedBy()).isEqualTo("user-2");
+    }
+
+    @Test
+    void closeShift_throwsWhenTablesStillHaveOpenSessions() {
+        CashShift shift = openShift();
+        when(cashShiftRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(shift));
+        when(sessionRepository.countByTenantIdAndStatus(TENANT_ID, SessionStatus.OPEN)).thenReturn(3L);
+
+        assertThatThrownBy(() -> cashShiftService.closeShift(1L, "user-2", new BigDecimal("260.00")))
+                .isInstanceOf(IllegalStateException.class);
     }
 
     @Test

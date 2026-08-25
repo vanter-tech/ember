@@ -1,8 +1,9 @@
 # Vanter Hub — Diseño (en progreso)
 
-> Estado: **borrador de decisiones**, no es spec final. Se pausó la sesión de
-> brainstorming para discutir temas del SaaS cloud antes de completar las
-> secciones de arquitectura detallada, data flow y testing.
+> Estado: **borrador de decisiones**, no es spec final. Arquitectura núcleo
+> (secciones 2.1–2.12) ya cerrada — retomada y completada el 2026-08-24. Queda
+> abierto el modelo de pagos digitales (sección 5), que se discute en su
+> propia sesión antes de escribir el plan de implementación.
 
 ## 1. Motivación
 
@@ -111,7 +112,108 @@ la nube requiere un agente local con conexión saliente (WebSocket) porque
 el servidor cloud no puede alcanzar impresoras dentro de la LAN del
 restaurante. Se decidió que este mismo componente de "Hardware Bridge" sea
 el único mecanismo de impresión, tanto para el modo cloud puro como para
-Vanter Hub — evita mantener dos soluciones de impresión distintas.
+Vanter Hub — evita mantener dos soluciones de impresión distintas. Un
+cliente cloud puro no necesita instalar Vanter Hub completo solo para
+imprimir: instala únicamente el agente liviano (`printing-agent/`, ya
+construido en EMB-PRINT). Ver 2.11 para su ampliación a otros periféricos.
+
+### 2.5 Alcance de paridad de funcionalidades offline
+
+- **Analítica:** el Hub muestra analítica **solo de su propio
+  restaurante/sucursal**, nunca cross-sucursal. Esto no es una versión
+  reducida — `/admin/analytics` (task-5.17–5.21) ya está scopeada por
+  tenant, así que correr localmente no requiere cambios de código. El
+  dashboard cross-sucursal para dueños multi-local es una feature del
+  panel cloud central (consumiendo lo que cada Hub sube), fuera del
+  alcance del Hub mismo.
+- **Loyalty:** corre igual que hoy si el tenant lo tiene activado — 100%
+  local sobre Postgres, sin cambios.
+- **Pagos digitales:** ver sección 5 — parqueado, pendiente de su propia
+  sesión de diseño (posible pivote de pasarela tradicional a depósito
+  bancario + conciliación).
+
+### 2.6 Topología de red en el local
+
+Un solo PC actúa como "servidor": corre el Hub completo (Spring Boot +
+Postgres portátil), normalmente la PC de caja. Las demás terminales
+(tablets de mesero, pantalla de cocina) se conectan por navegador a la IP
+local de esa PC dentro de la LAN del restaurante — mismo modelo que hoy
+usa un navegador para conectarse al dominio cloud, solo que apuntando a
+una IP local. No se contempla para v1 un modelo multi-nodo (cada puesto
+con su propia instancia sincronizando en LAN); eso implicaría replantear
+la ruta técnica de la sección 2.3.
+
+### 2.7 Mecanismo de sincronización (data flow)
+
+Polling HTTP periódico (cada 5–10 min), no conexión persistente. Un solo
+endpoint del lado Hub hace, en una sola llamada saliente:
+1. Heartbeat de licencia (ver 2.2/2.8).
+2. Descarga de deltas de catálogo/precios/configuración (nube → Hub).
+3. Subida de ventas/órdenes cerradas pendientes (Hub → nube).
+
+Manejo de errores: si un ciclo falla (sin internet, timeout, etc.), no se
+reintenta de inmediato — simplemente se reintenta completo en el
+siguiente ciclo programado. No hace falta lógica de reconexión de socket
+ni heartbeat de conexión persistente (se evita deliberadamente el patrón
+WebSocket del Hardware Bridge aquí, que ya tuvo bugs sutiles de
+aislamiento de broker — ver `PROGRESS.md`, "WebSocket endpoint isolation
+gotcha"). Las ventas subidas son records cerrados/inmutables, así que un
+reintento de subida es siempre seguro (idempotente por id).
+
+### 2.8 Periodo de gracia de licencia sin conexión
+
+4 días desde el último heartbeat exitoso. Dentro de la gracia, el Hub
+opera con normalidad aunque no haya internet. Al superar los 4 días sin
+un heartbeat exitoso, el Hub bloquea su operación (no procesa nuevas
+órdenes/pagos) hasta reconectar — pero **nunca borra datos locales**; al
+recuperar conexión y validar la licencia, vuelve a operar con todo el
+historial intacto.
+
+### 2.9 Backup local de base de datos
+
+`pg_dump` automático diario (ej. de madrugada, fuera de horario de
+operación) hacia una carpeta local, con rotación (ej. últimos 14 días).
+Protege contra corrupción de datos o error humano, no contra pérdida
+física de la PC/disco. Sin subida a la nube en v1 — se evalúa como mejora
+futura una vez el canal de sync (2.7) esté validado en producción.
+
+### 2.10 Estrategia de actualizaciones (auto-updater)
+
+Manual con aviso, no automático/silencioso en v1. El Hub revisa la
+versión disponible en la respuesta de cada heartbeat (2.7); si hay una
+más nueva, muestra un aviso en el ícono de bandeja/UI con link al
+instalador nuevo. El dueño/mesero decide cuándo reinstalar (fuera de
+horario pico) — evita el riesgo de romper un turno en producción por un
+update automático fallido, dado el tamaño del equipo (2 personas) y el
+plazo (2 meses).
+
+### 2.11 Hardware Bridge — ampliación a otros periféricos
+
+Se mantiene como el mismo agente Java standalone compartido entre cloud y
+Hub (2.4). Primeros dos periféricos priorizados más allá de impresión:
+
+- **Gaveta de dinero (cash drawer):** se abre normalmente con un comando
+  ESC-POS enviado a través de la misma impresora térmica (puerto RJ11 de
+  kick-out), no es un dispositivo USB aparte. Candidato a implementarse
+  como un nuevo tipo de `PrintJob` (ej. `CASH_DRAWER_KICK`) disparado al
+  confirmar un pago en efectivo, reutilizando `PrintDispatchService` tal
+  cual — probablemente no requiere nueva arquitectura de agente.
+- **Lector de código de barras:** en la mayoría de casos es un
+  dispositivo USB-HID tipo teclado — el navegador ya lo recibe como texto
+  tecleado, sin pasar por el agente. El trabajo real es de UX frontend
+  (un campo de búsqueda por SKU con foco/auto-submit en las pantallas
+  relevantes de admin/mesero), no de Hardware Bridge.
+
+Ambos supuestos (que no requieren nueva arquitectura del agente) se
+confirman en la prueba con hardware real (ver sección 4) antes de
+comprometerse a más trabajo del que hoy parece necesario.
+
+### 2.12 Modelo comercial / pricing
+
+Pago anual que cubre mantenimiento y soporte — no suscripción mensual
+estilo cloud. No impone restricciones técnicas nuevas: el mecanismo de
+heartbeat/licencia (2.2/2.8) ya soporta este modelo de facturación tal
+cual está diseñado.
 
 ## 3. Riesgos identificados (documentados, no bloqueantes para v1)
 
@@ -125,20 +227,40 @@ Vanter Hub — evita mantener dos soluciones de impresión distintas.
   de negocios pequeños, expone `.jar` extraíbles, consumo de recursos alto)
   — descartado explícitamente como estrategia de empaquetado comercial.
   Docker sigue siendo válido solo como entorno de desarrollo interno.
+- Notificaciones push (a celular del admin, etc.) dependen de un servicio
+  externo (FCM/APNs) y no pueden funcionar sin salida a internet — se
+  degradan sin más análisis necesario, no requieren diseño propio.
+- Las impresoras Epson ya instaladas para la prueba de la sección 4 podrían
+  no ser térmicas POS (tipo TM-) y por tanto no hablar ESC-POS crudo por
+  USB/red 9100 como espera el Hardware Bridge — se confirma en la prueba
+  misma, no se asume de antemano.
 
-## 4. Pendiente por decidir (próxima sesión de diseño)
+## 4. Plan de pruebas
 
-- Alcance de paridad de funcionalidades: qué debe seguir funcionando
-  offline vs qué se degrada sin internet (pagos con tarjeta, notificaciones
-  push, analítica cross-sucursal, etc.).
-- Arquitectura detallada de componentes, data flow y manejo de errores del
-  Hub (sección de diseño formal aún no presentada).
-- Estrategia de actualizaciones (auto-updater) para instalaciones ya en
-  campo.
-- Estrategia de backup local de la base de datos del restaurante.
-- Plan de pruebas/testing para el Hub (entorno Windows real con impresora
-  física, distinto del CI actual).
-- Modelo comercial (pricing) del SKU offline vs el SKU cloud.
+- Se prueba primero con las impresoras Epson ya instaladas en el negocio
+  del usuario (ver riesgo arriba sobre compatibilidad ESC-POS). Si no
+  compilan como impresoras térmicas POS, PRINT-07 (prueba end-to-end con
+  impresora física) queda pendiente de último, sin bloquear el resto del
+  Hub.
+- Mismo entorno sirve para validar 2.6 (topología LAN), 2.11 (gaveta de
+  dinero vía RJ11, lector de código de barras vía HID) y el instalador
+  `jpackage`/`jlink` en Windows real — no hay CI que cubra ninguno de
+  estos, es verificación manual.
+- Manejo de errores de arranque (Postgres portátil corrupto, licencia
+  inválida al iniciar, puerto ocupado, etc.) no se detalló en esta sesión
+  de brainstorming — queda para especificarse durante el plan de
+  implementación, informado por lo que se observe en esta prueba real.
 
-**Nota de contexto:** antes de continuar con las secciones pendientes de
-este diseño, el usuario quiere discutir temas del SaaS cloud actual.
+## 5. Pendiente por decidir
+
+- **Modelo de pagos digitales:** el usuario propone reemplazar la
+  pasarela de tarjeta tradicional (asumida en EMB-GATEWAY/GATEWAY-01) por
+  un modelo de depósito bancario — se despliega la cuenta bancaria del
+  restaurante al cliente para que pague desde su app bancaria, y el
+  mesero concilia los depósitos contra las cuentas por cobrar (posiblemente
+  vía scraping del banco). Afecta por igual al SaaS cloud y a Vanter Hub
+  (no es específico de uno u otro), y probablemente reemplaza/redefine
+  GATEWAY-01 en vez de solo resolverlo. Se **parqueó deliberadamente**
+  fuera de esta sesión para no repetir la pausa anterior — requiere su
+  propia sesión de brainstorming antes de tocar el plan de implementación
+  del Hub o de EMB-GATEWAY.

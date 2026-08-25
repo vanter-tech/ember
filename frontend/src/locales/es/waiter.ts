@@ -115,6 +115,7 @@ export const waiter = {
   movementErrorToast: 'No se pudo registrar el movimiento.',
   countedCashNegativeError: 'El monto contado no puede ser negativo',
   shiftCloseErrorToast: 'No se pudo cerrar la caja.',
+  shiftCloseTablesOpenToast: 'No se puede cerrar la caja: {{count}} mesa(s) aún tienen una sesión abierta.',
   tableClosedPaidToast: 'Mesa pagada y cerrada.',
   tableClosedToast: 'Mesa cerrada.',
   cashPaymentRegisteredToast: 'Pago en efectivo registrado.',

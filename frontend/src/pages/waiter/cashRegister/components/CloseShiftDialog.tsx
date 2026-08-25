@@ -5,6 +5,7 @@ import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import toast from 'react-hot-toast'
+import axios from 'axios'
 import {
   Dialog,
   DialogContent,
@@ -26,6 +27,15 @@ const createCloseShiftSchema = (t: ReturnType<typeof useTranslation<'waiter'>>['
 
 type CloseShiftInputs = z.infer<ReturnType<typeof createCloseShiftSchema>>
 
+// Matches CashShiftService.closeShift's "Cannot close cash shift: N table(s) still have an
+// open session" detail (backend) so the toast can surface the open-table count without
+// showing the raw English backend string to Spanish users.
+const extractOpenTablesCount = (detail: unknown): number | null => {
+  if (typeof detail !== 'string') return null
+  const match = detail.match(/^Cannot close cash shift: (\d+) table/)
+  return match ? Number(match[1]) : null
+}
+
 export const CloseShiftDialog = () => {
   const { t } = useTranslation('waiter')
   const { activeModal, modalPayload, closeModal } = useUIStore()
@@ -45,8 +55,15 @@ export const CloseShiftDialog = () => {
       queryClient.invalidateQueries({ queryKey: ['cashShiftCurrent'] })
       setResult(closed)
     },
-    onError: () => {
-      toast.error(t('shiftCloseErrorToast'))
+    onError: (error) => {
+      const count = axios.isAxiosError(error)
+        ? extractOpenTablesCount(error.response?.data?.detail)
+        : null
+      if (count !== null) {
+        toast.error(t('shiftCloseTablesOpenToast', { count }))
+      } else {
+        toast.error(t('shiftCloseErrorToast'))
+      }
     },
   })
 

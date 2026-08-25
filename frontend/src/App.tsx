@@ -7,7 +7,7 @@ import { ProtectedRoute } from './components/ProtectedRoute'
 import { NotFound } from './components/NotFound'
 import { Login } from './pages/auth/Login'
 import { Register } from './pages/auth/Register'
-import { Toaster } from 'react-hot-toast'
+import { Toaster, ToastBar } from 'react-hot-toast'
 import { AdminLayout } from './layouts/AdminLayout'
 import { Category } from './pages/admin/Category'
 import { ListMenuItem } from './pages/admin/ListMenuItem'
@@ -51,7 +51,41 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
     <BrowserRouter>
-      <Toaster />
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 4000,
+          style: {
+            background: 'var(--card)',
+            color: 'var(--card-foreground)',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--radius-lg)',
+            padding: '12px 16px',
+            fontSize: '14px',
+            maxWidth: '420px',
+            boxShadow: '0 4px 16px oklch(0 0 0 / 12%)',
+          },
+          success: {
+            iconTheme: { primary: '#16a34a', secondary: 'var(--card)' },
+            style: { borderLeft: '4px solid #16a34a' },
+          },
+          error: {
+            iconTheme: { primary: 'var(--destructive)', secondary: 'var(--card)' },
+            style: { borderLeft: '4px solid var(--destructive)' },
+          },
+        }}
+      >
+        {(t) => (
+          <ToastBar
+            toast={t}
+            style={{
+              animation: t.visible
+                ? 'toast-slide-in 0.35s cubic-bezier(.21,1.02,.73,1) forwards'
+                : 'toast-slide-out 0.4s cubic-bezier(.06,.71,.55,1) forwards',
+            }}
+          />
+        )}
+      </Toaster>
       <TenantSuspendedModal />
       <Routes>
         <Route path="/" element={<RoleRedirect />} />

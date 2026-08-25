@@ -210,6 +210,23 @@ export const ComandaView = () => {
                         </span>
                       </div>
 
+                      {item.modifiers && item.modifiers.length > 0 && (
+                        <div className="w-full rounded-md bg-[#8c1717] px-3 py-2 flex flex-col gap-1">
+                          {item.modifiers.map((modifier, modifierIndex) => (
+                            <div
+                              key={modifierIndex}
+                              className="flex justify-between text-xs text-white"
+                            >
+                              <span>{modifier.optionName}</span>
+
+                              {!!modifier.priceDelta && modifier.priceDelta > 0 && (
+                                <span>+${modifier.priceDelta.toFixed(2)}</span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
                       <div className="flex justify-between">
                         <div className='className="  flex items-center gap-3 pb-2'>
                           <Button
@@ -274,12 +291,30 @@ export const ComandaView = () => {
                     (item: (typeof items)[0] & { cantidad: number }) => (
                       <div
                         key={item.id}
-                        className="flex justify-between text-sm text-gray-600"
+                        className="flex flex-col gap-0.5 text-sm text-gray-600"
                       >
-                        <span>
-                          {item.cantidad}x {item.name}
-                        </span>
-                        <span>${item.price?.toFixed(2)}</span>
+                        <div className="flex justify-between">
+                          <span>
+                            {item.cantidad}x {item.name}
+                          </span>
+                          <span>${item.price?.toFixed(2)}</span>
+                        </div>
+                        {item.modifiers && item.modifiers.length > 0 && (
+                          <div className="w-full rounded-md bg-[#8c1717] px-3 py-2 flex flex-col gap-1">
+                            {item.modifiers.map((modifier, modifierIndex) => (
+                              <div
+                                key={modifierIndex}
+                                className="flex justify-between text-xs text-white"
+                              >
+                                <span>{modifier.optionName}</span>
+
+                                {!!modifier.priceDelta && modifier.priceDelta > 0 && (
+                                  <span>+${modifier.priceDelta.toFixed(2)}</span>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     )
                   )}
