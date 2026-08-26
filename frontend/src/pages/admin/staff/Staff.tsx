@@ -10,11 +10,31 @@ import { StaffGrid } from './components/StaffGrid'
 import { StaffHeader } from './components/StaffHeader'
 import { StaffKpis } from './components/StaffKpis'
 import type { StaffFilter } from './types'
+import { SectionTour } from '@/components/tours/SectionTour'
 import { useTranslation } from '@/lib/i18n'
 
 export const Staff = () => {
   const [roleFilter, setRoleFilter] = useState<StaffFilter>('ALL')
   const { t } = useTranslation('admin')
+
+  const tourSteps = [
+    {
+      target: '#staff-tour-filters',
+      title: t('tourStaffFiltersTitle'),
+      content: t('tourStaffFiltersContent'),
+      skipBeacon: true,
+    },
+    {
+      target: '#staff-tour-grid',
+      title: t('tourStaffGridTitle'),
+      content: t('tourStaffGridContent'),
+    },
+    {
+      target: '#topnav-create-button',
+      title: t('tourStaffCreateTitle'),
+      content: t('tourStaffCreateContent'),
+    },
+  ]
   const searchTerm = useUIStore((state) => state.searchTerm)
   const openModal = useUIStore((state) => state.openModal)
 
@@ -37,7 +57,9 @@ export const Staff = () => {
   return (
     <div className="flex flex-col gap-8">
       <StaffHeader />
-      <StaffFilters active={roleFilter} onChange={setRoleFilter} />
+      <div id="staff-tour-filters">
+        <StaffFilters active={roleFilter} onChange={setRoleFilter} />
+      </div>
       {isLoading && (
         <div className="flex items-center justify-center py-16 text-sm text-muted-foreground">
           {t('loadingStaff')}
@@ -50,18 +72,21 @@ export const Staff = () => {
       )}
       {!isLoading && !isError && (
         <>
-          <StaffGrid
-            members={filteredStaff}
-            onAddRole={() => openModal('CREATE_STAFF')}
-            onViewProfile={(member: StaffMemberResponse) => openModal('EDIT_STAFF', member)}
-            onOpenActions={(member: StaffMemberResponse) => openModal('DELETE_STAFF', member)}
-          />
+          <div id="staff-tour-grid">
+            <StaffGrid
+              members={filteredStaff}
+              onAddRole={() => openModal('CREATE_STAFF')}
+              onViewProfile={(member: StaffMemberResponse) => openModal('EDIT_STAFF', member)}
+              onOpenActions={(member: StaffMemberResponse) => openModal('DELETE_STAFF', member)}
+            />
+          </div>
           <StaffKpis members={staff} />
         </>
       )}
       <CreateStaffModal />
       <EditStaffModal />
       <GlobalDeleteModal />
+      <SectionTour sectionId="admin-staff" steps={tourSteps} ready={!isLoading && !isError} />
     </div>
   )
 }

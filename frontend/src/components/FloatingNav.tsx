@@ -2,7 +2,6 @@ import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
 import {
   LayoutDashboard,
-  Package,
   BarChart3,
   Settings,
   LogOut,
@@ -13,7 +12,6 @@ import {
   Users,
   Banknote,
   BookOpen,
-  SlidersHorizontal,
   Warehouse,
 } from 'lucide-react'
 import { useSessionStore } from '@/store/sessionStore'
@@ -84,20 +82,6 @@ export const FloatingNav = () => {
 
       {role === 'ADMIN' && (
         <>
-          <Link
-            to="/admin/categories"
-            className={navItemClass('/admin/categories')}
-            title={t('navCategories')}
-          >
-            <Package strokeWidth={1.5} size={24} />
-          </Link>
-          <Link
-            to="/admin/modifier-groups"
-            className={navItemClass('/admin/modifier-groups')}
-            title={t('navModifiers')}
-          >
-            <SlidersHorizontal strokeWidth={1.5} size={24} />
-          </Link>
           <Link
             to="/admin/inventory"
             className={navItemClass('/admin/inventory')}

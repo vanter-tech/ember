@@ -62,21 +62,21 @@ class PrintingEventListenerTest {
         printingEventListener.onKitchenItemsConfirmed(
                 new KitchenItemsConfirmed(TENANT_ID, "session-1", 5, List.of()));
 
-        verify(printJobRepository, never()).save(any());
+        verify(printJobRepository, never()).saveAndFlush(any());
         verify(printDispatchService, never()).dispatch(any());
     }
 
     @Test
     void onKitchenItemsConfirmed_autoPrintEnabled_createsAndDispatchesKitchenJob() {
         when(settingService.getSettings(TENANT_ID)).thenReturn(settingsWith(true));
-        when(printJobRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(printJobRepository.saveAndFlush(any())).thenAnswer(inv -> inv.getArgument(0));
         OrderItem item = OrderItem.builder().id("i1").itemId(1L).name("Hamburguesa").build();
 
         printingEventListener.onKitchenItemsConfirmed(
                 new KitchenItemsConfirmed(TENANT_ID, "session-1", 5, List.of(item)));
 
         ArgumentCaptor<PrintJob> jobCaptor = ArgumentCaptor.forClass(PrintJob.class);
-        verify(printJobRepository).save(jobCaptor.capture());
+        verify(printJobRepository).saveAndFlush(jobCaptor.capture());
         verify(printDispatchService).dispatch(jobCaptor.getValue());
         assertThat(jobCaptor.getValue().getRole().name()).isEqualTo("KITCHEN");
         assertThat(jobCaptor.getValue().getStatus()).isEqualTo(PrintJobStatus.PENDING);

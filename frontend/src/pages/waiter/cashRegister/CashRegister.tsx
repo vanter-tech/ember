@@ -11,11 +11,21 @@ import { OpenShiftDialog } from './components/OpenShiftDialog'
 import { MovementDialog } from './components/MovementDialog'
 import { CloseShiftDialog } from './components/CloseShiftDialog'
 import { RefundPaymentModal } from '@/pages/waiter/components/RefundPaymentModal'
+import { SectionTour } from '@/components/tours/SectionTour'
 import { useTranslation } from '@/lib/i18n'
 
 export const CashRegister = () => {
   const { t } = useTranslation('waiter')
   const { openModal } = useUIStore()
+
+  const tourSteps = [
+    {
+      target: '#waiter-cashregister-tour-content',
+      title: t('tourCashRegisterTitle'),
+      content: t('tourCashRegisterContent'),
+      skipBeacon: true,
+    },
+  ]
 
   const { data: shift, isLoading } = useQuery({
     queryKey: ['cashShiftCurrent'],
@@ -39,6 +49,7 @@ export const CashRegister = () => {
         <p className="text-sm text-muted-foreground">{t('cashRegisterSubtitle')}</p>
       </div>
 
+      <div id="waiter-cashregister-tour-content">
       {!shift ? (
         <Card className="border border-border/40 bg-background py-6 shadow-sm">
           <CardContent className="flex flex-col items-center gap-4 py-10">
@@ -173,11 +184,13 @@ export const CashRegister = () => {
           </Card>
         </>
       )}
+      </div>
 
       <OpenShiftDialog />
       <MovementDialog />
       <CloseShiftDialog />
       <RefundPaymentModal />
+      <SectionTour sectionId="waiter-cash-register" steps={tourSteps} />
     </div>
   )
 }

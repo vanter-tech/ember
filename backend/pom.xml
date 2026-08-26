@@ -129,6 +129,11 @@
 			<artifactId>thumbnailator</artifactId>
 			<version>0.4.20</version>
 		</dependency>
+		<dependency>
+			<groupId>com.github.oshi</groupId>
+			<artifactId>oshi-core</artifactId>
+			<version>6.6.5</version>
+		</dependency>
 	</dependencies>
 	<build>
 		<plugins>

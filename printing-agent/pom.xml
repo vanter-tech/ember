@@ -24,6 +24,15 @@
             <artifactId>spring-messaging</artifactId>
             <version>6.1.13</version>
         </dependency>
+        <!-- spring-websocket's StandardWebSocketClient only depends on the jakarta.websocket-api
+             interfaces; a servlet container (Tomcat) normally supplies the runtime
+             implementation, but this is a bare Java process with none — Tyrus's standalone
+             bundle is the standard self-contained JSR-356 client for exactly this case. -->
+        <dependency>
+            <groupId>org.glassfish.tyrus.bundles</groupId>
+            <artifactId>tyrus-standalone-client</artifactId>
+            <version>2.1.5</version>
+        </dependency>
         <dependency>
             <groupId>com.fazecast</groupId>
             <artifactId>jSerialComm</artifactId>

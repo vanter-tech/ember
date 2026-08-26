@@ -8,7 +8,10 @@
   </head>
   <body>
     <div id="root"></div>
-    <script src="/env-config.js"></script>
+    <!-- Relative (not "/env-config.js"): Vite doesn't rewrite plain <script src> refs for
+         --base, so an absolute path would ignore --base=/app/ (used by the Hub build) and
+         request it from the server root instead of alongside index.html. -->
+    <script src="env-config.js"></script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

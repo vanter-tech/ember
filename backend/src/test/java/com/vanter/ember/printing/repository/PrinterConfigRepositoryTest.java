@@ -8,6 +8,7 @@ import com.vanter.ember.printing.model.ConnectionType;
 import com.vanter.ember.printing.model.PrintAgent;
 import com.vanter.ember.printing.model.PrintAgentStatus;
 import com.vanter.ember.printing.model.PrinterConfig;
+import com.vanter.ember.printing.model.PrinterRenderMode;
 import com.vanter.ember.printing.model.PrinterRole;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -54,21 +55,24 @@ class PrinterConfigRepositoryTest {
         TenantContextHolder.setTenantId(TENANT_ID);
         try {
             PrintAgent agent = printAgentRepository.save(PrintAgent.builder()
-                    .id(UUID.randomUUID()).name("Agente Caja")
+                    .id(UUID.randomUUID()).tenantId(TENANT_ID).name("Agente Caja")
                     .apiKeyHash("hash").status(PrintAgentStatus.ACTIVE)
                     .createdAt(LocalDateTime.now()).build());
 
             printerConfigRepository.save(PrinterConfig.builder()
                     .id(UUID.randomUUID()).agentId(agent.getId())
                     .role(PrinterRole.KITCHEN).connectionType(ConnectionType.NETWORK)
+                    .renderMode(PrinterRenderMode.RAW)
                     .host("192.168.1.50").port(9100).label("Cocina 1").active(true).build());
             printerConfigRepository.save(PrinterConfig.builder()
                     .id(UUID.randomUUID()).agentId(agent.getId())
                     .role(PrinterRole.KITCHEN).connectionType(ConnectionType.NETWORK)
+                    .renderMode(PrinterRenderMode.RAW)
                     .host("192.168.1.51").port(9100).label("Cocina 2 (inactiva)").active(false).build());
             printerConfigRepository.save(PrinterConfig.builder()
                     .id(UUID.randomUUID()).agentId(agent.getId())
                     .role(PrinterRole.RECEIPT).connectionType(ConnectionType.USB)
+                    .renderMode(PrinterRenderMode.RAW)
                     .comPort("COM3").label("Caja").active(true).build());
 
             List<PrinterConfig> kitchenPrinters = printerConfigRepository

@@ -10,6 +10,7 @@ import { Armchair, Users } from 'lucide-react'
 import { useUIStore } from '@/store/uiStore'
 import { Link } from 'react-router-dom'
 import { useTranslation } from '@/lib/i18n'
+import { WaiterTour } from './components/WaiterTour'
 
 export const Tables = () => {
   const { t } = useTranslation('waiter')
@@ -89,7 +90,7 @@ export const Tables = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 relative">
+        <div id="waiter-tour-grid" className="grid grid-cols-2 sm:grid-cols-3 gap-4 relative">
           {!isCajaOpen && (
             <div className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-white/40">
               <span className="max-w-[80%] text-center text-lg font-semibold text-[#8c1717]">
@@ -132,7 +133,7 @@ export const Tables = () => {
           ))}
         </div>
       </div>
-      <div className="w-full md:w-[30%] border-t md:border-t-0 md:border-l border-zinc-200 pt-5 md:pt-0 md:pl-5">
+      <div id="waiter-tour-panel" className="w-full md:w-[30%] border-t md:border-t-0 md:border-l border-zinc-200 pt-5 md:pt-0 md:pl-5">
         {tableDetails ? (
           <div>
             <h2 className="text-xl font-semibold mb-5">{t('tableDetailsTitle')}</h2>
@@ -186,7 +187,7 @@ export const Tables = () => {
                 )}
               </div>
               <div className="flex flex-col gap-4 mt-6">
-                <Button className="w-full text-md">
+                <Button id="waiter-tour-action" className="w-full text-md">
                   {tableDetails.isOccupied ? t('chargeTableButton') : t('openTableButton')}
                 </Button>
                 {tableDetails.isOccupied ? (
@@ -201,6 +202,7 @@ export const Tables = () => {
                 </Button>
 
                 <Button
+                  id="waiter-tour-assign"
                   variant={'outline'}
                   className="w-full text-md"
                   disabled={!isCajaOpen}
@@ -222,6 +224,18 @@ export const Tables = () => {
         )}
       </div>
       <ParticipantQrModal />
+      <WaiterTour
+        tableIds={
+          dashboardData
+            ?.map((table) => table.tableId)
+            .filter((id): id is string => Boolean(id)) ?? []
+        }
+        onSelectFirstTable={() => {
+          if (dashboardData?.[0]) {
+            setSelectedTable(dashboardData[0].tableId)
+          }
+        }}
+      />
     </div>
   )
 }

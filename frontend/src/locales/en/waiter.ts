@@ -49,6 +49,8 @@ export const waiter = {
   loadingCashRegister: 'Loading register...',
   cashRegisterTitle: 'Cash register',
   cashRegisterSubtitle: 'Opening, movements, and shift reconciliation.',
+  tourCashRegisterTitle: 'Your shift',
+  tourCashRegisterContent: 'Open your shift, record cash movements, and close it out at the end of the day from here.',
   noOpenShift: 'There is no open cash shift.',
   openCajaButton: 'Open register',
   shiftNumberLabel: 'Shift #{{number}}',
@@ -131,4 +133,13 @@ export const waiter = {
   tableOpenedToast: 'Table opened successfully',
   billRequestedToast: 'Bill requested.',
   billCalculateErrorToast: 'Could not calculate the bill.',
+  tourGridTitle: 'Your tables',
+  tourGridContent: 'Here you see every table in the restaurant. Red means occupied, gray means free.',
+  tourPanelTitle: 'Table details',
+  tourPanelContent: "Click a table and you'll see who's seated there and what they've ordered.",
+  tourActionTitle: 'Open or charge',
+  tourActionContent:
+    "This button opens the table for the first order, or charges the bill if it's already occupied.",
+  tourAssignTitle: 'Invite guests',
+  tourAssignContent: "Generates a QR code so this table's guests can join from their phone.",
 } satisfies typeof esWaiter

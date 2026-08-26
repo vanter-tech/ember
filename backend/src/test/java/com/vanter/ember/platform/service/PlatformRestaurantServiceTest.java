@@ -44,6 +44,7 @@ class PlatformRestaurantServiceTest {
     @Mock PlatformOperatorRepository platformOperatorRepository;
     @Mock PlatformAuditLogRepository platformAuditLogRepository;
     @Mock PasswordEncoder passwordEncoder;
+    @Mock com.vanter.ember.licensing.service.LicenseIssuingService licenseIssuingService;
     @InjectMocks PlatformRestaurantService platformRestaurantService;
 
     private Restaurant restaurant() {
@@ -237,5 +238,41 @@ class PlatformRestaurantServiceTest {
 
         assertThatThrownBy(() -> platformRestaurantService.create(createRequest(), "ghost@ember.local"))
                 .isInstanceOf(BadCredentialsException.class);
+    }
+
+    @Test
+    void issueHubLicense_returnsSignedKeyAndWritesAuditLog() {
+        PlatformOperator operator = PlatformOperator.builder()
+                .id(UUID.randomUUID())
+                .email("operator@ember.local")
+                .build();
+        UUID restaurantId = UUID.randomUUID();
+        when(platformOperatorRepository.findByEmail("operator@ember.local")).thenReturn(Optional.of(operator));
+        when(restaurantRepository.existsById(restaurantId)).thenReturn(true);
+        when(licenseIssuingService.issue(restaurantId)).thenReturn("signed-license-key");
+
+        String result = platformRestaurantService.issueHubLicense(restaurantId, "operator@ember.local");
+
+        assertThat(result).isEqualTo("signed-license-key");
+
+        ArgumentCaptor<com.vanter.ember.platform.model.PlatformAuditLog> captor =
+                ArgumentCaptor.forClass(com.vanter.ember.platform.model.PlatformAuditLog.class);
+        org.mockito.Mockito.verify(platformAuditLogRepository).save(captor.capture());
+        assertThat(captor.getValue().getAction()).isEqualTo("HUB_LICENSE_ISSUED");
+        assertThat(captor.getValue().getRestaurantId()).isEqualTo(restaurantId);
+    }
+
+    @Test
+    void issueHubLicense_throwsWhenRestaurantNotFound() {
+        PlatformOperator operator = PlatformOperator.builder()
+                .id(UUID.randomUUID())
+                .email("operator@ember.local")
+                .build();
+        UUID restaurantId = UUID.randomUUID();
+        when(platformOperatorRepository.findByEmail("operator@ember.local")).thenReturn(Optional.of(operator));
+        when(restaurantRepository.existsById(restaurantId)).thenReturn(false);
+
+        assertThatThrownBy(() -> platformRestaurantService.issueHubLicense(restaurantId, "operator@ember.local"))
+                .isInstanceOf(ResourceNotFoundException.class);
     }
 }

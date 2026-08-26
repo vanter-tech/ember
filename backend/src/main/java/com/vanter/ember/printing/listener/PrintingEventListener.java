@@ -67,7 +67,14 @@ public class PrintingEventListener {
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
                 .build();
-        printJobRepository.save(job);
+        // saveAndFlush, not save: PrintJob.tenantId is a Hibernate @TenantId field, generated
+        // in-memory only when the INSERT actually executes (flush time), not at persist() —
+        // dispatch() below reads job.getTenantId() immediately, and a plain save() (which defers
+        // flushing to transaction commit) would hand it a still-null tenantId, making its printer
+        // lookup always come up empty on this synchronous first attempt (found+fixed during
+        // PRINT-07's manual verification, 2026-08-26 — every kitchen ticket landed PENDING with
+        // attempts=0 until the next unrelated agent reconnect happened to flush it).
+        printJobRepository.saveAndFlush(job);
         printDispatchService.dispatch(job);
     }
 

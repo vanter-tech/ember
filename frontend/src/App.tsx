@@ -9,6 +9,7 @@ import { Login } from './pages/auth/Login'
 import { Register } from './pages/auth/Register'
 import { Toaster, ToastBar } from 'react-hot-toast'
 import { AdminLayout } from './layouts/AdminLayout'
+import { InventoryHub } from './pages/admin/inventoryHub/InventoryHub'
 import { Category } from './pages/admin/Category'
 import { ListMenuItem } from './pages/admin/ListMenuItem'
 import { ModifierGroups } from './pages/admin/ModifierGroups'
@@ -47,10 +48,15 @@ const RoleRedirect = () => {
   return <Navigate to="/login" replace />
 }
 
+// Vite's BASE_URL reflects `vite build --base=/app/` (the Hub-bundled build only, see
+// ember-hub/build-frontend.ps1) — normal cloud/dev builds have BASE_URL "/", where a trailing
+// slash-stripped basename is falsy and BrowserRouter falls back to its own root default.
+const routerBasename = import.meta.env.BASE_URL.replace(/\/$/, '') || undefined
+
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-    <BrowserRouter>
+    <BrowserRouter basename={routerBasename}>
       <Toaster
         position="top-right"
         toastOptions={{
@@ -113,10 +119,12 @@ export default function App() {
 
         <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
           <Route path="/admin" element={<AdminLayout />}>
-            <Route path="categories" element={<Category />} />
-            <Route path="categories/:id/items" element={<ListMenuItem />} />
-            <Route path="modifier-groups" element={<ModifierGroups />} />
-            <Route path="inventory" element={<Inventory />} />
+            <Route path="inventory" element={<InventoryHub />}>
+              <Route index element={<Inventory />} />
+              <Route path="categories" element={<Category />} />
+              <Route path="categories/:id/items" element={<ListMenuItem />} />
+              <Route path="modifiers" element={<ModifierGroups />} />
+            </Route>
             <Route path="settings" element={<Settings />} />
             <Route path="analytics" element={<Analytics />} />
             <Route path="employees" element={<Staff />} />

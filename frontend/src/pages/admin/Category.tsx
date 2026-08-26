@@ -11,12 +11,27 @@ import { EditCategoryModal } from '@/pages/admin/components/EditCategoryModal'
 import { Link } from 'react-router-dom'
 import { GlobalDeleteModal } from '@/components/GlobalDeleteModal'
 import { PaginationControls } from '@/components/PaginationControls'
+import { SectionTour } from '@/components/tours/SectionTour'
 import { useTranslation } from '@/lib/i18n'
 
 export const Category = () => {
   const { openModal } = useUIStore()
   const [page, setPage] = useState(0)
   const { t } = useTranslation('admin')
+
+  const tourSteps = [
+    {
+      target: '#category-tour-grid',
+      title: t('tourCategoriesGridTitle'),
+      content: t('tourCategoriesGridContent'),
+      skipBeacon: true,
+    },
+    {
+      target: '#topnav-create-button',
+      title: t('tourCategoriesCreateTitle'),
+      content: t('tourCategoriesCreateContent'),
+    },
+  ]
 
   const {
     data: categoriesPage,
@@ -41,8 +56,8 @@ export const Category = () => {
   }
 
   return (
-    <div className="p-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div>
+      <div id="category-tour-grid" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {categories.map((Category) => (
           <Link to={Category.id + '/items'}>
             <div
@@ -127,6 +142,7 @@ export const Category = () => {
       <NewCategoryModal />
       <EditCategoryModal />
       <GlobalDeleteModal/>
+      <SectionTour sectionId="admin-inventory-categories" steps={tourSteps} />
     </div>
   )
 }
