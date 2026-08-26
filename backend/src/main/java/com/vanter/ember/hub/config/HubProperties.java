@@ -17,7 +17,10 @@ public record HubProperties(
         Path stateFile,
         int postgresPort,
         int serverPort,
-        String activationUrl) {
+        String activationUrl,
+        Path minioDataDir,
+        Path minioBinDir,
+        int minioPort) {
 
     public static HubProperties fromEnvironment() {
         return new HubProperties(
@@ -28,7 +31,10 @@ public record HubProperties(
                 Path.of(env("EMBER_HUB_STATE_FILE", "./hub-state.json")),
                 Integer.parseInt(env("EMBER_HUB_POSTGRES_PORT", "5432")),
                 Integer.parseInt(env("EMBER_HUB_SERVER_PORT", "8080")),
-                env("EMBER_HUB_ACTIVATION_URL", ""));
+                env("EMBER_HUB_ACTIVATION_URL", ""),
+                Path.of(env("EMBER_HUB_MINIO_DATA_DIR", "./data/minio")),
+                Path.of(env("EMBER_HUB_MINIO_BIN_DIR", "./minio/bin")),
+                Integer.parseInt(env("EMBER_HUB_MINIO_PORT", "9000")));
     }
 
     private static String env(String name, String fallback) {

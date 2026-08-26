@@ -1,6 +1,7 @@
 # PROGRESS.md — Active Execution State
 
 ## Current Execution State
+- **Last Completed Task (report 257, feat-hub-portable-minio):** portable MinIO bootstrap + `HubDashboard` status indicator for Ember Hub, closing the 2026-08-25 gap where image uploads silently failed on any customer PC without Docker/MinIO. Brainstormed session on 2026-08-26 decomposed the user's ask into 4 threads (MinIO bootstrap+indicator, Windows service auto-start, jpackage/jlink installer, Tauri shell) — only the first is done; the other three are queued but unstarted, see Task Queue Status. `./mvnw test` 846/846 PASS. Predecessor: report 256.
 - **Flyway V1 consolidated (2026-08-24, on `emb-i18n-08` directly, no branch):** `V2` couldn't
   bootstrap a genuinely empty Postgres (it ALTERs tables only `ddl-auto` ever created, never a
   runnable script) — surfaced by a `flyway:clean` recovery earlier the same day. Generated
@@ -154,9 +155,10 @@
 - [x] feat-hub-dashboard-launcher: v1 Swing start/stop dashboard, replaces auto-boot as the distributable's entry point; fixed a real orphaned-Postgres-on-exit bug along the way. (report 237)
 - [x] Bundle compiled `frontend/` into the backend jar's static resources, mounted at `/app/**`. (report 238)
 - [x] **Design gap CLOSED:** license↔tenant↔admin provisioning — implemented end-to-end by the 10-task `docs/superpowers/plans/2026-08-25-hub-license-activation.md` (Tasks 1–9, reports 239–247; see Task Queue Status below). Final whole-branch review (report 248) then fixed the one real Critical bug the plan's own design assumption had: `Restaurant.builder().id(licenseRestaurantId)...build()` + `save()` throws against real Hibernate (`GenerationType.UUID` rejects a pre-assigned id) — fixed with a native `insertWithId` query.
-- [ ] v2: Tauri + webview shell reusing `frontend/`'s real design — needs its own plan, not started.
+- [ ] v2: Tauri + webview shell reusing `frontend/`'s real design — needs its own plan, not started. (brainstormed 2026-08-26, deliberately deferred as its own sub-project — see bullet below)
+- [ ] Windows service auto-start (`sc.exe` + SCM recovery, spec §2.3 "Recuperación ante caídas") — not started, depends on the jpackage/jlink installer below.
 - [ ] `jpackage`/`jlink` embedded-JRE `.exe` installer (spec §2.3) — not started.
-- [ ] **Gap found 2026-08-25, not started:** no portable MinIO for Hub. `MinioConfig.ensureBucketExists` runs unconditionally (no `@Profile`) but only logs a warning on failure — never fails boot, which is why it went unnoticed through all of HUB-01-11's testing. Real impact: any image upload (`ImageUploadService` — restaurant logo, menu item photos) silently fails on a customer's PC with no Docker/MinIO running. Needs its own task: either a portable MinIO binary bootstrapped like Postgres, or a local-disk storage strategy for the hub profile instead of S3/MinIO.
+- [x] **Gap found 2026-08-25, CLOSED (report 257):** portable MinIO bootstrap (`PortableMinioBootstrap`, mirrors `PortableDatabaseBootstrap` — port check, `ProcessBuilder` launch, poll `/minio/health/live` since MinIO has no blocking `-w` start flag, in-memory `Process` handle since MinIO writes no pid file) + a third `HubDashboard` status label. Local-only creds (`ember-hub`/`ember-hub-local`), no web console exposed. **Not yet manually verified against a real `minio.exe` binary** — same gap `PortableDatabaseBootstrap` had before HUB-01-11.
 
 **Ember Hub — hub-license-activation** (plan `docs/superpowers/plans/2026-08-25-hub-license-activation.md`, closes the design gap above)
 - [x] Task 1: `HubActivation` entity + repository + `V2__hub_activations.sql`. (report 239)

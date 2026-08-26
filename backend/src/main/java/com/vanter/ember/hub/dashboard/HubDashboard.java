@@ -41,6 +41,7 @@ public final class HubDashboard extends JFrame {
     private ConfigurableApplicationContext context;
 
     private final JLabel dbStatusLabel = new JLabel("Postgres: detenido");
+    private final JLabel minioStatusLabel = new JLabel("MinIO: detenido");
     private final JLabel serverStatusLabel = new JLabel("Servidor: detenido");
     private final JButton startButton = new JButton("Iniciar");
     private final JButton stopButton = new JButton("Detener");
@@ -51,8 +52,9 @@ public final class HubDashboard extends JFrame {
         super("Ember Hub");
         this.launchArgs = launchArgs;
 
-        JPanel statusPanel = new JPanel(new GridLayout(2, 1));
+        JPanel statusPanel = new JPanel(new GridLayout(3, 1));
         statusPanel.add(dbStatusLabel);
+        statusPanel.add(minioStatusLabel);
         statusPanel.add(serverStatusLabel);
 
         JPanel buttonPanel = new JPanel(new GridLayout(1, 4, 8, 0));
@@ -81,7 +83,7 @@ public final class HubDashboard extends JFrame {
             }
         });
 
-        setSize(360, 160);
+        setSize(360, 190);
         setLocationRelativeTo(null);
     }
 
@@ -92,13 +94,17 @@ public final class HubDashboard extends JFrame {
     private void onStart() {
         startButton.setEnabled(false);
         dbStatusLabel.setText("Postgres: iniciando...");
+        minioStatusLabel.setText("MinIO: iniciando...");
         new Thread(this::startServicesInBackground, "hub-dashboard-start").start();
     }
 
     private void startServicesInBackground() {
         try {
             bootstrapRunner.startServices();
-            SwingUtilities.invokeLater(() -> dbStatusLabel.setText("Postgres: en ejecución"));
+            SwingUtilities.invokeLater(() -> {
+                dbStatusLabel.setText("Postgres: en ejecución");
+                minioStatusLabel.setText("MinIO: en ejecución");
+            });
 
             SpringApplication app = new SpringApplication(EmberApplication.class);
             app.addListeners((ApplicationListener<ApplicationReadyEvent>) event ->
@@ -112,6 +118,7 @@ public final class HubDashboard extends JFrame {
             log.error("Ember Hub no pudo iniciar", e);
             SwingUtilities.invokeLater(() -> {
                 dbStatusLabel.setText("Postgres: detenido");
+                minioStatusLabel.setText("MinIO: detenido");
                 startButton.setEnabled(true);
                 JOptionPane.showMessageDialog(
                         this, e.getMessage(), "Ember Hub no puede iniciar", JOptionPane.ERROR_MESSAGE);
@@ -124,6 +131,7 @@ public final class HubDashboard extends JFrame {
         openButton.setEnabled(false);
         serverStatusLabel.setText("Servidor: deteniendo...");
         dbStatusLabel.setText("Postgres: deteniendo...");
+        minioStatusLabel.setText("MinIO: deteniendo...");
         new Thread(this::stopServicesInBackground, "hub-dashboard-stop").start();
     }
 
@@ -135,6 +143,7 @@ public final class HubDashboard extends JFrame {
         bootstrapRunner.stopServices();
         SwingUtilities.invokeLater(() -> {
             dbStatusLabel.setText("Postgres: detenido");
+            minioStatusLabel.setText("MinIO: detenido");
             serverStatusLabel.setText("Servidor: detenido");
             startButton.setEnabled(true);
         });

@@ -19,5 +19,8 @@ class HubPropertiesTest {
         assertThat(properties.postgresPort()).isEqualTo(5432);
         assertThat(properties.serverPort()).isEqualTo(8080);
         assertThat(properties.activationUrl()).isEmpty();
+        assertThat(properties.minioDataDir()).isEqualTo(Path.of("./data/minio"));
+        assertThat(properties.minioBinDir()).isEqualTo(Path.of("./minio/bin"));
+        assertThat(properties.minioPort()).isEqualTo(9000);
     }
 }
