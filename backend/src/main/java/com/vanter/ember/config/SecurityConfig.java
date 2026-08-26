@@ -66,6 +66,15 @@ public class SecurityConfig {
                         .requestMatchers("/printing/agents/me/**").permitAll()
                         .requestMatchers("/actuator/health", "/actuator/**").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
+                        // Hub's bundled frontend shell (HubWebConfig, @Profile("hub")) — "/app"
+                        // is deliberately not used by any real controller, so this can never
+                        // shadow a protected API route (e.g. /kitchen/orders is both a real KDS
+                        // endpoint AND a frontend route, which is exactly why the frontend is
+                        // served from its own prefix instead of path-matched at the root).
+                        .requestMatchers("/app/**").permitAll()
+                        // The Hub's one-time activation call — authenticates via the license
+                        // signature itself (HubActivationService), not a bearer token.
+                        .requestMatchers("/hub-activations").permitAll()
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(e -> e.authenticationEntryPoint(unauthorizedEntryPoint()))
@@ -105,17 +114,26 @@ public class SecurityConfig {
                     chain.doFilter(request, response);
                     return;
                 }
-                String email = jwtService.extractSubject(token);
-                if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                    UserDetails userDetails = userDetailsService.loadUserByUsername(email);
-                    // A deactivated staff account's JWT can still be within its validity window —
-                    // simply not authenticating here lets the existing anyRequest().authenticated()
-                    // rule reject it the same way an absent/invalid token already does.
-                    if (userDetails.isEnabled()) {
-                        UsernamePasswordAuthenticationToken authToken =
-                                new UsernamePasswordAuthenticationToken(
-                                        userDetails, null, userDetails.getAuthorities());
-                        SecurityContextHolder.getContext().setAuthentication(authToken);
+                // A print-agent token's subject is the agent's own id, not a user email — it
+                // has no corresponding User row, so loadUserByUsername would always throw
+                // UsernameNotFoundException. This token type authenticates the caller (a print
+                // agent hitting one of its own permitAll /printing/agents/** routes) by its
+                // signature alone; it still needs TenantContextHolder bound below, just not a
+                // Spring Security principal.
+                String type = jwtService.extractClaim(token, claims -> claims.get("typ", String.class));
+                if (!"print-agent".equals(type)) {
+                    String email = jwtService.extractSubject(token);
+                    if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                        UserDetails userDetails = userDetailsService.loadUserByUsername(email);
+                        // A deactivated staff account's JWT can still be within its validity window —
+                        // simply not authenticating here lets the existing anyRequest().authenticated()
+                        // rule reject it the same way an absent/invalid token already does.
+                        if (userDetails.isEnabled()) {
+                            UsernamePasswordAuthenticationToken authToken =
+                                    new UsernamePasswordAuthenticationToken(
+                                            userDetails, null, userDetails.getAuthorities());
+                            SecurityContextHolder.getContext().setAuthentication(authToken);
+                        }
                     }
                 }
                 UUID tenantId = jwtService.extractTenantId(token);

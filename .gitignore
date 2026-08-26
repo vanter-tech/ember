@@ -5,3 +5,6 @@
 
 # Scratch workspace for superpowers:subagent-driven-development plan execution
 .superpowers/
+
+# Hub distributable's bundled frontend build output — regenerate via ember-hub/build-frontend.ps1
+backend/src/main/resources/static/

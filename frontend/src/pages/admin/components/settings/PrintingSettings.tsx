@@ -1,12 +1,105 @@
+import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Printer, RotateCcw } from 'lucide-react'
-import { printingService } from '@/lib/api'
+import { KeyRound, Printer, RotateCcw } from 'lucide-react'
+import { printingService, type PrintAgentResponse } from '@/lib/api'
 import { useUIStore } from '@/store/uiStore'
 import { useTranslation } from '@/lib/i18n'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { CreateAgentModal } from './printing/CreateAgentModal'
 import { AddPrinterModal } from './printing/AddPrinterModal'
+
+const printerConnectionDetail = (printer: {
+  connectionType?: string
+  host?: string
+  port?: number
+  comPort?: string
+  windowsQueueName?: string
+  renderMode?: string
+}) => {
+  switch (printer.connectionType) {
+    case 'NETWORK':
+      return `${printer.host ?? ''}:${printer.port ?? ''}`
+    case 'USB':
+      return printer.comPort ?? ''
+    case 'WINDOWS_QUEUE':
+      return printer.renderMode === 'DRIVER'
+        ? `${printer.windowsQueueName ?? ''} (driver)`
+        : (printer.windowsQueueName ?? '')
+    default:
+      return ''
+  }
+}
+
+const AgentPrinterList = ({ agent }: { agent: PrintAgentResponse }) => {
+  const { t } = useTranslation('admin')
+
+  const { data: printers = [] } = useQuery({
+    queryKey: ['printerConfigs', agent.id],
+    queryFn: () => printingService.listPrinters(agent.id as string),
+    enabled: !!agent.id,
+  })
+
+  if (printers.length === 0) {
+    return <p className="pl-3 text-sm text-zinc-400">{t('printingNoPrintersMessage')}</p>
+  }
+
+  return (
+    <div className="space-y-1 pl-3">
+      {printers.map((printer) => (
+        <div key={printer.id} className="flex items-center justify-between text-sm text-zinc-600">
+          <span>
+            {printer.role === 'KITCHEN' ? t('printingRoleKitchen') : t('printingRoleReceipt')} ·{' '}
+            {printer.label} · {printerConnectionDetail(printer)}
+          </span>
+          <span className={printer.active ? 'text-emerald-600' : 'text-zinc-400'}>
+            {printer.active ? t('printingPrinterActiveStatus') : t('printingPrinterInactiveStatus')}
+          </span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+const RegenerateKeyButton = ({ agentId }: { agentId: string }) => {
+  const { t } = useTranslation('admin')
+  const [newKey, setNewKey] = useState<string | null>(null)
+
+  const mutation = useMutation({
+    mutationFn: () => printingService.regenerateKey(agentId),
+    onSuccess: (created) => setNewKey(created.apiKey ?? null),
+  })
+
+  return (
+    <>
+      <Button
+        variant="outline"
+        size="sm"
+        className="rounded-xl"
+        onClick={() => mutation.mutate()}
+        disabled={mutation.isPending}
+      >
+        <KeyRound className="mr-2 h-4 w-4" />
+        {t('printingRegenerateKeyButton')}
+      </Button>
+      <Dialog open={!!newKey} onOpenChange={(isOpen) => !isOpen && setNewKey(null)}>
+        <DialogContent className="sm:max-w-md rounded-3xl p-6">
+          <DialogHeader className="mb-4">
+            <DialogTitle className="text-2xl font-bold text-zinc-800">{t('printingApiKeyTitle')}</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-zinc-500">{t('printingApiKeyWarning')}</p>
+          <code className="block break-all rounded-xl bg-zinc-100 p-3 text-sm">{newKey}</code>
+          <DialogFooter>
+            <Button type="button" onClick={() => setNewKey(null)}>
+              {t('printingCloseButton')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  )
+}
 
 export const PrintingSettings = () => {
   const { t } = useTranslation('admin')
@@ -52,26 +145,29 @@ export const PrintingSettings = () => {
             <p className="text-sm text-zinc-500">{t('printingNoAgentsMessage')}</p>
           )}
           {agents.map((agent) => (
-            <div
-              key={agent.id}
-              className="flex items-center justify-between rounded-xl border border-zinc-200 p-3"
-            >
-              <div>
-                <p className="font-medium text-zinc-800">{agent.name}</p>
-                <p className="text-sm text-zinc-500">
-                  {agent.status} ·{' '}
-                  {agent.connected ? t('printingConnectedStatus') : t('printingDisconnectedStatus')}
-                </p>
+            <div key={agent.id} className="space-y-2 rounded-xl border border-zinc-200 p-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium text-zinc-800">{agent.name}</p>
+                  <p className="text-sm text-zinc-500">
+                    {agent.status} ·{' '}
+                    {agent.connected ? t('printingConnectedStatus') : t('printingDisconnectedStatus')}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  {agent.id && <RegenerateKeyButton agentId={agent.id} />}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="rounded-xl"
+                    onClick={() => openModal('ADD_PRINTER', agent.id)}
+                  >
+                    <Printer className="mr-2 h-4 w-4" />
+                    {t('printingAddPrinterButton')}
+                  </Button>
+                </div>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                className="rounded-xl"
-                onClick={() => openModal('ADD_PRINTER', agent.id)}
-              >
-                <Printer className="mr-2 h-4 w-4" />
-                {t('printingAddPrinterButton')}
-              </Button>
+              <AgentPrinterList agent={agent} />
             </div>
           ))}
         </CardContent>

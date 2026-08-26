@@ -58,7 +58,7 @@ export const SettingsBar = ({
     const loyaltyGroupActive = GROUP_MEMBERS.FIDELIZACION.includes(activeSettings)
 
     return (
-        <nav className={`flex flex-col gap-2 ${collapsed ? 'w-fit' : 'w-64'}`}>
+        <nav id="settings-tour-sidebar" className={`flex flex-col gap-2 ${collapsed ? 'w-fit' : 'w-64'}`}>
             <Button
                 variant={activeSettings === 'BRANDING' ?
                     'default' : 'ghost'}

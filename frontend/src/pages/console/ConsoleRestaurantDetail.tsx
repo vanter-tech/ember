@@ -56,6 +56,21 @@ export default function ConsoleRestaurantDetail() {
     },
   })
 
+  const issueHubLicense = useMutation({
+    mutationFn: () => platformRestaurantService.issueHubLicense(id!),
+    onSuccess: (licenseKeyContents) => {
+      const blob = new Blob([licenseKeyContents], { type: 'text/plain' })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = 'license.key'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+    },
+  })
+
   if (isLoading) {
     return <div className="p-6 text-zinc-500">Cargando restaurante...</div>
   }
@@ -73,13 +88,23 @@ export default function ConsoleRestaurantDetail() {
           </Link>
           <h1 className="text-2xl font-semibold">{restaurant.name}</h1>
         </div>
-        <Button
-          type="button"
-          disabled={toggleStatus.isPending}
-          onClick={() => toggleStatus.mutate(nextStatus(restaurant.status))}
-        >
-          {restaurant.status === 'SUSPENDED' ? 'Reactivar' : 'Suspender'}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            disabled={issueHubLicense.isPending}
+            onClick={() => issueHubLicense.mutate()}
+          >
+            {issueHubLicense.isPending ? 'Emitiendo...' : 'Emitir licencia Hub'}
+          </Button>
+          <Button
+            type="button"
+            disabled={toggleStatus.isPending}
+            onClick={() => toggleStatus.mutate(nextStatus(restaurant.status))}
+          >
+            {restaurant.status === 'SUSPENDED' ? 'Reactivar' : 'Suspender'}
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4 rounded-lg border border-zinc-200 p-4 text-sm">

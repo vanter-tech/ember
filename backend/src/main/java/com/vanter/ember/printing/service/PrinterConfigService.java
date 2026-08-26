@@ -7,6 +7,7 @@ import com.vanter.ember.printing.dto.UpdatePrinterConfigRequest;
 import com.vanter.ember.printing.model.ConnectionType;
 import com.vanter.ember.printing.model.PrintAgent;
 import com.vanter.ember.printing.model.PrinterConfig;
+import com.vanter.ember.printing.model.PrinterRenderMode;
 import com.vanter.ember.printing.model.PrinterRole;
 import com.vanter.ember.printing.repository.PrintAgentRepository;
 import com.vanter.ember.printing.repository.PrinterConfigRepository;
@@ -39,6 +40,10 @@ public class PrinterConfigService {
                 .host(request.host())
                 .port(request.port())
                 .comPort(request.comPort())
+                .windowsQueueName(request.windowsQueueName())
+                .renderMode(request.renderMode() != null
+                        ? PrinterRenderMode.valueOf(request.renderMode())
+                        : PrinterRenderMode.RAW)
                 .label(request.label())
                 .active(true)
                 .build());
@@ -51,6 +56,8 @@ public class PrinterConfigService {
         if (request.host() != null) config.setHost(request.host());
         if (request.port() != null) config.setPort(request.port());
         if (request.comPort() != null) config.setComPort(request.comPort());
+        if (request.windowsQueueName() != null) config.setWindowsQueueName(request.windowsQueueName());
+        if (request.renderMode() != null) config.setRenderMode(PrinterRenderMode.valueOf(request.renderMode()));
         if (request.label() != null) config.setLabel(request.label());
         if (request.active() != null) config.setActive(request.active());
         return toResponse(printerConfigRepository.save(config));
@@ -76,6 +83,7 @@ public class PrinterConfigService {
         return new PrinterConfigResponse(
                 config.getId(), config.getAgentId(), config.getRole().name(),
                 config.getConnectionType().name(), config.getHost(), config.getPort(),
-                config.getComPort(), config.getLabel(), config.isActive());
+                config.getComPort(), config.getWindowsQueueName(), config.getRenderMode().name(),
+                config.getLabel(), config.isActive());
     }
 }

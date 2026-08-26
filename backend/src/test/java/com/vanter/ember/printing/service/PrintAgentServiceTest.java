@@ -11,6 +11,7 @@ import com.vanter.ember.printing.model.PrintAgent;
 import com.vanter.ember.printing.model.PrintAgentStatus;
 import com.vanter.ember.printing.repository.PrintAgentRepository;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -25,6 +26,7 @@ class PrintAgentServiceTest {
 
     @Mock PrintAgentRepository printAgentRepository;
     @Mock PasswordEncoder passwordEncoder;
+    @Mock PrintAgentConnectionRegistry connectionRegistry;
     @InjectMocks PrintAgentService printAgentService;
 
     private static final UUID TENANT_ID = UUID.randomUUID();
@@ -60,5 +62,27 @@ class PrintAgentServiceTest {
 
         assertThatThrownBy(() -> printAgentService.revoke(TENANT_ID, agentId))
                 .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void list_reflectsLiveConnectionStateFromRegistry_notHardcodedFalse() {
+        UUID connectedId = UUID.randomUUID();
+        UUID disconnectedId = UUID.randomUUID();
+        PrintAgent connectedAgent = PrintAgent.builder()
+                .id(connectedId).tenantId(TENANT_ID).name("Conectado")
+                .apiKeyHash("h").status(PrintAgentStatus.ACTIVE).createdAt(LocalDateTime.now()).build();
+        PrintAgent disconnectedAgent = PrintAgent.builder()
+                .id(disconnectedId).tenantId(TENANT_ID).name("Desconectado")
+                .apiKeyHash("h").status(PrintAgentStatus.ACTIVE).createdAt(LocalDateTime.now()).build();
+        when(printAgentRepository.findByTenantId(TENANT_ID))
+                .thenReturn(List.of(connectedAgent, disconnectedAgent));
+        when(connectionRegistry.isConnected(connectedId)).thenReturn(true);
+        when(connectionRegistry.isConnected(disconnectedId)).thenReturn(false);
+
+        var responses = printAgentService.list(TENANT_ID);
+
+        assertThat(responses).hasSize(2);
+        assertThat(responses.get(0).connected()).isTrue();
+        assertThat(responses.get(1).connected()).isFalse();
     }
 }

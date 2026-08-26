@@ -9,4 +9,6 @@ public record CreatePrinterConfigRequest(
         String host,
         Integer port,
         String comPort,
+        String windowsQueueName,
+        String renderMode,
         @NotBlank String label) {}

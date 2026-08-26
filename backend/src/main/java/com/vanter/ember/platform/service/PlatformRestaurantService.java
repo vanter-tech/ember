@@ -17,7 +17,7 @@ import com.vanter.ember.restaurant.model.RestaurantStatus;
 import com.vanter.ember.restaurant.repository.RestaurantRepository;
 import com.vanter.ember.restaurant.service.RestaurantService;
 import java.util.UUID;
-import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -32,7 +32,6 @@ import org.springframework.transaction.annotation.Transactional;
  * never touches it (see {@link com.vanter.ember.platform.config.PlatformSecurityConfig}).
  */
 @Service
-@RequiredArgsConstructor
 public class PlatformRestaurantService {
 
     private final RestaurantRepository restaurantRepository;
@@ -41,6 +40,32 @@ public class PlatformRestaurantService {
     private final PlatformOperatorRepository platformOperatorRepository;
     private final PlatformAuditLogRepository platformAuditLogRepository;
     private final PasswordEncoder passwordEncoder;
+    private final com.vanter.ember.licensing.service.LicenseIssuingService licenseIssuingService;
+
+    /**
+     * Manual constructor (not Lombok's {@code @RequiredArgsConstructor}): {@code @Lazy} on a
+     * field is never copied onto the generated constructor parameter, so it would silently NOT
+     * defer {@link com.vanter.ember.licensing.service.LicenseIssuingService}'s creation — and that
+     * bean throws at construction time whenever {@code hub.license.private-key} isn't set (true
+     * for every non-{@code hub}-profile boot, tests included). The {@code @Lazy} has to sit on
+     * this constructor's parameter to actually produce a deferred-resolution proxy here.
+     */
+    public PlatformRestaurantService(
+            RestaurantRepository restaurantRepository,
+            UserRepository userRepository,
+            RestaurantService restaurantService,
+            PlatformOperatorRepository platformOperatorRepository,
+            PlatformAuditLogRepository platformAuditLogRepository,
+            PasswordEncoder passwordEncoder,
+            @Lazy com.vanter.ember.licensing.service.LicenseIssuingService licenseIssuingService) {
+        this.restaurantRepository = restaurantRepository;
+        this.userRepository = userRepository;
+        this.restaurantService = restaurantService;
+        this.platformOperatorRepository = platformOperatorRepository;
+        this.platformAuditLogRepository = platformAuditLogRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.licenseIssuingService = licenseIssuingService;
+    }
 
     public Page<PlatformRestaurantSummaryResponse> getAll(Pageable pageable) {
         return restaurantRepository.findAll(pageable).map(PlatformRestaurantSummaryResponse::from);
@@ -126,5 +151,31 @@ public class PlatformRestaurantService {
                 .build());
 
         return PlatformRestaurantSummaryResponse.from(restaurant);
+    }
+
+    /**
+     * Operator-driven license issuance: signs a {@code license.key} for a restaurant that already
+     * exists (created via {@link #create}), and audits it the same way as every other operator
+     * action here.
+     */
+    @Transactional
+    public String issueHubLicense(UUID restaurantId, String operatorEmail) {
+        PlatformOperator operator = platformOperatorRepository.findByEmail(operatorEmail)
+                .orElseThrow(() -> new BadCredentialsException("Invalid credentials"));
+
+        if (!restaurantRepository.existsById(restaurantId)) {
+            throw new ResourceNotFoundException("Restaurant not found: " + restaurantId);
+        }
+
+        String licenseKey = licenseIssuingService.issue(restaurantId);
+
+        platformAuditLogRepository.save(PlatformAuditLog.builder()
+                .operatorId(operator.getId())
+                .operatorEmail(operator.getEmail())
+                .restaurantId(restaurantId)
+                .action("HUB_LICENSE_ISSUED")
+                .build());
+
+        return licenseKey;
     }
 }

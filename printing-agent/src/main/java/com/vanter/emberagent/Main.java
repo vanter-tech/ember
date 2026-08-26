@@ -15,42 +15,39 @@ public class Main {
         AuthClient authClient = new AuthClient();
         PrinterConfigClient printerConfigClient = new PrinterConfigClient();
         AgentConnection agentConnection = new AgentConnection();
-        NetworkPrinterSender networkPrinterSender = new NetworkPrinterSender();
-        UsbPrinterSender usbPrinterSender = new UsbPrinterSender();
+        PrintJobDispatcher dispatcher = new PrintJobDispatcher(
+                new NetworkPrinterSender(), new UsbPrinterSender(), new WindowsPrintQueueSender());
         AckSender ackSender = new AckSender();
 
         while (true) {
             try {
                 String jwt = authClient.fetchToken(config);
                 String agentId = decodeAgentIdFromJwt(jwt);
+                // Fetched once here only to fail fast (and log a count) if the config endpoint is
+                // unreachable before opening the WS session — PrintJobHandler below refetches the
+                // list fresh on every job, since a session can stay open for hours and printers can
+                // change (added/edited/deactivated) at any point during that window.
                 List<PrinterConfigClient.PrinterConfigDto> myPrinters =
                         printerConfigClient.fetchMyPrinters(config.backendBaseUrl(), jwt);
+                PrintJobHandler jobHandler =
+                        new PrintJobHandler(printerConfigClient, dispatcher, config.backendBaseUrl(), jwt);
 
                 AtomicReference<StompSession> sessionRef = new AtomicReference<>();
                 StompSession session = agentConnection.connect(
-                        toWsUrl(config.backendBaseUrl()), jwt, agentId, job -> {
-                            for (PrinterConfigClient.PrinterConfigDto printer : myPrinters) {
-                                if (!printer.role().equals(job.role())) continue;
-                                try {
-                                    if ("NETWORK".equals(printer.connectionType())) {
-                                        networkPrinterSender.print(printer, job.payload());
-                                    } else {
-                                        usbPrinterSender.print(printer, job.payload());
-                                    }
-                                    ackSender.send(sessionRef.get(), job.jobId(), printer.id(), "PRINTED", null);
-                                } catch (Exception e) {
-                                    ackSender.send(sessionRef.get(), job.jobId(), printer.id(), "ERROR", e.getMessage());
-                                }
-                            }
-                        });
+                        toWsUrl(config.backendBaseUrl()), jwt, agentId,
+                        job -> jobHandler.handle(job, (jobId, printerConfigId, result, error) ->
+                                ackSender.send(sessionRef.get(), jobId, printerConfigId, result, error)));
                 sessionRef.set(session);
+                System.out.println("[print-agent] conectado, agentId=" + agentId
+                        + ", impresoras=" + myPrinters.size());
 
                 // Block this thread while the STOMP session is alive; reconnect on any drop.
                 while (session.isConnected()) {
                     TimeUnit.SECONDS.sleep(5);
                 }
+                System.err.println("[print-agent] sesion desconectada, reintentando...");
             } catch (Exception e) {
-                System.err.println("Agent connection lost, retrying in 10s: " + e.getMessage());
+                System.err.println("[print-agent] conexion perdida, reintentando en 10s: " + e.getMessage());
                 TimeUnit.SECONDS.sleep(10);
             }
         }

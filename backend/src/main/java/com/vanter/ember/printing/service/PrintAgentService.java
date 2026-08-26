@@ -25,12 +25,14 @@ public class PrintAgentService {
 
     private final PrintAgentRepository printAgentRepository;
     private final PasswordEncoder passwordEncoder;
+    private final PrintAgentConnectionRegistry connectionRegistry;
 
     @Transactional
     public CreatedPrintAgentResponse create(UUID tenantId, String name) {
         String apiKey = generateApiKey();
         PrintAgent agent = printAgentRepository.save(PrintAgent.builder()
                 .id(UUID.randomUUID())
+                .tenantId(tenantId)
                 .name(name)
                 .apiKeyHash(passwordEncoder.encode(apiKey))
                 .status(PrintAgentStatus.ACTIVE)
@@ -64,7 +66,7 @@ public class PrintAgentService {
 
     public List<PrintAgentResponse> list(UUID tenantId) {
         return printAgentRepository.findByTenantId(tenantId).stream()
-                .map(a -> toResponse(a, false))
+                .map(a -> toResponse(a, connectionRegistry.isConnected(a.getId())))
                 .toList();
     }
 

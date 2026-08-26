@@ -12,7 +12,10 @@ public class PrintAgentAckController {
 
     private final PrintDispatchService printDispatchService;
 
-    @MessageMapping("/ack")
+    // WebSocketConfig.setApplicationDestinationPrefixes registers ("/app", "/app/print-agent")
+    // — Spring strips the FIRST prefix that matches a destination, so the agent's
+    // "/app/print-agent/ack" SEND resolves to mapped destination "/print-agent/ack", not "/ack".
+    @MessageMapping("/print-agent/ack")
     public void ack(PrintJobAck ack) {
         printDispatchService.handleAck(ack);
     }

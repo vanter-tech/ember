@@ -12,7 +12,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.TenantId;
 
 /**
  * One local Hardware Bridge process registered for a restaurant. A tenant may register more
@@ -20,6 +19,13 @@ import org.hibernate.annotations.TenantId;
  * reachable from the PC it is physically plugged into (spec §2.5). {@code apiKeyHash} is a
  * BCrypt hash, same encoder as {@code User.password} — the plaintext key is shown exactly
  * once, at creation/regeneration time, and never persisted.
+ *
+ * <p>Deliberately NOT {@code @TenantId} — same reason as {@code User}/{@code Session}:
+ * {@link com.vanter.ember.printing.service.PrintAgentService#authenticateByApiKey} must scan
+ * every {@code ACTIVE} agent across all tenants, since the caller (a print agent presenting its
+ * API key at {@code POST /printing/agents/token}, a {@code permitAll} route) has no tenant bound
+ * yet — that's the whole point of the call. Every tenant-scoped method
+ * ({@code create}/{@code list}/{@code getOwned}) filters by {@code tenantId} explicitly instead.
  */
 @Entity
 @Table(name = "print_agents")
@@ -32,7 +38,6 @@ public class PrintAgent {
     @Id
     private UUID id;
 
-    @TenantId
     @Column(name = "tenant_id", nullable = false, updatable = false)
     private UUID tenantId;
 

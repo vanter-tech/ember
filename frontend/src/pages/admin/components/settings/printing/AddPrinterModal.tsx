@@ -20,10 +20,12 @@ import { useTranslation } from '@/lib/i18n'
 
 const addPrinterSchema = z.object({
   role: z.enum(['KITCHEN', 'RECEIPT']),
-  connectionType: z.enum(['NETWORK', 'USB']),
+  connectionType: z.enum(['NETWORK', 'USB', 'WINDOWS_QUEUE']),
   host: z.string().optional(),
   port: z.string().optional(),
   comPort: z.string().optional(),
+  windowsQueueName: z.string().optional(),
+  renderMode: z.enum(['RAW', 'DRIVER']),
   label: z.string().min(1).max(100),
 })
 
@@ -37,7 +39,16 @@ export const AddPrinterModal = () => {
 
   const form = useForm<AddPrinterInputs>({
     resolver: zodResolver(addPrinterSchema),
-    defaultValues: { role: 'KITCHEN', connectionType: 'NETWORK', host: '', port: '9100', comPort: '', label: '' },
+    defaultValues: {
+      role: 'KITCHEN',
+      connectionType: 'NETWORK',
+      host: '',
+      port: '9100',
+      comPort: '',
+      windowsQueueName: '',
+      renderMode: 'RAW',
+      label: '',
+    },
   })
 
   const connectionType = form.watch('connectionType')
@@ -51,6 +62,8 @@ export const AddPrinterModal = () => {
         host: data.connectionType === 'NETWORK' ? data.host : undefined,
         port: data.connectionType === 'NETWORK' ? Number(data.port) : undefined,
         comPort: data.connectionType === 'USB' ? data.comPort : undefined,
+        windowsQueueName: data.connectionType === 'WINDOWS_QUEUE' ? data.windowsQueueName : undefined,
+        renderMode: data.connectionType === 'WINDOWS_QUEUE' ? data.renderMode : undefined,
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['printerConfigs', agentId] })
@@ -109,6 +122,7 @@ export const AddPrinterModal = () => {
                     <SelectContent>
                       <SelectItem value="NETWORK">{t('printingConnectionNetwork')}</SelectItem>
                       <SelectItem value="USB">{t('printingConnectionUsb')}</SelectItem>
+                      <SelectItem value="WINDOWS_QUEUE">{t('printingConnectionWindowsQueue')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </FormItem>
@@ -139,7 +153,7 @@ export const AddPrinterModal = () => {
                   )}
                 />
               </>
-            ) : (
+            ) : connectionType === 'USB' ? (
               <FormField
                 control={form.control}
                 name="comPort"
@@ -151,6 +165,40 @@ export const AddPrinterModal = () => {
                   </FormItem>
                 )}
               />
+            ) : (
+              <>
+                <FormField
+                  control={form.control}
+                  name="windowsQueueName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <Input placeholder={t('printingQueueNamePlaceholder')} className="rounded-xl" {...field} />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="renderMode"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t('printingRenderModeLabel')}</FormLabel>
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <FormControl>
+                          <SelectTrigger className="w-full rounded-xl">
+                            <SelectValue />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="RAW">{t('printingRenderModeRaw')}</SelectItem>
+                          <SelectItem value="DRIVER">{t('printingRenderModeDriver')}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </FormItem>
+                  )}
+                />
+              </>
             )}
             <FormField
               control={form.control}

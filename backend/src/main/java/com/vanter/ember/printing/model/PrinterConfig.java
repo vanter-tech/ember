@@ -51,6 +51,13 @@ public class PrinterConfig {
     @Column(name = "com_port")
     private String comPort;
 
+    @Column(name = "windows_queue_name")
+    private String windowsQueueName;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "render_mode", nullable = false)
+    private PrinterRenderMode renderMode;
+
     @Column(nullable = false)
     private String label;
 

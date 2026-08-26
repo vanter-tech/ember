@@ -1,13 +1,15 @@
-# Vanter Hub — Diseño (en progreso)
+# Ember Hub — Diseño (en progreso)
 
 > Estado: **borrador de decisiones**, no es spec final. Arquitectura núcleo
-> (secciones 2.1–2.12) ya cerrada — retomada y completada el 2026-08-24. Queda
-> abierto el modelo de pagos digitales (sección 5), que se discute en su
+> (secciones 2.1–2.12) ya cerrada — retomada y completada el 2026-08-24. La
+> migración Mongo→Postgres que 2.3 daba por pendiente ya está hecha, mergeada
+> en `emb-i18n-08` (rama `ember-postgress-migration`) — ver 2.3 actualizada.
+> Queda abierto el modelo de pagos digitales (sección 5), que se discute en su
 > propia sesión antes de escribir el plan de implementación.
 
 ## 1. Motivación
 
-Vanter Hub es la variante on-premise/offline de Ember, pensada para
+Ember Hub es la variante on-premise/offline de Ember, pensada para
 restaurantes clientes que prefieren operar de forma local en vez de
 contratar la versión alojada en la nube. No es un producto nuevo: es el
 mismo SaaS (Ember), reempaquetado para correr en la PC del restaurante sin
@@ -52,7 +54,13 @@ el panel admin central, las ventas se generan solo en el Hub.
 ### 2.2 Licenciamiento
 
 - **Hardware fingerprint** (CPU + placa madre): evita instalar la misma
-  licencia en más de una PC sin autorización.
+  licencia en más de una PC sin autorización. Librería: **OSHI** (Java puro
+  vía JNA, ya soporta Windows nativamente — aunque es multiplataforma,
+  v1 es **Windows-only** por decisión explícita del 2026-08-24: la ruta
+  técnica completa de 2.3 depende de mecanismos específicos de Windows
+  (`sc.exe`/Service Control Manager, instalador `.exe`), así que soporte
+  Mac/Linux queda fuera de alcance hasta que exista una razón de negocio
+  concreta para duplicar ese trabajo de empaquetado/recovery).
 - **Restaurant ID / tenant vinculado**: la licencia no es genérica, está
   atada a un restaurante específico del cliente. Permite:
   - Desactivación remota (próximo heartbeat bloquea el Hub de un cliente
@@ -76,6 +84,16 @@ usa únicamente herramientas del stack Java/Spring ya conocido:
 
 - **Empaquetado:** `jpackage` + `jlink` → JRE embebido, instalador `.exe`
   nativo de Windows. El cliente no instala Java por separado.
+- **Estructura de carpetas (2026-08-24):** `ember-hub/` en la raíz del
+  monolito es **solo empaquetado** — config de `jpackage`/`jlink`, los
+  binarios portátiles de Postgres, scripts de build del instalador — NO es
+  un módulo Maven separado (a diferencia de `printing-agent/`). El código
+  específico de Hub (licencia, sync client, bandeja del sistema) vive
+  DENTRO de `backend/` como un paquete nuevo (`com.vanter.ember.hub`),
+  activado por un perfil de Spring (`hub`). Consistente con que Hub es
+  literalmente el mismo JAR que el cloud, solo empaquetado distinto — no
+  una aplicación separada que reutilice el dominio vía librería
+  compartida.
 - **Proceso único:** el propio Spring Boot corre como el proceso principal;
   sin Rust, sin Tauri, sin watchdog externo.
 - **Bandeja del sistema:** `java.awt.SystemTray` dentro del mismo proceso
@@ -84,12 +102,23 @@ usa únicamente herramientas del stack Java/Spring ya conocido:
   compilados; se abre el navegador por defecto automáticamente al iniciar.
 - **Persistencia:** Postgres portátil (binarios oficiales de EDB extraídos,
   sin instalador, iniciado localmente vía `pg_ctl`). Se mantiene el mismo
-  motor relacional que ya usa el backend (cero migración de JPA).
-  - Los dominios que hoy viven en MongoDB (`session`, `kitchen`) se migran a
-    tablas Postgres usando columnas `JSONB` para los arrays embebidos
-    (participants, order items) — conserva el modelo de "documento
-    embebido" sin correr dos motores de base de datos en la máquina del
-    cliente.
+  motor relacional que ya usa el backend.
+  - **YA HECHO (2026-08-24, no es trabajo pendiente de Hub):** `session`/
+    `kitchen` migraron de MongoDB a Postgres/JPA para **todo** el SaaS
+    (cloud incluido, no algo exclusivo de Hub) — sus arrays embebidos
+    (participants, order items) ahora son columnas `jsonb` vía
+    `@JdbcTypeCode(SqlTypes.JSON)`. Esto elimina el ítem de mayor
+    riesgo/costo que este documento tenía pendiente: el backend entero ya
+    corre sobre un solo motor de persistencia, sin ninguna rama de código
+    condicional entre cloud y Hub — es literalmente el mismo JAR apuntado
+    a un Postgres local en vez de uno en red. Detalle en
+    `PROGRESS.md` y `docs/superpowers/plans/2026-08-24-ember-postgres-migration.md`.
+  - **Riesgo nuevo descubierto por esta migración, con decisión tomada y
+    ya implementada — ver 2.3.1:** el `baseline-on-migrate` de Flyway
+    asumía un schema preexistente (construido por `ddl-auto` antes de que
+    Flyway existiera en el proyecto) — no podía arrancar desde un Postgres
+    genuinamente vacío, que es exactamente el estado de cada instalación
+    nueva de Hub.
 - **Recuperación ante caídas:** registrar el proceso como servicio de
   Windows y usar `sc.exe failure` (recovery nativo del Service Control
   Manager) en vez de construir un watchdog custom.
@@ -105,6 +134,43 @@ usa únicamente herramientas del stack Java/Spring ya conocido:
   clonación importe a mayor escala (más clientes = más incentivo de
   ingeniería inversa).
 
+### 2.3.1 Bootstrap de schema en una instalación nueva (Postgres vacío)
+
+**COMPLETO (2026-08-24).** Se consolidó un V1 real — un script SQL
+(`backend/src/main/resources/db/migration/V1__baseline_consolidated.sql`,
+generado vía `pg_dump --schema-only` sobre el schema ya completamente
+migrado, más el seed del operador de plataforma que V4 sembraba) que
+construye el schema completo desde cero, reemplazando el baseline
+no-reproducible anterior. V2–V15 originales se preservaron por su valor
+histórico/explicativo en `backend/src/main/resources/db/migration-archive/`
+(fuera del `classpath:db/migration` que Flyway escanea, así que nunca se
+re-aplican).
+
+Se prefirió consolidar sobre un bootstrap especial solo-para-Hub porque el
+problema no era exclusivo de Hub: **cualquier** Postgres nuevo (un entorno
+de staging, la máquina de un futuro segundo desarrollador, un restore ante
+desastre) chocaba con el mismo `baseline-on-migrate` roto. Confirmado
+empíricamente el 2026-08-24: al intentar recuperar la base de datos de
+desarrollo local tras un `flyway:clean` accidental, `V2` falló porque
+asumía tablas que solo `ddl-auto` había creado — no había manera de
+re-crear el schema desde cero usando únicamente las migraciones
+versionadas existentes.
+
+**Verificado de punta a punta** contra un Postgres genuinamente vacío: `V1`
+solo (sin `baseline-on-migrate`) crea el schema completo, `ddl-auto=validate`
+pasa sin discrepancias contra el modelo de entidades actual, el arranque
+completo de la app funciona (`GET /actuator/health` → `UP`), y el login del
+operador de plataforma sembrado funciona (`POST /platform/auth/login` →
+200). La base de datos de desarrollo existente (ya baselineada en V15)
+ignora `V1` correctamente (`Below Baseline`) — sin riesgo de reejecución.
+
+**Drift cosmético conocido:** el dump se tomó contra un schema reconstruido
+vía `ddl-auto=create` (ver nota de recuperación en `PROGRESS.md`), así que
+algunos constraints que las migraciones originales nombraron a mano ahora
+llevan el nombre genérico que autogenera Hibernate (ej.
+`uk_platform_operators_email` → `platform_operators_email_key`). Sin efecto
+funcional; documentado en el propio header del script V1.
+
 ### 2.4 Puente de impresión (reutilizable entre cloud y Hub)
 
 Del análisis previo del SaaS cloud: la impresión de tickets/ESC-POS desde
@@ -112,8 +178,8 @@ la nube requiere un agente local con conexión saliente (WebSocket) porque
 el servidor cloud no puede alcanzar impresoras dentro de la LAN del
 restaurante. Se decidió que este mismo componente de "Hardware Bridge" sea
 el único mecanismo de impresión, tanto para el modo cloud puro como para
-Vanter Hub — evita mantener dos soluciones de impresión distintas. Un
-cliente cloud puro no necesita instalar Vanter Hub completo solo para
+Ember Hub — evita mantener dos soluciones de impresión distintas. Un
+cliente cloud puro no necesita instalar Ember Hub completo solo para
 imprimir: instala únicamente el agente liviano (`printing-agent/`, ya
 construido en EMB-PRINT). Ver 2.11 para su ampliación a otros periféricos.
 
@@ -218,7 +284,10 @@ cual está diseñado.
 ## 3. Riesgos identificados (documentados, no bloqueantes para v1)
 
 - GraalVM native-image + Spring AOT tiene fricción real con
-  Hibernate/Jackson/driver de Mongo/STOMP — por eso se excluyó de v1.
+  Hibernate/Jackson/STOMP — por eso se excluyó de v1. (Actualizado
+  2026-08-24: el driver de Mongo ya no es parte del árbol de dependencias
+  tras la migración a Postgres, así que esa fricción específica desapareció
+  — las demás siguen vigentes.)
 - La afirmación "binario cerrado, no descompilable" del plan original es
   una sobreestimación: un native-image sube la barrera de ingeniería
   inversa, pero no la elimina.
@@ -237,6 +306,12 @@ cual está diseñado.
 
 ## 4. Plan de pruebas
 
+- La capa de persistencia (2.3) ya está validada aguas arriba — 788 tests
+  de backend en verde más un arranque manual verificado contra un Postgres
+  real (`GET /actuator/health` → `UP`). El plan de pruebas de Hub no
+  necesita reprobar esto; se enfoca en lo específico de Hub: empaquetado
+  (`jpackage`/`jlink`), 2.3.1 (bootstrap en Postgres vacío), licencia, sync,
+  y hardware.
 - Se prueba primero con las impresoras Epson ya instaladas en el negocio
   del usuario (ver riesgo arriba sobre compatibilidad ESC-POS). Si no
   compilan como impresoras térmicas POS, PRINT-07 (prueba end-to-end con
@@ -258,7 +333,7 @@ cual está diseñado.
   un modelo de depósito bancario — se despliega la cuenta bancaria del
   restaurante al cliente para que pague desde su app bancaria, y el
   mesero concilia los depósitos contra las cuentas por cobrar (posiblemente
-  vía scraping del banco). Afecta por igual al SaaS cloud y a Vanter Hub
+  vía scraping del banco). Afecta por igual al SaaS cloud y a Ember Hub
   (no es específico de uno u otro), y probablemente reemplaza/redefine
   GATEWAY-01 en vez de solo resolverlo. Se **parqueó deliberadamente**
   fuera de esta sesión para no repetir la pausa anterior — requiere su

@@ -47,6 +47,9 @@ export const waiter = {
   loadingCashRegister: 'Cargando caja...',
   cashRegisterTitle: 'Caja',
   cashRegisterSubtitle: 'Apertura, movimientos y arqueo del turno.',
+  tourCashRegisterTitle: 'Tu turno de caja',
+  tourCashRegisterContent:
+    'Abre tu turno, registra movimientos de efectivo y cierra la caja al final del día desde aquí.',
   noOpenShift: 'No hay un turno de caja abierto.',
   openCajaButton: 'Abrir caja',
   shiftNumberLabel: 'Turno #{{number}}',
@@ -129,4 +132,14 @@ export const waiter = {
   tableOpenedToast: 'Mesa abierta con éxito',
   billRequestedToast: 'Cuenta solicitada.',
   billCalculateErrorToast: 'No se pudo calcular la cuenta.',
+  tourGridTitle: 'Tus mesas',
+  tourGridContent:
+    'Aquí ves todas las mesas del restaurante. Rojo significa ocupada, gris significa libre.',
+  tourPanelTitle: 'Detalles de la mesa',
+  tourPanelContent: 'Al hacer clic en una mesa, aquí verás quién está sentado y qué han pedido.',
+  tourActionTitle: 'Abrir o cobrar',
+  tourActionContent:
+    'Este botón abre la mesa para tomar el primer pedido, o cobra la cuenta si ya está ocupada.',
+  tourAssignTitle: 'Invitar clientes',
+  tourAssignContent: 'Genera un código QR para que los clientes de esta mesa se unan desde su celular.',
 }

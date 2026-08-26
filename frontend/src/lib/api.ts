@@ -612,14 +612,31 @@ export const printingService = {
   },
   addPrinter: async (
     agentId: string,
-    request: { role: string; connectionType: string; host?: string; port?: number; comPort?: string; label: string }
+    request: {
+      role: string
+      connectionType: string
+      host?: string
+      port?: number
+      comPort?: string
+      windowsQueueName?: string
+      renderMode?: string
+      label: string
+    }
   ): Promise<PrinterConfigResponse> => {
     const { data } = await api.post<PrinterConfigResponse>(`/printing/admin/agents/${agentId}/printers`, request)
     return data
   },
   updatePrinter: async (
     printerId: string,
-    request: Partial<{ host: string; port: number; comPort: string; label: string; active: boolean }>
+    request: Partial<{
+      host: string
+      port: number
+      comPort: string
+      windowsQueueName: string
+      renderMode: string
+      label: string
+      active: boolean
+    }>
   ): Promise<PrinterConfigResponse> => {
     const { data } = await api.patch<PrinterConfigResponse>(`/printing/admin/agents/printers/${printerId}`, request)
     return data

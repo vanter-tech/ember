@@ -27,6 +27,12 @@ import {
   FormMessage,
 } from '../../components/ui/form'
 
+// Same signal App.tsx already uses for the router basename: only the Hub build (vite build
+// --base=/app/, see ember-hub/build-frontend.ps1) has a non-"/" BASE_URL. The Hub's admin is
+// always pre-provisioned (HubProvisioningRunner) — self-registration is a customer-only flow
+// there (join-table/collaborative cart), never the entry point for the restaurant's own admin.
+const isHubBuild = import.meta.env.BASE_URL !== '/'
+
 const createLoginSchema = (t: ReturnType<typeof useTranslation<'auth'>>['t']) =>
   z.object({
     email: z.string().email(t('invalidEmail')).min(1, t('emailRequired')),
@@ -206,9 +212,11 @@ export const Login = () => {
                 {form.formState.isSubmitting ? tAuth('loggingIn') : tAuth('login')}
               </Button>
 
-              <Button asChild variant="outline" className="w-full text-center mb-3">
-                <Link to="/register">{tAuth('registerLink')}</Link>
-              </Button>
+              {!isHubBuild && (
+                <Button asChild variant="outline" className="w-full text-center mb-3">
+                  <Link to="/register">{tAuth('registerLink')}</Link>
+                </Button>
+              )}
             </form>
           </Form>
         </CardContent>

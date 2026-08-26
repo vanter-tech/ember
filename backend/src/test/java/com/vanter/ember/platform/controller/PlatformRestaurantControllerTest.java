@@ -234,4 +234,36 @@ class PlatformRestaurantControllerTest {
                         .content("{\"status\":\"SUSPENDED\"}"))
                 .andExpect(status().isNotFound());
     }
+
+    @Test
+    void issueHubLicense_returns401WithoutAuthHeader() throws Exception {
+        UUID id = UUID.randomUUID();
+        mockMvc.perform(post("/platform/restaurants/" + id + "/hub-license"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void issueHubLicense_returns200WithLicenseKeyText() throws Exception {
+        authenticate();
+        UUID id = UUID.randomUUID();
+        when(platformRestaurantService.issueHubLicense(id, OPERATOR_EMAIL)).thenReturn("signed-license-key");
+
+        mockMvc.perform(post("/platform/restaurants/" + id + "/hub-license")
+                        .header("Authorization", "Bearer " + TOKEN))
+                .andExpect(status().isOk())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
+                        .string("signed-license-key"));
+    }
+
+    @Test
+    void issueHubLicense_returns404WhenRestaurantNotFound() throws Exception {
+        authenticate();
+        UUID id = UUID.randomUUID();
+        when(platformRestaurantService.issueHubLicense(id, OPERATOR_EMAIL))
+                .thenThrow(new ResourceNotFoundException("Restaurant not found: " + id));
+
+        mockMvc.perform(post("/platform/restaurants/" + id + "/hub-license")
+                        .header("Authorization", "Bearer " + TOKEN))
+                .andExpect(status().isNotFound());
+    }
 }

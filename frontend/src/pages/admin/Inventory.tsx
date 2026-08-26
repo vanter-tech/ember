@@ -11,11 +11,31 @@ import { Badge } from '@/components/ui/badge'
 import { Pencil } from 'lucide-react'
 import { NewInventoryItemModal } from './components/NewInventoryItemModal'
 import { EditInventoryItemModal } from './components/EditInventoryItemModal'
+import { SectionTour } from '@/components/tours/SectionTour'
 import { useTranslation } from '@/lib/i18n'
 
 export const Inventory = () => {
   const { openModal } = useUIStore()
   const { t } = useTranslation('admin')
+
+  const tourSteps = [
+    {
+      target: '#inventory-hub-sidebar',
+      title: t('tourStockSidebarTitle'),
+      content: t('tourStockSidebarContent'),
+      skipBeacon: true,
+    },
+    {
+      target: '#inventory-tour-grid',
+      title: t('tourStockGridTitle'),
+      content: t('tourStockGridContent'),
+    },
+    {
+      target: '#topnav-create-button',
+      title: t('tourStockCreateTitle'),
+      content: t('tourStockCreateContent'),
+    },
+  ]
   const restaurantId = useAuthStore((state) => state.restaurantId)
   const {
     connect,
@@ -59,12 +79,8 @@ export const Inventory = () => {
   if (isError) return <div className="p-6 text-red-500">{t('loadingInventoryError')}</div>
 
   return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-bold">{t('inventoryTitle')}</h1>
-        <Button onClick={() => openModal('CREATE_INVENTORY_ITEM')}>{t('newInventoryItemButton')}</Button>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div>
+      <div id="inventory-tour-grid" className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {items.map((item) => (
           <Card key={item.id} className="p-4 rounded-3xl flex flex-col gap-2">
             <div className="flex items-center justify-between">
@@ -87,6 +103,7 @@ export const Inventory = () => {
       </div>
       <NewInventoryItemModal />
       <EditInventoryItemModal />
+      <SectionTour sectionId="admin-inventory-stock" steps={tourSteps} />
     </div>
   )
 }

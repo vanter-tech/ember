@@ -241,6 +241,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/platform/restaurants/{id}/hub-license": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Issue a Hub license.key for this restaurant */
+        post: operations["issueHubLicense"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/platform/auth/login": {
         parameters: {
             query?: never;
@@ -270,6 +287,22 @@ export interface paths {
         put?: never;
         /** Create a reward catalog entry (ADMIN) */
         post: operations["create_2"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hub-activations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["activate"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1643,6 +1676,8 @@ export interface components {
             /** Format: int32 */
             port?: number;
             comPort?: string;
+            windowsQueueName?: string;
+            renderMode?: string;
             label: string;
         };
         PrinterConfigResponse: {
@@ -1656,6 +1691,8 @@ export interface components {
             /** Format: int32 */
             port?: number;
             comPort?: string;
+            windowsQueueName?: string;
+            renderMode?: string;
             label?: string;
             active?: boolean;
         };
@@ -1705,6 +1742,17 @@ export interface components {
             active?: boolean;
             /** Format: date-time */
             createdAt?: string;
+        };
+        HubActivationRequest: {
+            licenseKey: string;
+            hardwareFingerprint: string;
+        };
+        HubActivationResponse: {
+            name?: string;
+            slug?: string;
+            adminName?: string;
+            adminEmail?: string;
+            adminPasswordHash?: string;
         };
         ModifierGroupRequest: {
             name: string;
@@ -1943,6 +1991,8 @@ export interface components {
             /** Format: int32 */
             port?: number;
             comPort?: string;
+            windowsQueueName?: string;
+            renderMode?: string;
             label?: string;
             active?: boolean;
         };
@@ -2108,30 +2158,30 @@ export interface components {
             sort?: string[];
         };
         PagePrintJobResponse: {
-            /** Format: int32 */
-            totalPages?: number;
             /** Format: int64 */
             totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["PrintJobResponse"][];
             /** Format: int32 */
             number?: number;
             sort?: components["schemas"]["SortObject"];
-            first?: boolean;
-            last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
+            first?: boolean;
+            last?: boolean;
             empty?: boolean;
         };
         PageableObject: {
             /** Format: int64 */
             offset?: number;
             sort?: components["schemas"]["SortObject"];
+            paged?: boolean;
             /** Format: int32 */
             pageSize?: number;
-            paged?: boolean;
             /** Format: int32 */
             pageNumber?: number;
             unpaged?: boolean;
@@ -2155,21 +2205,21 @@ export interface components {
             unsorted?: boolean;
         };
         PagePlatformRestaurantSummaryResponse: {
-            /** Format: int32 */
-            totalPages?: number;
             /** Format: int64 */
             totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["PlatformRestaurantSummaryResponse"][];
             /** Format: int32 */
             number?: number;
             sort?: components["schemas"]["SortObject"];
-            first?: boolean;
-            last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
+            first?: boolean;
+            last?: boolean;
             empty?: boolean;
         };
         PlatformRestaurantAdminResponse: {
@@ -2191,21 +2241,21 @@ export interface components {
             admins?: components["schemas"]["PlatformRestaurantAdminResponse"][];
         };
         PagePlatformAuditLogResponse: {
-            /** Format: int32 */
-            totalPages?: number;
             /** Format: int64 */
             totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["PlatformAuditLogResponse"][];
             /** Format: int32 */
             number?: number;
             sort?: components["schemas"]["SortObject"];
-            first?: boolean;
-            last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
+            first?: boolean;
+            last?: boolean;
             empty?: boolean;
         };
         PlatformAuditLogResponse: {
@@ -2261,21 +2311,21 @@ export interface components {
             pointsEarned?: number;
         };
         PageKitchenOrder: {
-            /** Format: int32 */
-            totalPages?: number;
             /** Format: int64 */
             totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["KitchenOrder"][];
             /** Format: int32 */
             number?: number;
             sort?: components["schemas"]["SortObject"];
-            first?: boolean;
-            last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
+            first?: boolean;
+            last?: boolean;
             empty?: boolean;
         };
         KitchenDisplayEntry: {
@@ -2300,57 +2350,57 @@ export interface components {
             currentSession?: components["schemas"]["ActiveSessionSummary"];
         };
         PageMenuItemResponse: {
-            /** Format: int32 */
-            totalPages?: number;
             /** Format: int64 */
             totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["MenuItemResponse"][];
             /** Format: int32 */
             number?: number;
             sort?: components["schemas"]["SortObject"];
-            first?: boolean;
-            last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
+            first?: boolean;
+            last?: boolean;
             empty?: boolean;
         };
         PageCategoryResponse: {
-            /** Format: int32 */
-            totalPages?: number;
             /** Format: int64 */
             totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["CategoryResponse"][];
             /** Format: int32 */
             number?: number;
             sort?: components["schemas"]["SortObject"];
-            first?: boolean;
-            last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
+            first?: boolean;
+            last?: boolean;
             empty?: boolean;
         };
         PageCashShiftResponse: {
-            /** Format: int32 */
-            totalPages?: number;
             /** Format: int64 */
             totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["CashShiftResponse"][];
             /** Format: int32 */
             number?: number;
             sort?: components["schemas"]["SortObject"];
-            first?: boolean;
-            last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
+            first?: boolean;
+            last?: boolean;
             empty?: boolean;
         };
         CashShiftDetailResponse: {
@@ -3006,6 +3056,28 @@ export interface operations {
             };
         };
     };
+    issueHubLicense: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/plain": string;
+                };
+            };
+        };
+    };
     login: {
         parameters: {
             query?: never;
@@ -3070,6 +3142,30 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["LoyaltyRewardResponse"];
+                };
+            };
+        };
+    };
+    activate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HubActivationRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["HubActivationResponse"];
                 };
             };
         };

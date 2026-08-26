@@ -163,6 +163,11 @@ export const platformRestaurantService = {
     )
     return data
   },
+
+  issueHubLicense: async (id: string): Promise<string> => {
+    const { data } = await platformApi.post<string>(`/platform/restaurants/${id}/hub-license`)
+    return data
+  },
 }
 
 export const platformAuditLogService = {

@@ -12,6 +12,7 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -36,6 +37,12 @@ public class PlatformRestaurantController {
             @Valid @RequestBody PlatformRestaurantCreateRequest request,
             Authentication authentication) {
         return ResponseEntity.ok(platformRestaurantService.create(request, authentication.getName()));
+    }
+
+    @Operation(summary = "Issue a Hub license.key for this restaurant")
+    @PostMapping(value = "/{id}/hub-license", produces = MediaType.TEXT_PLAIN_VALUE)
+    public ResponseEntity<String> issueHubLicense(@PathVariable UUID id, Authentication authentication) {
+        return ResponseEntity.ok(platformRestaurantService.issueHubLicense(id, authentication.getName()));
     }
 
     @Operation(summary = "List all tenants, paginated")
