@@ -147,7 +147,7 @@ public class PortableDatabaseBootstrap {
             Process process = new ProcessBuilder(
                     postgresBinDir.resolve("createdb").toString(),
                     "-U", "ember",
-                    "-h", "localhost",
+                    "-h", "127.0.0.1",
                     "-p", String.valueOf(port),
                     "ember")
                     .redirectErrorStream(true)

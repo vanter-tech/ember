@@ -19,13 +19,15 @@ public class HubBootstrapRunner {
 
     private final HubProperties properties;
     private PortableDatabaseBootstrap dbBootstrap;
+    private PortableMinioBootstrap minioBootstrap;
     private Thread shutdownHook;
 
     public HubBootstrapRunner(HubProperties properties) {
         this.properties = properties;
     }
 
-    public void startServices() throws InvalidLicenseException, PortableDatabaseException {
+    public void startServices()
+            throws InvalidLicenseException, PortableDatabaseException, PortableMinioException {
         PublicKey publicKey = LicenseKeyParser.loadPublicKey(properties.publicKeyFile());
         LicenseService licenseService = new LicenseService(
                 properties.licenseFile(),
@@ -38,6 +40,10 @@ public class HubBootstrapRunner {
         dbBootstrap = new PortableDatabaseBootstrap(
                 properties.dataDir(), properties.postgresBinDir(), properties.postgresPort());
         dbBootstrap.ensureRunning();
+
+        minioBootstrap = new PortableMinioBootstrap(
+                properties.minioDataDir(), properties.minioBinDir(), properties.minioPort());
+        minioBootstrap.ensureRunning();
 
         shutdownHook = new Thread(this::stopServicesQuietly, "hub-db-shutdown");
         Runtime.getRuntime().addShutdownHook(shutdownHook);
@@ -57,6 +63,14 @@ public class HubBootstrapRunner {
     }
 
     private void stopServicesQuietly() {
+        if (minioBootstrap != null) {
+            try {
+                minioBootstrap.stop();
+            } catch (PortableMinioException ignored) {
+                // Best-effort on shutdown — there's nowhere left to surface this to the user.
+            }
+            minioBootstrap = null;
+        }
         if (dbBootstrap != null) {
             try {
                 dbBootstrap.stop();

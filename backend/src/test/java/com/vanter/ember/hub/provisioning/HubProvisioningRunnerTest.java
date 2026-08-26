@@ -65,7 +65,7 @@ class HubProvisioningRunnerTest {
 
         properties = new HubProperties(
                 tempDir, tempDir, licenseFile, tempDir.resolve("pub.der"), tempDir.resolve("state.json"),
-                5432, 8080, "http://localhost:9999/hub-activations");
+                5432, 8080, "http://localhost:9999/hub-activations", tempDir, tempDir, 9000);
         stateStore = new HubStateStore(properties.stateFile());
         stateStore.save(new HubState("fp-1", restaurantId, Instant.now()));
 
@@ -94,7 +94,7 @@ class HubProvisioningRunnerTest {
     void run_blankActivationUrl_throwsProvisioningException() {
         HubProperties propertiesWithoutUrl = new HubProperties(
                 tempDir, tempDir, properties.licenseFile(), tempDir.resolve("pub.der"), properties.stateFile(),
-                5432, 8080, "");
+                5432, 8080, "", tempDir, tempDir, 9000);
         when(restaurantRepository.existsById(restaurantId)).thenReturn(false);
         HubProvisioningRunner runner = new HubProvisioningRunner(
                 propertiesWithoutUrl, stateStore, fingerprintService, restaurantRepository, userRepository,
@@ -141,7 +141,7 @@ class HubProvisioningRunnerTest {
 
         HubProperties propertiesWithStubUrl = new HubProperties(
                 tempDir, tempDir, properties.licenseFile(), tempDir.resolve("pub.der"), properties.stateFile(),
-                5432, 8080, "http://localhost:" + port + "/hub-activations");
+                5432, 8080, "http://localhost:" + port + "/hub-activations", tempDir, tempDir, 9000);
         when(restaurantRepository.existsById(restaurantId)).thenReturn(false);
         Restaurant insertedRestaurant = Restaurant.builder()
                 .id(restaurantId)
