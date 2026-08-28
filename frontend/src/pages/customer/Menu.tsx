@@ -24,7 +24,7 @@ import { useNavigate } from 'react-router-dom'
 import type { MenuItemResponse } from '@/lib/api'
 
 export const Menu = () => {
-  const [activeCategory, setActiveCategory] = useState<Number | undefined>()
+  const [activeCategory, setActiveCategory] = useState<number | undefined>()
   const [selectingItem, setSelectingItem] = useState<MenuItemResponse | null>(null)
   const { connect, isConnected, subscribeToSession, stompClient } =
     useWebsocketStore()
@@ -65,6 +65,13 @@ export const Menu = () => {
     queryFn: () => menuServices.getMenu(),
   })
 
+  // Default to the first category once the menu loads. Adjusting state during render (rather than
+  // in an effect) is React's recommended pattern here — it converges after one extra render and
+  // avoids the flash of an unselected category a post-paint effect would cause.
+  if (menuItems.length > 0 && activeCategory === undefined) {
+    setActiveCategory(menuItems[0].id)
+  }
+
   const itemsCategory =
     menuItems.find((item) => item.id == activeCategory)?.items || []
 
@@ -89,12 +96,6 @@ export const Menu = () => {
   },[sessionId, isSessionError, isSessionLoading, navigate, sessionData])
     
 
-
-  useEffect(() => {
-    if (menuItems.length > 0 && activeCategory === undefined) {
-      setActiveCategory(menuItems[0].id)
-    }
-  }, [menuItems, activeCategory])
 
   useEffect(() => {
     if (sessionId && isConnected && stompClient?.connected) {

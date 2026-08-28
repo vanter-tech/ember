@@ -1,7 +1,7 @@
 import {useQuery} from "@tanstack/react-query";
 import { SettingsService } from "@/lib/api";
 
-export const settingStore = () => {
+export const useSettingStore = () => {
     const { data: settings, isPending: isLoadingSettings } = useQuery({
         queryKey: ['restaurantSettings'],
         queryFn: () => SettingsService.getSettings(),

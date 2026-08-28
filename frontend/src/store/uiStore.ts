@@ -20,6 +20,10 @@ export type InventoryHubSection = 'categories' | 'modifiers' | 'stock' | null
 
 interface UIState {
   activeModal: ModalType
+  // Heterogeneous per-modal payload (a number id, a string, or one of ~20 entity shapes). A proper
+  // discriminated union keyed by ModalType is a separate refactor tracked for later; every consumer
+  // already narrows with `as` / optional chaining at the call site.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   modalPayload: any
   searchTerm: string
   // Whether TopNav's global-search results panel (a Popover anchored to the search input,
@@ -33,6 +37,7 @@ interface UIState {
   activeTourSection: string | null
   // Set only by the "?" button; SectionTour clears it once its own tour finishes/skips.
   requestedTourSection: string | null
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- see modalPayload above
   openModal: (modal: ModalType, payload?: any) => void
   closeModal: () => void
   setSearchTerm: (value: string) => void

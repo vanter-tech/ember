@@ -6,9 +6,11 @@ import { useTranslation } from '@/lib/i18n'
 
 export const ParticipantsPopUp = () => {
   const { id: tableId, participants } = useSessionStore()
-  if (!tableId || !participants) return null
   const [isOpen, setIsOpen] = useState(false)
   const { t } = useTranslation('customer')
+
+  if (!tableId || !participants) return null
+
   const visibleParticipants = participants.slice(0, 3)
   const remainingParticipants = participants.length - 3
 

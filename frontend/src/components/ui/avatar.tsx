@@ -15,7 +15,7 @@ export const Avatar = ({ children, className = '', ...props }: AvatarProps) => {
   );
 };
 
-interface AvatarImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {}
+type AvatarImageProps = React.ImgHTMLAttributes<HTMLImageElement>
 
 export const AvatarImage = ({ src, alt, className = '', ...props }: AvatarImageProps) => {
   const [hasError, setHasError] = useState(false);

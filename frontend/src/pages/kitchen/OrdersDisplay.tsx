@@ -23,7 +23,7 @@ export const OrdersDisplays = () => {
   const ordersRaw = info.flatMap((item) => item.orders)
   const orders = ordersRaw.sort(
     (a, b) =>
-      new Date(a?.createdAt!).getTime() - new Date(b?.createdAt!).getTime()
+      new Date(a?.createdAt ?? 0).getTime() - new Date(b?.createdAt ?? 0).getTime()
   )
 
   if (isLoading) {

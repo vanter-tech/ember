@@ -10,7 +10,7 @@ interface sessionState extends sessionResponse {
   billSplits?: BillSplit[]
   setSession: (data: sessionResponse) => void
   clearSession: () => void
-  updateSession: (data: any) => void
+  updateSession: (data: Partial<sessionResponse>) => void
   addParticipant: (participant: participantDTO) => void
   addItem: (item: orderItemDTO) => void
   setBillReady: (bill: Bill, splits: BillSplit[]) => void

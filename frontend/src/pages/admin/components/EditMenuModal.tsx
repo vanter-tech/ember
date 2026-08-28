@@ -35,6 +35,7 @@ export const EditMenuModal = () => {
   const [modifierGroups, setModifierGroups] = useState<ModifierGroupAssignment[]>([])
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- seed editable field-array state from the modal payload when the dialog opens
     setModifierGroups(
       (modalPayload?.modifierGroups ?? []).map((g: { id: number }, index: number) => ({
         groupId: g.id,

@@ -214,11 +214,12 @@ export const TableInformation = () => {
                         className=""
                         variant={'destructive'}
                         onClick={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
                           openModal('DELETE_ITEMS', {
                             sessionId: id,
                             itemId: item.id
                           })
-                          ;(e.preventDefault(), e.stopPropagation())
                         }}
                       >
                         <Trash2 />

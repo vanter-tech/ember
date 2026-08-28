@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { Client } from '@stomp/stompjs'
+import { Client, type StompSubscription } from '@stomp/stompjs'
 import SockJS from 'sockjs-client'
 import { useAuthStore } from "./authStore";
 import { useSessionStore } from "./sessionStore";
@@ -17,14 +17,14 @@ interface LowStockAlert {
 interface WebSocketState {
     stompClient: Client | null,
     isConnected: boolean,
-    currentSubscription: any | null,
-    waiterSessionSubscription: any | null,
+    currentSubscription: StompSubscription | null,
+    waiterSessionSubscription: StompSubscription | null,
     subscribeToSession:(sessionId: string) => void,
     subscribeToKitchen:(tenantId: string) => void,
     subscribeToWaiter:(tenantId: string) => void,
     subscribeToWaiterSession:(sessionId: string) => void,
     unsubscribeFromWaiterSession:() => void,
-    inventorySubscription: any | null,
+    inventorySubscription: StompSubscription | null,
     lastLowStockAlert: LowStockAlert | null,
     subscribeToInventory:(tenantId: string) => void,
     unsubscribeFromInventory:() => void,
