@@ -58,5 +58,6 @@ public class RateLimitProperties {
 
     /** Paths the limiter guards, compared after the servlet context path is stripped. */
     private List<String> paths = new ArrayList<>(
-            List.of("/auth/login", "/auth/register", "/platform/auth/login", "/hub-activations"));
+            List.of("/auth/login", "/auth/register", "/platform/auth/login",
+                    "/hub-activations", "/hub-heartbeat"));
 }

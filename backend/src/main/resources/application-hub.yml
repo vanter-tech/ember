@@ -7,6 +7,10 @@ spring:
     hibernate:
       ddl-auto: validate
 
+ember:
+  hub:
+    heartbeat-interval-ms: ${EMBER_HUB_HEARTBEAT_INTERVAL_MS:300000}
+
 minio:
   url: http://127.0.0.1:${EMBER_HUB_MINIO_PORT:9000}
   access-key: ember-hub

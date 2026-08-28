@@ -17,18 +17,21 @@ public class LicenseService {
     private final LicenseKeyParser parser;
     private final HardwareFingerprintService fingerprintService;
     private final HubStateStore stateStore;
+    private final Duration suspendedGrace;
 
     public LicenseService(
             Path licenseFile,
             PublicKey publicKey,
             LicenseKeyParser parser,
             HardwareFingerprintService fingerprintService,
-            HubStateStore stateStore) {
+            HubStateStore stateStore,
+            Duration suspendedGrace) {
         this.licenseFile = licenseFile;
         this.publicKey = publicKey;
         this.parser = parser;
         this.fingerprintService = fingerprintService;
         this.stateStore = stateStore;
+        this.suspendedGrace = suspendedGrace;
     }
 
     /**
@@ -72,7 +75,30 @@ public class LicenseService {
     }
 
     public HubState recordHeartbeatSuccess(HubState state) {
-        HubState updated = new HubState(state.hardwareFingerprint(), state.restaurantId(), Instant.now());
+        HubState updated = state.withHeartbeatNow();
+        stateStore.save(updated);
+        return updated;
+    }
+
+    /**
+     * True once a Hub has been marked {@code SUSPENDED} by the cloud for longer than the courtesy
+     * grace window. Until then the Hub keeps operating so a mistaken/transient suspension doesn't
+     * halt service instantly.
+     */
+    public boolean isSuspendedGraceExpired(HubState state) {
+        return state.suspendedSince() != null
+                && Duration.between(state.suspendedSince(), Instant.now()).compareTo(suspendedGrace) > 0;
+    }
+
+    /**
+     * Stamps {@code suspendedSince} the first time the cloud reports SUSPENDED and persists it; a
+     * later SUSPENDED cycle is a no-op so the courtesy-grace counter is not reset every heartbeat.
+     */
+    public HubState recordSuspended(HubState state) {
+        if (state.suspendedSince() != null) {
+            return state;
+        }
+        HubState updated = state.withSuspendedSince(Instant.now());
         stateStore.save(updated);
         return updated;
     }

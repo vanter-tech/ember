@@ -25,6 +25,17 @@ public class GracePeriodInterceptor implements HandlerInterceptor {
         HubState state = stateStore.load()
                 .orElseThrow(() -> new IllegalStateException(
                         "hub-state.json missing after startup license validation"));
+
+        if (licenseService.isSuspendedGraceExpired(state)) {
+            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+            response.setContentType("application/json");
+            response.getWriter().write(
+                    "{\"error\":\"license_suspended\","
+                            + "\"message\":\"La licencia de Ember Hub está suspendida. "
+                            + "Contacta a Vanter para reactivarla.\"}");
+            return false;
+        }
+
         if (licenseService.isWithinGracePeriod(state)) {
             return true;
         }

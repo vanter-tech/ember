@@ -34,7 +34,8 @@ public class HubBootstrapRunner {
                 publicKey,
                 new LicenseKeyParser(),
                 new HardwareFingerprintService(),
-                new HubStateStore(properties.stateFile()));
+                new HubStateStore(properties.stateFile()),
+                java.time.Duration.ofHours(properties.suspendedGraceHours()));
         licenseService.validateOrActivate();
 
         dbBootstrap = new PortableDatabaseBootstrap(

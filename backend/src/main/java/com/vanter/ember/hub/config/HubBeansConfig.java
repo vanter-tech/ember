@@ -10,9 +10,11 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Profile;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 @Configuration
 @Profile("hub")
+@EnableScheduling
 public class HubBeansConfig {
 
     @Bean
@@ -44,6 +46,8 @@ public class HubBeansConfig {
             HubStateStore stateStore)
             throws InvalidLicenseException {
         PublicKey publicKey = LicenseKeyParser.loadPublicKey(properties.publicKeyFile());
-        return new LicenseService(properties.licenseFile(), publicKey, parser, fingerprintService, stateStore);
+        return new LicenseService(
+                properties.licenseFile(), publicKey, parser, fingerprintService, stateStore,
+                java.time.Duration.ofHours(properties.suspendedGraceHours()));
     }
 }
