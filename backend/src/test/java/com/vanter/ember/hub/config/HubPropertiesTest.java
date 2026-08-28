@@ -23,4 +23,12 @@ class HubPropertiesTest {
         assertThat(properties.minioBinDir()).isEqualTo(Path.of("./minio/bin"));
         assertThat(properties.minioPort()).isEqualTo(9000);
     }
+
+    @Test
+    void fromEnvironment_heartbeatDefaults() {
+        HubProperties properties = HubProperties.fromEnvironment();
+
+        assertThat(properties.heartbeatUrl()).isEmpty();
+        assertThat(properties.suspendedGraceHours()).isEqualTo(48);
+    }
 }

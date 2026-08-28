@@ -44,6 +44,8 @@ public class HubBeansConfig {
             HubStateStore stateStore)
             throws InvalidLicenseException {
         PublicKey publicKey = LicenseKeyParser.loadPublicKey(properties.publicKeyFile());
-        return new LicenseService(properties.licenseFile(), publicKey, parser, fingerprintService, stateStore);
+        return new LicenseService(
+                properties.licenseFile(), publicKey, parser, fingerprintService, stateStore,
+                java.time.Duration.ofHours(properties.suspendedGraceHours()));
     }
 }

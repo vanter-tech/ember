@@ -20,7 +20,18 @@ public record HubProperties(
         String activationUrl,
         Path minioDataDir,
         Path minioBinDir,
-        int minioPort) {
+        int minioPort,
+        String heartbeatUrl,
+        int suspendedGraceHours) {
+
+    /** Back-compat: the pre-heartbeat 11-arg shape, still used by tests that don't care about it. */
+    public HubProperties(
+            Path dataDir, Path postgresBinDir, Path licenseFile, Path publicKeyFile, Path stateFile,
+            int postgresPort, int serverPort, String activationUrl,
+            Path minioDataDir, Path minioBinDir, int minioPort) {
+        this(dataDir, postgresBinDir, licenseFile, publicKeyFile, stateFile, postgresPort, serverPort,
+                activationUrl, minioDataDir, minioBinDir, minioPort, "", 48);
+    }
 
     public static HubProperties fromEnvironment() {
         return new HubProperties(
@@ -34,7 +45,9 @@ public record HubProperties(
                 env("EMBER_HUB_ACTIVATION_URL", ""),
                 Path.of(env("EMBER_HUB_MINIO_DATA_DIR", "./data/minio")),
                 Path.of(env("EMBER_HUB_MINIO_BIN_DIR", "./minio/bin")),
-                Integer.parseInt(env("EMBER_HUB_MINIO_PORT", "9000")));
+                Integer.parseInt(env("EMBER_HUB_MINIO_PORT", "9000")),
+                env("EMBER_HUB_HEARTBEAT_URL", ""),
+                Integer.parseInt(env("EMBER_HUB_SUSPENDED_GRACE_HOURS", "48")));
     }
 
     private static String env(String name, String fallback) {
