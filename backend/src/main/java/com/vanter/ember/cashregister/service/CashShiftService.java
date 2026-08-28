@@ -11,6 +11,8 @@ import com.vanter.ember.cashregister.dto.DailyReportResponse;
 import com.vanter.ember.cashregister.event.CashMovementRecorded;
 import com.vanter.ember.cashregister.event.CashShiftClosed;
 import com.vanter.ember.cashregister.event.CashShiftOpened;
+import com.vanter.ember.cashregister.event.CashShiftProlonged;
+import com.vanter.ember.cashregister.exception.CashShiftOverdueException;
 import com.vanter.ember.cashregister.model.CashMovement;
 import com.vanter.ember.cashregister.model.CashMovementType;
 import com.vanter.ember.cashregister.model.CashShift;
@@ -22,6 +24,7 @@ import com.vanter.ember.identity.model.User;
 import com.vanter.ember.identity.repository.UserRepository;
 import com.vanter.ember.session.model.SessionStatus;
 import com.vanter.ember.session.repository.SessionRepository;
+import com.vanter.ember.settings.service.SettingService;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -54,6 +57,8 @@ public class CashShiftService {
     private final SessionRepository sessionRepository;
     private final ApplicationEventPublisher eventPublisher;
     private final PaymentService paymentService;
+    private final SettingService settingService;
+    private final CashShiftDeadlineService deadlineService;
 
     @Transactional
     public CashShift openShift(UUID tenantId, String openedByUserId, BigDecimal openingFloat) {
@@ -63,6 +68,10 @@ public class CashShiftService {
 
         int nextShiftNumber = cashShiftRepository.findMaxShiftNumber(tenantId) + 1;
 
+        var businessHours = settingService.getSettings(tenantId).getPayload().getBusinessHours();
+        LocalDateTime openedAt = LocalDateTime.now();
+        LocalDateTime expiresAt = deadlineService.computeExpiresAt(openedAt, businessHours);
+
         CashShift shift;
         try {
             shift = cashShiftRepository.save(CashShift.builder()
@@ -70,7 +79,8 @@ public class CashShiftService {
                     .status(CashShiftStatus.OPEN)
                     .openingFloat(openingFloat)
                     .openedBy(openedByUserId)
-                    .openedAt(LocalDateTime.now())
+                    .openedAt(openedAt)
+                    .expiresAt(expiresAt)
                     .build());
         } catch (DataIntegrityViolationException ex) {
             throw new IllegalStateException("A cash shift is already open for this tenant");
@@ -88,6 +98,10 @@ public class CashShiftService {
         if (shift.getStatus() != CashShiftStatus.OPEN) {
             throw new IllegalStateException("Cash shift is not open: " + shiftId);
         }
+        if (deadlineService.isOverdue(shift, LocalDateTime.now())) {
+            throw new CashShiftOverdueException(
+                    "Cash shift " + shiftId + " is overdue; prolong or close it before recording a movement");
+        }
 
         CashMovement movement = cashMovementRepository.save(CashMovement.builder()
                 .cashShiftId(shiftId)
@@ -100,6 +114,21 @@ public class CashShiftService {
 
         eventPublisher.publishEvent(new CashMovementRecorded(shift.getTenantId(), shiftId));
         return movement;
+    }
+
+    @Transactional
+    public CashShift prolongShift(Long shiftId, String userId) {
+        CashShift shift = cashShiftRepository.findByIdForUpdate(shiftId)
+                .orElseThrow(() -> new ResourceNotFoundException("Cash shift not found: " + shiftId));
+        if (shift.getStatus() != CashShiftStatus.OPEN) {
+            throw new IllegalStateException("Cash shift is not open: " + shiftId);
+        }
+        shift.setProlongedUntil(deadlineService.prolong(shift, LocalDateTime.now()));
+        shift.setProlongedBy(userId);
+        shift.setProlongCount(shift.getProlongCount() + 1);
+        CashShift saved = cashShiftRepository.save(shift);
+        eventPublisher.publishEvent(new CashShiftProlonged(shift.getTenantId(), shiftId));
+        return saved;
     }
 
     @Transactional
@@ -211,7 +240,10 @@ public class CashShiftService {
                 shift.getClosedBy() == null ? null : names.getOrDefault(shift.getClosedBy(), shift.getClosedBy()),
                 shift.getClosedAt(), shift.getExpectedCash(), shift.getCountedCash(), shift.getVariance(),
                 shift.getTotalCashSales(), shift.getTotalDigitalSales(), shift.getTotalCashIn(),
-                shift.getTotalCashOut());
+                shift.getTotalCashOut(),
+                shift.getExpiresAt(), shift.effectiveDeadline(),
+                deadlineService.isOverdue(shift, LocalDateTime.now()),
+                shift.businessDay(), shift.getProlongCount());
     }
 
     private CashMovementResponse toMovementResponse(CashMovement movement, Map<String, String> names) {

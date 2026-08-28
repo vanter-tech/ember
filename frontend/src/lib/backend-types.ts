@@ -1830,6 +1830,15 @@ export interface components {
             totalDigitalSales?: number;
             totalCashIn?: number;
             totalCashOut?: number;
+            /** Format: date-time */
+            expiresAt?: string;
+            /** Format: date-time */
+            effectiveDeadline?: string;
+            overdue?: boolean;
+            /** Format: date */
+            businessDay?: string;
+            /** Format: int32 */
+            prolongCount?: number;
         };
         OpenShiftRequest: {
             openingFloat: number;

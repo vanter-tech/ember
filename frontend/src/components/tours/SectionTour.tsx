@@ -42,6 +42,7 @@ export const SectionTour = ({ sectionId, steps, ready = true, onStepAfter }: Sec
   // would never actually start (see WaiterTour's original bugfix, report 212).
   useEffect(() => {
     if (isRequested) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- a replay request can arrive after `run` was flipped false; see comment above
       setRun(true)
     }
   }, [isRequested])

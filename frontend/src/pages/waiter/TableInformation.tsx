@@ -18,6 +18,7 @@ import {
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import toast from 'react-hot-toast'
+import axios from 'axios'
 import { useNavigate } from 'react-router-dom'
 import {
   Card,
@@ -92,7 +93,15 @@ export const TableInformation = () => {
       amount: number
     }) => billingService.registerPhysicalPayment(billData!.id, participantName, amount),
     onSuccess: () => toast.success(t('cashPaymentRegisteredToast')),
-    onError: () => toast.error(t('cashPaymentErrorToast')),
+    onError: (error) => {
+      const code =
+        axios.isAxiosError(error) && (error.response?.data as { code?: string })?.code
+      toast.error(
+        code === 'CASH_SHIFT_OVERDUE'
+          ? t('cashShiftOverduePaymentToast')
+          : t('cashPaymentErrorToast'),
+      )
+    },
   })
 
   const confirmDigitalPaymentMutation = useMutation({
@@ -205,11 +214,12 @@ export const TableInformation = () => {
                         className=""
                         variant={'destructive'}
                         onClick={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
                           openModal('DELETE_ITEMS', {
                             sessionId: id,
                             itemId: item.id
                           })
-                          ;(e.preventDefault(), e.stopPropagation())
                         }}
                       >
                         <Trash2 />

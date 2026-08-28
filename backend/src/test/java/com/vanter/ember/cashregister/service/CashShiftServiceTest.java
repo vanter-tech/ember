@@ -11,6 +11,9 @@ import com.vanter.ember.billing.dto.PaymentResponse;
 import com.vanter.ember.billing.model.Payment;
 import com.vanter.ember.billing.service.PaymentService;
 import com.vanter.ember.cashregister.dto.CashShiftDetailResponse;
+import com.vanter.ember.cashregister.dto.CashShiftResponse;
+import com.vanter.ember.cashregister.event.CashShiftProlonged;
+import com.vanter.ember.cashregister.exception.CashShiftOverdueException;
 import com.vanter.ember.cashregister.model.CashMovement;
 import com.vanter.ember.cashregister.model.CashMovementType;
 import com.vanter.ember.cashregister.model.CashShift;
@@ -22,6 +25,9 @@ import com.vanter.ember.config.ResourceNotFoundException;
 import com.vanter.ember.identity.repository.UserRepository;
 import com.vanter.ember.session.model.SessionStatus;
 import com.vanter.ember.session.repository.SessionRepository;
+import com.vanter.ember.settings.model.RestaurantSettings;
+import com.vanter.ember.settings.model.SettingsPayload;
+import com.vanter.ember.settings.service.SettingService;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -44,6 +50,8 @@ class CashShiftServiceTest {
     @Mock SessionRepository sessionRepository;
     @Mock ApplicationEventPublisher eventPublisher;
     @Mock PaymentService paymentService;
+    @Mock SettingService settingService;
+    @Mock CashShiftDeadlineService deadlineService;
     @InjectMocks CashShiftService cashShiftService;
 
     private static final UUID TENANT_ID = UUID.randomUUID();
@@ -55,11 +63,18 @@ class CashShiftServiceTest {
                 .openedAt(LocalDateTime.now().minusHours(2)).build();
     }
 
+    private RestaurantSettings settingsWithPayload() {
+        RestaurantSettings settings = new RestaurantSettings();
+        settings.setPayload(new SettingsPayload());
+        return settings;
+    }
+
     @Test
     void openShift_createsShiftWithNextSequentialNumberAndPublishesEvent() {
         when(cashShiftRepository.findByTenantIdAndStatus(TENANT_ID, CashShiftStatus.OPEN))
                 .thenReturn(Optional.empty());
         when(cashShiftRepository.findMaxShiftNumber(TENANT_ID)).thenReturn(4);
+        when(settingService.getSettings(TENANT_ID)).thenReturn(settingsWithPayload());
         when(cashShiftRepository.save(any())).thenAnswer(inv -> {
             CashShift toSave = inv.getArgument(0);
             toSave.setId(9L);
@@ -175,5 +190,73 @@ class CashShiftServiceTest {
 
         assertThat(detail.payments()).hasSize(1);
         assertThat(detail.payments().get(0).participantName()).isEqualTo("Alice");
+    }
+
+    @Test
+    void openShift_stampsExpiresAtFromDeadlineService() {
+        when(cashShiftRepository.findByTenantIdAndStatus(TENANT_ID, CashShiftStatus.OPEN))
+                .thenReturn(Optional.empty());
+        when(cashShiftRepository.findMaxShiftNumber(TENANT_ID)).thenReturn(0);
+        when(settingService.getSettings(TENANT_ID)).thenReturn(settingsWithPayload());
+        LocalDateTime stamped = LocalDateTime.now().plusHours(9);
+        when(deadlineService.computeExpiresAt(any(), any())).thenReturn(stamped);
+        when(cashShiftRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        CashShift shift = cashShiftService.openShift(TENANT_ID, "user-1", new BigDecimal("50.00"));
+
+        assertThat(shift.getExpiresAt()).isEqualTo(stamped);
+    }
+
+    @Test
+    void prolongShift_pushesDeadlineIncrementsCountAndPublishes() {
+        CashShift open = openShift();
+        open.setExpiresAt(LocalDateTime.now().plusMinutes(10));
+        when(cashShiftRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(open));
+        when(cashShiftRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        LocalDateTime pushed = LocalDateTime.now().plusHours(1);
+        when(deadlineService.prolong(any(), any())).thenReturn(pushed);
+
+        CashShift result = cashShiftService.prolongShift(1L, "user-7");
+
+        assertThat(result.getProlongedUntil()).isEqualTo(pushed);
+        assertThat(result.getProlongedBy()).isEqualTo("user-7");
+        assertThat(result.getProlongCount()).isEqualTo(1);
+        org.mockito.Mockito.verify(eventPublisher)
+                .publishEvent(any(CashShiftProlonged.class));
+    }
+
+    @Test
+    void prolongShift_throwsWhenShiftNotOpen() {
+        CashShift closed = openShift();
+        closed.setStatus(CashShiftStatus.CLOSED);
+        when(cashShiftRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(closed));
+
+        assertThatThrownBy(() -> cashShiftService.prolongShift(1L, "user-7"))
+                .isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    void recordMovement_throwsWhenShiftIsOverdue() {
+        CashShift open = openShift();
+        when(cashShiftRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(open));
+        when(deadlineService.isOverdue(org.mockito.ArgumentMatchers.eq(open), any())).thenReturn(true);
+
+        assertThatThrownBy(() -> cashShiftService.recordMovement(
+                1L, "user-1", CashMovementType.CASH_IN, new BigDecimal("10.00"), "tip"))
+                .isInstanceOf(CashShiftOverdueException.class);
+    }
+
+    @Test
+    void toResponse_fillsOverdueAndBusinessDay() {
+        CashShift open = openShift();
+        open.setExpiresAt(open.getOpenedAt().plusHours(9));
+        when(deadlineService.isOverdue(org.mockito.ArgumentMatchers.eq(open), any())).thenReturn(true);
+        when(userRepository.findAllById(any())).thenReturn(List.of());
+
+        CashShiftResponse response = cashShiftService.toResponse(open);
+
+        assertThat(response.overdue()).isTrue();
+        assertThat(response.businessDay()).isEqualTo(open.getOpenedAt().toLocalDate());
+        assertThat(response.effectiveDeadline()).isEqualTo(open.getExpiresAt());
     }
 }

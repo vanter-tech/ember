@@ -575,6 +575,10 @@ export const cashShiftService = {
     const { data } = await api.post<CashShiftResponse>(`/cash-shifts/${id}/close`, { countedCash })
     return data
   },
+  prolong: async (id: number): Promise<CashShiftResponse> => {
+    const { data } = await api.post<CashShiftResponse>(`/cash-shifts/${id}/prolong`)
+    return data
+  },
   dailyReport: async (date: string): Promise<DailyReportResponse> => {
     const { data } = await api.get<DailyReportResponse>('/cash-shifts/daily-report', { params: { date } })
     return data

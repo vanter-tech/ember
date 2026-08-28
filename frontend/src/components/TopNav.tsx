@@ -3,7 +3,7 @@ import { useLocation, useMatch } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
 import { Search, Plus, Clock, HelpCircle } from 'lucide-react'
 import { useUIStore, type ModalType } from '@/store/uiStore'
-import { settingStore } from '@/store/settingStore'
+import { useSettingStore } from '@/store/settingStore'
 import { LanguageSwitcher } from '@/components/LanguageSwitcher'
 import { useTranslation } from '@/lib/i18n'
 import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover'
@@ -13,7 +13,7 @@ export const TopNav = () => {
   let actionType: ModalType | null = null
 
   const role = useAuthStore((state) => state.role)
-  const { settings } = settingStore()
+  const { settings } = useSettingStore()
   const {
     openModal,
     searchTerm,

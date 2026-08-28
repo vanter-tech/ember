@@ -14,6 +14,7 @@ export const OtpInput = ({ length = 5, value, onChange }: OtpInputProps) => {
   // Sincronizar estado interno si el valor cambia desde afuera (ej. limpiar el input)
   useEffect(() => {
     if (!value) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- reset the per-box array when the parent clears its controlled value
       setOtp(Array(length).fill(''));
     }
   }, [value, length]);

@@ -79,7 +79,8 @@ class CashShiftControllerTest {
                 .thenReturn(sampleShift());
         when(cashShiftService.toResponse(any())).thenReturn(new CashShiftResponse(
                 1L, 1, "OPEN", new BigDecimal("100.00"), "Alice", LocalDateTime.now(),
-                null, null, null, null, null, null, null, null, null));
+                null, null, null, null, null, null, null, null, null,
+                null, null, false, null, 0));
 
         OpenShiftRequest request = new OpenShiftRequest(new BigDecimal("100.00"));
         mockMvc.perform(post("/cash-shifts/open")
@@ -122,7 +123,8 @@ class CashShiftControllerTest {
                 1L, 1, "CLOSED", new BigDecimal("100.00"), "Alice", LocalDateTime.now(), "Alice",
                 LocalDateTime.now(), new BigDecimal("265.00"), new BigDecimal("260.00"),
                 new BigDecimal("-5.00"), new BigDecimal("150.00"), new BigDecimal("0.00"),
-                new BigDecimal("20.00"), new BigDecimal("5.00")));
+                new BigDecimal("20.00"), new BigDecimal("5.00"),
+                null, null, false, null, 0));
 
         CloseShiftRequest request = new CloseShiftRequest(new BigDecimal("260.00"));
         mockMvc.perform(post("/cash-shifts/1/close")

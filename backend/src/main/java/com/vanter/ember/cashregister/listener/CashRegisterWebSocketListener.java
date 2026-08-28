@@ -3,6 +3,7 @@ package com.vanter.ember.cashregister.listener;
 import com.vanter.ember.cashregister.event.CashMovementRecorded;
 import com.vanter.ember.cashregister.event.CashShiftClosed;
 import com.vanter.ember.cashregister.event.CashShiftOpened;
+import com.vanter.ember.cashregister.event.CashShiftProlonged;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.event.EventListener;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -33,6 +34,11 @@ public class CashRegisterWebSocketListener {
 
     @EventListener
     public void onMovementRecorded(CashMovementRecorded event) {
+        messagingTemplate.convertAndSend("/topic/cash-register/" + event.tenantId(), event);
+    }
+
+    @EventListener
+    public void onShiftProlonged(CashShiftProlonged event) {
         messagingTemplate.convertAndSend("/topic/cash-register/" + event.tenantId(), event);
     }
 }

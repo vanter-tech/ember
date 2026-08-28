@@ -37,11 +37,16 @@ export const useOnboardingGate = () => {
     !isError &&
     (!settings?.branding?.businessName?.trim() || !settings?.space?.totalTables)
 
+  // Deliberate render-phase latch: once the shared query has errored we must stay frozen even if a
+  // later background refetch flips it back to success, otherwise the mount/refetch ping-pong
+  // described above resumes. A ref (not state) so flipping it never itself schedules a render.
   const erroredOnce = useRef(false)
   if (!isPending && isError) {
+    // eslint-disable-next-line react-hooks/refs -- intentional latch write, see comment above
     erroredOnce.current = true
   }
 
+  // eslint-disable-next-line react-hooks/refs -- intentional latch read, see comment above
   if (erroredOnce.current) {
     return { needsOnboarding: false, isLoading: false, isError: true }
   }

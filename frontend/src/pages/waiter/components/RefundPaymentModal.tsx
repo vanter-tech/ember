@@ -42,6 +42,7 @@ export const RefundPaymentModal = () => {
 
   useEffect(() => {
     if (payment) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- seed the input from the newly selected payment
       setAmount(String(payment.remaining ?? 0))
     }
     // Only re-sync when the SELECTED payment actually changes (undefined -> id, or a different

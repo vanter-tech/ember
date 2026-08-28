@@ -45,4 +45,9 @@ export const common = {
   tenantSuspendedTitle: 'Account suspended',
   tenantSuspendedDefaultMessage:
     'This restaurant account is not active. Access is blocked until the situation is resolved.',
+  logoutCashShiftOverdueTitle: 'The cash register expired and is still open',
+  logoutCashShiftOverdueBody:
+    "It must be closed for today's business day. Log out anyway?",
+  logoutCashShiftConfirmButton: 'Log out',
+  logoutCashShiftBackButton: 'Back',
 } satisfies typeof esCommon
