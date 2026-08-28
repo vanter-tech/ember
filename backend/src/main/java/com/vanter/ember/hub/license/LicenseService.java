@@ -72,7 +72,7 @@ public class LicenseService {
     }
 
     public HubState recordHeartbeatSuccess(HubState state) {
-        HubState updated = new HubState(state.hardwareFingerprint(), state.restaurantId(), Instant.now());
+        HubState updated = state.withHeartbeatNow();
         stateStore.save(updated);
         return updated;
     }
