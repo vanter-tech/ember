@@ -19,16 +19,26 @@ import {
   FormItem,
   FormLabel,
 } from '@/components/ui/form'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { useUIStore } from '@/store/uiStore'
+import { useAuthStore } from '@/store/authStore'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { staffService, type StaffMemberResponse } from '@/lib/api'
+import { staffService, type StaffMemberResponse, type StaffRole } from '@/lib/api'
+import { ROLE_LABELS } from '../types'
 import { useTranslation } from '@/lib/i18n'
 
 const editStaffSchemaFactory = (t: ReturnType<typeof useTranslation<'admin'>>['t']) =>
   z.object({
     name: z.string().min(2, t('staffNameMinLengthError')),
     email: z.string().email(t('staffEmailInvalidError')),
+    role: z.enum(['WAITER', 'KITCHEN', 'ADMIN']),
     jobTitle: z.string(),
     shift: z.string(),
     contractType: z.string(),
@@ -42,14 +52,22 @@ export const EditStaffModal = () => {
   const { activeModal, modalPayload, closeModal } = useUIStore()
   const queryClient = useQueryClient()
   const { t } = useTranslation('admin')
+  const currentUserId = useAuthStore((state) => state.userId)
   const member = modalPayload as StaffMemberResponse | null
   const editStaffSchema = useMemo(() => editStaffSchemaFactory(t), [t])
+
+  // Guard against an admin locking themselves out of the panel by demoting their own account.
+  const isSelf = !!member?.id && member.id === currentUserId
+
+  const initialRole: StaffRole =
+    member?.role && member.role !== 'CUSTOMER' ? member.role : 'WAITER'
 
   const form = useForm<EditStaffInputs>({
     resolver: zodResolver(editStaffSchema),
     values: {
       name: member?.name ?? '',
       email: member?.email ?? '',
+      role: initialRole,
       jobTitle: member?.jobTitle ?? '',
       shift: member?.shift ?? '',
       contractType: member?.contractType ?? '',
@@ -59,7 +77,13 @@ export const EditStaffModal = () => {
   })
 
   const mutation = useMutation({
-    mutationFn: (data: EditStaffInputs) => staffService.updateProfile(member!.id!, data),
+    mutationFn: async (data: EditStaffInputs) => {
+      const { role, ...profile } = data
+      await staffService.updateProfile(member!.id!, profile)
+      if (role !== member?.role) {
+        await staffService.updateRole(member!.id!, role)
+      }
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['staff'] })
       toast.success(t('staffUpdatedToast'))
@@ -109,6 +133,32 @@ export const EditStaffModal = () => {
                   <FormControl>
                     <Input type="email" className="rounded-xl" {...field} />
                   </FormControl>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="role"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('roleLabel')}</FormLabel>
+                  <Select
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    disabled={isSelf}
+                  >
+                    <FormControl>
+                      <SelectTrigger className="w-full rounded-xl">
+                        <SelectValue />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="WAITER">{ROLE_LABELS.WAITER}</SelectItem>
+                      <SelectItem value="KITCHEN">{ROLE_LABELS.KITCHEN}</SelectItem>
+                      <SelectItem value="ADMIN">{ROLE_LABELS.ADMIN}</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </FormItem>
               )}
             />

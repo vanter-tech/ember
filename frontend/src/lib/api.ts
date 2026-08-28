@@ -515,6 +515,11 @@ export const analyticsService = {
 export type StaffMemberResponse = components['schemas']['StaffMemberResponse']
 export type CreateStaffRequest = components['schemas']['CreateStaffRequest']
 export type UpdateStaffProfileRequest = components['schemas']['UpdateStaffProfileRequest']
+/** The assignable staff roles — the backend `Role` enum minus CUSTOMER (self-assigned only). */
+export type StaffRole = Exclude<
+  components['schemas']['UpdateUserRoleRequest']['role'],
+  'CUSTOMER'
+>
 
 export const staffService = {
   getAll: async (): Promise<StaffMemberResponse[]> => {
@@ -531,6 +536,9 @@ export const staffService = {
   ): Promise<StaffMemberResponse> => {
     const { data } = await api.patch<StaffMemberResponse>(`/admin/staff/${userId}`, request)
     return data
+  },
+  updateRole: async (userId: string, role: StaffRole): Promise<void> => {
+    await api.patch(`/admin/users/${userId}/role`, { role })
   },
 }
 
