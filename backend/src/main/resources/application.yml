@@ -27,8 +27,12 @@ spring:
     password: ${SPRING_DATASOURCE_PASSWORD}
     driver-class-name: org.postgresql.Driver
   flyway:
-    # The schema predates Flyway (it was built by ddl-auto), so the existing state is adopted as V1
-    # and versioned migrations start at V2.
+    # A genuinely empty database (every fresh Ember Hub install) bootstraps the whole schema from
+    # V1__baseline_consolidated.sql, then applies V2+ in order. baseline-on-migrate only matters for
+    # a NON-empty, unversioned schema (adopts it as V1, runs V2+). The real dev DB carried an old
+    # V15 baseline row and skipped the renumbered V2-V5 forever until it was realigned to this
+    # scheme via docs/db/dev-rebaseline-v5.sql (see report 263). Dev still runs ddl-auto=update;
+    # switching it to `validate` (Flyway as sole owner) is a queued follow-up — see PROGRESS.md.
     baseline-on-migrate: true
     baseline-version: 1
   jpa:
