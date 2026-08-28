@@ -3,12 +3,16 @@ package com.vanter.ember.hub.dashboard;
 import com.vanter.ember.EmberApplication;
 import com.vanter.ember.hub.bootstrap.HubBootstrapRunner;
 import com.vanter.ember.hub.config.HubProperties;
+import com.vanter.ember.hub.license.HubState;
+import com.vanter.ember.hub.license.HubStateStore;
 import java.awt.BorderLayout;
 import java.awt.Desktop;
 import java.awt.GridLayout;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.net.URI;
+import java.time.Duration;
+import java.time.Instant;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -36,6 +40,7 @@ public final class HubDashboard extends JFrame {
 
     private final HubProperties properties = HubProperties.fromEnvironment();
     private final HubBootstrapRunner bootstrapRunner = new HubBootstrapRunner(properties);
+    private final HubStateStore stateStore = new HubStateStore(properties.stateFile());
     private final String[] launchArgs;
 
     private ConfigurableApplicationContext context;
@@ -43,6 +48,7 @@ public final class HubDashboard extends JFrame {
     private final JLabel dbStatusLabel = new JLabel("Postgres: detenido");
     private final JLabel minioStatusLabel = new JLabel("MinIO: detenido");
     private final JLabel serverStatusLabel = new JLabel("Servidor: detenido");
+    private final JLabel licenseStatusLabel = new JLabel("Licencia: sin estado local");
     private final JButton startButton = new JButton("Iniciar");
     private final JButton stopButton = new JButton("Detener");
     private final JButton openButton = new JButton("Abrir en navegador");
@@ -52,10 +58,12 @@ public final class HubDashboard extends JFrame {
         super("Ember Hub");
         this.launchArgs = launchArgs;
 
-        JPanel statusPanel = new JPanel(new GridLayout(3, 1));
+        JPanel statusPanel = new JPanel(new GridLayout(4, 1));
         statusPanel.add(dbStatusLabel);
         statusPanel.add(minioStatusLabel);
         statusPanel.add(serverStatusLabel);
+        statusPanel.add(licenseStatusLabel);
+        refreshLicenseStatus();
 
         JPanel buttonPanel = new JPanel(new GridLayout(1, 4, 8, 0));
         buttonPanel.add(startButton);
@@ -83,7 +91,7 @@ public final class HubDashboard extends JFrame {
             }
         });
 
-        setSize(360, 190);
+        setSize(360, 215);
         setLocationRelativeTo(null);
     }
 
@@ -112,6 +120,7 @@ public final class HubDashboard extends JFrame {
                         serverStatusLabel.setText("Servidor: listo");
                         openButton.setEnabled(true);
                         stopButton.setEnabled(true);
+                        refreshLicenseStatus();
                     }));
             context = app.run(launchArgs);
         } catch (Exception e) {
@@ -146,7 +155,33 @@ public final class HubDashboard extends JFrame {
             minioStatusLabel.setText("MinIO: detenido");
             serverStatusLabel.setText("Servidor: detenido");
             startButton.setEnabled(true);
+            refreshLicenseStatus();
         });
+    }
+
+    private void refreshLicenseStatus() {
+        licenseStatusLabel.setText(licenseStatusText(stateStore.load().orElse(null)));
+    }
+
+    private String licenseStatusText(HubState state) {
+        if (state == null) {
+            return "Licencia: sin estado local";
+        }
+        if (state.suspendedSince() != null) {
+            return "Licencia: SUSPENDIDA (desde hace " + humanizeSince(state.suspendedSince()) + ")";
+        }
+        return "Licencia: OK · último contacto hace " + humanizeSince(state.lastHeartbeatAt());
+    }
+
+    private static String humanizeSince(Instant when) {
+        Duration d = Duration.between(when, Instant.now());
+        if (d.toMinutes() < 60) {
+            return d.toMinutes() + " min";
+        }
+        if (d.toHours() < 48) {
+            return d.toHours() + " h";
+        }
+        return d.toDays() + " d";
     }
 
     private void onOpenBrowser() {
