@@ -162,15 +162,19 @@
 - [x] **Gap found 2026-08-25, CLOSED (report 257):** portable MinIO bootstrap (`PortableMinioBootstrap`, mirrors `PortableDatabaseBootstrap`) + a third `HubDashboard` status label. Local-only creds (`ember-hub`/`ember-hub-local`), no web console exposed.
 - [x] **Manually verified end-to-end against a real `minio.exe` (report 258):** 2 real bugs found+fixed (`createdb -h localhost` IPv6 hang; uploaded images 403'd with no bucket policy) — see Active Context / report 258 for detail.
 
-**Ember Hub — hub-license-activation** (plan `docs/superpowers/plans/2026-08-25-hub-license-activation.md`, closes the design gap above)
-- [x] Task 1: `HubActivation` entity + repository + `V2__hub_activations.sql`. (report 239)
-- [x] Task 2: `LicenseIssuingService` (sign/verify RSA license keys). (report 240)
-- [x] Task 3: `POST /platform/restaurants/{id}/hub-license` issuance endpoint. (report 241)
-- [x] Task 4: `HubActivationService` (verify + hardware-lock + resolve admin). (report 242)
-- [x] Task 5: Public `POST /hub-activations` endpoint. (report 243)
-- [x] Task 6: `HubProvisioningRunner` (Hub-side, calls activation once on first boot). (report 244)
-- [x] Task 7: Broaden `HubDashboard` error handling to catch provisioning failures. (report 245)
-- [x] Task 8: Console "Emitir licencia Hub" button. (report 246)
-- [x] Task 9: Hide "Registrarse" on the Hub build's login screen. (report 247)
-- [x] Task 10: Manual end-to-end verification. (report 256, hub-license-activation plan COMPLETE)
-- [x] Final whole-branch review fix wave: native `insertWithId` fixes broken Restaurant seeding, `/hub-activations` gated `@Profile("!hub")`, JSON forward-compat + Spanish error messages, rate-limited, doc/report corrections. (report 248)
+**Ember Hub — hub-license-activation** (plan `docs/superpowers/plans/2026-08-25-hub-license-activation.md`) — COMPLETE: all 10 tasks + final whole-branch review fix wave (reports 239–248, verified live 256). See Active Context bullet for architecture/decisions.
+
+### EMBER-FIX — Cash shift expiry & forced daily close (spec `docs/superpowers/specs/2026-08-28-cash-shift-expiry-forced-close-design.md`, plan `docs/superpowers/plans/2026-08-28-cash-shift-expiry-forced-close.md`)
+Motive: a till left `OPEN` overnight (staff log out without closing) attributes the next day's payments/movements to the wrong business day, skewing `getDailyReport` and the arqueo. Adds a computed expiry (configured `closeTime` + 2h; 12h fallback), unlimited 1h prolongs, a 409 block on new physical payments / movements once overdue (digital + table service untouched), a `<CashShiftSentinel/>` with pre-warning / overdue / stale-shift modals, and a non-blocking logout warning. Run one task per context window, then `/clear`.
+- [ ] EMBER-FIX-01: `CashShiftDeadlineService` — pure deadline math + constants (`GRACE`/`CLOSED_DAY_FALLBACK`/`PROLONG_STEP`), `computeExpiresAt`/`isOverdue`/`prolong`.
+- [ ] EMBER-FIX-02: `V5__cash_shift_expiry.sql` + `CashShift` columns (`expiresAt`/`prolongedUntil`/`prolongedBy`/`prolongCount`) + `effectiveDeadline()`/`businessDay()` helpers + backfill.
+- [ ] EMBER-FIX-03: `CashShiftOverdueException` + `CashShiftProlonged` event + `GlobalExceptionHandler` 409 mapping with stable `code: "CASH_SHIFT_OVERDUE"` + listener broadcast.
+- [ ] EMBER-FIX-04: `CashShiftService` — stamp `expiresAt` on `openShift`, add `prolongShift`, guard `recordMovement`, fill `CashShiftResponse` +5 fields.
+- [ ] EMBER-FIX-05: `POST /cash-shifts/{id}/prolong` endpoint (WAITER/ADMIN) + controller test.
+- [ ] EMBER-FIX-06: `PaymentService.registerPhysicalPayment` overdue guard (409); assert digital path unaffected.
+- [ ] EMBER-FIX-07: Regenerate `backend-types.ts` + `cashShiftService.prolong` client method.
+- [ ] EMBER-FIX-08: `deriveCashShiftAlert(shift, now)` pure helper (`IDLE`/`PRE_WARNING`/`OVERDUE`/`STALE`) + `PRE_WARNING_MS`/`REMINDER_INTERVAL_MS` + tests.
+- [ ] EMBER-FIX-09: `<CashShiftSentinel/>` (pre-warning / overdue / stale modals, 60s poll) mounted in Waiter+Admin layouts; disable movement button when overdue; es/en keys.
+- [ ] EMBER-FIX-10: `FloatingNav` logout warning shown only when the cached current shift is `overdue`, non-blocking; es/en keys.
+- [ ] EMBER-FIX-11: Specific overdue feedback — `TableInformation` physical-payment `onError` recognises `CASH_SHIFT_OVERDUE`; es/en keys.
+- [ ] EMBER-FIX-12: Full `./mvnw test` + `pnpm run build`/`lint`/`test`, squash EMBER-FIX-01..11 into one atomic commit, write `reports/259-feat-cash-shift-expiry-forced-close.md`, update this file.
