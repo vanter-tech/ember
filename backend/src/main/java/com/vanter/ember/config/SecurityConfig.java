@@ -75,6 +75,9 @@ public class SecurityConfig {
                         // The Hub's one-time activation call — authenticates via the license
                         // signature itself (HubActivationService), not a bearer token.
                         .requestMatchers("/hub-activations").permitAll()
+                        // The Hub's periodic license heartbeat — same signature-based auth
+                        // (HubHeartbeatService), no bearer token.
+                        .requestMatchers("/hub-heartbeat").permitAll()
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(e -> e.authenticationEntryPoint(unauthorizedEntryPoint()))
