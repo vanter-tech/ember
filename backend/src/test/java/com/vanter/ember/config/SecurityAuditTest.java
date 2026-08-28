@@ -79,6 +79,7 @@ class SecurityAuditTest {
         "GET,  /cash-shifts",
         "GET,  /cash-shifts/1",
         "POST, /cash-shifts/1/movements",
+        "POST, /cash-shifts/1/prolong",
         "POST, /cash-shifts/1/close",
         "GET,  /cash-shifts/daily-report",
         "POST, /loyalty/rewards",

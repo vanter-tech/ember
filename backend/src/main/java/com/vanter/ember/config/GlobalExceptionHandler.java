@@ -67,6 +67,14 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return problem(HttpStatus.CONFLICT, ex.getMessage(), request.getRequestURI());
     }
 
+    @ExceptionHandler(com.vanter.ember.cashregister.exception.CashShiftOverdueException.class)
+    public ProblemDetail handleCashShiftOverdue(
+            com.vanter.ember.cashregister.exception.CashShiftOverdueException ex, HttpServletRequest request) {
+        ProblemDetail problem = problem(HttpStatus.CONFLICT, ex.getMessage(), request.getRequestURI());
+        problem.setProperty("code", "CASH_SHIFT_OVERDUE");
+        return problem;
+    }
+
     @ExceptionHandler(BadCredentialsException.class)
     public ProblemDetail handleBadCredentials(BadCredentialsException ex, HttpServletRequest request) {
         return problem(HttpStatus.UNAUTHORIZED, "Invalid credentials", request.getRequestURI());

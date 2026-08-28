@@ -7,6 +7,11 @@ import { SettingsService } from '@/lib/api'
 
 vi.mock('@/lib/api', () => ({
   SettingsService: { getSettings: vi.fn(), updateSettings: vi.fn() },
+  cashShiftService: {
+    current: vi.fn().mockResolvedValue(null),
+    detail: vi.fn(),
+    prolong: vi.fn(),
+  },
 }))
 
 function renderAdminLayout() {

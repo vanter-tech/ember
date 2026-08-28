@@ -30,6 +30,7 @@ export const CashRegister = () => {
   const { data: shift, isLoading } = useQuery({
     queryKey: ['cashShiftCurrent'],
     queryFn: cashShiftService.current,
+    refetchInterval: 60_000,
   })
 
   const { data: detail } = useQuery({
@@ -78,7 +79,12 @@ export const CashRegister = () => {
                 </div>
               </div>
               <div className="flex gap-2">
-                <Button variant="outline" onClick={() => openModal('CASH_MOVEMENT', { shiftId: shift.id })}>
+                <Button
+                  variant="outline"
+                  disabled={shift.overdue ?? false}
+                  title={shift.overdue ? t('cashShiftOverdueMovementBlocked') : undefined}
+                  onClick={() => openModal('CASH_MOVEMENT', { shiftId: shift.id })}
+                >
                   {t('recordMovementButton')}
                 </Button>
                 <Button onClick={() => openModal('CLOSE_SHIFT', { shiftId: shift.id })}>

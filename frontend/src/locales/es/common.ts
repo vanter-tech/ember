@@ -43,4 +43,9 @@ export const common = {
   tenantSuspendedTitle: 'Cuenta suspendida',
   tenantSuspendedDefaultMessage:
     'Esta cuenta de restaurante no está activa. El acceso está bloqueado hasta que se resuelva la situación.',
+  logoutCashShiftOverdueTitle: 'La caja venció y sigue abierta',
+  logoutCashShiftOverdueBody:
+    'Debe cerrarse para la jornada de hoy. ¿Cerrar sesión de todos modos?',
+  logoutCashShiftConfirmButton: 'Cerrar sesión',
+  logoutCashShiftBackButton: 'Volver',
 }

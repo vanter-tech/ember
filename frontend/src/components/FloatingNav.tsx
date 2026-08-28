@@ -1,4 +1,6 @@
+import { useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '../store/authStore'
 import {
   LayoutDashboard,
@@ -16,6 +18,17 @@ import {
 } from 'lucide-react'
 import { useSessionStore } from '@/store/sessionStore'
 import { useTranslation } from '@/lib/i18n'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import type { CashShiftResponse } from '@/lib/api'
 
 export const FloatingNav = () => {
   const { t } = useTranslation('common')
@@ -23,16 +36,29 @@ export const FloatingNav = () => {
   const logout = useAuthStore((state) => state.logout)
   const navigate = useNavigate()
   const location = useLocation()
+  const queryClient = useQueryClient()
   const { userId } = useAuthStore()
   const { participants } = useSessionStore()
+  const [confirmLogout, setConfirmLogout] = useState(false)
 
   const amiIn = participants?.find((data) => data.userId === userId)
 
   if (!role) return null
 
-  const handleLogout = () => {
+  const doLogout = () => {
     logout()
     navigate('/login')
+  }
+
+  const handleLogout = () => {
+    const shift = queryClient.getQueryData<CashShiftResponse | null>([
+      'cashShiftCurrent',
+    ])
+    if (shift?.overdue) {
+      setConfirmLogout(true)
+      return
+    }
+    doLogout()
   }
 
   const isActive = (path: string) => location.pathname.includes(path)
@@ -45,6 +71,7 @@ export const FloatingNav = () => {
     }`
 
   return (
+    <>
     <nav
       className="fixed bottom-4 sm:bottom-8 inset-x-0 mx-auto w-max max-w-[92vw] bg-white dark:bg-zinc-900 shadow-2xl rounded-full
         px-2 sm:px-4 py-2 flex items-center gap-1 sm:gap-2 border border-zinc-200 dark:border-zinc-800 z-50
@@ -163,5 +190,27 @@ export const FloatingNav = () => {
         </button>
       </div>
     </nav>
+
+      <AlertDialog open={confirmLogout} onOpenChange={setConfirmLogout}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t('logoutCashShiftOverdueTitle')}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('logoutCashShiftOverdueBody')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>
+              {t('logoutCashShiftBackButton')}
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={doLogout}>
+              {t('logoutCashShiftConfirmButton')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   )
 }

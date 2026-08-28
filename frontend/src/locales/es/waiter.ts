@@ -142,4 +142,23 @@ export const waiter = {
     'Este botón abre la mesa para tomar el primer pedido, o cobra la cuenta si ya está ocupada.',
   tourAssignTitle: 'Invitar clientes',
   tourAssignContent: 'Genera un código QR para que los clientes de esta mesa se unan desde su celular.',
+  cashShiftPreWarningTitle: 'La caja está por cerrarse',
+  cashShiftPreWarningBody: 'La caja se cerrará a las {{time}}. Recuerda cerrarla o prolongarla.',
+  cashShiftOverdueTitle: 'La caja venció',
+  cashShiftOverdueBody:
+    'La caja venció a las {{time}}. Los cobros en efectivo y los movimientos están bloqueados hasta que la cierres. La atención de mesas sigue disponible.',
+  cashShiftStaleTitle: 'La caja del {{date}} nunca se cerró',
+  cashShiftStaleBody:
+    'Todo lo registrado desde entonces se está sumando al turno del {{date}}. Ciérralo antes de empezar el día.',
+  cashShiftStaleMovementsCount: '{{count}} movimiento(s) acumulado(s)',
+  cashShiftStalePaymentsCount: '{{count}} pago(s) acumulado(s)',
+  cashShiftStaleCloseButton: 'Cerrar caja del {{date}}',
+  cashShiftProlongButton: 'Prolongar 1 h',
+  cashShiftCloseButton: 'Cerrar caja',
+  cashShiftLaterButton: 'Ahora no',
+  cashShiftProlongedToast: 'Caja prolongada una hora más.',
+  cashShiftProlongErrorToast: 'No se pudo prolongar la caja.',
+  cashShiftOpenTodayButton: 'Abrir turno de hoy',
+  cashShiftOverduePaymentToast: 'La caja venció. Prolóngala o ciérrala para cobrar.',
+  cashShiftOverdueMovementBlocked: 'La caja venció. Prolóngala o ciérrala para registrar movimientos.',
 }

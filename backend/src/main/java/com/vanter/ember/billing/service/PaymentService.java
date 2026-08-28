@@ -19,11 +19,13 @@ import com.vanter.ember.billing.repository.BillSplitRepository;
 import com.vanter.ember.billing.repository.PaymentRepository;
 import com.vanter.ember.billing.repository.RefundRepository;
 import com.vanter.ember.cashregister.event.CashMovementRecorded;
+import com.vanter.ember.cashregister.exception.CashShiftOverdueException;
 import com.vanter.ember.cashregister.model.CashMovement;
 import com.vanter.ember.cashregister.model.CashMovementType;
 import com.vanter.ember.cashregister.model.CashShift;
 import com.vanter.ember.cashregister.repository.CashMovementRepository;
 import com.vanter.ember.cashregister.repository.CashShiftRepository;
+import com.vanter.ember.cashregister.service.CashShiftDeadlineService;
 import com.vanter.ember.config.ResourceNotFoundException;
 import com.vanter.ember.config.TenantContextHolder;
 import com.vanter.ember.identity.model.User;
@@ -56,6 +58,7 @@ public class PaymentService {
     private final SimpMessagingTemplate messagingTemplate;
     private final RefundRepository refundRepository;
     private final CashMovementRepository cashMovementRepository;
+    private final CashShiftDeadlineService deadlineService;
 
     @Transactional
     public Payment registerPhysicalPayment(
@@ -63,6 +66,10 @@ public class PaymentService {
         CashShift shift = cashShiftRepository.findOpenForUpdate(TenantContextHolder.requireTenantId())
                 .orElseThrow(() -> new IllegalStateException(
                         "No open cash shift; open one before registering a physical payment"));
+        if (deadlineService.isOverdue(shift, LocalDateTime.now())) {
+            throw new CashShiftOverdueException(
+                    "Cash shift is overdue; prolong or close it before registering a physical payment");
+        }
 
         Bill bill = billRepository.findByIdForUpdate(billId)
                 .orElseThrow(() -> new ResourceNotFoundException("Bill not found: " + billId));

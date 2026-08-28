@@ -96,6 +96,14 @@ public class CashShiftController {
         return cashShiftService.toMovementResponse(movement);
     }
 
+    @Operation(summary = "Prolong an open shift's deadline by one hour (WAITER/ADMIN)")
+    @PostMapping("/{id}/prolong")
+    @PreAuthorize("hasAnyRole('WAITER','ADMIN')")
+    public CashShiftResponse prolong(@PathVariable Long id, Authentication authentication) {
+        CashShift shift = cashShiftService.prolongShift(id, resolveUserId(authentication));
+        return cashShiftService.toResponse(shift);
+    }
+
     @Operation(summary = "Close a shift with a blind cash count — Arqueo de Turno (WAITER)")
     @PostMapping("/{id}/close")
     @PreAuthorize("hasRole('WAITER')")

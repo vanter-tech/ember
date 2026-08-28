@@ -50,6 +50,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -65,6 +66,7 @@ class PaymentServiceTest {
     @Mock SimpMessagingTemplate messagingTemplate;
     @Mock RefundRepository refundRepository;
     @Mock CashMovementRepository cashMovementRepository;
+    @Mock com.vanter.ember.cashregister.service.CashShiftDeadlineService deadlineService;
     @InjectMocks PaymentService paymentService;
 
     private static final UUID TABLE_ID = UUID.randomUUID();
@@ -129,6 +131,18 @@ class PaymentServiceTest {
         assertThat(payment.getCashShiftId()).isEqualTo(9L);
         assertThat(payment.getProcessedBy()).isEqualTo("user-1");
         assertThat(payment.getCreatedAt()).isNotNull();
+    }
+
+    @Test
+    void registerPhysicalPayment_throwsWhenOpenShiftIsOverdue() {
+        CashShift shift = openShift();
+        when(cashShiftRepository.findOpenForUpdate(any())).thenReturn(Optional.of(shift));
+        when(deadlineService.isOverdue(org.mockito.ArgumentMatchers.eq(shift), any())).thenReturn(true);
+
+        assertThatThrownBy(() -> paymentService.registerPhysicalPayment(
+                1L, "Alice", new BigDecimal("12.50"), "alice@ember.local"))
+                .isInstanceOf(com.vanter.ember.cashregister.exception.CashShiftOverdueException.class);
+        verifyNoInteractions(billRepository);
     }
 
     @Test
@@ -301,6 +315,7 @@ class PaymentServiceTest {
         assertThat(payment.getParticipantName()).isEqualTo("Alice");
         assertThat(payment.getBill().getId()).isEqualTo(1L);
         assertThat(payment.getProcessedBy()).isEqualTo("user-1");
+        verifyNoInteractions(deadlineService);
     }
 
     @Test

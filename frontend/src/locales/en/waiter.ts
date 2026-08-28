@@ -142,4 +142,23 @@ export const waiter = {
     "This button opens the table for the first order, or charges the bill if it's already occupied.",
   tourAssignTitle: 'Invite guests',
   tourAssignContent: "Generates a QR code so this table's guests can join from their phone.",
+  cashShiftPreWarningTitle: 'The cash register is about to close',
+  cashShiftPreWarningBody: 'The register closes at {{time}}. Close it or extend it.',
+  cashShiftOverdueTitle: 'The cash register has expired',
+  cashShiftOverdueBody:
+    'The register expired at {{time}}. Cash payments and movements are blocked until you close it. Table service still works.',
+  cashShiftStaleTitle: 'The {{date}} register was never closed',
+  cashShiftStaleBody:
+    'Everything recorded since then is being added to the {{date}} shift. Close it before starting the day.',
+  cashShiftStaleMovementsCount: '{{count}} movement(s) accumulated',
+  cashShiftStalePaymentsCount: '{{count}} payment(s) accumulated',
+  cashShiftStaleCloseButton: 'Close the {{date}} register',
+  cashShiftProlongButton: 'Extend 1 h',
+  cashShiftCloseButton: 'Close register',
+  cashShiftLaterButton: 'Not now',
+  cashShiftProlongedToast: 'Register extended by one hour.',
+  cashShiftProlongErrorToast: 'Could not extend the register.',
+  cashShiftOpenTodayButton: "Open today's shift",
+  cashShiftOverduePaymentToast: 'The register expired. Extend or close it to charge.',
+  cashShiftOverdueMovementBlocked: 'The register expired. Extend or close it to record movements.',
 } satisfies typeof esWaiter

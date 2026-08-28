@@ -9,6 +9,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
@@ -82,4 +83,27 @@ public class CashShift {
 
     @Column(name = "total_cash_out", precision = 10, scale = 2)
     private BigDecimal totalCashOut;
+
+    @Column(name = "expires_at")
+    private LocalDateTime expiresAt;
+
+    @Column(name = "prolonged_until")
+    private LocalDateTime prolongedUntil;
+
+    @Column(name = "prolonged_by")
+    private String prolongedBy;
+
+    @Column(name = "prolong_count", nullable = false)
+    @Builder.Default
+    private int prolongCount = 0;
+
+    /** The deadline in force right now: the last prolong if any, else the base expiry. */
+    public LocalDateTime effectiveDeadline() {
+        return prolongedUntil != null ? prolongedUntil : expiresAt;
+    }
+
+    /** The calendar day this till belongs to, for daily-report attribution. */
+    public LocalDate businessDay() {
+        return openedAt == null ? null : openedAt.toLocalDate();
+    }
 }
