@@ -36,7 +36,12 @@ export default function ContactForm() {
     setErrors({});
     setSubmitting(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 900));
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name.trim(), email: email.trim(), message: message.trim() }),
+      });
+      if (!res.ok) throw new Error(String(res.status));
       window.location.href = '/thank-you';
     } catch {
       setSubmitting(false);
