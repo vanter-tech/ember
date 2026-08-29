@@ -1,0 +1,39 @@
+name: backend-image
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Derive tags
+        id: t
+        run: |
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            {
+              echo "tags<<EOF"
+              echo "ghcr.io/vanter-tech/ember-backend:${GITHUB_REF_NAME#v}"
+              echo "ghcr.io/vanter-tech/ember-backend:latest"
+              echo "EOF"
+            } >> "$GITHUB_OUTPUT"
+          else
+            echo "tags=ghcr.io/vanter-tech/ember-backend:${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: docker/build-push-action@v6
+        with:
+          context: backend
+          push: true
+          tags: ${{ steps.t.outputs.tags }}

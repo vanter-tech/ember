@@ -8,7 +8,7 @@ import sitemap from '@astrojs/sitemap';
 
 // https://astro.build/config
 export default defineConfig({
-  site: 'https://ember.vanter.com',
+  site: 'https://ember.vanter.net',
   integrations: [react(), sitemap()],
   server: { port: 5174 },
   vite: {

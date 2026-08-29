@@ -6,7 +6,6 @@ import com.vanter.ember.catalog.model.dto.MenuItemResponse;
 import com.vanter.ember.catalog.model.dto.ModifierGroupAssignment;
 import com.vanter.ember.catalog.repository.CategoryRepository;
 import com.vanter.ember.catalog.repository.MenuItemRepository;
-import com.vanter.ember.config.MinioProperties;
 import com.vanter.ember.config.ResourceNotFoundException;
 
 import io.minio.messages.Item;
@@ -25,7 +24,6 @@ public class MenuItemService {
     private final MenuItemRepository menuItemRepository;
     private final CategoryRepository categoryRepository;
     private final ImageUploadService imageUploadService;
-    private final MinioProperties minioProperties;
     private final ModifierGroupService modifierGroupService;
 
     public MenuItemResponse create(MenuItemRequest request, MultipartFile image) {
@@ -42,7 +40,7 @@ public class MenuItemService {
                 .build();
 
         if (image != null && !image.isEmpty()) {
-            item.setImageUrl(imageUploadService.uploadImage(image, minioProperties.getBucket()));
+            item.setImageUrl(imageUploadService.uploadImage(image));
         }
 
         MenuItem saved = menuItemRepository.save(item);
@@ -74,7 +72,7 @@ public class MenuItemService {
 
         if (request.getImageUrl() != null && !request.getImageUrl().isEmpty()) {
             String UrlVieja = item.getImageUrl();
-            String NuevaUrl = imageUploadService.uploadImage(request.getImageUrl(), "ember-media");
+            String NuevaUrl = imageUploadService.uploadImage(request.getImageUrl());
             item.setImageUrl(NuevaUrl);
             if (UrlVieja != null && !UrlVieja.isEmpty()) {
                 imageUploadService.deleteImage(UrlVieja);

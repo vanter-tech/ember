@@ -23,7 +23,7 @@ public class CategoryService {
         if (categoryRepository.existsByName(request.getName())) {
             throw new IllegalArgumentException("Category name already exists: " + request.getName());
         }
-        String imageUrl = imageUploadService.uploadImage(request.getImage(), "ember-media");
+        String imageUrl = imageUploadService.uploadImage(request.getImage());
 
         Category category = Category.builder()
                 .name((request.getName()))
@@ -57,7 +57,7 @@ public class CategoryService {
 
         if( request.getImage() != null && !request.getImage().isEmpty() ) {
             String UrlVieja = category.getImgUrl();
-            String NuevaUrl = imageUploadService.uploadImage(request.getImage(), "ember-media");
+            String NuevaUrl = imageUploadService.uploadImage(request.getImage());
             category.setImgUrl(NuevaUrl);
             if(UrlVieja != null && !UrlVieja.isEmpty()) {
                 imageUploadService.deleteImage(UrlVieja);

@@ -51,6 +51,7 @@ public class AuthRateLimiterFilter extends OncePerRequestFilter {
     private static final String NO_TENANT = "-";
     private static final String FORWARDED_FOR = "X-Forwarded-For";
     private static final String FORWARDED_HOST = "X-Forwarded-Host";
+    private static final String CF_CONNECTING_IP = "CF-Connecting-IP";
 
     private final RateLimitProperties properties;
     private final ObjectMapper objectMapper;
@@ -170,14 +171,22 @@ public class AuthRateLimiterFilter extends OncePerRequestFilter {
     }
 
     /**
-     * The peer address, unless it is a configured proxy — then the rightmost
-     * {@code X-Forwarded-For} hop that is not itself a trusted proxy, i.e. the address the
-     * outermost trusted proxy actually observed. Anything a client prepends sits further left and
-     * is never reached.
+     * The peer address, unless it is a configured proxy — then {@code CF-Connecting-IP} when it
+     * carries an IP literal (Cloudflare sets it to the true client and strips any client-supplied
+     * value at the edge), else the rightmost {@code X-Forwarded-For} hop that is not itself a
+     * trusted proxy, i.e. the address the outermost trusted proxy actually observed. Anything a
+     * client prepends sits further left and is never reached.
      */
     private String resolveClientIp(HttpServletRequest request, String peer, boolean trustedPeer) {
         if (!trustedPeer) {
             return peer;
+        }
+        String cfHeader = request.getHeader(CF_CONNECTING_IP);
+        if (cfHeader != null && !cfHeader.isBlank()) {
+            String cfIp = normalizeIp(cfHeader);
+            if (isIpLiteral(cfIp)) {
+                return cfIp;
+            }
         }
         String forwarded = request.getHeader(FORWARDED_FOR);
         if (forwarded == null || forwarded.isBlank()) {

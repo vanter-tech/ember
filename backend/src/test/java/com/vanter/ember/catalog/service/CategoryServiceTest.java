@@ -21,7 +21,6 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -42,7 +41,7 @@ class CategoryServiceTest {
         CategoryRequest Burgers  = new CategoryRequest();
         Burgers.setName("Burgers");
         Burgers.setDescription("Burgerssssss");
-        when(imageUploadService.uploadImage(any(), anyString()))
+        when(imageUploadService.uploadImage(any()))
                 .thenReturn("http://fake-url.com/imagen.jpg");
         CategoryResponse result = categoryService.create(Burgers);
 

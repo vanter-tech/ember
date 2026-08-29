@@ -11,4 +11,6 @@ public class MinioProperties {
     private String accessKey;
     private String secretKey;
     private String bucket;
+    /** Public base a browser fetches images from (CDN / custom domain), no bucket segment. */
+    private String publicUrl;
 }

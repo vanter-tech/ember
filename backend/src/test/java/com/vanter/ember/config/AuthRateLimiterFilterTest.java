@@ -298,6 +298,62 @@ class AuthRateLimiterFilterTest {
     }
 
     @Test
+    void trustedPeerPrefersCfConnectingIpForBucketKey() throws Exception {
+        properties.setTrustedProxies(List.of("10.0.0.0/8"));
+        AuthRateLimiterFilter filter = newFilter();
+
+        for (int i = 0; i < 10; i++) {
+            MockHttpServletRequest request = loginRequest("10.0.0.5");
+            request.addHeader("CF-Connecting-IP", "203.0.113.9");
+            filter.doFilterInternal(request, new MockHttpServletResponse(), chain);
+        }
+
+        MockHttpServletRequest sameClient = loginRequest("10.0.0.5");
+        sameClient.addHeader("CF-Connecting-IP", "203.0.113.9");
+        assertThat(statusOf(filter, sameClient)).isEqualTo(429);
+
+        // A different real client behind the same Cloudflare edge is a separate bucket.
+        MockHttpServletRequest otherClient = loginRequest("10.0.0.5");
+        otherClient.addHeader("CF-Connecting-IP", "203.0.113.10");
+        assertThat(statusOf(filter, otherClient)).isEqualTo(200);
+    }
+
+    @Test
+    void cfConnectingIpTakesPrecedenceOverForwardedForBehindATrustedProxy() throws Exception {
+        properties.setTrustedProxies(List.of("10.0.0.0/8"));
+        AuthRateLimiterFilter filter = newFilter();
+
+        // Cloudflare Tunnel's X-Forwarded-For chain is not a reliable client-IP source; the edge
+        // guarantees CF-Connecting-IP is the true client and strips any client-supplied value.
+        for (int i = 0; i < 10; i++) {
+            MockHttpServletRequest request = loginRequest("10.0.0.5");
+            request.addHeader("X-Forwarded-For", "198.51.100." + i);
+            request.addHeader("CF-Connecting-IP", "203.0.113.9");
+            filter.doFilterInternal(request, new MockHttpServletResponse(), chain);
+        }
+
+        MockHttpServletRequest sameClient = loginRequest("10.0.0.5");
+        sameClient.addHeader("X-Forwarded-For", "198.51.100.250");
+        sameClient.addHeader("CF-Connecting-IP", "203.0.113.9");
+        assertThat(statusOf(filter, sameClient)).isEqualTo(429);
+    }
+
+    @Test
+    void untrustedPeerIgnoresCfConnectingIp() throws Exception {
+        AuthRateLimiterFilter filter = newFilter();
+
+        for (int i = 0; i < 10; i++) {
+            MockHttpServletRequest request = loginRequest("198.51.100.7");
+            request.addHeader("CF-Connecting-IP", "203.0.113." + i);
+            filter.doFilterInternal(request, new MockHttpServletResponse(), chain);
+        }
+
+        MockHttpServletRequest spoofed = loginRequest("198.51.100.7");
+        spoofed.addHeader("CF-Connecting-IP", "203.0.113.200");
+        assertThat(statusOf(filter, spoofed)).isEqualTo(429);
+    }
+
+    @Test
     void readsTheTenantFromForwardedHostOnlyBehindATrustedProxy() throws Exception {
         properties.setTenantHostSuffixes(List.of("ember.vanter.com"));
         properties.setTrustedProxies(List.of("10.0.0.0/8"));

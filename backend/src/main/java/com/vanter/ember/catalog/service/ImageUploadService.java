@@ -9,6 +9,7 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.net.URI;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -27,7 +28,7 @@ public class ImageUploadService {
     private final MinioClient minioClient;
     private final MinioProperties minioProperties;
 
-    public String uploadImage(MultipartFile file, String bucketName) {
+    public String uploadImage(MultipartFile file) {
         String contentType = file.getContentType();
         if(contentType == null || !allowed_types.contains(contentType)){
             throw new IllegalArgumentException("Unsupported file type: " + contentType);
@@ -51,14 +52,15 @@ public class ImageUploadService {
 
             minioClient.putObject(
                     PutObjectArgs.builder()
-                            .bucket(bucketName)
+                            .bucket(minioProperties.getBucket())
                             .object(objectName)
                             .stream(new ByteArrayInputStream(imageBytes), imageBytes.length, -1)
                             .contentType("image/jpeg")
+                            .headers(Map.of("Cache-Control", "public, max-age=31536000, immutable"))
                             .build()
             );
 
-            return minioProperties.getUrl() + "/" + bucketName + "/" + objectName;
+            return minioProperties.getPublicUrl() + "/" + objectName;
 
         }catch (Exception e){
             throw new RuntimeException("Failed to upload image: " + e.getMessage(), e);
@@ -66,22 +68,19 @@ public class ImageUploadService {
     }
 
     public void deleteImage(String imageUrl) {
+        if (imageUrl == null || imageUrl.isBlank()) {
+            return;
+        }
         String path = URI.create(imageUrl).getPath();
-        String[] parts = path.split("/", 3);
-        String bucket = parts[1];
-        String objectName = parts[2];
+        String objectName = path.substring(path.lastIndexOf('/') + 1);
         try {
             minioClient.removeObject(
-                    RemoveObjectArgs.builder().bucket(bucket).object(objectName).build());
+                    RemoveObjectArgs.builder()
+                            .bucket(minioProperties.getBucket())
+                            .object(objectName)
+                            .build());
         } catch (Exception e) {
             throw new RuntimeException("Failed to delete image: " + e.getMessage(), e);
         }
-    }
-
-    private String extension(String filename) {
-        if (filename == null || !filename.contains(".")) {
-            return "";
-        }
-        return filename.substring(filename.lastIndexOf('.'));
     }
 }

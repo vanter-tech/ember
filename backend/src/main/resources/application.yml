@@ -104,6 +104,9 @@ minio:
   access-key: ${MINIO_ACCESS_KEY}
   secret-key: ${MINIO_SECRET_KEY}
   bucket: ${MINIO_BUCKET:ember-media}
+  # Public base browsers fetch images from. Dev/local MinIO serves at <url>/<bucket>;
+  # prod points at the R2 custom domain (no bucket segment).
+  public-url: ${MINIO_PUBLIC_URL:http://localhost:9000/ember-media}
 
 server:
   servlet:
