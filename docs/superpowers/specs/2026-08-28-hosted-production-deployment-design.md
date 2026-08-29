@@ -214,30 +214,37 @@ integration test). No `SecurityConfig` rule gymnastics needed.
 ### 5.3 Media storage — object-key indirection (shared fix with Ember Hub)
 
 `ImageUploadService.uploadImage()` today returns
-`minioProperties.getUrl() + "/" + bucket + "/" + object` — an absolute URL built
-from the S3 endpoint — and callers persist that string in the DB. Against R2 the
-S3 endpoint is not the public host, and any future host/CDN change breaks every
-stored row. This also bit the Hub (report 258).
+`minioProperties.getUrl() + "/" + bucketName + "/" + object` — an absolute URL
+built from the **S3 API endpoint** — and callers persist that string in the DB.
+Against R2 the S3 endpoint is not the public host. Callers also pass
+**inconsistent bucket names** (`CategoryService` and `MenuItemService.update`
+pass the literal `"ember-media"`; `MenuItemService.create` passes
+`minioProperties.getBucket()`), so in prod some uploads would land in the wrong
+bucket. This class of URL breakage also bit the Hub (report 258).
 
-**Change:**
+**Change** — build the stored URL from a configurable, *stable* public base
+(write-time, not read-time): the base is a permanent custom domain we control
+(`cdn.ember.vanter.net`), so re-pointing storage later (R2 → GCS) is a CNAME
+change, not a data migration. This keeps the static DTO mappers
+(`CategoryResponse.from`, `MenuItemResponse.from`) untouched.
 
-- New property `minio.public-url` (prod: `https://cdn.ember.vanter.net`; dev:
-  `http://localhost:9000`; Hub: `http://localhost:9000` or the LAN form).
-- `uploadImage` persists **only the object key** (`<uuid>.jpg`).
-- Wherever an image field is serialized into a DTO (category, menu item — locate
-  the mappers), resolve `key` → `${minio.public-url}/${key}` at read time.
-  A null/blank key resolves to null.
-- `deleteImage` takes the key directly (drop the URL-parsing).
+- New property `minio.public-url` — prod `https://cdn.ember.vanter.net`; dev
+  default `http://localhost:9000/ember-media` (local MinIO serves at
+  `<url>/<bucket>`); Hub `http://localhost:9000/ember-media` or the LAN form.
+- `uploadImage` drops its `bucketName` parameter (always `minio.bucket`), and
+  returns `${minio.public-url}/<uuid>.jpg`.
+- `deleteImage` derives the object name from the URL's last path segment and the
+  bucket from `minio.bucket` (works for both the dev `<host>/<bucket>/<obj>` and
+  the prod `<cdn>/<obj>` shapes); null/blank is a no-op.
 - Set `Cache-Control: public, max-age=31536000, immutable` on `putObject`
   (`PutObjectArgs` headers). Filenames are UUIDs, so immutable is safe; the CDN
   then caches forever and origin egress ≈ 0.
 - `MinioConfig.ensureBucketExists` calls `setBucketPolicy` for public read;
   against R2 that call may fail (as on portable MinIO). It already `log.warn`s
-  and continues — leave that, and document that R2 public read is configured
-  out-of-band (Cloudflare R2 → custom domain + public access toggle).
-- **Data note:** a fresh prod DB has no image rows; onboarding/seed data with
-  image URLs (if any) must be re-pointed. Existing dev rows keep their old
-  absolute URLs unless re-uploaded — non-blocking.
+  and continues — leave that; R2 public read is configured out-of-band
+  (Cloudflare R2 → custom domain + public-access toggle).
+- **Data note:** a fresh prod DB has no image rows. Existing dev rows keep their
+  old absolute URLs unless re-uploaded — non-blocking.
 
 ### 5.4 Rate limiter — real client IP
 
@@ -472,12 +479,18 @@ no-server-operations are worth ~$100+/month.
 - `landing/functions/contact.ts` **or** a `POST /v1/public/contact` endpoint (decided at plan time)
 - `landing/astro.config.mjs` — `site:` update
 
-## 16. Open items to settle during the implementation plan
+## 16. Open items
 
-- Contact-form target: Pages Function vs backend endpoint vs third-party (§9.1).
+Settled during planning (`docs/superpowers/plans/2026-08-28-hosted-production-deployment.md`):
+
+- **Contact form** → a Cloudflare Pages Function (`landing/functions/api/contact.ts`)
+  forwarding to a configurable webhook. No backend endpoint, no mail infra.
+- **`/actuator/health` on a separate management port** → yes, all actuator
+  endpoints move to `:8081`; a new unauthenticated `GET /v1/public/ping` serves
+  the external uptime check.
+- **Container registry** → GHCR (`ghcr.io/vanter-tech/ember-backend`).
+
+Still open, deferred to the close-out (Task 22):
+
 - Production branch model: build straight off `main` vs a dedicated `release`
-  branch/tag (§9.3, §11).
-- Whether Spring serves `/actuator/health` on the main port automatically once
-  `management.server.port` is set, or an explicit mapping is needed (§5.2) —
-  resolve with an integration test early.
-- Container registry: GHCR vs GCP Artifact Registry (§11).
+  branch/tag.

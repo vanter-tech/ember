@@ -1,6 +1,7 @@
 # PROGRESS.md — Active Execution State
 
 ## Current Execution State
+- **Sub-project: Hosted Production Deployment — spec + plan DONE (2026-08-28), branch `feat/hosted-production-deployment` off `main` `040bb72`.** Stand up the hosted SaaS SKU on one GCP `e2-medium` VM running Docker Compose (`postgres`/`app`/`cloudflared`/`backup`), fronted by Cloudflare (Pages ×2 at `ember.vanter.net` + `app.ember.vanter.net`, Tunnel at `api.`, R2 at `cdn.`); backups to GCS; Ops Agent monitoring; migration path to Cloud Run + Cloud SQL documented. **Digital payments + HA out of scope.** Spec `docs/superpowers/specs/2026-08-28-hosted-production-deployment-design.md`, plan `docs/superpowers/plans/2026-08-28-hosted-production-deployment.md` (22 tasks HPD-01..22 in the Task Queue). **Division of labor:** maintainer does the GCP track (Phases 1–3, 5), colleague does the Cloudflare track (Phase 4). Report 278's prometheus/grafana cleanup lives on `feat/hub-packaging-installer`, NOT this branch — cherry-pick aborted on a `PROGRESS.md` conflict; merge B1 to `main` soon to end the divergence.
 - **BRANCH EVENT 6 (2026-08-28):** `emb-i18n-08` (49 commits: postgres migration, EMB-MOD, EMB-INV, restaurant onboarding, all of Ember Hub HUB-01 + post-HUB-01 + `hub-license-activation`, EMB-PRINT debugging arc, EMBER-FIX, report 260 lint cleanup) merged to `main` via PR #55 (`34f5c6d`); user merged on GitHub after local 3-part verification passed (backend `./mvnw test`, frontend build+test, printing-agent package). `emb-i18n-08` retired local + remote. **All future work now branches from `main` as short-lived `fix/*` / `feat/*` branches.** **CI blockers found during the merge — FIXED by report 261 (PR #56, `b7fc1b7`):** `lint.yml`'s frontend job ran `npm ci` in a pnpm repo (`setup-node` hard-failed at ~5s); job names (`Lint Java Backend` etc.) never matched the ruleset's required contexts (`lint-backend`/`lint-frontend`/`lint-gateway`); and no job produced `lint-gateway`. Now: frontend job on `pnpm/action-setup@v4` + `pnpm install --frozen-lockfile` + `pnpm run lint`; jobs renamed to the exact required contexts; a trivial passing `lint-gateway` stub added (no `gateway/` module yet — replace its body when EMB-GATEWAY starts). All 3 checks green on PR #56, `mergeStateStatus: CLEAN`. PR-per-task workflow to `main` now works.
 - **Flyway V1 consolidated (2026-08-24, on `emb-i18n-08` directly, no branch):** `V2` couldn't
   bootstrap a genuinely empty Postgres (it ALTERs tables only `ddl-auto` ever created, never a
@@ -179,3 +180,28 @@ Makes the 4-day offline grace actually reset on cloud contact + lets `/console` 
 - [x] HEARTBEAT-05: Hub `com.vanter.ember.hub.sync.HeartbeatScheduler` (`@Profile("hub")`, `@Scheduled(fixedDelayString="${ember.hub.heartbeat-interval-ms:300000}")`, all exceptions swallowed in the method) + `@EnableScheduling` on `HubBeansConfig` + interval prop in `application-hub.yml`. Test via `com.sun.net.httpserver.HttpServer` (4: OK/SUSPENDED/500/blank-URL). Full suite 889/889. (report 269)
 - [x] HEARTBEAT-06: `GracePeriodInterceptor` also blocks on `isSuspendedGraceExpired` with a distinct `license_suspended` body (keeps `license_grace_period_expired` for the no-contact case). `GracePeriodInterceptorTest` +2. Full suite 891/891. (report 270)
 - [x] HEARTBEAT-07: `HubDashboard` license status line + `.env.example` (`EMBER_HUB_HEARTBEAT_URL`/`_INTERVAL_MS`/`_SUSPENDED_GRACE_HOURS`, `hub.latest-version`). Full suite 891/891. Code complete on branch; manual 2-process smoke + PR to `main` PENDING operator. (report 271)
+
+### Hosted Production Deployment (spec `docs/superpowers/specs/2026-08-28-hosted-production-deployment-design.md`, plan `docs/superpowers/plans/2026-08-28-hosted-production-deployment.md`)
+Branch `feat/hosted-production-deployment` off `main` `040bb72`. Phases: 1–2 repo code (maintainer), 3+5 GCP runbook (maintainer), 4 Cloudflare runbook (colleague). B1 E2E runs in parallel.
+- [ ] HPD-01: `minio.public-url` config + `ImageUploadService` builds URL from it, drops `bucketName` param (fixes 3-way bucket-name drift), robust `deleteImage`, immutable `Cache-Control`. Also unblocks Hub (report 258).
+- [ ] HPD-02: `PublicPingController` — unauthenticated `GET /v1/public/ping` for the external uptime check.
+- [ ] HPD-03: `application-prod.properties` — `management.server.port=8081`, `forward-headers-strategy=framework`, `health.show-details=never`.
+- [ ] HPD-04: `AuthRateLimiterFilter` trusts `CF-Connecting-IP` behind a configured proxy. + security-review pass.
+- [ ] HPD-05: `deploy/docker-compose.prod.yml` (`postgres`/`app`/`cloudflared`/`backup`) + `deploy/.env.prod.example`.
+- [ ] HPD-06: `deploy/backup/` — nightly `pg_dump` → GCS + 14-daily/8-weekly rotation container.
+- [ ] HPD-07: `deploy/deploy.sh` (pull+up+health-gate over IAP) + `deploy/RUNBOOK.md` skeleton.
+- [ ] HPD-08: `.github/workflows/backend-image.yml` — build + push `ghcr.io/vanter-tech/ember-backend` on `v*` tag.
+- [ ] HPD-09: `frontend/scripts/gen-env-config.mjs` + `build:pages` script (env-config.js for Pages).
+- [ ] HPD-10: landing `ContactForm.tsx` → `POST /api/contact` + `landing/functions/api/contact.ts` + `astro.config.mjs` `site:` → `.net`.
+- [ ] HPD-11: GCP — project/APIs, VM `ember-prod` (no public IP), IAP-SSH-only firewall, swap, Docker.
+- [ ] HPD-12: GCP — `ember-backups-<project>` GCS bucket (private), VM SA `objectAdmin` on it, daily disk snapshot policy.
+- [ ] HPD-13: GCP — `ember-prod-env` Secret Manager (rotated secrets), first bring-up, Flyway V1–V5 + backup verified.
+- [ ] HPD-14: GCP — Ops Agent (+ Prometheus scrape of `:8081`), uptime check on `/v1/public/ping`, alert policies.
+- [ ] HPD-15: CF — `ember.vanter.net` zone delegation (NS from `vanter.net`) + DNS records.
+- [ ] HPD-16: CF — R2 `ember-media-prod` + `cdn.ember.vanter.net` custom domain + scoped API token → GCP track.
+- [ ] HPD-17: CF — Tunnel `ember-prod`, public hostname `api.ember.vanter.net → app:8080`, `TUNNEL_TOKEN` → GCP track.
+- [ ] HPD-18: CF — Pages `ember-app` (root `frontend`, `build:pages`) + `ember-landing` (root `landing`) + custom domains + env vars.
+- [ ] HPD-19: CF — HSTS/Always-HTTPS, managed WAF, rate-limit `/v1/auth/*`, block `/v1/actuator/*`.
+- [ ] HPD-20: Integration — real `TUNNEL_TOKEN`+R2 into the secret, redeploy, full infra smoke checklist.
+- [ ] HPD-21: Restore test — latest GCS dump → throwaway `pg_restore`, document real-disaster procedure in RUNBOOK.
+- [ ] HPD-22: E2E product walkthrough on `app.ember.vanter.net` (2 devices, full order flow) + PROGRESS.md close-out.
