@@ -6,7 +6,6 @@ import com.vanter.ember.catalog.model.dto.MenuItemRequest;
 import com.vanter.ember.catalog.model.dto.MenuItemResponse;
 import com.vanter.ember.catalog.repository.CategoryRepository;
 import com.vanter.ember.catalog.repository.MenuItemRepository;
-import com.vanter.ember.config.MinioProperties;
 import com.vanter.ember.config.ResourceNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -24,7 +23,6 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -35,7 +33,6 @@ class MenuItemServiceTest {
     @Mock MenuItemRepository menuItemRepository;
     @Mock CategoryRepository categoryRepository;
     @Mock ImageUploadService imageUploadService;
-    @Mock MinioProperties minioProperties;
     @Mock ModifierGroupService modifierGroupService;
     @InjectMocks MenuItemService menuItemService;
 
@@ -66,7 +63,7 @@ class MenuItemServiceTest {
 
         assertThat(result.getName()).isEqualTo("Classic Burger");
         assertThat(result.getImageUrl()).isNull();
-        verify(imageUploadService, never()).uploadImage(any(), any());
+        verify(imageUploadService, never()).uploadImage(any());
     }
 
     @Test
@@ -75,8 +72,7 @@ class MenuItemServiceTest {
                 "image", "photo.jpg", "image/jpeg", new byte[100]);
 
         when(categoryRepository.findById(1L)).thenReturn(Optional.of(burgersCategory()));
-        when(minioProperties.getBucket()).thenReturn("ember-media");
-        when(imageUploadService.uploadImage(any(), eq("ember-media")))
+        when(imageUploadService.uploadImage(any()))
                 .thenReturn("http://localhost:9000/ember-media/uuid.jpg");
         when(menuItemRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(modifierGroupService.findActiveGroupsForMenuItem(any())).thenReturn(List.of());
@@ -145,7 +141,7 @@ class MenuItemServiceTest {
 
         assertThat(result.getName()).isEqualTo("Classic Burger");
         assertThat(result.getPrice()).isEqualByComparingTo("9.99");
-        verify(imageUploadService, never()).uploadImage(any(), any());
+        verify(imageUploadService, never()).uploadImage(any());
     }
 
     @Test
@@ -158,7 +154,7 @@ class MenuItemServiceTest {
 
         when(menuItemRepository.findById(1L)).thenReturn(Optional.of(existing));
         when(categoryRepository.findById(1L)).thenReturn(Optional.of(burgersCategory()));
-        when(imageUploadService.uploadImage(any(), eq("ember-media")))
+        when(imageUploadService.uploadImage(any()))
                 .thenReturn("http://localhost:9000/ember-media/new.jpg");
         when(menuItemRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(modifierGroupService.findActiveGroupsForMenuItem(any())).thenReturn(List.of());
