@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
-import { useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '../store/authStore'
+import toast from 'react-hot-toast'
 import {
   LayoutDashboard,
   BarChart3,
@@ -15,7 +16,9 @@ import {
   Banknote,
   BookOpen,
   Warehouse,
+  DoorOpen,
 } from 'lucide-react'
+import { SessionTableService } from '@/lib/api'
 import { useSessionStore } from '@/store/sessionStore'
 import { useTranslation } from '@/lib/i18n'
 import {
@@ -38,10 +41,22 @@ export const FloatingNav = () => {
   const location = useLocation()
   const queryClient = useQueryClient()
   const { userId } = useAuthStore()
-  const { participants } = useSessionStore()
+  const { participants, id: sessionId, clearSession } = useSessionStore()
   const [confirmLogout, setConfirmLogout] = useState(false)
+  const [confirmLeave, setConfirmLeave] = useState(false)
 
   const amiIn = participants?.find((data) => data.userId === userId)
+
+  const leaveMutation = useMutation({
+    mutationFn: () => SessionTableService.leaveSession(sessionId!),
+    onSuccess: () => {
+      clearSession()
+      setConfirmLeave(false)
+      toast.success(t('leaveTableDoneToast'))
+      navigate('/customer/home')
+    },
+    onError: () => toast.error(t('leaveTableErrorToast')),
+  })
 
   if (!role) return null
 
@@ -170,6 +185,17 @@ export const FloatingNav = () => {
         </Link>
       )}
 
+      {role === 'CUSTOMER' && amiIn && (
+        <button
+          onClick={() => setConfirmLeave(true)}
+          className="flex items-center justify-center w-12 h-12 rounded-full text-zinc-500
+            hover:bg-red-50 hover:text-[#920703] transition-all duration-300 cursor-pointer"
+          title={t('leaveTableCta')}
+        >
+          <DoorOpen strokeWidth={1.5} size={24} />
+        </button>
+      )}
+
       <div
         className="flex items-center gap-4 pl-2 border-l
             border-zinc-200 dark:border-zinc-700"
@@ -207,6 +233,26 @@ export const FloatingNav = () => {
             </AlertDialogCancel>
             <AlertDialogAction onClick={doLogout}>
               {t('logoutCashShiftConfirmButton')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={confirmLeave} onOpenChange={setConfirmLeave}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('leaveTableConfirmTitle')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('leaveTableConfirmBody')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('leaveTableCancelButton')}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => leaveMutation.mutate()}
+              disabled={leaveMutation.isPending}
+            >
+              {t('leaveTableConfirmButton')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

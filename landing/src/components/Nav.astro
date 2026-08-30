@@ -1,37 +1,177 @@
 ---
 import MobileNavDrawer from './MobileNavDrawer';
+import LangSwitcher from './LangSwitcher.astro';
+import Flame from './Flame.astro';
 import { FRONTEND_URL, NAV_LINKS } from '../lib/constants';
+import { getLang, useTranslations, localizePath } from '../i18n/utils';
+
+const lang = getLang(Astro.currentLocale);
+const t = useTranslations(lang);
+
+// Path with any /en prefix removed, so active-state checks work in both locales.
+const path = Astro.url.pathname.replace(/^\/en(?=\/|$)/, '') || '/';
+const isActive = (href: string) => {
+	if (href.startsWith('/#') || href.startsWith('#')) return false;
+	const target = href.replace(/\/$/, '');
+	return path === target || path.startsWith(`${target}/`);
+};
+
+const navLinks = NAV_LINKS.map((link) => ({
+	href: localizePath(link.href, lang),
+	label: t(link.key),
+	active: isActive(link.href)
+}));
 ---
 
-<header class="sticky top-0 z-40 border-b-[3px] border-foreground bg-background">
-	<div class="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-		<a href="/" class="font-mono text-xl font-black uppercase tracking-tight">EMBER</a>
+<header
+	id="site-header"
+	class="sticky top-0 z-40 border-b border-transparent bg-transparent transition-[background-color,border-color,box-shadow] duration-300 data-[scrolled]:border-border data-[scrolled]:bg-background/80 data-[scrolled]:shadow-sm data-[scrolled]:backdrop-blur"
+>
+	<div class="mx-auto flex max-w-6xl items-center justify-between px-6 py-3">
+		<a href={localizePath('/', lang)} class="group flex items-center gap-2.5">
+			<span
+				class="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm transition-transform duration-300 group-hover:-rotate-6"
+			>
+				<Flame class="h-4 w-auto" />
+			</span>
+			<span class="text-lg font-bold tracking-tight text-foreground">Ember</span>
+		</a>
 
-		<nav class="hidden items-center gap-8 md:flex">
-			{NAV_LINKS.map((link) => (
-				<a href={link.href} class="font-mono text-sm uppercase tracking-wide">
-					{link.label}
+		<div class="flex items-center gap-2 md:gap-4">
+			<nav class="hidden items-center gap-1 md:flex">
+				{navLinks.map((link) => (
+					<a
+						href={link.href}
+						aria-current={link.active ? 'page' : undefined}
+						class:list={[
+							'rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+							link.active
+								? 'bg-muted text-foreground'
+								: 'text-muted-foreground hover:bg-muted hover:text-foreground',
+						]}
+					>
+						{link.label}
+					</a>
+				))}
+			</nav>
+
+			<div class="hidden items-center gap-1 md:flex">
+				<a
+					href={`${FRONTEND_URL}/login`}
+					class="rounded-lg px-3.5 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+				>
+					{t('nav.login')}
 				</a>
-			))}
-		</nav>
+				<span class="mx-1 h-5 w-px bg-border" aria-hidden="true"></span>
+				<a
+					href={`${FRONTEND_URL}/register`}
+					class="group inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
+				>
+					{t('nav.register')}
+					<svg
+						class="size-4 transition-transform duration-300 group-hover:translate-x-0.5"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						aria-hidden="true"
+					>
+						<path d="M5 12h14" />
+						<path d="m13 6 6 6-6 6" />
+					</svg>
+				</a>
+			</div>
 
-		<div class="hidden items-center gap-4 md:flex">
-			<a
-				href={`${FRONTEND_URL}/login`}
-				class="border-[3px] border-foreground bg-background px-4 py-2 text-sm font-black uppercase"
-			>
-				Iniciar sesión
-			</a>
-			<a
-				href={`${FRONTEND_URL}/register`}
-				class="border-[3px] border-foreground bg-accent px-4 py-2 text-sm font-black uppercase text-background shadow-brutal-sm"
-			>
-				Registrarme
-			</a>
-		</div>
+			<span class="mx-1 hidden h-5 w-px bg-border md:block" aria-hidden="true"></span>
 
-		<div class="md:hidden">
-			<MobileNavDrawer client:load />
+			<button
+				id="theme-toggle"
+				type="button"
+				aria-label={t('nav.toggleTheme')}
+				class="flex size-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+			>
+				<svg
+					class="theme-icon theme-icon--moon size-5"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					aria-hidden="true"
+				>
+					<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+				</svg>
+				<svg
+					class="theme-icon theme-icon--sun size-5"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					aria-hidden="true"
+				>
+					<circle cx="12" cy="12" r="4" />
+					<path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
+				</svg>
+			</button>
+
+			<div class="hidden md:block">
+				<LangSwitcher />
+			</div>
+
+			<div class="md:hidden">
+				<MobileNavDrawer lang={lang} client:load />
+			</div>
 		</div>
 	</div>
 </header>
+
+<style>
+	.theme-icon--sun {
+		display: none;
+	}
+	:root[data-theme='dark'] .theme-icon--moon {
+		display: none;
+	}
+	:root[data-theme='dark'] .theme-icon--sun {
+		display: block;
+	}
+</style>
+
+<script is:inline>
+	(() => {
+		// The header + toggle are re-rendered on every client-side navigation,
+		// so re-bind on astro:page-load (also fires on the initial full load).
+		let onScroll;
+
+		const setup = () => {
+			if (onScroll) window.removeEventListener('scroll', onScroll);
+
+			const header = document.getElementById('site-header');
+			if (header) {
+				onScroll = () => {
+					if (window.scrollY > 8) header.setAttribute('data-scrolled', '');
+					else header.removeAttribute('data-scrolled');
+				};
+				onScroll();
+				window.addEventListener('scroll', onScroll, { passive: true });
+			}
+
+			document.getElementById('theme-toggle')?.addEventListener('click', () => {
+				const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+				document.documentElement.dataset.theme = next;
+				try {
+					localStorage.setItem('ember-theme', next);
+				} catch (e) {
+					/* ignore */
+				}
+			});
+		};
+
+		document.addEventListener('astro:page-load', setup);
+	})();
+</script>

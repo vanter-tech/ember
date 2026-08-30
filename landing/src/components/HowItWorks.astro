@@ -1,0 +1,33 @@
+---
+import { getLang, useTranslations } from '../i18n/utils';
+
+const lang = getLang(Astro.currentLocale);
+const t = useTranslations(lang);
+
+const steps = [
+	{ n: '1', title: t('how.1.title'), body: t('how.1.body') },
+	{ n: '2', title: t('how.2.title'), body: t('how.2.body') },
+	{ n: '3', title: t('how.3.title'), body: t('how.3.body') },
+];
+---
+
+<section class="border-t border-border bg-muted/30">
+	<div class="mx-auto max-w-6xl px-6 py-20 md:py-28">
+		<p class="text-xs font-semibold uppercase tracking-wider text-primary">{t('how.eyebrow')}</p>
+		<h2 class="mt-4 max-w-2xl text-3xl font-bold leading-tight tracking-tight text-foreground md:text-4xl">
+			{t('how.title')}
+		</h2>
+
+		<div class="mt-14 grid gap-10 md:grid-cols-3 md:gap-8">
+			{steps.map((step) => (
+				<div>
+					<span class="flex size-11 items-center justify-center rounded-xl bg-primary text-lg font-bold text-primary-foreground shadow-sm">
+						{step.n}
+					</span>
+					<h3 class="mt-5 text-lg font-semibold tracking-tight text-foreground">{step.title}</h3>
+					<p class="mt-2 text-muted-foreground">{step.body}</p>
+				</div>
+			))}
+		</div>
+	</div>
+</section>

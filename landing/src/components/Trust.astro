@@ -1,0 +1,49 @@
+---
+import { getLang, useTranslations, localizePath } from '../i18n/utils';
+
+const lang = getLang(Astro.currentLocale);
+const t = useTranslations(lang);
+
+const items = [t('trust.1'), t('trust.2'), t('trust.3'), t('trust.4'), t('trust.5')];
+---
+
+<section class="border-t border-border bg-muted/30">
+	<div class="mx-auto max-w-6xl px-6 py-20 md:py-28">
+		<p class="text-xs font-semibold uppercase tracking-wider text-primary">{t('trust.eyebrow')}</p>
+		<h2
+			class="mt-4 max-w-2xl text-3xl font-bold leading-tight tracking-tight text-foreground md:text-4xl"
+		>
+			{t('trust.title')}
+		</h2>
+
+		<ul class="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+			{items.map((item) => (
+				<li class="flex gap-3 rounded-lg border border-border bg-card p-5 shadow-sm">
+					<svg
+						class="mt-0.5 size-5 shrink-0 text-primary"
+						viewBox="0 0 20 20"
+						fill="currentColor"
+						aria-hidden="true"
+					>
+						<path
+							fill-rule="evenodd"
+							d="M16.704 5.29a1 1 0 0 1 .006 1.414l-7.5 7.6a1 1 0 0 1-1.42.006l-3.5-3.5a1 1 0 1 1 1.414-1.414l2.79 2.79 6.795-6.885a1 1 0 0 1 1.414-.006Z"
+							clip-rule="evenodd"
+						/>
+					</svg>
+					<span class="text-sm text-card-foreground">{item}</span>
+				</li>
+			))}
+		</ul>
+
+		<p class="mt-10 max-w-2xl text-sm text-muted-foreground">
+			{t('trust.closing')}
+			<a
+				href={localizePath('/contacto', lang)}
+				class="ml-1 font-medium text-primary transition-colors hover:text-primary/80"
+			>
+				{t('trust.contact')} →
+			</a>
+		</p>
+	</div>
+</section>

@@ -15,6 +15,7 @@ import {
   CheckCircle2,
   Ban,
   RotateCcw,
+  UserMinus,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import toast from 'react-hot-toast'
@@ -41,18 +42,24 @@ export const TableInformation = () => {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const { openModal } = useUIStore()
-  const { isConnected, stompClient, subscribeToWaiterSession, unsubscribeFromWaiterSession } =
-    useWebsocketStore()
+  const {
+    isConnected,
+    stompClient,
+    subscribeToWaiterSession,
+    unsubscribeFromWaiterSession,
+    lastBillRedistribution,
+    clearBillRedistribution,
+  } = useWebsocketStore()
 
   const { data: sessionData, isPending: isLoadingData } = useQuery({
     queryKey: ['sessionDetails', id],
     queryFn: () => SessionTableService.sessionInformation(id!),
   })
 
-  const { data: billData } = useQuery<WaiterBillState | undefined>({
+  const { data: billData } = useQuery<WaiterBillState | null>({
     queryKey: ['bill', id],
-    queryFn: () => Promise.resolve(undefined),
-    enabled: false,
+    queryFn: () => billingService.getBillState(id!),
+    enabled: !!id,
   })
 
   useEffect(() => {
@@ -70,6 +77,12 @@ export const TableInformation = () => {
       navigate('/waiter/tables')
     }
   }, [sessionData?.status, navigate])
+
+  useEffect(() => {
+    if (!lastBillRedistribution) return
+    toast(t('splitRedistributedToast', { name: lastBillRedistribution.departedParticipantName }))
+    clearBillRedistribution()
+  }, [lastBillRedistribution, clearBillRedistribution, t])
 
   const itemsToWaiter = sessionData?.items
     ? sessionData.items.filter((item) => item.status != 'DRAFT')
@@ -108,6 +121,19 @@ export const TableInformation = () => {
     mutationFn: (paymentId: number) => billingService.confirmDigitalPayment(paymentId),
     onSuccess: () => toast.success(t('digitalPaymentConfirmedToast')),
     onError: () => toast.error(t('digitalPaymentErrorToast')),
+  })
+
+  const redistributeSplitMutation = useMutation({
+    mutationFn: (departingParticipantName: string) =>
+      billingService.redistributeSplit(billData!.id, departingParticipantName),
+    onSuccess: () => toast.success(t('splitRedistributedDoneToast')),
+    onError: () => toast.error(t('splitRedistributeErrorToast')),
+  })
+
+  const settleAndCloseMutation = useMutation({
+    mutationFn: () => billingService.settleAndClose(billData!.id),
+    onSuccess: () => toast.success(t('tableSettledToast')),
+    onError: () => toast.error(t('tableSettleErrorToast')),
   })
 
   if (isLoadingData) {
@@ -185,7 +211,12 @@ export const TableInformation = () => {
             </CardHeader>
             <CardContent className="flex flex-col gap-3 max-h-87.5 overflow-y-auto pr-2">
               {itemsToWaiter && itemsToWaiter.length > 0 ? (
-                itemsToWaiter.map((item) => (
+                itemsToWaiter.map((item) => {
+                  const isSentToKitchen =
+                    item.status === 'PREPARING' ||
+                    item.status === 'READY' ||
+                    item.status === 'DELIVERED'
+                  return (
                   <div
                     key={item.id}
                     className="flex items-center justify-between p-4 bg-gray-50/80 rounded-2xl"
@@ -213,6 +244,8 @@ export const TableInformation = () => {
                       <Button
                         className=""
                         variant={'destructive'}
+                        disabled={isSentToKitchen}
+                        title={isSentToKitchen ? t('cannotRemoveSentItem') : undefined}
                         onClick={(e) => {
                           e.preventDefault()
                           e.stopPropagation()
@@ -226,7 +259,8 @@ export const TableInformation = () => {
                       </Button>
                     </div>
                   </div>
-                ))
+                  )
+                })
               ) : (
                 <div className="text-center py-8 text-gray-400">
                   {t('noOrdersRegistered')}
@@ -356,51 +390,66 @@ export const TableInformation = () => {
                             ${split.amount?.toFixed(2)}
                           </span>
                         </div>
-                        {split.status === 'PAID' || split.status === 'PARTIALLY_PAID' ? (
-                          <div className="flex items-center gap-2">
-                            <Badge className="flex items-center gap-1">
-                              <CheckCircle2 className="w-4 h-4" />
-                              {split.status === 'PAID' ? t('paidLabel') : t('partiallyPaidLabel')}
-                            </Badge>
+                        <div className="flex items-center gap-2">
+                          {split.status === 'UNPAID' && (
                             <Button
                               variant="ghost"
                               size="icon"
+                              title={t('removeDinerLabel')}
                               onClick={() =>
-                                openModal('REFUND_PAYMENT', {
-                                  billId: billData.id,
-                                  sessionId: id,
-                                  participantName: split.participantName,
+                                redistributeSplitMutation.mutate(split.participantName!)
+                              }
+                              disabled={redistributeSplitMutation.isPending}
+                            >
+                              <UserMinus className="w-4 h-4" />
+                            </Button>
+                          )}
+                          {split.status === 'PAID' || split.status === 'PARTIALLY_PAID' ? (
+                            <div className="flex items-center gap-2">
+                              <Badge className="flex items-center gap-1">
+                                <CheckCircle2 className="w-4 h-4" />
+                                {split.status === 'PAID' ? t('paidLabel') : t('partiallyPaidLabel')}
+                              </Badge>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() =>
+                                  openModal('REFUND_PAYMENT', {
+                                    billId: billData.id,
+                                    sessionId: id,
+                                    participantName: split.participantName,
+                                  })
+                                }
+                              >
+                                <RotateCcw className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          ) : pendingDigital ? (
+                            <Button
+                              className="text-sm"
+                              onClick={() =>
+                                confirmDigitalPaymentMutation.mutate(pendingDigital.id)
+                              }
+                              disabled={confirmDigitalPaymentMutation.isPending}
+                            >
+                              <CreditCard className="w-4 h-4 mr-2" /> {t('confirmDigitalButton')}
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="secondary"
+                              className="text-sm"
+                              onClick={() =>
+                                physicalPaymentMutation.mutate({
+                                  participantName: split.participantName!,
+                                  amount: split.amount!,
                                 })
                               }
+                              disabled={physicalPaymentMutation.isPending}
                             >
-                              <RotateCcw className="w-4 h-4" />
+                              <Banknote className="w-4 h-4 mr-2" /> {t('markPaidButton')}
                             </Button>
-                          </div>
-                        ) : pendingDigital ? (
-                          <Button
-                            className="text-sm"
-                            onClick={() =>
-                              confirmDigitalPaymentMutation.mutate(pendingDigital.id)
-                            }
-                            disabled={confirmDigitalPaymentMutation.isPending}
-                          >
-                            <CreditCard className="w-4 h-4 mr-2" /> {t('confirmDigitalButton')}
-                          </Button>
-                        ) : (
-                          <Button
-                            variant="secondary"
-                            className="text-sm"
-                            onClick={() =>
-                              physicalPaymentMutation.mutate({
-                                participantName: split.participantName!,
-                                amount: split.amount!,
-                              })
-                            }
-                            disabled={physicalPaymentMutation.isPending}
-                          >
-                            <Banknote className="w-4 h-4 mr-2" /> {t('markPaidButton')}
-                          </Button>
-                        )}
+                          )}
+                        </div>
                       </div>
                     )
                   })}
@@ -412,6 +461,16 @@ export const TableInformation = () => {
                       ${billData.total.toFixed(2)}
                     </span>
                   </div>
+                  <Button
+                    variant="secondary"
+                    className="w-full"
+                    onClick={() => settleAndCloseMutation.mutate()}
+                    disabled={settleAndCloseMutation.isPending}
+                  >
+                    {settleAndCloseMutation.isPending
+                      ? t('closingTableLabel')
+                      : t('settleAndCloseButton')}
+                  </Button>
                 </CardFooter>
               </>
             ) : (

@@ -12,9 +12,11 @@ interface sessionState extends sessionResponse {
   clearSession: () => void
   updateSession: (data: Partial<sessionResponse>) => void
   addParticipant: (participant: participantDTO) => void
+  removeParticipant: (userId: string) => void
   addItem: (item: orderItemDTO) => void
   setBillReady: (bill: Bill, splits: BillSplit[]) => void
   markSplitStatus: (participantName: string, status: BillSplit['status']) => void
+  replaceSplits: (splits: BillSplit[]) => void
   clearBill: () => void
 }
 
@@ -39,6 +41,11 @@ export const useSessionStore = create<sessionState>()(
           participants: [...(state.participants || []), participant],
         }))
       },
+      removeParticipant: (userId) => {
+        set((state) => ({
+          participants: (state.participants || []).filter((p) => p.userId !== userId),
+        }))
+      },
       addItem: (item) => {
         set((state) => ({
           items: [...(state.items || []), item],
@@ -55,6 +62,9 @@ export const useSessionStore = create<sessionState>()(
               : split
           ),
         }))
+      },
+      replaceSplits: (splits) => {
+        set({ billSplits: splits })
       },
       clearBill: () => {
         set({ bill: undefined, billSplits: undefined })

@@ -683,4 +683,152 @@ class PaymentServiceTest {
         assertThatThrownBy(() -> paymentService.refundPayment(99L, null, "reason", "alice@ember.local"))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
+
+    // --- redistributeSplit tests ---
+
+    @Test
+    void redistributeSplit_spreadsDepartingShareEquallyAcrossRemainingUnpaidSplits() {
+        Bill bill = sampleBill();
+        BillSplit carol = unpaidSplit(bill, "Carol", "6.00");
+        BillSplit alice = unpaidSplit(bill, "Alice", "12.00");
+        BillSplit bob = unpaidSplit(bill, "Bob", "6.00");
+        when(billRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(bill));
+        when(billSplitRepository.findByBillIdAndParticipantName(1L, "Carol")).thenReturn(Optional.of(carol));
+        when(billSplitRepository.findByBillId(1L)).thenReturn(new ArrayList<>(List.of(carol, alice, bob)));
+        when(billSplitRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        paymentService.redistributeSplit(1L, "Carol");
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<BillSplit>> captor = ArgumentCaptor.forClass(List.class);
+        verify(billSplitRepository).saveAll(captor.capture());
+        BillSplit savedAlice = captor.getValue().stream()
+                .filter(s -> s.getParticipantName().equals("Alice")).findFirst().orElseThrow();
+        BillSplit savedBob = captor.getValue().stream()
+                .filter(s -> s.getParticipantName().equals("Bob")).findFirst().orElseThrow();
+        assertThat(savedAlice.getAmount()).isEqualByComparingTo("15.00");
+        assertThat(savedBob.getAmount()).isEqualByComparingTo("9.00");
+        verify(billSplitRepository).delete(carol);
+    }
+
+    @Test
+    void redistributeSplit_broadcastsRedistributedMessageToSessionTopic() {
+        Bill bill = sampleBill();
+        BillSplit carol = unpaidSplit(bill, "Carol", "6.00");
+        BillSplit alice = unpaidSplit(bill, "Alice", "12.00");
+        when(billRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(bill));
+        when(billSplitRepository.findByBillIdAndParticipantName(1L, "Carol")).thenReturn(Optional.of(carol));
+        when(billSplitRepository.findByBillId(1L)).thenReturn(new ArrayList<>(List.of(carol, alice)));
+        when(billSplitRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        paymentService.redistributeSplit(1L, "Carol");
+
+        ArgumentCaptor<com.vanter.ember.billing.dto.SplitsRedistributedMessage> captor =
+                ArgumentCaptor.forClass(com.vanter.ember.billing.dto.SplitsRedistributedMessage.class);
+        verify(messagingTemplate).convertAndSend(
+                org.mockito.ArgumentMatchers.eq("/topic/session/sess-1"), captor.capture());
+        assertThat(captor.getValue().type()).isEqualTo("SPLITS_REDISTRIBUTED");
+        assertThat(captor.getValue().billId()).isEqualTo(1L);
+        assertThat(captor.getValue().departedParticipantName()).isEqualTo("Carol");
+    }
+
+    @Test
+    void redistributeSplit_throwsWhenDepartingSplitIsNotUnpaid() {
+        Bill bill = sampleBill();
+        BillSplit carolPaid = paidSplit(bill, "Carol", "6.00");
+        when(billRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(bill));
+        when(billSplitRepository.findByBillIdAndParticipantName(1L, "Carol")).thenReturn(Optional.of(carolPaid));
+
+        assertThatThrownBy(() -> paymentService.redistributeSplit(1L, "Carol"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("refund it first");
+    }
+
+    @Test
+    void redistributeSplit_throwsWhenNoRemainingParticipantsToAbsorbTheShare() {
+        Bill bill = sampleBill();
+        BillSplit carol = unpaidSplit(bill, "Carol", "6.00");
+        BillSplit alicePaid = paidSplit(bill, "Alice", "16.50");
+        when(billRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(bill));
+        when(billSplitRepository.findByBillIdAndParticipantName(1L, "Carol")).thenReturn(Optional.of(carol));
+        when(billSplitRepository.findByBillId(1L)).thenReturn(new ArrayList<>(List.of(carol, alicePaid)));
+
+        assertThatThrownBy(() -> paymentService.redistributeSplit(1L, "Carol"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("No remaining participants");
+    }
+
+    @Test
+    void redistributeSplit_throwsWhenBillIsNotOpen() {
+        Bill paid = sampleBill();
+        paid.setStatus(BillStatus.PAID);
+        when(billRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(paid));
+
+        assertThatThrownBy(() -> paymentService.redistributeSplit(1L, "Carol"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("not open");
+    }
+
+    @Test
+    void redistributeSplit_throwsWhenSplitNotFound() {
+        when(billRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(sampleBill()));
+        when(billSplitRepository.findByBillIdAndParticipantName(1L, "Ghost")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> paymentService.redistributeSplit(1L, "Ghost"))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    // --- settleAndClose tests ---
+
+    @Test
+    void settleAndClose_marksBillPaidAndPublishesPaymentCompletedWhenAllSplitsPaid() {
+        Bill bill = sampleBill();
+        when(billRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(bill));
+        when(billSplitRepository.findByBillId(1L))
+                .thenReturn(List.of(paidSplit(bill, "Alice", "12.50"), paidSplit(bill, "Bob", "10.00")));
+        when(sessionService.findById("sess-1")).thenReturn(sampleSession());
+
+        Bill result = paymentService.settleAndClose(1L);
+
+        assertThat(result.getStatus()).isEqualTo(BillStatus.PAID);
+        ArgumentCaptor<PaymentCompleted> captor = ArgumentCaptor.forClass(PaymentCompleted.class);
+        verify(eventPublisher).publishEvent(captor.capture());
+        assertThat(captor.getValue().sessionId()).isEqualTo("sess-1");
+        assertThat(captor.getValue().tableId()).isEqualTo(TABLE_ID);
+        assertThat(captor.getValue().billId()).isEqualTo(1L);
+        verify(billRepository).save(bill);
+    }
+
+    @Test
+    void settleAndClose_throwsWhenAnySplitStillUnpaid() {
+        Bill bill = sampleBill();
+        when(billRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(bill));
+        when(billSplitRepository.findByBillId(1L))
+                .thenReturn(List.of(paidSplit(bill, "Alice", "12.50"), unpaidSplit(bill, "Bob", "10.00")));
+
+        assertThatThrownBy(() -> paymentService.settleAndClose(1L))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("still unpaid");
+        verify(eventPublisher, never()).publishEvent(any());
+        assertThat(bill.getStatus()).isEqualTo(BillStatus.OPEN);
+    }
+
+    @Test
+    void settleAndClose_throwsWhenBillHasNoSplits() {
+        Bill bill = sampleBill();
+        when(billRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(bill));
+        when(billSplitRepository.findByBillId(1L)).thenReturn(List.of());
+
+        assertThatThrownBy(() -> paymentService.settleAndClose(1L))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("no splits");
+    }
+
+    @Test
+    void settleAndClose_throwsWhenBillNotFound() {
+        when(billRepository.findByIdForUpdate(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> paymentService.settleAndClose(99L))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
 }

@@ -1,0 +1,57 @@
+---
+import InfoLayout from '../../layouts/InfoLayout.astro';
+import { getLang, useTranslations, localizePath } from '../../i18n/utils';
+
+const lang = getLang(Astro.currentLocale);
+const t = useTranslations(lang);
+
+const links = [
+	{
+		href: localizePath('/info/manual', lang),
+		title: t('info.card.manual.title'),
+		body: t('info.card.manual.body'),
+	},
+	{
+		href: localizePath('/info/videos', lang),
+		title: t('info.card.videos.title'),
+		body: t('info.card.videos.body'),
+	},
+];
+---
+
+<InfoLayout title={t('info.title')} description={t('info.desc')}>
+	<p class="text-xs font-semibold uppercase tracking-wider text-primary">{t('info.sidebar')}</p>
+	<h1 class="mt-3 text-3xl font-bold tracking-tight text-foreground md:text-4xl">
+		{t('info.h1')}
+	</h1>
+	<p class="mt-4 text-muted-foreground">
+		{t('info.lede')}
+	</p>
+
+	<div class="mt-8 grid gap-4">
+		{links.map((link) => (
+			<a
+				href={link.href}
+				class="group rounded-lg border border-border bg-card p-5 shadow-sm transition-colors hover:border-primary/40"
+			>
+				<h2 class="flex items-center gap-2 text-lg font-semibold tracking-tight text-card-foreground">
+					{link.title}
+					<svg
+						class="size-4 text-primary transition-transform group-hover:translate-x-0.5"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						aria-hidden="true"
+					>
+						<path d="M5 12h14" />
+						<path d="m13 6 6 6-6 6" />
+					</svg>
+				</h2>
+				<p class="mt-2 text-sm text-muted-foreground">{link.body}</p>
+			</a>
+		))}
+	</div>
+</InfoLayout>

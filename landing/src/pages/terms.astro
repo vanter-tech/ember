@@ -2,73 +2,38 @@
 import Layout from '../layouts/Layout.astro';
 import Nav from '../components/Nav.astro';
 import Footer from '../components/Footer.astro';
+import { getLang, useTranslations } from '../i18n/utils';
 
-const lastUpdated = '14 de agosto de 2026';
+const lang = getLang(Astro.currentLocale);
+const t = useTranslations(lang);
 
-const sections = [
-	{
-		title: '1. Aceptación de los términos',
-		body: 'Al crear una cuenta o usar Ember, el restaurante contratante y su personal aceptan estos Términos de Servicio y la Política de privacidad. Si no estás de acuerdo, no debés usar el servicio.',
-	},
-	{
-		title: '2. Descripción del servicio',
-		body: 'Ember es una plataforma de gestión de restaurantes ofrecida por Vanter S.A. (RUC 1792999999001) que incluye carrito colaborativo para comensales, comandas de cocina (KDS), gestión de piso/meseros, facturación y analítica administrativa, según el plan contratado.',
-	},
-	{
-		title: '3. Cuentas y responsabilidad',
-		body: 'El restaurante es responsable de mantener la confidencialidad de las credenciales de su personal y de toda actividad realizada bajo su cuenta. Vanter S.A. no se responsabiliza por accesos no autorizados derivados de un manejo negligente de credenciales.',
-	},
-	{
-		title: '4. Planes y facturación',
-		body: 'El acceso a Ember se rige por el plan contratado (FREE, STARTER, PRO o ENTERPRISE). Los cambios de plan, suspensión o cancelación se gestionan según lo acordado comercialmente con Vanter S.A. o desde el panel de administración correspondiente.',
-	},
-	{
-		title: '5. Uso aceptable',
-		body: 'No está permitido usar Ember para fines ilícitos, interferir con la operación del servicio, intentar acceder a datos de otro restaurante (tenant) sin autorización, o realizar ingeniería inversa sobre la plataforma.',
-	},
-	{
-		title: '6. Disponibilidad del servicio',
-		body: 'Vanter S.A. realiza esfuerzos razonables para mantener Ember disponible, pero no garantiza un servicio libre de interrupciones. Se podrán realizar mantenimientos programados o de emergencia con o sin aviso previo según la criticidad.',
-	},
-	{
-		title: '7. Limitación de responsabilidad',
-		body: 'En la medida permitida por la ley ecuatoriana, Vanter S.A. no será responsable por daños indirectos, incidentales o lucro cesante derivados del uso o la imposibilidad de uso de Ember.',
-	},
-	{
-		title: '8. Ley aplicable y jurisdicción',
-		body: 'Estos términos se rigen por las leyes de la República del Ecuador. Cualquier controversia se someterá a los jueces competentes de Quito, Pichincha, Ecuador.',
-	},
-	{
-		title: '9. Contacto',
-		body: 'Consultas sobre estos términos: ventas@ember.vanter.com — Vanter S.A., Av. Amazonas N34-451 y Av. Atahualpa, Quito, Pichincha, Ecuador.',
-	},
-];
+const sections = Array.from({ length: 9 }, (_, i) => ({
+	title: t(`terms.s${i + 1}.title`),
+	body: t(`terms.s${i + 1}.body`),
+}));
 ---
 
-<Layout
-	title="Términos de servicio — Ember"
-	description="Condiciones de uso de la plataforma Ember, operada por Vanter S.A."
->
+<Layout title={t('terms.title')} description={t('terms.desc')}>
 	<Nav />
-	<section class="border-b-[3px] border-foreground bg-background">
+	<main id="main-content" tabindex="-1" class="bg-background">
 		<div class="mx-auto max-w-3xl px-6 py-16 md:py-24">
-			<p class="font-mono text-sm font-bold uppercase tracking-widest text-accent">Legal</p>
-			<h1 class="mt-4 text-4xl font-black uppercase leading-[0.95] tracking-tight md:text-5xl">
-				Términos de servicio
+			<p class="text-xs font-semibold uppercase tracking-wider text-primary">{t('legal.eyebrow')}</p>
+			<h1 class="mt-4 text-4xl font-bold leading-tight tracking-tight text-foreground md:text-5xl">
+				{t('terms.h1')}
 			</h1>
-			<p class="mt-4 font-mono text-xs uppercase tracking-widest text-foreground/80">
-				Última actualización: {lastUpdated}
+			<p class="mt-4 text-sm text-muted-foreground">
+				{t('legal.updated')} {t('terms.date')}
 			</p>
 
-			<div class="mt-12 space-y-10">
+			<div class="mt-12 space-y-6">
 				{sections.map((section) => (
-					<div class="border-[3px] border-foreground bg-background p-6 shadow-brutal-sm">
-						<h2 class="text-lg font-black uppercase tracking-tight">{section.title}</h2>
-						<p class="mt-3 text-sm font-medium text-foreground/80">{section.body}</p>
+					<div class="rounded-lg border border-border bg-card p-6 shadow-sm">
+						<h2 class="text-lg font-semibold tracking-tight text-card-foreground">{section.title}</h2>
+						<p class="mt-3 text-sm leading-relaxed text-muted-foreground">{section.body}</p>
 					</div>
 				))}
 			</div>
 		</div>
-	</section>
+	</main>
 	<Footer />
 </Layout>

@@ -1,0 +1,50 @@
+---
+import { getFeatures } from '../lib/features';
+import { getLang, useTranslations, localizePath } from '../i18n/utils';
+
+const lang = getLang(Astro.currentLocale);
+const t = useTranslations(lang);
+const FEATURES = getFeatures(lang);
+---
+
+<section class="border-t border-border bg-background">
+	<div class="mx-auto max-w-6xl px-6 py-20 md:py-28">
+		<div class="flex flex-wrap items-end justify-between gap-4">
+			<div>
+				<p class="text-xs font-semibold uppercase tracking-wider text-primary">{t('ftease.eyebrow')}</p>
+				<h2 class="mt-4 max-w-xl text-3xl font-bold leading-tight tracking-tight text-foreground md:text-4xl">
+					{t('ftease.title')}
+				</h2>
+			</div>
+			<a
+				href={localizePath('/funcionalidades', lang)}
+				class="group inline-flex items-center gap-1.5 text-sm font-medium text-primary transition-colors hover:text-primary/80"
+			>
+				{t('ftease.link')}
+				<svg
+					class="size-4 transition-transform group-hover:translate-x-0.5"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					aria-hidden="true"
+				>
+					<path d="M5 12h14" />
+					<path d="m13 6 6 6-6 6" />
+				</svg>
+			</a>
+		</div>
+
+		<div class="mt-12 grid gap-6 sm:grid-cols-2">
+			{FEATURES.map((feature) => (
+				<div class="rounded-lg border border-border bg-card p-6 shadow-sm">
+					<span class="text-sm font-semibold text-primary">{feature.n}</span>
+					<h3 class="mt-3 text-lg font-semibold tracking-tight text-card-foreground">{feature.title}</h3>
+					<p class="mt-2 text-sm text-muted-foreground">{feature.description}</p>
+				</div>
+			))}
+		</div>
+	</div>
+</section>

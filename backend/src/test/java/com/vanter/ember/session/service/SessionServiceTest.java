@@ -10,9 +10,12 @@ import com.vanter.ember.kitchen.event.KitchenItemUpdated;
 import com.vanter.ember.restaurant.model.Restaurant;
 import com.vanter.ember.restaurant.model.RestaurantStatus;
 import com.vanter.ember.restaurant.repository.RestaurantRepository;
+import com.vanter.ember.session.event.DeleteItem;
 import com.vanter.ember.session.event.ItemAdded;
 import com.vanter.ember.session.event.KitchenItemsConfirmed;
 import com.vanter.ember.session.event.ParticipantJoined;
+import com.vanter.ember.session.event.ParticipantLeft;
+import com.vanter.ember.session.event.SessionClosed;
 import com.vanter.ember.session.event.SessionOpened;
 import com.vanter.ember.session.exception.TooManyParticipantsException;
 import com.vanter.ember.session.model.OrderItem;
@@ -29,6 +32,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -588,14 +593,15 @@ class SessionServiceTest {
         assertThat(result.getItems()).isEmpty();
     }
 
-    @Test
-    void removeItem_throwsWhenItemIsPreparing() {
-        Session session = openSessionWithItem(OrderItemStatus.PREPARING, "user-1");
+    @ParameterizedTest
+    @EnumSource(value = OrderItemStatus.class, names = {"PREPARING", "READY", "DELIVERED"})
+    void removeItem_throwsWhenItemAlreadySentToKitchen(OrderItemStatus status) {
+        Session session = openSessionWithItem(status, "user-1");
         when(sessionRepository.findByIdAndTenantId("sess-1", RESTAURANT_ID)).thenReturn(Optional.of(session));
 
         assertThatThrownBy(() -> sessionService.removeItem("sess-1", "order-item-1", "user-1"))
                 .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("being prepared");
+                .hasMessageContaining("sent to the kitchen");
     }
 
     @Test
@@ -789,5 +795,187 @@ class SessionServiceTest {
         assertThat(activity.getType()).isEqualTo(SessionActivity.Type.ITEM_SENT);
         assertThat(activity.getItemName()).isEqualTo("Tacos");
         assertThat(activity.getParticipantName()).isEqualTo("Alice");
+    }
+
+    // --- leaveSession tests ---
+
+    private Session openSessionWithTwoParticipants() {
+        return Session.builder()
+                .id("sess-1").tenantId(RESTAURANT_ID).tableId(TABLE_ID).waiterId("waiter@test.com")
+                .status(SessionStatus.OPEN).maxParticipants(4)
+                .participants(new ArrayList<>(List.of(
+                        Participant.builder().userId("user-1").name("Alice").build(),
+                        Participant.builder().userId("user-2").name("Bob").build())))
+                .items(new ArrayList<>())
+                .createdAt(LocalDateTime.now())
+                .build();
+    }
+
+    private OrderItem itemFor(String participantId, String id, OrderItemStatus status) {
+        return OrderItem.builder()
+                .id(id).itemId(10L).name("Tacos").price(new java.math.BigDecimal("12.50"))
+                .participantId(participantId).participantName("Alice")
+                .status(status).addedAt(LocalDateTime.now()).build();
+    }
+
+    @Test
+    void leaveSession_discardsLeaverDraftsKeepsSentItemsAndRemovesParticipant() {
+        Session session = openSessionWithTwoParticipants();
+        session.getItems().add(itemFor("user-1", "draft-1", OrderItemStatus.DRAFT));
+        session.getItems().add(itemFor("user-1", "pending-1", OrderItemStatus.PENDING));
+        session.getItems().add(itemFor("user-2", "draft-2", OrderItemStatus.DRAFT));
+        when(sessionRepository.findByIdAndTenantId("sess-1", RESTAURANT_ID)).thenReturn(Optional.of(session));
+        when(userRepository.findByEmail("user-1")).thenReturn(Optional.of(user("user-1")));
+        when(sessionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        Session result = sessionService.leaveSession("sess-1", "user-1");
+
+        assertThat(result.getParticipants()).extracting(Participant::getUserId).containsExactly("user-2");
+        assertThat(result.getItems()).extracting(OrderItem::getId)
+                .containsExactlyInAnyOrder("pending-1", "draft-2");
+        assertThat(result.getStatus()).isEqualTo(SessionStatus.OPEN);
+    }
+
+    @Test
+    void leaveSession_publishesDeleteItemForEachDiscardedDraftAndParticipantLeft() {
+        Session session = openSessionWithTwoParticipants();
+        session.getItems().add(itemFor("user-1", "draft-1", OrderItemStatus.DRAFT));
+        session.getItems().add(itemFor("user-1", "pending-1", OrderItemStatus.PENDING));
+        when(sessionRepository.findByIdAndTenantId("sess-1", RESTAURANT_ID)).thenReturn(Optional.of(session));
+        when(userRepository.findByEmail("user-1")).thenReturn(Optional.of(user("user-1")));
+        when(sessionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        sessionService.leaveSession("sess-1", "user-1");
+
+        ArgumentCaptor<Object> captor = ArgumentCaptor.forClass(Object.class);
+        verify(eventPublisher, org.mockito.Mockito.atLeastOnce()).publishEvent(captor.capture());
+        assertThat(captor.getAllValues()).filteredOn(DeleteItem.class::isInstance)
+                .extracting(e -> ((DeleteItem) e).orderItemId()).containsExactly("draft-1");
+        assertThat(captor.getAllValues()).filteredOn(ParticipantLeft.class::isInstance)
+                .singleElement()
+                .extracting(e -> ((ParticipantLeft) e).userName()).isEqualTo("Alice");
+    }
+
+    @Test
+    void leaveSession_closesSessionWhenLastParticipantLeavesWithNoBillableItems() {
+        Session session = openSessionWithParticipant("user-1");
+        session.getItems().add(itemFor("user-1", "draft-1", OrderItemStatus.DRAFT));
+        when(sessionRepository.findByIdAndTenantId("sess-1", RESTAURANT_ID)).thenReturn(Optional.of(session));
+        when(userRepository.findByEmail("user-1")).thenReturn(Optional.of(user("user-1")));
+        when(sessionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        Session result = sessionService.leaveSession("sess-1", "user-1");
+
+        assertThat(result.getStatus()).isEqualTo(SessionStatus.CLOSED);
+        ArgumentCaptor<Object> captor = ArgumentCaptor.forClass(Object.class);
+        verify(eventPublisher, org.mockito.Mockito.atLeastOnce()).publishEvent(captor.capture());
+        assertThat(captor.getAllValues()).anySatisfy(e -> assertThat(e).isInstanceOf(SessionClosed.class));
+        assertThat(captor.getAllValues()).noneSatisfy(e -> assertThat(e).isInstanceOf(ParticipantLeft.class));
+    }
+
+    @Test
+    void leaveSession_throwsWhenCallerIsNotAParticipant() {
+        Session session = openSessionWithParticipant("user-2");
+        when(sessionRepository.findByIdAndTenantId("sess-1", RESTAURANT_ID)).thenReturn(Optional.of(session));
+        when(userRepository.findByEmail("user-1")).thenReturn(Optional.of(user("user-1")));
+
+        assertThatThrownBy(() -> sessionService.leaveSession("sess-1", "user-1"))
+                .isInstanceOf(AccessDeniedException.class);
+    }
+
+    @Test
+    void leaveSession_throwsWhenSessionNotOpen() {
+        Session session = openSessionWithParticipant("user-1");
+        session.setStatus(SessionStatus.CLOSED);
+        when(sessionRepository.findByIdAndTenantId("sess-1", RESTAURANT_ID)).thenReturn(Optional.of(session));
+
+        assertThatThrownBy(() -> sessionService.leaveSession("sess-1", "user-1"))
+                .isInstanceOf(IllegalStateException.class);
+    }
+
+    // --- resumeSession tests ---
+
+    @Test
+    void resumeSession_returnsSessionForParticipantAndBindsItsTenant() {
+        Session session = openSessionWithParticipant("user-1");
+        when(userRepository.findByEmail("user-1")).thenReturn(Optional.of(user("user-1")));
+        when(sessionRepository.findById("sess-1")).thenReturn(Optional.of(session));
+        stubActiveRestaurant();
+
+        Session result = sessionService.resumeSession("sess-1", "user-1");
+
+        assertThat(result.getId()).isEqualTo("sess-1");
+        assertThat(TenantContextHolder.requireTenantId()).isEqualTo(RESTAURANT_ID);
+    }
+
+    @Test
+    void resumeSession_throwsWhenCallerIsNotAParticipant() {
+        Session session = openSessionWithParticipant("user-2");
+        when(userRepository.findByEmail("user-1")).thenReturn(Optional.of(user("user-1")));
+        when(sessionRepository.findById("sess-1")).thenReturn(Optional.of(session));
+
+        assertThatThrownBy(() -> sessionService.resumeSession("sess-1", "user-1"))
+                .isInstanceOf(AccessDeniedException.class);
+    }
+
+    @Test
+    void resumeSession_throwsWhenSessionAlreadyClosed() {
+        Session session = openSessionWithParticipant("user-1");
+        session.setStatus(SessionStatus.CLOSED);
+        when(userRepository.findByEmail("user-1")).thenReturn(Optional.of(user("user-1")));
+        when(sessionRepository.findById("sess-1")).thenReturn(Optional.of(session));
+
+        assertThatThrownBy(() -> sessionService.resumeSession("sess-1", "user-1"))
+                .isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    void resumeSession_throwsWhenSessionNotFound() {
+        when(userRepository.findByEmail("user-1")).thenReturn(Optional.of(user("user-1")));
+        when(sessionRepository.findById("missing")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> sessionService.resumeSession("missing", "user-1"))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    // --- one active table per customer ---
+
+    private Session otherOpenSessionFor(String userId) {
+        return Session.builder().id("sess-9").tenantId(RESTAURANT_ID)
+                .status(SessionStatus.OPEN)
+                .participants(new ArrayList<>(List.of(
+                        Participant.builder().userId(userId).name("Alice").build())))
+                .build();
+    }
+
+    @Test
+    void join_throwsWhenUserAlreadySeatedAtAnotherOpenTable() {
+        stubQrTokenFor("qr-token");
+        stubActiveRestaurant();
+        when(userRepository.findByEmail("user-1")).thenReturn(Optional.of(user("user-1")));
+        when(sessionRepository.findByIdAndTenantId("sess-1", RESTAURANT_ID))
+                .thenReturn(Optional.of(openSessionWithCapacity(4, List.of())));
+        when(sessionRepository.findByTenantIdAndParticipants_UserId(RESTAURANT_ID, "user-1"))
+                .thenReturn(List.of(otherOpenSessionFor("user-1")));
+
+        assertThatThrownBy(() -> sessionService.joinSession("qr-token", "user-1", "Alice"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("another table");
+        verify(sessionRepository, never()).save(any());
+    }
+
+    @Test
+    void joinCode_throwsWhenUserAlreadySeatedAtAnotherOpenTable() {
+        when(userRepository.findByEmail("user-1")).thenReturn(Optional.of(user("user-1")));
+        when(sessionRepository.findByJoinCodeAndStatus("AB3CD", SessionStatus.OPEN))
+                .thenReturn(List.of(openSessionWithCapacity(4, List.of())));
+        stubActiveRestaurant();
+        when(sessionRepository.findByTenantIdAndParticipants_UserId(RESTAURANT_ID, "user-1"))
+                .thenReturn(List.of(otherOpenSessionFor("user-1")));
+
+        assertThatThrownBy(() -> sessionService.joinSessionCode("AB3CD", "user-1"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("another table");
+        verify(sessionRepository, never()).save(any());
     }
 }

@@ -1,0 +1,33 @@
+---
+import { getLang, switchLocalePath } from '../i18n/utils';
+
+const lang = getLang(Astro.currentLocale);
+const pathname = Astro.url.pathname;
+const langs = [
+	{ code: 'es' as const, label: 'ES' },
+	{ code: 'en' as const, label: 'EN' }
+];
+---
+
+<div
+	class="flex items-center rounded-lg border border-border p-0.5 text-xs font-semibold"
+	role="group"
+	aria-label="Idioma"
+>
+	{
+		langs.map((l) => (
+			<a
+				href={switchLocalePath(pathname, l.code)}
+				aria-current={lang === l.code ? 'true' : undefined}
+				class:list={[
+					'rounded-md px-2 py-1 transition-colors',
+					lang === l.code
+						? 'bg-primary text-primary-foreground'
+						: 'text-muted-foreground hover:text-foreground'
+				]}
+			>
+				{l.label}
+			</a>
+		))
+	}
+</div>

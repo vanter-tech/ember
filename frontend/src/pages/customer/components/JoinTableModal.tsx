@@ -51,6 +51,10 @@ export const JoinTableModal = () => {
           toast.error(t('joinCodeInvalidToast'))
           return
         }
+        if (error.response?.status === 409) {
+          toast.error(t('joinBlockedOtherTableToast'))
+          return
+        }
       }
       toast.error(t('genericErrorToast'))
     },

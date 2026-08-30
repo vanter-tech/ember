@@ -48,4 +48,12 @@ export const common = {
     'Debe cerrarse para la jornada de hoy. ¿Cerrar sesión de todos modos?',
   logoutCashShiftConfirmButton: 'Cerrar sesión',
   logoutCashShiftBackButton: 'Volver',
+  leaveTableCta: 'Abandonar mesa',
+  leaveTableConfirmTitle: '¿Abandonar la mesa?',
+  leaveTableConfirmBody:
+    'Se descartarán tus platillos sin enviar. Lo que ya pediste queda en la cuenta de la mesa.',
+  leaveTableConfirmButton: 'Abandonar mesa',
+  leaveTableCancelButton: 'Volver',
+  leaveTableDoneToast: 'Saliste de la mesa.',
+  leaveTableErrorToast: 'No se pudo abandonar la mesa.',
 }

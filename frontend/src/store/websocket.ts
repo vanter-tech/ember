@@ -29,6 +29,8 @@ interface WebSocketState {
     subscribeToInventory:(tenantId: string) => void,
     unsubscribeFromInventory:() => void,
     clearLowStockAlert:() => void,
+    lastBillRedistribution: { departedParticipantName: string } | null,
+    clearBillRedistribution:() => void,
     connect: () => void,
     disconnect: () => void
 }
@@ -42,6 +44,7 @@ export const useWebsocketStore = create<WebSocketState>((set, get) => ({
     waiterSessionSubscription: null,
     inventorySubscription: null,
     lastLowStockAlert: null,
+    lastBillRedistribution: null,
 
     connect: () => {
         if (get().stompClient) return;
@@ -100,6 +103,9 @@ export const useWebsocketStore = create<WebSocketState>((set, get) => ({
                 }
                 useSessionStore.getState().addParticipant(newParticipants)
             }
+            if(eventData.type === 'PARTICIPANT_LEFT'){
+                useSessionStore.getState().removeParticipant(eventData.userId)
+            }
             if(eventData.type === 'ITEM_ADDED'){
                 useSessionStore.getState().updateSession({items: eventData.sessionItems})
             }
@@ -122,6 +128,10 @@ export const useWebsocketStore = create<WebSocketState>((set, get) => ({
             }
             if(eventData.type === 'SPLIT_REFUNDED'){
                 useSessionStore.getState().markSplitStatus(eventData.participantName, eventData.status)
+            }
+            if(eventData.type === 'SPLITS_REDISTRIBUTED'){
+                useSessionStore.getState().replaceSplits(eventData.splits)
+                set({ lastBillRedistribution: { departedParticipantName: eventData.departedParticipantName } })
             }
             if(eventData.type === 'BILL_VOIDED'){
                 useSessionStore.getState().clearBill()
@@ -176,6 +186,7 @@ export const useWebsocketStore = create<WebSocketState>((set, get) => ({
                 eventData.type === 'ITEM_ADDED' ||
                 eventData.type === 'ITEMS_CONFIRMED' ||
                 eventData.type === 'ITEM_DELETED' ||
+                eventData.type === 'PARTICIPANT_LEFT' ||
                 eventData.type === 'SESSION_CLOSED'
             ){
                 queryClient.invalidateQueries({queryKey: ['sessionDetails', sessionId]})
@@ -217,6 +228,12 @@ export const useWebsocketStore = create<WebSocketState>((set, get) => ({
                         }
                         : old
                 )
+            }
+            if(eventData.type === 'SPLITS_REDISTRIBUTED'){
+                queryClient.setQueryData<WaiterBillState | undefined>(['bill', sessionId], (old) =>
+                    old ? { ...old, splits: eventData.splits } : old
+                )
+                set({ lastBillRedistribution: { departedParticipantName: eventData.departedParticipantName } })
             }
             if(eventData.type === 'BILL_VOIDED'){
                 queryClient.removeQueries({queryKey: ['bill', sessionId]})
@@ -300,6 +317,10 @@ export const useWebsocketStore = create<WebSocketState>((set, get) => ({
 
     clearLowStockAlert: () => {
         set({lastLowStockAlert: null})
+    },
+
+    clearBillRedistribution: () => {
+        set({lastBillRedistribution: null})
     },
 
     subscribeToWaiter: (tenantId: string) => {

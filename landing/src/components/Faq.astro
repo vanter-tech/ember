@@ -1,0 +1,57 @@
+---
+import { getLang, useTranslations, localizePath } from '../i18n/utils';
+
+const lang = getLang(Astro.currentLocale);
+const t = useTranslations(lang);
+
+const faqs = [
+	{ q: t('faq.1.q'), a: t('faq.1.a') },
+	{ q: t('faq.2.q'), a: t('faq.2.a') },
+	{ q: t('faq.3.q'), a: t('faq.3.a') },
+	{ q: t('faq.4.q'), a: t('faq.4.a') },
+	{ q: t('faq.5.q'), a: t('faq.5.a'), link: { href: localizePath('/planes', lang), label: t('faq.link.plans') } },
+	{ q: t('faq.6.q'), a: t('faq.6.a'), link: { href: localizePath('/contacto', lang), label: t('faq.link.contact') } },
+];
+---
+
+<section class="border-t border-border bg-background">
+	<div class="mx-auto max-w-6xl px-6 py-20 md:py-28">
+		<p class="text-xs font-semibold uppercase tracking-wider text-primary">{t('faq.eyebrow')}</p>
+		<h2 class="mt-4 text-3xl font-bold leading-tight tracking-tight text-foreground md:text-4xl">
+			{t('faq.title')}
+		</h2>
+
+		<div class="mt-12 space-y-3">
+			{faqs.map((faq) => (
+				<details class="group overflow-hidden rounded-lg border border-border">
+					<summary class="flex cursor-pointer list-none items-center justify-between gap-4 bg-primary px-5 py-4 text-base font-semibold text-primary-foreground transition-colors hover:bg-primary/90 [&::-webkit-details-marker]:hidden">
+						{faq.q}
+						<svg
+							class="size-5 shrink-0 text-primary-foreground transition-transform duration-200 group-open:rotate-45"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							aria-hidden="true"
+						>
+							<path d="M12 5v14M5 12h14" />
+						</svg>
+					</summary>
+					<p class="bg-card px-5 py-4 leading-relaxed text-muted-foreground">
+						{faq.a}
+						{faq.link && (
+							<a
+								href={faq.link.href}
+								class="ml-1 font-medium text-primary transition-colors hover:text-primary/80"
+							>
+								{faq.link.label} →
+							</a>
+						)}
+					</p>
+				</details>
+			))}
+		</div>
+	</div>
+</section>

@@ -1,0 +1,20 @@
+{
+  "displayName": "ember-prod memory > 90%",
+  "combiner": "OR",
+  "conditions": [
+    {
+      "displayName": "mem high",
+      "conditionThreshold": {
+        "filter": "resource.type=\"gce_instance\" AND metric.type=\"agent.googleapis.com/memory/percent_used\" AND metric.labels.state=\"used\"",
+        "comparison": "COMPARISON_GT",
+        "thresholdValue": 90,
+        "duration": "600s",
+        "aggregations": [
+          { "alignmentPeriod": "60s", "perSeriesAligner": "ALIGN_MEAN" }
+        ]
+      }
+    }
+  ],
+  "notificationChannels": ["${CHANNEL}"],
+  "alertStrategy": { "autoClose": "1800s" }
+}

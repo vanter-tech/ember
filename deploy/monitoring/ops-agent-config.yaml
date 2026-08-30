@@ -1,0 +1,41 @@
+# Google Cloud Ops Agent config for the ember-prod VM (HPD-14).
+# Deployed to /etc/google-cloud-ops-agent/config.yaml, then:
+#   sudo systemctl restart google-cloud-ops-agent
+#
+# - hostmetrics  : guest CPU / memory / disk / swap / load (agent.googleapis.com/*)
+# - ember_app    : scrapes the Spring Boot actuator on the loopback-only management
+#                  port 8081 (prometheus.googleapis.com/* : jvm_*, http_server_*,
+#                  hikaricp_*, process_*). Not reachable off the VM.
+logging:
+  receivers:
+    syslog:
+      type: files
+      include_paths: [/var/log/messages, /var/log/syslog]
+  service:
+    pipelines:
+      default_pipeline:
+        receivers: [syslog]
+metrics:
+  receivers:
+    hostmetrics:
+      type: hostmetrics
+    ember_app:
+      type: prometheus
+      config:
+        scrape_configs:
+          - job_name: ember-app
+            scrape_interval: 30s
+            metrics_path: /actuator/prometheus
+            static_configs:
+              - targets: ["localhost:8081"]
+  processors:
+    metrics_filter:
+      type: exclude_metrics
+      metrics_pattern: []
+  service:
+    pipelines:
+      default_pipeline:
+        receivers: [hostmetrics]
+        processors: [metrics_filter]
+      ember_app_pipeline:
+        receivers: [ember_app]

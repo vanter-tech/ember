@@ -20,6 +20,7 @@ export const auth = {
   passwordTooShort: 'La contraseña debe tener al menos 6 caracteres',
   nameRequired: 'El nombre es obligatorio',
   loginSuccessToast: '¡Inicio de sesión exitoso!',
+  sessionResumedToast: 'Retomaste tu mesa activa.',
   unauthorizedToast: 'No autorizado',
   tooManyLoginAttemptsToast: 'Demasiados intentos de inicio de sesión. Intenta de nuevo más tarde.',
   loginFailedToast: 'Error al iniciar sesión',

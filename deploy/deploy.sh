@@ -19,7 +19,7 @@ gcloud compute ssh "${VM}" --zone "${ZONE}" --tunnel-through-iap --command "
   sudo docker compose -f docker-compose.prod.yml up -d
   echo 'waiting for app health...'
   for i in \$(seq 1 20); do
-    if sudo docker compose -f docker-compose.prod.yml exec -T app wget -qO- http://localhost:8080/v1/actuator/health | grep -q UP; then
+    if sudo docker compose -f docker-compose.prod.yml exec -T app wget -qO- http://localhost:8081/actuator/health | grep -q UP; then
       echo 'app healthy'; exit 0
     fi
     sleep 6

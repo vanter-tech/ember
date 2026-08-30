@@ -2,26 +2,37 @@
 import Layout from '../layouts/Layout.astro';
 import Nav from '../components/Nav.astro';
 import Hero from '../components/Hero.astro';
-import Features from '../components/Features.astro';
-import Pricing from '../components/Pricing.astro';
-import ContactSection from '../components/ContactSection.astro';
+import Compare from '../components/Compare.astro';
+import HowItWorks from '../components/HowItWorks.astro';
+import FeaturesTeaser from '../components/FeaturesTeaser.astro';
+import WhyEmber from '../components/WhyEmber.astro';
+import Faq from '../components/Faq.astro';
+import Trust from '../components/Trust.astro';
 import CTASection from '../components/CTASection.astro';
 import Footer from '../components/Footer.astro'
 import StickyMobileCTA from '../components/StickyMobileCTA.tsx';
 import CookieBanner from '../components/CookieBanner.tsx';
+import StructuredData from '../components/StructuredData.astro';
+import { getLang, useTranslations } from '../i18n/utils';
+
+const lang = getLang(Astro.currentLocale);
+const t = useTranslations(lang);
 ---
 
-<Layout
-	title="Ember — Restaurant Management Platform"
-	description="Collaborative real-time ordering, kitchen display, floor management, and analytics for modern restaurants."
->
+<Layout title={t('seo.home.title')} description={t('seo.home.desc')}>
+	<StructuredData />
 	<Nav />
-	<Hero />
-	<Features />
-	<Pricing />
-	<ContactSection />
-	<CTASection />
+	<main id="main-content" tabindex="-1">
+		<Hero />
+		<Compare />
+		<HowItWorks />
+		<FeaturesTeaser />
+		<WhyEmber />
+		<Faq />
+		<Trust />
+		<CTASection />
+	</main>
 	<Footer />
-	<StickyMobileCTA client:load />
-	<CookieBanner client:load />
+	<StickyMobileCTA lang={lang} client:load />
+	<CookieBanner lang={lang} client:load />
 </Layout>
