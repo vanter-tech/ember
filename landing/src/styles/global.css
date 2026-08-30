@@ -76,6 +76,31 @@
   outline-offset: 2px;
 }
 
+/* Custom scrollbar — brand-red thumb, same in light and dark. */
+html {
+  scrollbar-color: #8c1717 transparent;
+  scrollbar-width: thin;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #8c1717;
+  border-radius: 9999px;
+  border: 2px solid var(--color-background);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: #a51c1c;
+}
+
 /* Keyboard skip link — hidden until focused, then pinned top-left. */
 .skip-link {
   position: fixed;

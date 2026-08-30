@@ -1,7 +1,6 @@
 ---
 import MobileNavDrawer from './MobileNavDrawer';
 import LangSwitcher from './LangSwitcher.astro';
-import Flame from './Flame.astro';
 import { FRONTEND_URL, NAV_LINKS } from '../lib/constants';
 import { getLang, useTranslations, localizePath } from '../i18n/utils';
 
@@ -29,12 +28,21 @@ const navLinks = NAV_LINKS.map((link) => ({
 >
 	<div class="mx-auto flex max-w-6xl items-center justify-between px-6 py-3">
 		<a href={localizePath('/', lang)} class="group flex items-center gap-2.5">
-			<span
-				class="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm transition-transform duration-300 group-hover:-rotate-6"
-			>
-				<Flame class="h-4 w-auto" />
-			</span>
-			<span class="text-lg font-bold tracking-tight text-foreground">Ember</span>
+			<img
+				src="/ember-logo-l.ico"
+				alt=""
+				width="142"
+				height="180"
+				class="site-logo site-logo--light h-8 w-auto transition-transform duration-300 group-hover:-rotate-6"
+			/>
+			<img
+				src="/ember-logo-d.ico"
+				alt=""
+				width="142"
+				height="180"
+				class="site-logo site-logo--dark h-8 w-auto transition-transform duration-300 group-hover:-rotate-6"
+			/>
+			<span class="site-wordmark text-lg font-bold tracking-tight text-foreground">Ember</span>
 		</a>
 
 		<div class="flex items-center gap-2 md:gap-4">
@@ -139,6 +147,24 @@ const navLinks = NAV_LINKS.map((link) => ({
 	}
 	:root[data-theme='dark'] .theme-icon--sun {
 		display: block;
+	}
+
+	.site-logo--dark {
+		display: none;
+	}
+	:root[data-theme='dark'] .site-logo--light {
+		display: none;
+	}
+	:root[data-theme='dark'] .site-logo--dark {
+		display: block;
+	}
+
+	/* Light theme: brand-red wordmark. Dark keeps the default foreground. */
+	.site-wordmark {
+		color: #8c1717;
+	}
+	:root[data-theme='dark'] .site-wordmark {
+		color: var(--color-foreground);
 	}
 </style>
 
