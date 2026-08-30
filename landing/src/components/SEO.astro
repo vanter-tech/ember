@@ -1,4 +1,6 @@
 ---
+import { switchLocalePath } from '../i18n/utils';
+
 interface Props {
   title: string;
   description: string;
@@ -9,13 +11,28 @@ const { title, description, image = '/og-image.png' } = Astro.props;
 
 const canonicalURL = new URL(Astro.url.pathname, Astro.site);
 const imageURL = new URL(image, Astro.site);
+
+// Language alternates for this same page. x-default points at the prefix-less
+// Spanish version (the site's default locale).
+const esURL = new URL(switchLocalePath(Astro.url.pathname, 'es'), Astro.site);
+const enURL = new URL(switchLocalePath(Astro.url.pathname, 'en'), Astro.site);
+
+const ogLocale = Astro.currentLocale === 'en' ? 'en_US' : 'es_ES';
+const ogLocaleAlt = Astro.currentLocale === 'en' ? 'es_ES' : 'en_US';
 ---
 
 <title>{title}</title>
 <meta name="description" content={description} />
 <link rel="canonical" href={canonicalURL} />
 
+<link rel="alternate" hreflang="es" href={esURL} />
+<link rel="alternate" hreflang="en" href={enURL} />
+<link rel="alternate" hreflang="x-default" href={esURL} />
+
 <meta property="og:type" content="website" />
+<meta property="og:site_name" content="Ember" />
+<meta property="og:locale" content={ogLocale} />
+<meta property="og:locale:alternate" content={ogLocaleAlt} />
 <meta property="og:url" content={canonicalURL} />
 <meta property="og:title" content={title} />
 <meta property="og:description" content={description} />

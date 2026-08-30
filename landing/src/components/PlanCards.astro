@@ -1,0 +1,131 @@
+---
+import { getPlans } from '../lib/plans';
+import { getLang, useTranslations } from '../i18n/utils';
+
+const lang = getLang(Astro.currentLocale);
+const t = useTranslations(lang);
+const PLANS = getPlans(lang);
+---
+
+<div>
+	<div class="mb-8 flex justify-center">
+		<div
+			data-billing-toggle
+			role="group"
+			aria-label={t('ppage.billing.label')}
+			class="inline-flex rounded-lg border border-border bg-muted/40 p-1"
+		>
+			<button
+				type="button"
+				data-billing-set="monthly"
+				aria-pressed="true"
+				class="billing-btn rounded-md px-4 py-1.5 text-sm font-medium text-muted-foreground transition-colors"
+			>
+				{t('ppage.billing.monthly')}
+			</button>
+			<button
+				type="button"
+				data-billing-set="annual"
+				aria-pressed="false"
+				class="billing-btn rounded-md px-4 py-1.5 text-sm font-medium text-muted-foreground transition-colors"
+			>
+				{t('ppage.billing.annual')}
+				<span class="text-primary">· {t('ppage.billing.save')}</span>
+			</button>
+		</div>
+	</div>
+
+	<div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+		{PLANS.map((plan) => (
+			<div
+				class:list={[
+					'flex flex-col rounded-lg border bg-card p-6 shadow-sm',
+					plan.highlighted ? 'border-primary ring-1 ring-primary' : 'border-border',
+				]}
+			>
+				{plan.highlighted && (
+					<span class="text-xs font-semibold uppercase tracking-wider text-primary">
+						{t('plan.mostPopular')}
+					</span>
+				)}
+				<h3 class="mt-2 text-lg font-semibold tracking-tight text-card-foreground">{plan.name}</h3>
+				<p class="mt-1 text-sm text-muted-foreground">{plan.tagline}</p>
+
+				<p class="mt-6 flex items-baseline gap-1" data-price-monthly={plan.priceAnnual ? '' : undefined}>
+					<span class="text-4xl font-bold tracking-tight text-card-foreground">{plan.price}</span>
+					{plan.period && <span class="text-sm text-muted-foreground">{plan.period}</span>}
+				</p>
+				{plan.priceAnnual && (
+					<p class="mt-6 flex items-baseline gap-1" data-price-annual>
+						<span class="text-4xl font-bold tracking-tight text-card-foreground">{plan.priceAnnual}</span>
+						{plan.periodAnnual && (
+							<span class="text-sm text-muted-foreground">{plan.periodAnnual}</span>
+						)}
+					</p>
+				)}
+				{plan.annualNote && (
+					<p class="mt-1 text-xs font-medium text-primary" data-annual-note>{plan.annualNote}</p>
+				)}
+
+				<ul class="mt-6 flex-1 space-y-2.5">
+					{plan.features.map((feature) => (
+						<li class="flex items-start gap-2 text-sm text-muted-foreground">
+							<svg
+								class="mt-0.5 size-4 shrink-0 text-primary"
+								viewBox="0 0 20 20"
+								fill="currentColor"
+								aria-hidden="true"
+							>
+								<path
+									fill-rule="evenodd"
+									d="M16.704 5.29a1 1 0 0 1 .006 1.414l-7.5 7.6a1 1 0 0 1-1.42.006l-3.5-3.5a1 1 0 1 1 1.414-1.414l2.79 2.79 6.795-6.885a1 1 0 0 1 1.414-.006Z"
+									clip-rule="evenodd"
+								/>
+							</svg>
+							<span>{feature}</span>
+						</li>
+					))}
+				</ul>
+
+				<a
+					href={plan.href}
+					class:list={[
+						'mt-8 rounded-lg px-4 py-3 text-center text-sm font-medium transition-colors',
+						plan.highlighted
+							? 'bg-primary text-primary-foreground shadow-sm hover:bg-primary/90'
+							: 'border border-border bg-background text-foreground hover:bg-muted',
+					]}
+				>
+					{plan.cta}
+				</a>
+			</div>
+		))}
+	</div>
+</div>
+
+<style>
+	.billing-btn[aria-pressed='true'] {
+		background-color: var(--color-background);
+		color: var(--color-foreground);
+		box-shadow: 0 1px 2px rgb(0 0 0 / 0.06);
+	}
+</style>
+
+<script is:inline>
+	(() => {
+		const setup = () => {
+			const toggle = document.querySelector('[data-billing-toggle]');
+			if (!toggle) return;
+			const target = toggle.closest('[data-billing]');
+			if (!target) return;
+			const buttons = toggle.querySelectorAll('[data-billing-set]');
+			buttons.forEach((btn) => {
+				btn.addEventListener('click', () => {
+					target.setAttribute('data-billing', btn.getAttribute('data-billing-set'));
+					buttons.forEach((b) => b.setAttribute('aria-pressed', String(b === btn)));
+				});
+			});
+		};
+		document.addEventListener('astro:page-load', setup);
+	})();
+</script>

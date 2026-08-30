@@ -172,6 +172,8 @@ public class SessionService {
                     "User " + user.getId() + " has already joined this session");
         }
 
+        rejectIfSeatedElsewhere(session, user.getId());
+
         session.getParticipants().add(Participant.builder().userId(user.getId()).name(userName).build());
         Session saved = sessionRepository.save(session);
 
@@ -205,6 +207,8 @@ public class SessionService {
         if (alreadyJoin) {
             return session;
         }
+
+        rejectIfSeatedElsewhere(session, user.getId());
 
         session.getParticipants().add(Participant.builder().userId(user.getId()).name(user.getName()).build());
         Session saved = sessionRepository.save(session);
@@ -400,9 +404,11 @@ public class SessionService {
                 .findFirst()
                 .orElseThrow(() -> new ResourceNotFoundException("Item not found: " + orderItemId));
 
-        if (item.getStatus() == OrderItemStatus.PREPARING) {
+        if (item.getStatus() == OrderItemStatus.PREPARING
+                || item.getStatus() == OrderItemStatus.READY
+                || item.getStatus() == OrderItemStatus.DELIVERED) {
             throw new IllegalStateException(
-                    "Cannot remove item '" + item.getName() + "' as it is already being prepared");
+                    "Cannot remove item '" + item.getName() + "' as it has already been sent to the kitchen");
         }
 
         var user = userRepository.findByEmail(requesterId)
@@ -480,5 +486,104 @@ public class SessionService {
 
         return findById(id).getStatus();
 
+    }
+
+    /** True when the user behind {@code userEmail} is a participant of the given session. */
+    public boolean isParticipant(String sessionId, String userEmail) {
+        String userId = userRepository.findByEmail(userEmail)
+                .map(User::getId)
+                .orElse(null);
+        if (userId == null) {
+            return false;
+        }
+        return findById(sessionId).getParticipants().stream()
+                .anyMatch(p -> p.getUserId().equals(userId));
+    }
+
+    /**
+     * One active table per customer: refuse a join when the user is already a participant of a
+     * different OPEN session in the same restaurant. Scoped to the session's tenant — a stale
+     * session at another venue is not the common footgun and there is no cross-tenant finder.
+     */
+    private void rejectIfSeatedElsewhere(Session target, String userId) {
+        boolean seatedElsewhere = sessionRepository
+                .findByTenantIdAndParticipants_UserId(target.getTenantId(), userId).stream()
+                .anyMatch(s -> !s.getId().equals(target.getId()) && s.getStatus() == SessionStatus.OPEN);
+        if (seatedElsewhere) {
+            throw new IllegalStateException(
+                    "You are already seated at another table; leave it before joining a new one");
+        }
+    }
+
+    /**
+     * A customer abandons an open session. Their DRAFT items are discarded (and broadcast as
+     * removed); anything already sent to the kitchen stays on the table bill. When the last
+     * participant leaves and nothing is billable the session is closed outright; otherwise a
+     * {@link ParticipantLeft} event lets the billing side redistribute an unpaid split.
+     */
+    public Session leaveSession(String sessionId, String requesterEmail) {
+        Session session = findById(sessionId);
+        if (session.getStatus() != SessionStatus.OPEN) {
+            throw new IllegalStateException("Session is not open: " + sessionId);
+        }
+
+        User user = userRepository.findByEmail(requesterEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + requesterEmail));
+
+        Participant leaver = session.getParticipants().stream()
+                .filter(p -> p.getUserId().equals(user.getId()))
+                .findFirst()
+                .orElseThrow(() -> new AccessDeniedException("Not a participant of this session"));
+
+        List<OrderItem> discardedDrafts = session.getItems().stream()
+                .filter(i -> user.getId().equals(i.getParticipantId())
+                        && i.getStatus() == OrderItemStatus.DRAFT)
+                .toList();
+        session.getItems().removeAll(discardedDrafts);
+        session.getParticipants().removeIf(p -> p.getUserId().equals(user.getId()));
+
+        boolean hasBillableItems = session.getItems().stream()
+                .anyMatch(i -> i.getStatus() != OrderItemStatus.DRAFT);
+
+        if (session.getParticipants().isEmpty() && !hasBillableItems) {
+            session.setStatus(SessionStatus.CLOSED);
+            Session closed = sessionRepository.save(session);
+            eventPublisher.publishEvent(new SessionClosed(
+                    closed.getTenantId(), closed.getId(), closed.getTableId(), closed.getStatus()));
+            return closed;
+        }
+
+        Session saved = sessionRepository.save(session);
+        discardedDrafts.forEach(d -> eventPublisher.publishEvent(new DeleteItem(saved.getId(), d.getId())));
+        eventPublisher.publishEvent(new ParticipantLeft(
+                saved.getTenantId(), saved.getId(), user.getId(), leaver.getName()));
+        return saved;
+    }
+
+    /**
+     * Re-attach a customer to their still-open session after a re-login, when their JWT has lost
+     * the tenant scope. Looked up untenanted (like {@link #joinSessionCode}) then verified: the
+     * session must still be OPEN and the caller must already be one of its participants. Binds the
+     * session's restaurant for the response so the controller can hand back a re-scoped token.
+     */
+    public Session resumeSession(String sessionId, String requesterEmail) {
+        User user = userRepository.findByEmail(requesterEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + requesterEmail));
+
+        Session session = sessionRepository.findById(sessionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Session not found: " + sessionId));
+
+        if (session.getStatus() != SessionStatus.OPEN) {
+            throw new IllegalStateException("Session is not open: " + sessionId);
+        }
+
+        boolean isParticipant = session.getParticipants().stream()
+                .anyMatch(p -> p.getUserId().equals(user.getId()));
+        if (!isParticipant) {
+            throw new AccessDeniedException("Not a participant of this session");
+        }
+
+        bindResolvedTenant(session.getTenantId());
+        return session;
     }
 }

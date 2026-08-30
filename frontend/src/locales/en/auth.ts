@@ -18,6 +18,7 @@ export const auth = {
   passwordTooShort: 'Password must be at least 6 characters',
   nameRequired: 'Name is required',
   loginSuccessToast: 'Login successful!',
+  sessionResumedToast: 'Reconnected to your active table.',
   unauthorizedToast: 'Unauthorized',
   tooManyLoginAttemptsToast: 'Too many login attempts. Please try again later.',
   loginFailedToast: 'Login failed',

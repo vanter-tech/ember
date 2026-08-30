@@ -122,6 +122,23 @@ public class SessionController {
         return new JoinSessionResponse(session, token);
     }
 
+    @Operation(summary = "Leave / abandon an open session (CUSTOMER). DRAFT items are discarded; "
+            + "items already sent to the kitchen stay on the table bill.")
+    @PostMapping("/{id}/leave")
+    @PreAuthorize("hasRole('CUSTOMER')")
+    public Session leaveSession(@PathVariable String id, Authentication authentication) {
+        return sessionService.leaveSession(id, authentication.getName());
+    }
+
+    @Operation(summary = "Resume the caller's still-open session after a re-login, returning a "
+            + "token re-scoped to its restaurant (CUSTOMER)")
+    @PostMapping("/{id}/resume")
+    @PreAuthorize("hasRole('CUSTOMER')")
+    public JoinSessionResponse resumeSession(@PathVariable String id, Authentication authentication) {
+        Session session = sessionService.resumeSession(id, authentication.getName());
+        return withRescopedToken(session, authentication);
+    }
+
     @Operation(summary = "Expand session capacity (WAITER)")
     @PatchMapping("/{id}/capacity")
     @PreAuthorize("hasRole('WAITER')")

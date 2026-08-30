@@ -189,6 +189,56 @@ class SessionControllerTest {
                 .andExpect(status().isUnauthorized());
     }
 
+    // --- POST /sessions/{id}/leave ---
+
+    @Test
+    @WithMockUser(username = "customer@test.com", roles = "CUSTOMER")
+    void leaveSession_returnsUpdatedSessionForCustomer() throws Exception {
+        when(sessionService.leaveSession("sess-1", "customer@test.com")).thenReturn(sampleSession());
+
+        mockMvc.perform(post("/sessions/sess-1/leave"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value("sess-1"));
+    }
+
+    @Test
+    @WithMockUser(username = "waiter@test.com", roles = "WAITER")
+    void leaveSession_forbiddenForStaff() throws Exception {
+        mockMvc.perform(post("/sessions/sess-1/leave"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void leaveSession_unauthenticatedReturns401() throws Exception {
+        mockMvc.perform(post("/sessions/sess-1/leave"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    // --- POST /sessions/{id}/resume ---
+
+    @Test
+    @WithMockUser(username = "customer@test.com", roles = "CUSTOMER")
+    void resumeSession_returnsSessionAndRescopedToken() throws Exception {
+        Session withParticipant = sampleSession();
+        withParticipant.getParticipants().add(
+                Participant.builder().userId("customer@test.com").name("Alice").build());
+        when(sessionService.resumeSession("sess-1", "customer@test.com")).thenReturn(withParticipant);
+        when(authService.issueTenantScopedToken(eq("customer@test.com"), any()))
+                .thenReturn(AuthResponse.builder().token("scoped-token").build());
+
+        mockMvc.perform(post("/sessions/sess-1/resume"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.session.id").value("sess-1"))
+                .andExpect(jsonPath("$.token").value("scoped-token"));
+    }
+
+    @Test
+    @WithMockUser(username = "waiter@test.com", roles = "WAITER")
+    void resumeSession_forbiddenForStaff() throws Exception {
+        mockMvc.perform(post("/sessions/sess-1/resume"))
+                .andExpect(status().isForbidden());
+    }
+
     // --- PATCH /sessions/{id}/capacity ---
 
     @Test

@@ -1,0 +1,56 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Nav from '../components/Nav.astro';
+import Footer from '../components/Footer.astro';
+import CTASection from '../components/CTASection.astro';
+import PlanCards from '../components/PlanCards.astro';
+import PricingTable from '../components/PricingTable.astro';
+import { getLang, useTranslations } from '../i18n/utils';
+
+const lang = getLang(Astro.currentLocale);
+const t = useTranslations(lang);
+---
+
+<Layout title={t('ppage.title')} description={t('ppage.desc')}>
+	<Nav />
+
+	<main id="main-content" tabindex="-1" data-billing="monthly">
+	<section class="bg-background">
+		<div class="mx-auto max-w-6xl px-6 py-16 md:py-24">
+			<p class="text-xs font-semibold uppercase tracking-wider text-primary">{t('ppage.eyebrow')}</p>
+			<h1 class="mt-4 max-w-2xl text-4xl font-bold leading-tight tracking-tight text-foreground md:text-5xl">
+				{t('ppage.h1')}
+			</h1>
+			<p class="mt-4 max-w-xl text-lg text-muted-foreground">
+				{t('ppage.lede')}
+			</p>
+
+			<div class="mt-12">
+				<PlanCards />
+			</div>
+		</div>
+	</section>
+
+	<section class="border-t border-border bg-muted/30">
+		<div class="mx-auto max-w-6xl px-6 py-16 md:py-24">
+			<h2 class="text-2xl font-bold tracking-tight text-foreground md:text-3xl">
+				{t('ppage.section2')}
+			</h2>
+			<p class="mt-3 max-w-xl text-sm text-muted-foreground">
+				{t('ppage.section2sub')}
+			</p>
+
+			<div class="mt-10 rounded-xl border border-border bg-card">
+				<PricingTable />
+			</div>
+
+			<p class="mt-6 text-xs text-muted-foreground">
+				{t('ppage.fineprint')}
+			</p>
+		</div>
+	</section>
+
+	<CTASection />
+	</main>
+	<Footer />
+</Layout>

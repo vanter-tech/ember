@@ -1,4 +1,5 @@
 ---
+import { ClientRouter } from 'astro:transitions';
 import '../styles/global.css';
 import SEO from '../components/SEO.astro';
 import Analytics from '../components/Analytics.astro';
@@ -10,13 +11,41 @@ interface Props {
 }
 
 const { title, description, image } = Astro.props;
+const lang = Astro.currentLocale ?? 'es';
 ---
 
-<html lang="es">
+<html lang={lang}>
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<meta name="generator" content={Astro.generator} />
+
+		<ClientRouter />
+
+		<script is:inline>
+			(() => {
+				const applyTheme = () => {
+					try {
+						const stored = localStorage.getItem('ember-theme');
+						const theme =
+							stored === 'dark' || stored === 'light'
+								? stored
+								: window.matchMedia('(prefers-color-scheme: dark)').matches
+									? 'dark'
+									: 'light';
+						document.documentElement.dataset.theme = theme;
+					} catch (e) {
+						document.documentElement.dataset.theme = 'light';
+					}
+				};
+
+				// Runs now (first paint) and again after every client-side
+				// navigation, before the swapped-in DOM is painted — the new
+				// page ships without data-theme, so re-apply it to avoid a flash.
+				applyTheme();
+				document.addEventListener('astro:after-swap', applyTheme);
+			})();
+		</script>
 
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 		<link rel="icon" href="/favicon.ico" />
@@ -27,6 +56,9 @@ const { title, description, image } = Astro.props;
 		<Analytics />
 	</head>
 	<body>
+		<a class="skip-link" href="#main-content">
+			{lang === 'en' ? 'Skip to content' : 'Saltar al contenido'}
+		</a>
 		<slot />
 	</body>
 </html>

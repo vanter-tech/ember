@@ -1,0 +1,59 @@
+---
+import Layout from './Layout.astro';
+import Nav from '../components/Nav.astro';
+import Footer from '../components/Footer.astro';
+import { getLang, useTranslations, localizePath } from '../i18n/utils';
+
+interface Props {
+	title: string;
+	description: string;
+}
+
+const { title, description } = Astro.props;
+const lang = getLang(Astro.currentLocale);
+const t = useTranslations(lang);
+
+const path = Astro.url.pathname.replace(/^\/en(?=\/|$)/, '').replace(/\/$/, '') || '/info';
+
+const items = [
+	{ href: '/info', label: t('info.nav.overview') },
+	{ href: '/info/manual', label: t('info.nav.manual') },
+	{ href: '/info/videos', label: t('info.nav.videos') },
+];
+
+const isActive = (href: string) => path === href;
+---
+
+<Layout title={title} description={description}>
+	<Nav />
+
+	<main id="main-content" tabindex="-1" class="bg-background">
+		<div class="mx-auto grid max-w-6xl gap-10 px-6 py-12 md:grid-cols-[220px_1fr] md:gap-14 md:py-16">
+			<aside class="md:sticky md:top-24 md:self-start">
+				<p class="text-xs font-semibold uppercase tracking-wider text-primary">{t('info.sidebar')}</p>
+				<nav class="mt-4 flex flex-col gap-1">
+					{items.map((item) => (
+						<a
+							href={localizePath(item.href, lang)}
+							aria-current={isActive(item.href) ? 'page' : undefined}
+							class:list={[
+								'-mx-2 rounded-md px-2 py-1.5 text-sm font-medium transition-colors',
+								isActive(item.href)
+									? 'bg-muted text-foreground'
+									: 'text-muted-foreground hover:bg-muted hover:text-foreground',
+							]}
+						>
+							{item.label}
+						</a>
+					))}
+				</nav>
+			</aside>
+
+			<div class="min-w-0 max-w-2xl">
+				<slot />
+			</div>
+		</div>
+	</main>
+
+	<Footer />
+</Layout>

@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { useEffect } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useSessionStore } from '@/store/sessionStore'
 import { useAuthStore } from '@/store/authStore'
@@ -17,7 +18,23 @@ export const Bill = () => {
   const billSplits = useSessionStore((state) => state.billSplits)
   const sessionId = useSessionStore((state) => state.id)
   const participants = useSessionStore((state) => state.participants)
+  const setBillReady = useSessionStore((state) => state.setBillReady)
   const currentId = useAuthStore((state) => state.userId)
+
+  // Rehydrate the bill for a diner who rejoined after the BILL_READY frame was already broadcast —
+  // the store only ever held it from that live frame. WS updates take over once it's in the store.
+  const { data: fetchedBill } = useQuery({
+    queryKey: ['billState', sessionId],
+    queryFn: () => billingService.getBillState(sessionId!),
+    enabled: !!sessionId && !bill,
+    retry: false,
+  })
+
+  useEffect(() => {
+    if (fetchedBill) {
+      setBillReady({ id: fetchedBill.id, total: fetchedBill.total }, fetchedBill.splits)
+    }
+  }, [fetchedBill, setBillReady])
 
   const myName = participants?.find((p) => p.userId === currentId)?.name
   const mySplit = billSplits?.find((split) => split.participantName === myName)

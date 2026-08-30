@@ -1,6 +1,7 @@
 package com.vanter.ember.session.listener;
 
 import com.vanter.ember.session.event.ParticipantJoined;
+import com.vanter.ember.session.event.ParticipantLeft;
 import com.vanter.ember.session.event.SessionClosed;
 import com.vanter.ember.session.event.SessionOpened;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +27,11 @@ public class WaiterWebSocketListener {
 
     @EventListener
     public void onParticipantJoined(ParticipantJoined event) {
+        messagingTemplate.convertAndSend("/topic/waiter/" + event.tenantId(), event);
+    }
+
+    @EventListener
+    public void onParticipantLeft(ParticipantLeft event) {
         messagingTemplate.convertAndSend("/topic/waiter/" + event.tenantId(), event);
     }
 

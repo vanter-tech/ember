@@ -1,0 +1,55 @@
+---
+import { getLang, useTranslations } from '../i18n/utils';
+
+const lang = getLang(Astro.currentLocale);
+const t = useTranslations(lang);
+
+const points = [
+	{ title: t('why.1.title'), body: t('why.1.body'), icon: 'bolt' },
+	{ title: t('why.2.title'), body: t('why.2.body'), icon: 'phone' },
+	{ title: t('why.3.title'), body: t('why.3.body'), icon: 'layers' },
+	{ title: t('why.4.title'), body: t('why.4.body'), icon: 'building' },
+];
+---
+
+<section class="border-t border-border bg-muted/30">
+	<div class="mx-auto max-w-6xl px-6 py-20 md:py-28">
+		<p class="text-xs font-semibold uppercase tracking-wider text-primary">{t('why.eyebrow')}</p>
+		<h2 class="mt-4 max-w-2xl text-3xl font-bold leading-tight tracking-tight text-foreground md:text-4xl">
+			{t('why.title')}
+		</h2>
+
+		<div class="mt-14 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+			{points.map((point) => (
+				<div>
+					<span class="flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+						<svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+							{point.icon === 'bolt' && <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8Z" />}
+							{point.icon === 'phone' && (
+								<>
+									<rect x="7" y="2" width="10" height="20" rx="2" />
+									<path d="M11 18h2" />
+								</>
+							)}
+							{point.icon === 'layers' && (
+								<>
+									<path d="m12 2 9 5-9 5-9-5 9-5Z" />
+									<path d="m3 12 9 5 9-5" />
+									<path d="m3 17 9 5 9-5" />
+								</>
+							)}
+							{point.icon === 'building' && (
+								<>
+									<rect x="4" y="3" width="16" height="18" rx="1.5" />
+									<path d="M9 8h.01M15 8h.01M9 12h.01M15 12h.01M9 16h6" />
+								</>
+							)}
+						</svg>
+					</span>
+					<h3 class="mt-5 text-base font-semibold tracking-tight text-foreground">{point.title}</h3>
+					<p class="mt-2 text-sm text-muted-foreground">{point.body}</p>
+				</div>
+			))}
+		</div>
+	</div>
+</section>

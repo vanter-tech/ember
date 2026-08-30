@@ -50,4 +50,12 @@ export const common = {
     "It must be closed for today's business day. Log out anyway?",
   logoutCashShiftConfirmButton: 'Log out',
   logoutCashShiftBackButton: 'Back',
+  leaveTableCta: 'Leave table',
+  leaveTableConfirmTitle: 'Leave the table?',
+  leaveTableConfirmBody:
+    'Your unsent items will be discarded. Anything you already ordered stays on the table bill.',
+  leaveTableConfirmButton: 'Leave table',
+  leaveTableCancelButton: 'Back',
+  leaveTableDoneToast: 'You left the table.',
+  leaveTableErrorToast: 'Could not leave the table.',
 } satisfies typeof esCommon

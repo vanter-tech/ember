@@ -410,6 +410,20 @@ export const SessionTableService = {
     return data
   },
 
+  // Abandon an open session. DRAFT items are discarded; anything already sent to the kitchen
+  // stays on the table bill for the waiter to settle.
+  leaveSession: async (sessionId: string): Promise<infoSession> => {
+    const { data } = await api.post<infoSession>(`/sessions/${sessionId}/leave`)
+    return data
+  },
+
+  // Re-attach to a still-open session after a re-login, getting back a token re-scoped to its
+  // restaurant (the login token is tenant-less).
+  resumeSession: async (sessionId: string): Promise<joinSessionResponse> => {
+    const { data } = await api.post<joinSessionResponse>(`/sessions/${sessionId}/resume`)
+    return data
+  },
+
   addItem: async (sessionId: string, itemId: number, selectedOptionIds: number[] = []): Promise<orderItemDTO> => {
     const { data } = await api.post<orderItemDTO>(
       `/sessions/${sessionId}/items`,
@@ -671,6 +685,14 @@ export const billingService = {
     const body: RequestBillingRequest = { splitMethod, participantCount }
     await api.post<void>(`/billing/sessions/${sessionId}/request`, body)
   },
+  // Rehydrates the bill view when the live BILL_READY frame was missed or dropped (waiter reopening
+  // the table, diner rejoining after a reload). Returns null when the session has no bill yet (204).
+  getBillState: async (sessionId: string): Promise<WaiterBillState | null> => {
+    const { data, status } = await api.get<WaiterBillState | ''>(
+      `/billing/sessions/${sessionId}/bill`
+    )
+    return status === 204 || !data ? null : (data as WaiterBillState)
+  },
   registerPhysicalPayment: async (
     billId: number,
     participantName: string,
@@ -701,6 +723,23 @@ export const billingService = {
   },
   voidBill: async (billId: number, reason: string): Promise<Bill> => {
     const { data } = await api.post<Bill>(`/billing/bills/${billId}/void`, { reason })
+    return data
+  },
+  // Spreads a departing diner's still-unpaid share across the participants still present; the
+  // bill total is unchanged. Returns the full post-redistribution split list.
+  redistributeSplit: async (
+    billId: number,
+    departingParticipantName: string
+  ): Promise<BillSplit[]> => {
+    const { data } = await api.post<BillSplit[]>(
+      `/billing/bills/${billId}/splits/redistribute`,
+      { departingParticipantName }
+    )
+    return data
+  },
+  // Closes a partially-paid session from the waiter side. 409 if any split is still unpaid.
+  settleAndClose: async (billId: number): Promise<Bill> => {
+    const { data } = await api.post<Bill>(`/billing/bills/${billId}/settle`)
     return data
   },
   listPayments: async (billId: number): Promise<PaymentResponse[]> => {

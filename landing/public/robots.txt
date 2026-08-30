@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://ember.vanter.com/sitemap-index.xml
+Sitemap: https://ember.vanter.net/sitemap-index.xml

@@ -5,6 +5,7 @@ import com.vanter.ember.billing.dto.CalculateBillRequest;
 import com.vanter.ember.billing.dto.DigitalPaymentRequest;
 import com.vanter.ember.billing.dto.PaymentResponse;
 import com.vanter.ember.billing.dto.PhysicalPaymentRequest;
+import com.vanter.ember.billing.dto.RedistributeSplitRequest;
 import com.vanter.ember.billing.dto.RefundPaymentRequest;
 import com.vanter.ember.billing.dto.RefundResponse;
 import com.vanter.ember.billing.dto.RequestBillingRequest;
@@ -19,8 +20,10 @@ import com.vanter.ember.billing.model.PaymentMethod;
 import com.vanter.ember.billing.model.PaymentStatus;
 import com.vanter.ember.billing.model.Refund;
 import com.vanter.ember.billing.model.SplitMethod;
+import com.vanter.ember.billing.dto.WaiterBillStateResponse;
 import com.vanter.ember.billing.service.BillingService;
 import com.vanter.ember.billing.service.PaymentService;
+import com.vanter.ember.session.service.SessionService;
 import com.vanter.ember.config.CorsConfig;
 import com.vanter.ember.config.SecurityConfig;
 import com.vanter.ember.identity.service.JwtService;
@@ -58,6 +61,7 @@ class BillingControllerTest {
     @Autowired ObjectMapper objectMapper;
     @MockBean BillingService billingService;
     @MockBean PaymentService paymentService;
+    @MockBean SessionService sessionService;
     @MockBean JwtService jwtService;
     @MockBean UserDetailsService userDetailsService;
     @MockBean RestaurantRepository restaurantRepository;
@@ -152,6 +156,56 @@ class BillingControllerTest {
                 .andExpect(status().isForbidden());
     }
 
+    // --- GET /billing/sessions/{sessionId}/bill ---
+
+    @Test
+    @WithMockUser(roles = "WAITER")
+    void getBillState_returnsOkWithBillForWaiter() throws Exception {
+        when(paymentService.getBillState("sess-1")).thenReturn(new WaiterBillStateResponse(
+                1L, new BigDecimal("40.00"), List.of(), List.of()));
+
+        mockMvc.perform(get("/billing/sessions/sess-1/bill"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.total").value(40.00));
+    }
+
+    @Test
+    @WithMockUser(roles = "WAITER")
+    void getBillState_returnsNoContentWhenNoBill() throws Exception {
+        when(paymentService.getBillState("sess-1")).thenReturn(null);
+
+        mockMvc.perform(get("/billing/sessions/sess-1/bill"))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    @WithMockUser(username = "customer@ember.local", roles = "CUSTOMER")
+    void getBillState_okForParticipantCustomer() throws Exception {
+        when(sessionService.isParticipant("sess-1", "customer@ember.local")).thenReturn(true);
+        when(paymentService.getBillState("sess-1")).thenReturn(new WaiterBillStateResponse(
+                1L, new BigDecimal("40.00"), List.of(), List.of()));
+
+        mockMvc.perform(get("/billing/sessions/sess-1/bill"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(username = "outsider@ember.local", roles = "CUSTOMER")
+    void getBillState_forbiddenForNonParticipantCustomer() throws Exception {
+        when(sessionService.isParticipant("sess-1", "outsider@ember.local")).thenReturn(false);
+
+        mockMvc.perform(get("/billing/sessions/sess-1/bill"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "KITCHEN")
+    void getBillState_forbiddenForKitchen() throws Exception {
+        mockMvc.perform(get("/billing/sessions/sess-1/bill"))
+                .andExpect(status().isForbidden());
+    }
+
     // --- POST /billing/bills/{id}/split ---
 
     @Test
@@ -199,6 +253,53 @@ class BillingControllerTest {
         mockMvc.perform(post("/billing/bills/1/split")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isForbidden());
+    }
+
+    // --- POST /billing/bills/{id}/splits/redistribute ---
+
+    @Test
+    @WithMockUser(roles = "WAITER")
+    void redistributeSplit_returnsUpdatedSplitsForWaiter() throws Exception {
+        Bill bill = sampleBill();
+        when(paymentService.redistributeSplit(1L, "Carol")).thenReturn(List.of(sampleSplit(bill)));
+
+        RedistributeSplitRequest req = new RedistributeSplitRequest("Carol");
+        mockMvc.perform(post("/billing/bills/1/splits/redistribute")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].participantName").value("Alice"));
+    }
+
+    @Test
+    @WithMockUser(roles = "CUSTOMER")
+    void redistributeSplit_forbiddenForCustomer() throws Exception {
+        RedistributeSplitRequest req = new RedistributeSplitRequest("Carol");
+        mockMvc.perform(post("/billing/bills/1/splits/redistribute")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isForbidden());
+    }
+
+    // --- POST /billing/bills/{id}/settle ---
+
+    @Test
+    @WithMockUser(roles = "WAITER")
+    void settleAndClose_returnsPaidBillForWaiter() throws Exception {
+        Bill paid = sampleBill();
+        paid.setStatus(BillStatus.PAID);
+        when(paymentService.settleAndClose(1L)).thenReturn(paid);
+
+        mockMvc.perform(post("/billing/bills/1/settle"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("PAID"));
+    }
+
+    @Test
+    @WithMockUser(roles = "CUSTOMER")
+    void settleAndClose_forbiddenForCustomer() throws Exception {
+        mockMvc.perform(post("/billing/bills/1/settle"))
                 .andExpect(status().isForbidden());
     }
 
