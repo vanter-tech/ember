@@ -1,6 +1,4 @@
 {
-  // Cloudflare Pages project config for the marketing site (static Astro build).
-  // Dashboard build settings: root dir `landing`, build command `pnpm run build`.
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "ember-landing",
   "compatibility_date": "2026-08-31",
