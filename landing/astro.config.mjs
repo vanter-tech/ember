@@ -34,3 +34,4 @@ export default defineConfig({
 });
 
 // Deployed to Cloudflare (Workers static assets) via Git integration.
+// Production deploys from main.
