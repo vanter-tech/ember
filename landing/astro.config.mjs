@@ -32,3 +32,5 @@ export default defineConfig({
     plugins: [tailwindcss()]
   }
 });
+
+// Deployed to Cloudflare (Workers static assets) via Git integration.
