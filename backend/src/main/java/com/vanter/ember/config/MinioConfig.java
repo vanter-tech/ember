@@ -29,6 +29,10 @@ public class MinioConfig {
 
     @Bean
     public ApplicationRunner ensureBucketExists(MinioClient minioClient) {
+        if (!minioProperties.isManageBucket()) {
+            return args -> log.info("MinIO bucket management disabled; assuming '{}' is provisioned externally",
+                    minioProperties.getBucket());
+        }
         return args -> {
             String bucket = minioProperties.getBucket();
             try {

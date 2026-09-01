@@ -1304,6 +1304,15 @@ The colleague runs these on the team's Cloudflare account. Outputs (tokens, cred
 
 ## Task 16: R2 media bucket + `cdn.` domain + credentials
 
+> **DONE 2026-09-01 as GCS, not R2 — see `deploy/RUNBOOK.md` "HPD-16 — executed"
+> and report 325.** R2 needs a card on the Cloudflare account; GCS billing is
+> already funded, so media uses **GCS via its S3 XML API** (`storage.googleapis.com`
+> + a **user-account** HMAC key — the org blocks SA-key creation and this account
+> can't override it). No `cdn.` domain (Cloudflare Free can't Host-rewrite to
+> GCS): `MINIO_PUBLIC_URL=https://storage.googleapis.com/ember-media-prod`.
+> Backend `minio.manage-bucket=false` in prod. The steps below are the original
+> R2 plan, kept for reference.
+
 - [ ] **Step 1:** R2 → create bucket `ember-media-prod`.
 - [ ] **Step 2:** Bucket → Settings → Public access → connect custom domain `cdn.ember.vanter.net`. Enable public access.
 - [ ] **Step 3:** R2 → Manage API Tokens → create a token scoped to `ember-media-prod`, permission *Object Read & Write*. Note the **Access Key ID**, **Secret Access Key**, and the **S3 endpoint** `https://<accountid>.r2.cloudflarestorage.com`.

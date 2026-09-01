@@ -21,6 +21,7 @@ class MinioConfigTest {
         assertThat(minioProperties.getAccessKey()).isEqualTo("minioadmin");
         assertThat(minioProperties.getSecretKey()).isEqualTo("minioadmin");
         assertThat(minioProperties.getBucket()).isEqualTo("ember-media");
+        assertThat(minioProperties.isManageBucket()).isTrue();
     }
 
     @Test

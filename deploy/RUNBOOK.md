@@ -27,12 +27,12 @@ executed.
               │  · WAF, edge rate-limit, HSTS, analytics  │
               └───┬───────────┬───────────┬───────────┬───┘
                   │           │           │           │
-        ember.vanter.net  app.ember…  api.ember…  cdn.ember…
-                  │           │           │           │
-            Worker:      Worker:     proxied A     R2 bucket
-             `ember`     `ember-app`  record →      ember-media-prod
-           (Astro,        (React SPA,  VM ext. IP   (public read)
-            landing/)      frontend/)  34.44.144.220   (HPD-16, tbd)
+        ember.vanter.net  app.ember…  api.ember…   (media: no CF domain)
+                  │           │           │
+            Worker:      Worker:     proxied A     GCS bucket ember-media-prod
+             `ember`     `ember-app`  record →      served direct at
+           (Astro,        (React SPA,  VM ext. IP   storage.googleapis.com
+            landing/)      frontend/)  34.44.144.220   (S3 XML API, public read)
                                          │  Full (strict) → Origin Cert
                                          │  fw: :443 from Cloudflare ranges only
                         ┌────────────────┴─────────────────────┐
@@ -324,9 +324,11 @@ writes to the CWD must `cd /tmp` first (e.g. `curl -O`).
 
 - **HPD-15** — ~~`ember.vanter.net` zone delegation~~ **not done.** No NS
   delegation; all records live directly in the existing **`vanter.net`** zone.
-- **HPD-16** — R2 `ember-media-prod` bucket + `cdn.ember.vanter.net` custom
-  domain + scoped API token handed to the GCP track. **Still pending** — media
-  uploads are not wired in prod yet.
+- **HPD-16** — media object storage: **GCS `ember-media-prod` via its S3 XML
+  API**, served direct from `storage.googleapis.com` (deviations from the plan:
+  GCS not R2, user-account HMAC key, no `cdn.` custom domain — see the executed
+  block below). Bucket + HMAC key provisioned; the `MINIO_*` values reach
+  `ember-prod-env` in HPD-20, when media uploads go live.
 - **HPD-17** — ~~Tunnel `ember-prod`~~ **superseded** by a proxied A record +
   `caddy` edge. Done 2026-09-01 — see the executed block below.
 - **HPD-18** — Worker `ember-app` (static assets, root `frontend`, build
@@ -434,6 +436,97 @@ Ruleset" (no UI, nothing to deploy).
 - Configuration Rule `api ssl full strict` (see step 5 above).
 
 Not done (optional / plan-gated): Bot Fight Mode; OWASP Core Ruleset (Business+).
+
+#### HPD-16 — executed 2026-09-01
+
+**DEVIATION — Google Cloud Storage, not Cloudflare R2.** The plan/spec specified
+R2. Enabling R2 requires a payment method on the Cloudflare account; the GCP
+billing account is already funded and HPD-12 already stood up a GCS bucket + an
+IAM binding for the VM's compute SA, so media storage reuses that path. GCS is
+consumed through its **S3-compatible XML API** (`https://storage.googleapis.com`
++ an HMAC key) — the app's `minio-java` client is unchanged. Cost at Ember's
+scale (≤120 KB compressed JPEGs, `immutable` cache) is a few cents/month.
+
+**DEVIATION 3 — no `cdn.ember.vanter.net` custom domain; objects are served
+straight from `https://storage.googleapis.com/ember-media-prod/`.** A pretty
+domain in front of GCS on the Cloudflare **Free** plan needs either an Origin
+Rule *Host Header* override (Pro-only) or a small proxy Worker; both were
+declined to keep the deployment surface minimal. `MINIO_PUBLIC_URL` therefore
+points at the bucket URL directly. Browsers hit GCS without a Cloudflare cache
+in front — egress is GCS→internet (~$0.12/GB, i.e. cents/month at this size).
+**Follow-up (optional, do it before real media exists to avoid rewriting stored
+URLs):** an `ember-cdn` Worker (`fetch` → `storage.googleapis.com/ember-media-prod$path`,
+`cf.cacheEverything`) bound to `cdn.ember.vanter.net`, then flip
+`MINIO_PUBLIC_URL`.
+
+**DEVIATION 2 — the HMAC key belongs to the operator's user account, not a
+service account.** The org enforces `constraints/iam.disableServiceAccountKeyCreation`
+(HMAC keys for an SA count as SA keys) and this account has no
+`roles/orgpolicy.policyAdmin` at the org to override it. A **user-account HMAC
+key** (GCS → Settings → Interoperability → *Access keys for your user account*,
+after setting the default interop project to `ember-prod-vanter`) is not covered
+by that constraint. Trade-off: the credential authenticates as
+`fer.obando1.10.4@gmail.com` (a project Owner) — acceptable for a single-operator
+SaaS, but if that account is lost or its access changes, image uploads break.
+Rotation: same Interoperability screen. **TODO:** migrate to a dedicated-SA HMAC
+key (`ember-media@…`, `objectAdmin` on this bucket only) if the org constraint is
+ever lifted for this project.
+
+Backend change shipped with this task (report 325): `minio.manage-bucket`
+(`MinioProperties`, default `true`) — `false` in `application-prod.properties`.
+GCS's XML API has no S3 `PutBucketPolicy` / the app should not create the bucket,
+so `MinioConfig.ensureBucketExists` becomes a log-only no-op in prod; the bucket
+and its public-read binding are provisioned by the operator below.
+
+**1. GCS bucket + public read** (`gcloud`, project `ember-prod-vanter`):
+
+```bash
+# Bucket — uniform access, same region as the VM. Standard class (default).
+# No --public-access-prevention flag: a new bucket defaults to PAP "inherited",
+# which is what a public bucket needs. (Older gcloud rejects an explicit value.)
+gcloud storage buckets create gs://ember-media-prod \
+  --project=ember-prod-vanter --location=us-central1 \
+  --uniform-bucket-level-access
+
+# Public read for browsers (objects only; no listing).
+gcloud storage buckets add-iam-policy-binding gs://ember-media-prod \
+  --member=allUsers --role=roles/storage.objectViewer
+```
+
+**2. User-account HMAC key** (Console — the SA path is org-policy-blocked, see
+DEVIATION 2). GCS → **Settings → Interoperability**: set the default project for
+your user account to `ember-prod-vanter`, then under *Access keys for your user
+account* → **Create key**. It shows an **Access key** + **Secret** once.
+
+Secret values (→ `ember-prod-env` in **HPD-20**, never committed):
+`MINIO_URL=https://storage.googleapis.com`, `MINIO_ACCESS_KEY=<access key>`,
+`MINIO_SECRET_KEY=<secret>`, `MINIO_BUCKET=ember-media-prod`,
+`MINIO_PUBLIC_URL=https://storage.googleapis.com/ember-media-prod`.
+
+**3. Verify** the bucket + anonymous public read + that a custom `Cache-Control`
+survives (Cloud Shell has no `aws` CLI, so upload with `gcloud storage` — the
+HMAC key itself is exercised when the app boots against it at HPD-20):
+
+```bash
+echo ok > /tmp/hc.txt
+gcloud storage cp /tmp/hc.txt gs://ember-media-prod/healthcheck.txt \
+  --content-type=text/plain --cache-control='public, max-age=31536000, immutable'
+curl -sI https://storage.googleapis.com/ember-media-prod/healthcheck.txt
+gcloud storage rm gs://ember-media-prod/healthcheck.txt
+```
+
+Confirmed 2026-09-01 — `curl` returned:
+
+```
+HTTP/2 200
+content-type: text/plain
+cache-control: public, max-age=31536000, immutable
+x-goog-storage-class: STANDARD
+```
+
+A `403` here would mean the `allUsers` → `roles/storage.objectViewer` binding on
+the bucket did not take. End-to-end proof (a real upload from the running app via
+the user-account HMAC key, its URL opened in a browser) is HPD-20 / HPD-22.
 
 ## Routine deploy
 
