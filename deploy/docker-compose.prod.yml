@@ -44,12 +44,22 @@ services:
       retries: 5
       start_period: 60s
 
-  cloudflared:
-    image: cloudflare/cloudflared:latest
+  # Public edge for api.ember.vanter.net. Cloudflare (proxied A record -> VM external IP,
+  # GCP firewall opens 443 only to Cloudflare's ranges) terminates the browser-facing TLS,
+  # then re-encrypts to this container using a Cloudflare Origin Certificate (SSL mode
+  # "Full (strict)"). Caddy forwards to app:8080 over the compose network and passes
+  # CF-Connecting-IP through untouched, so the rate limiter still sees the real client IP
+  # (EMBER_RATELIMIT_TRUSTED_PROXIES already trusts the docker bridge).
+  caddy:
+    image: caddy:2
     restart: unless-stopped
-    command: tunnel --no-autoupdate run
-    environment:
-      TUNNEL_TOKEN: ${TUNNEL_TOKEN:?set in /opt/ember/.env}
+    ports:
+      - "443:443"
+    volumes:
+      - /opt/ember/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - /opt/ember/caddy/origin.pem:/certs/origin.pem:ro
+      - /opt/ember/caddy/origin.key:/certs/origin.key:ro
+      - caddy_data:/data
     depends_on:
       - app
 
@@ -70,3 +80,4 @@ services:
 
 volumes:
   ember_pgdata:
+  caddy_data:

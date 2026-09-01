@@ -1,0 +1,17 @@
+# Edge reverse proxy for the hosted API. Deployed as the `caddy` service in
+# deploy/docker-compose.prod.yml. This file is bind-mounted to
+# /opt/ember/caddy/Caddyfile on the VM; the two PEMs it references
+# (/opt/ember/caddy/origin.pem, /opt/ember/caddy/origin.key) are a Cloudflare
+# Origin Certificate created in the dashboard (SSL/TLS -> Origin Server), not
+# committed. Cloudflare must be set to SSL mode "Full (strict)".
+
+api.ember.vanter.net {
+	tls /certs/origin.pem /certs/origin.key
+
+	# app listens on plain HTTP inside the compose network; it does not publish a
+	# host port. Caddy adds X-Forwarded-* and leaves Cloudflare's CF-Connecting-IP
+	# header intact, which is what AuthRateLimiterFilter keys the client IP on.
+	reverse_proxy app:8080
+
+	encode gzip
+}
