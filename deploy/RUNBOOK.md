@@ -5,35 +5,46 @@ Operational procedures for the hosted SaaS SKU: one GCP `e2-medium` VM running
 provisioning and recovery sections are filled in as Phases 3–5 (HPD-11..22) are
 executed.
 
+> **2026-09-01 — edge reworked.** The Cloudflare **Tunnel** (`cloudflared`) was
+> dropped. `api.ember.vanter.net` is now a **proxied Cloudflare A record → the
+> VM's external IP**, and a `caddy` container on the VM terminates a Cloudflare
+> **Origin Certificate** on `:443` and reverse-proxies to `app:8080`. Inbound
+> `:443` is opened **only to Cloudflare's published IP ranges** by the
+> `allow-cf-https` firewall rule. There is no delegated `ember.vanter.net`
+> zone — everything lives directly in the **`vanter.net`** Cloudflare zone
+> (HPD-15's NS delegation was not done). The landing and the SPA are Cloudflare
+> **Workers with static assets** (`ember` and `ember-app`), not Pages projects.
+> See "HPD-17 — executed 2026-09-01" below and report 322.
+
 ## Topology
 
 ```
                           Internet
                              │
               ┌──────────────┴───────────────────────────┐
-              │  Cloudflare — zone `ember.vanter.net`     │
-              │  (delegated to the team's CF account via  │
-              │   an NS record from `vanter.net`)         │
-              │  · Universal SSL covers *.ember.vanter.net│
+              │  Cloudflare — zone `vanter.net`           │
+              │  · Universal SSL covers the edge hostnames│
               │  · WAF, edge rate-limit, HSTS, analytics  │
               └───┬───────────┬───────────┬───────────┬───┘
                   │           │           │           │
         ember.vanter.net  app.ember…  api.ember…  cdn.ember…
                   │           │           │           │
-             Pages:       Pages:      Cloudflare    R2 bucket
-          ember-landing  ember-app    Tunnel        ember-media-prod
-           (Astro,        (React SPA,    │          (public read)
-            landing/)      frontend/)    │
-                                         │  outbound-only; VM opens
-                                         │  NO inbound ports
+            Worker:      Worker:     proxied A     R2 bucket
+             `ember`     `ember-app`  record →      ember-media-prod
+           (Astro,        (React SPA,  VM ext. IP   (public read)
+            landing/)      frontend/)  34.44.144.220   (HPD-16, tbd)
+                                         │  Full (strict) → Origin Cert
+                                         │  fw: :443 from Cloudflare ranges only
                         ┌────────────────┴─────────────────────┐
                         │  GCP Compute Engine  e2-medium       │
                         │  Ubuntu LTS + Docker, us-central1    │
-                        │  firewall: SSH via IAP only          │
+                        │  firewall: IAP SSH + allow-cf-https  │
                         │                                      │
                         │  docker compose -f                   │
                         │    deploy/docker-compose.prod.yml:   │
-                        │    · cloudflared  → app:8080         │
+                        │    · caddy  :443 → app:8080          │
+                        │        (TLS: /opt/ember/caddy/       │
+                        │         origin.pem + origin.key)     │
                         │    · app  (Spring, profile=prod)     │
                         │    · postgres  (never exposed)       │
                         │    · backup  (nightly pg_dump → GCS) │
@@ -41,11 +52,15 @@ executed.
                         └──────────────────────────────────────┘
 ```
 
-Login request flow: SPA (Pages) → `POST /v1/auth/login` on `api.ember.vanter.net`
-→ Cloudflare Tunnel → `cloudflared` on the VM → `app:8080` → `postgres:5432`
-(never leaves the VM). `wss://api.ember.vanter.net/v1/ws` upgrades over the same
-Tunnel path. `app.` and `api.` are separate origins → CORS applies
-(`EMBER_CORS_ALLOWED_ORIGINS`).
+Login request flow: SPA (Worker `ember-app`) → `POST /v1/auth/login` on
+`api.ember.vanter.net` → Cloudflare edge (TLS #1, public cert) → proxied to the
+VM external IP `:443` → `caddy` (TLS #2, Cloudflare Origin Cert) → `app:8080` →
+`postgres:5432` (never leaves the VM). `wss://api.ember.vanter.net/v1/ws` upgrades
+over the same path (Caddy proxies WebSockets by default). `app.` and `api.` are
+separate origins → CORS applies (`EMBER_CORS_ALLOWED_ORIGINS`). Caddy forwards
+Cloudflare's `CF-Connecting-IP` untouched, so `AuthRateLimiterFilter` keys the
+real client IP (`EMBER_RATELIMIT_TRUSTED_PROXIES=172.16.0.0/12` trusts the
+compose bridge Caddy sits on).
 
 ## First-time provisioning
 
@@ -118,11 +133,13 @@ gcloud compute ssh ember-prod --zone us-central1-a --tunnel-through-iap \
 
 **DEVIATION — external IP instead of `--no-address` + Cloud NAT.** The plan
 specified a VM with no public IP. As provisioned, `ember-prod` carries an external
-IP (`34.44.144.220`) for outbound access (GHCR image pulls, `apt`, `cloudflared`
-dial-out) because no Cloud NAT was set up. Inbound is still fully closed — the only
-ingress rule is `allow-iap-ssh` (tcp:22 from the IAP range), so nothing is
-reachable from the internet. A later hardening pass can add a Cloud Router + Cloud
-NAT in `us-central1` and recreate/replace the instance with `--no-address`.
+IP (`34.44.144.220`) for outbound access (GHCR image pulls, `apt`) because no
+Cloud NAT was set up. *(At the time of HPD-11 inbound was fully closed. Since
+HPD-17 the external IP also serves inbound `:443`, restricted to Cloudflare's IP
+ranges by `allow-cf-https`; the A record for `api.ember.vanter.net` points here,
+so this IP now needs to be static or the record updated on VM rebuild.)* A later
+hardening pass can still add Cloud NAT for egress and keep `:443` as the only
+inbound.
 
 #### HPD-12 — executed 2026-08-29
 
@@ -223,8 +240,9 @@ not this plan). No paying Hub is deployed, so nothing breaks today.
 
 Ops Agent + a Prometheus scrape of the app's actuator + resource alert policies.
 The Cloud Monitoring uptime check targets `https://api.ember.vanter.net/v1/public/ping`,
-which does not resolve until the Cloudflare Tunnel is live — it and its alert policy
-are done in HPD-20.
+which did not resolve until the edge was live — it and its alert policy are done in
+HPD-20. *(Update 2026-09-01: the hostname now resolves via the HPD-17 Caddy edge —
+the check can be created; the "Cloudflare Tunnel" wording here is historical.)*
 
 ```bash
 # 1. Install the Ops Agent. NOTE: the documented bootstrap script
@@ -290,7 +308,8 @@ CH=$(gcloud beta monitoring channels create --display-name="ember ops email" \
 # All autoClose 1800s. Policy JSON committed under deploy/monitoring/.
 ```
 
-**Deferred to HPD-20.** Uptime check:
+**Deferred to HPD-20** *(unblocked 2026-09-01 — `api.ember.vanter.net` resolves
+via the Caddy edge)*. Uptime check:
 `gcloud monitoring uptime create ember-api-ping --resource-type=uptime-url \
 --resource-labels=host=api.ember.vanter.net,project_id=ember-prod-vanter \
 --path=/v1/public/ping --period=5` plus an alert policy on
@@ -301,19 +320,96 @@ CH=$(gcloud beta monitoring channels create --display-name="ember ops email" \
 (`Could not chdir to home directory … Permission denied`, harmless). Any command that
 writes to the CWD must `cd /tmp` first (e.g. `curl -O`).
 
-### Cloudflare (colleague) — Phase 4
+### Cloudflare — Phase 4
 
-- **HPD-15** — `ember.vanter.net` zone delegation (NS record from `vanter.net`) +
-  DNS records.
+- **HPD-15** — ~~`ember.vanter.net` zone delegation~~ **not done.** No NS
+  delegation; all records live directly in the existing **`vanter.net`** zone.
 - **HPD-16** — R2 `ember-media-prod` bucket + `cdn.ember.vanter.net` custom
-  domain + scoped API token handed to the GCP track.
-- **HPD-17** — Tunnel `ember-prod`, public hostname
-  `api.ember.vanter.net → http://app:8080`, `TUNNEL_TOKEN` handed to the GCP
-  track.
-- **HPD-18** — Pages `ember-app` (root `frontend`, build `pnpm run build:pages`)
-  + `ember-landing` (root `landing`) + custom domains + env vars.
+  domain + scoped API token handed to the GCP track. **Still pending** — media
+  uploads are not wired in prod yet.
+- **HPD-17** — ~~Tunnel `ember-prod`~~ **superseded** by a proxied A record +
+  `caddy` edge. Done 2026-09-01 — see the executed block below.
+- **HPD-18** — Worker `ember-app` (static assets, root `frontend`, build
+  `pnpm run build:pages`) at `app.ember.vanter.net`; Worker `ember` keeps the
+  landing at `ember.vanter.net`. Done 2026-08-31/09-01 — see report 321.
 - **HPD-19** — HSTS / Always-Use-HTTPS, managed WAF, edge rate-limit on
-  `/v1/auth/*`, block rule for `/v1/actuator/*`.
+  `/v1/auth/*`, block rule for `/v1/actuator/*`. **Still pending.**
+
+#### HPD-18 — executed 2026-08-31 → 09-01
+
+`frontend/wrangler.jsonc` (`name: "ember-app"`, `assets ./dist`,
+`not_found_handling: "single-page-application"`) added by report 321. The
+operator then:
+
+1. Created a Cloudflare **Worker** `ember-app` connected to this Git repo — root
+   directory `frontend`, build command `pnpm run build:pages`, deploy command
+   `npx wrangler deploy`. Build variables: `EMBW_API_URL=https://api.ember.vanter.net/v1`,
+   `EMBW_WS_URL=wss://api.ember.vanter.net/v1/ws`, `NODE_VERSION=20`.
+   (`scripts/gen-env-config.mjs` writes `dist/env-config.js` from those at build
+   time; `index.html` loads it as `window.ENV`.)
+2. Moved the custom domain `app.ember.vanter.net` off the `ember` Worker and onto
+   `ember-app`. `ember.vanter.net` stays on `ember`.
+
+The `/console` platform UI is a route in the same SPA bundle (`/console/*` →
+`ConsoleApp`), served by the SPA fallback — no separate deploy. Seed platform
+operator (Flyway `V1__baseline_consolidated.sql`): `platform-admin@ember.local` /
+`ChangeMe123!` — **change on first login**, the hash is in the repo.
+
+Verify: `https://app.ember.vanter.net/` serves the SPA;
+`https://app.ember.vanter.net/env-config.js` carries the `wss://api.ember.vanter.net`
+values; `https://app.ember.vanter.net/console` reaches the console login.
+
+#### HPD-17 — executed 2026-09-01
+
+The Cloudflare Tunnel was replaced by a direct proxied path. `deploy/docker-compose.prod.yml`
+drops `cloudflared` and adds a `caddy:2` service (report 322); `deploy/caddy/Caddyfile`
+is one site block for `api.ember.vanter.net` (`tls /certs/origin.pem /certs/origin.key`,
+`reverse_proxy app:8080`, `encode gzip`).
+
+```bash
+# 1. Cloudflare DNS (zone vanter.net): A  api.ember.vanter.net  34.44.144.220  — PROXIED.
+
+# 2. GCP firewall — open :443 to Cloudflare's ranges only (confirm the list at
+#    https://www.cloudflare.com/ips-v4 before re-running).
+gcloud compute firewall-rules create allow-cf-https \
+  --project=ember-prod-vanter --network=default \
+  --direction=INGRESS --action=ALLOW --rules=tcp:443 \
+  --source-ranges=173.245.48.0/20,103.21.244.0/22,103.22.200.0/22,103.31.4.0/22,141.101.64.0/18,108.162.192.0/18,190.93.240.0/20,188.114.96.0/20,197.234.240.0/22,198.41.128.0/17,162.158.0.0/15,104.16.0.0/13,104.24.0.0/14,172.64.0.0/13,131.0.72.0/22
+
+# 3. Cloudflare Origin Certificate for api.ember.vanter.net
+#    (dash → vanter.net → SSL/TLS → Origin Server → Create Certificate, RSA, 15y).
+#    Stage the two PEM blocks + the Caddyfile, ship to the VM:
+gcloud compute scp --zone us-central1-a --tunnel-through-iap \
+  origin.pem origin.key Caddyfile ember-prod:/tmp/
+gcloud compute ssh ember-prod --zone us-central1-a --tunnel-through-iap --command '
+  sudo mkdir -p /opt/ember/caddy
+  sudo mv /tmp/origin.pem /tmp/origin.key /tmp/Caddyfile /opt/ember/caddy/
+  sudo chmod 600 /opt/ember/caddy/origin.key
+  sudo chmod 644 /opt/ember/caddy/origin.pem /opt/ember/caddy/Caddyfile
+'
+
+# 4. Ship the new compose file (deploy.sh does NOT copy it) and bring up the edge.
+gcloud compute scp deploy/docker-compose.prod.yml ember-prod:/tmp/dcp.yml \
+  --zone us-central1-a --tunnel-through-iap
+gcloud compute ssh ember-prod --zone us-central1-a --tunnel-through-iap --command '
+  sudo cp /opt/ember/docker-compose.prod.yml /opt/ember/docker-compose.prod.yml.bak
+  sudo mv /tmp/dcp.yml /opt/ember/docker-compose.prod.yml
+  cd /opt/ember
+  sudo docker compose -f docker-compose.prod.yml config >/dev/null
+  sudo docker compose -f docker-compose.prod.yml pull caddy
+  sudo docker compose -f docker-compose.prod.yml up -d --remove-orphans
+'
+
+# 5. Cloudflare → vanter.net → SSL/TLS: mode "Full (strict)" — zone-wide, OR a
+#    Configuration Rule scoped to hostname eq api.ember.vanter.net if other proxied
+#    origins in the zone can't take strict.
+
+# 6. Smoke.
+curl -s https://api.ember.vanter.net/v1/public/ping        # -> pong
+```
+
+`TUNNEL_TOKEN` in `ember-prod-env` is now dead (the new compose never reads it) —
+drop it on the next secret edit.
 
 ## Routine deploy
 
@@ -349,8 +445,19 @@ Overridable via env: `EMBER_VM` (default `ember-prod`), `EMBER_ZONE` (default
 
 Recreate the instance from the most recent disk snapshot (HPD-12 policy),
 re-attach, `cd /opt/ember && sudo docker compose -f docker-compose.prod.yml up -d`.
-`cloudflared` reconnects the Tunnel automatically from `TUNNEL_TOKEN` in the env
-file.
+
+Edge-specific after a rebuild:
+
+- The snapshot carries `/opt/ember/caddy/` (Caddyfile + `origin.pem`/`origin.key`)
+  and `/opt/ember/docker-compose.prod.yml`; if the restore predates HPD-17,
+  re-stage them per "HPD-17 — executed" above.
+- **The external IP changes** unless it was promoted to static. `api.ember.vanter.net`
+  is a plain A record → update it in Cloudflare (zone `vanter.net`) to the new
+  IP. Consider `gcloud compute addresses create` + assigning it so this step
+  disappears.
+- Nothing to reconnect — Caddy serves as soon as the container is up and 443 is
+  reachable from Cloudflare's ranges (`allow-cf-https` is a project firewall
+  rule, unaffected by the VM rebuild).
 
 ## Secret rotation
 
@@ -365,13 +472,22 @@ $EDITOR /tmp/prod.env
 gcloud secrets versions add ember-prod-env --data-file=/tmp/prod.env
 shred -u /tmp/prod.env
 
-# 2. Push it to the VM and restart the stack on the current tag.
-./deploy/deploy.sh "$(git describe --tags --abbrev=0)"
+# 2. Push it to the VM and restart the stack.
+./deploy/deploy.sh latest
 ```
 
-This is also how HPD-20 swaps the `TUNNEL_TOKEN` / `MINIO_*` placeholders for the
-real Cloudflare Tunnel token + R2 credentials.
+Pass `latest` (or a bare `0.1.0`), **not** `v0.1.0` — CI publishes
+`ghcr.io/vanter-tech/ember-backend:<tag-without-v>` + `:latest`; there is no
+`:v0.1.0` image, so `git describe --tags` would set an `EMBER_IMAGE_TAG` that
+fails `compose pull`.
 
+- This is how the remaining `MINIO_*` placeholders get swapped for real R2
+  credentials (HPD-16/20). `TUNNEL_TOKEN` is obsolete — delete the line.
+- Rotating the **Caddy Origin Certificate**: create a new one in Cloudflare
+  (SSL/TLS → Origin Server), replace `/opt/ember/caddy/origin.pem` +
+  `origin.key` on the VM, then
+  `sudo docker compose -f /opt/ember/docker-compose.prod.yml restart caddy`.
+  No secret-rotation round-trip (the cert is not in `.env`).
 - Rotating `JWT_SECRET` / `PLATFORM_JWT_SECRET` invalidates every live session by
   design.
 - Rotating `SPRING_DATASOURCE_PASSWORD` does **not** re-key the running Postgres —
