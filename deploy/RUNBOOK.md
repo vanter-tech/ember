@@ -333,7 +333,8 @@ writes to the CWD must `cd /tmp` first (e.g. `curl -O`).
   `pnpm run build:pages`) at `app.ember.vanter.net`; Worker `ember` keeps the
   landing at `ember.vanter.net`. Done 2026-08-31/09-01 — see report 321.
 - **HPD-19** — HSTS / Always-Use-HTTPS, managed WAF, edge rate-limit on
-  `/v1/auth/*`, block rule for `/v1/actuator/*`. **Still pending.**
+  `/v1/auth/*`, block rule for `/v1/actuator/*`. Done 2026-09-01 — see the
+  executed block below.
 
 #### HPD-18 — executed 2026-08-31 → 09-01
 
@@ -400,16 +401,39 @@ gcloud compute ssh ember-prod --zone us-central1-a --tunnel-through-iap --comman
   sudo docker compose -f docker-compose.prod.yml up -d --remove-orphans
 '
 
-# 5. Cloudflare → vanter.net → SSL/TLS: mode "Full (strict)" — zone-wide, OR a
-#    Configuration Rule scoped to hostname eq api.ember.vanter.net if other proxied
-#    origins in the zone can't take strict.
+# 5. SSL mode. The vanter.net zone default is "Full" and carries other proxied
+#    origins, so strict is NOT set zone-wide. Instead: Rules → Configuration Rules →
+#    a rule "api ssl full strict", When `http.host eq "api.ember.vanter.net"`,
+#    Then SSL = "Full (strict)". (done 2026-09-01)
 
 # 6. Smoke.
 curl -s https://api.ember.vanter.net/v1/public/ping        # -> pong
+curl -s -o /dev/null -w '%{http_code}\n' https://api.ember.vanter.net/v1/public/ping   # 200 = strict OK; 526 = origin cert doesn't validate
 ```
 
 `TUNNEL_TOKEN` in `ember-prod-env` is now dead (the new compose never reads it) —
 drop it on the next secret edit.
+
+#### HPD-19 — executed 2026-09-01
+
+Edge hardening, all in the Cloudflare dashboard on zone `vanter.net`. This is a
+**Free** plan, so the managed WAF is the auto-applied "Cloudflare Free Managed
+Ruleset" (no UI, nothing to deploy).
+
+- **SSL/TLS → Edge Certificates → Always Use HTTPS:** On (zone-wide).
+- **SSL/TLS → Edge Certificates → HSTS:** enabled — `max-age` 6 months,
+  `includeSubDomains` on, **preload off**, No-Sniff header on. (The backend
+  already sends its own HSTS for `api.`; this covers the Worker hostnames too.)
+- **Security → Security rules → Rate limiting rule** `api auth rate limit`:
+  URI Path starts with `/v1/auth/` → 10 requests / 1 min per IP → Block for
+  1 min. Edge companion to the in-app `AuthRateLimiterFilter`.
+- **Security → Security rules → Custom rule** `block api actuator`: URI Path
+  starts with `/v1/actuator` AND Hostname eq `api.ember.vanter.net` → Block.
+  Belt-and-suspenders — actuator is on the loopback-only `:8081` and never
+  reaches Caddy, so `api.` already 404s that path.
+- Configuration Rule `api ssl full strict` (see step 5 above).
+
+Not done (optional / plan-gated): Bot Fight Mode; OWASP Core Ruleset (Business+).
 
 ## Routine deploy
 
