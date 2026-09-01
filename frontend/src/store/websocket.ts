@@ -50,10 +50,13 @@ export const useWebsocketStore = create<WebSocketState>((set, get) => ({
         if (get().stompClient) return;
         const token = useAuthStore.getState().token;
 
-        const wsUrl =
+        // SockJS requires an http(s):// URL (it negotiates the ws upgrade itself),
+        // so coerce a ws://|wss:// value — a common deploy-config mistake — back to http(s)://.
+        const wsUrl = (
             window.ENV?.EMBW_WS_URL ||
             import.meta.env.VITE_WS_URL ||
             'http://localhost:8080/v1/ws'
+        ).replace(/^ws(s?):\/\//i, 'http$1://')
 
         const client = new Client({
             webSocketFactory: () => {
