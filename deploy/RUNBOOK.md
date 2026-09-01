@@ -137,7 +137,7 @@ IP (`34.44.144.220`) for outbound access (GHCR image pulls, `apt`) because no
 Cloud NAT was set up. *(At the time of HPD-11 inbound was fully closed. Since
 HPD-17 the external IP also serves inbound `:443`, restricted to Cloudflare's IP
 ranges by `allow-cf-https`; the A record for `api.ember.vanter.net` points here,
-so this IP now needs to be static or the record updated on VM rebuild.)* A later
+and the IP is now the static reservation `ember-prod-ip`.)* A later
 hardening pass can still add Cloud NAT for egress and keep `:443` as the only
 inbound.
 
@@ -451,10 +451,12 @@ Edge-specific after a rebuild:
 - The snapshot carries `/opt/ember/caddy/` (Caddyfile + `origin.pem`/`origin.key`)
   and `/opt/ember/docker-compose.prod.yml`; if the restore predates HPD-17,
   re-stage them per "HPD-17 — executed" above.
-- **The external IP changes** unless it was promoted to static. `api.ember.vanter.net`
-  is a plain A record → update it in Cloudflare (zone `vanter.net`) to the new
-  IP. Consider `gcloud compute addresses create` + assigning it so this step
-  disappears.
+- **External IP:** reserved as the static address `ember-prod-ip`
+  (`34.44.144.220`, `us-central1`, promoted in place 2026-09-01), so a rebuilt
+  instance keeps it as long as the reservation is re-attached
+  (`--address ember-prod-ip` on create, or `gcloud compute instances
+  add-access-config`). Only if the reservation is ever released does the
+  `api.ember.vanter.net` A record in Cloudflare (zone `vanter.net`) need updating.
 - Nothing to reconnect — Caddy serves as soon as the container is up and 443 is
   reachable from Cloudflare's ranges (`allow-cf-https` is a project firewall
   rule, unaffected by the VM rebuild).

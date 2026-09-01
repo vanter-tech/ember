@@ -91,5 +91,7 @@ the media/CDN work (HPD-16) are what's actually next, not a re-run of HPD-17/18.
   `api.ember.vanter.net/v1/public/ping` (now resolvable).
 - Confirm the console admin password is off `ChangeMe123!`.
 - Confirm Cloudflare SSL mode is `Full (strict)` for `api.ember.vanter.net`.
-- Promote the VM external IP to a static address so the `api.` A record survives
-  a VM rebuild.
+- ~~Promote the VM external IP to a static address~~ **done 2026-09-01** —
+  `34.44.144.220` promoted in place as the static reservation `ember-prod-ip`
+  (`us-central1`, `IN_USE` by `ember-prod`). RUNBOOK "VM lost" + HPD-11 deviation
+  note updated to match.
