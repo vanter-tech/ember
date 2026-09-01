@@ -353,6 +353,12 @@ operator then:
 2. Moved the custom domain `app.ember.vanter.net` off the `ember` Worker and onto
    `ember-app`. `ember.vanter.net` stays on `ember`.
 
+The `ember` Worker (root directory `landing`, build `pnpm run build`) should set
+build variable `PUBLIC_FRONTEND_URL=https://app.ember.vanter.net` so the landing's
+login/register CTAs point at the SPA. If it is unset, `landing/src/lib/constants.ts`
+now falls back to `https://app.ember.vanter.net` for any `PROD` build (never
+localhost) — the build variable only needs setting to target a different SPA origin.
+
 The `/console` platform UI is a route in the same SPA bundle (`/console/*` →
 `ConsoleApp`), served by the SPA fallback — no separate deploy. Seed platform
 operator (Flyway `V1__baseline_consolidated.sql`): `platform-admin@ember.local` /
