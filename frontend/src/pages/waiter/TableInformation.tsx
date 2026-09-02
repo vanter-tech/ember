@@ -183,18 +183,18 @@ export const TableInformation = () => {
         <div className="flex items-center gap-3 pr-7">
           <Button
             variant="secondary"
-            className="rounded-full bg-gray-100 hover:bg-gray-200 text-1xl w-38 h-18"
+            className="rounded-full bg-gray-100 hover:bg-gray-200 text-1xl px-6 h-18"
           >
             <Printer className="w-4 h-4 mr-2" /> {t('printBillLabel')}
           </Button>
           <Button
             variant="secondary"
-            className="rounded-full bg-gray-100 hover:bg-gray-200 text-1xl w-38 h-18"
+            className="rounded-full bg-gray-100 hover:bg-gray-200 text-1xl px-6 h-18"
           >
             <ArrowRightLeft className="w-4 h-4 mr-2" /> {t('transferLabel')}
           </Button>
           {/* Botón principal rojo */}
-          <Button className="rounded-full bg-[#8B0000] hover:bg-[#700000] text-1xl text-white w-38 h-18">
+          <Button className="rounded-full bg-[#8B0000] hover:bg-[#700000] text-1xl text-white px-6 h-18">
             <Plus className="w-4 h-4 mr-2" /> {t('addItemLabel')}
           </Button>
         </div>
