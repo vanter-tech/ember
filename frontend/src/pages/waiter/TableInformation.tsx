@@ -35,6 +35,8 @@ import { VoidBillModal } from './components/VoidBillModal'
 import { RefundPaymentModal } from './components/RefundPaymentModal'
 import { useWebsocketStore } from '@/store/websocket'
 import { useTranslation } from '@/lib/i18n'
+import { SectionTour } from '@/components/tours/SectionTour'
+import type { Step } from 'react-joyride'
 
 export const TableInformation = () => {
   const { t } = useTranslation('waiter')
@@ -151,8 +153,17 @@ export const TableInformation = () => {
   const taxes = subtotal * 0.1
   const total = subtotal + taxes
 
+  const tourSteps: Step[] = [
+    { target: '#table-tour-actions', title: t('tourTableActionsTitle'), content: t('tourTableActionsContent'), skipBeacon: true },
+    { target: '#table-tour-orders', title: t('tourTableOrdersTitle'), content: t('tourTableOrdersContent') },
+    { target: '#table-tour-participants', title: t('tourTableParticipantsTitle'), content: t('tourTableParticipantsContent') },
+    { target: '#table-tour-activity', title: t('tourTableActivityTitle'), content: t('tourTableActivityContent') },
+    { target: '#table-tour-bill', title: t('tourTableBillTitle'), content: t('tourTableBillContent') },
+  ]
+
   return (
     <>
+      <SectionTour sectionId="waiter-table-detail" steps={tourSteps} ready={!!sessionData} />
       <div className="flex justify-between items-start mb-6">
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-4 p-5 pb-0">
@@ -180,7 +191,7 @@ export const TableInformation = () => {
             <span className="text-m">{sessionData?.waiterId} {t('waiterRoleLabel')}</span>
           </div>
         </div>
-        <div className="flex items-center gap-3 pr-7">
+        <div id="table-tour-actions" className="flex items-center gap-3 pr-7">
           <Button
             variant="secondary"
             className="rounded-full bg-gray-100 hover:bg-gray-200 text-1xl px-6 h-18"
@@ -201,7 +212,7 @@ export const TableInformation = () => {
       </div>
       <div className="grid lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 flex flex-col gap-6">
-          <Card className="rounded-3xl border-none shadow-sm relative overflow-hidden">
+          <Card id="table-tour-orders" className="rounded-3xl border-none shadow-sm relative overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-transparent via-[#8B0000] to-transparent opacity-20"></div>
             <CardHeader className="p-7 border-b border">
               <CardTitle className="text-2xl text-gray-800 font-bold">
@@ -268,7 +279,7 @@ export const TableInformation = () => {
             </CardContent>
           </Card>
 
-          <Card className="rounded-3xl border-none shadow-sm relative overflow-hidden">
+          <Card id="table-tour-participants" className="rounded-3xl border-none shadow-sm relative overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-transparent via-[#8B0000] to-transparent opacity-20"></div>
             <CardHeader className="p-7 border-b border">
               <CardTitle className="text-2xl text-gray-800 font-bold">
@@ -303,7 +314,7 @@ export const TableInformation = () => {
             </CardContent>
           </Card>
 
-          <Card className="rounded-3xl border-none shadow-sm relative overflow-hidden">
+          <Card id="table-tour-activity" className="rounded-3xl border-none shadow-sm relative overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-transparent via-[#8B0000] to-transparent opacity-20"></div>
             <CardHeader className="p-7 border-b border">
               <CardTitle className="text-xs font-bold text-gray-500 tracking-widest uppercase">
@@ -353,7 +364,7 @@ export const TableInformation = () => {
             </CardContent>
           </Card>
         </div>
-        <div className="lg:col-span-1">
+        <div id="table-tour-bill" className="lg:col-span-1">
           <Card>
             <CardHeader className="p-7 border-b border flex flex-row items-center justify-between">
               <CardTitle className="text-2xl text-gray-800 font-bold">

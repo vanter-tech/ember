@@ -149,6 +149,20 @@ export const waiter = {
     'Este botón abre la mesa para tomar el primer pedido, o cobra la cuenta si ya está ocupada.',
   tourAssignTitle: 'Invitar clientes',
   tourAssignContent: 'Genera un código QR para que los clientes de esta mesa se unan desde su celular.',
+  tourTableActionsTitle: 'Acciones de la mesa',
+  tourTableActionsContent:
+    'Imprime la cuenta, transfiere la mesa a otro mesero o agrega un platillo manualmente al pedido.',
+  tourTableOrdersTitle: 'Detalles de pedidos',
+  tourTableOrdersContent:
+    'Todo lo que han pedido los comensales. Puedes quitar un platillo mientras no se haya enviado a la cocina.',
+  tourTableParticipantsTitle: 'Participantes',
+  tourTableParticipantsContent: 'Los clientes que se unieron a esta mesa desde su celular.',
+  tourTableActivityTitle: 'Actividad',
+  tourTableActivityContent:
+    'Historial de la mesa: cuándo se abrió, qué se pidió y qué se eliminó.',
+  tourTableBillTitle: 'Cuenta y cierre',
+  tourTableBillContent:
+    'Aquí ves el resumen o la cuenta con sus divisiones. Desde aquí cobras la mesa y la cierras.',
   cashShiftPreWarningTitle: 'La caja está por cerrarse',
   cashShiftPreWarningBody: 'La caja se cerrará a las {{time}}. Recuerda cerrarla o prolongarla.',
   cashShiftOverdueTitle: 'La caja venció',

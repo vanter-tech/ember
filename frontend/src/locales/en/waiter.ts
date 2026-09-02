@@ -149,6 +149,20 @@ export const waiter = {
     "This button opens the table for the first order, or charges the bill if it's already occupied.",
   tourAssignTitle: 'Invite guests',
   tourAssignContent: "Generates a QR code so this table's guests can join from their phone.",
+  tourTableActionsTitle: 'Table actions',
+  tourTableActionsContent:
+    'Print the bill, transfer the table to another waiter, or add an item to the order manually.',
+  tourTableOrdersTitle: 'Order details',
+  tourTableOrdersContent:
+    "Everything the guests have ordered. You can remove an item as long as it hasn't been sent to the kitchen.",
+  tourTableParticipantsTitle: 'Participants',
+  tourTableParticipantsContent: 'The guests who joined this table from their phones.',
+  tourTableActivityTitle: 'Activity',
+  tourTableActivityContent:
+    'Table history: when it opened, what was ordered, and what was removed.',
+  tourTableBillTitle: 'Bill and close-out',
+  tourTableBillContent:
+    'The summary or the bill with its splits. From here you charge the table and close it.',
   cashShiftPreWarningTitle: 'The cash register is about to close',
   cashShiftPreWarningBody: 'The register closes at {{time}}. Close it or extend it.',
   cashShiftOverdueTitle: 'The cash register has expired',
