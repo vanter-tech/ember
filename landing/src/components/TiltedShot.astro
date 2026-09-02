@@ -46,6 +46,48 @@ const {
 		perspective: 1600px;
 	}
 
+	@keyframes tiltshot-float {
+		0%,
+		100% {
+			transform: translateY(0);
+		}
+		50% {
+			transform: translateY(-12px);
+		}
+	}
+
+	/* translate (no transform) para no pisar el rotate del chip. */
+	@keyframes tiltshot-float-soft {
+		0%,
+		100% {
+			translate: 0 0;
+		}
+		50% {
+			translate: 0 -5px;
+		}
+	}
+
+	/* Bob idle continuo: la imagen va sobre el contenedor (que no tiene
+	   transform propio, así compone con el tilt del hijo); los chips flotan
+	   con menos amplitud y otro período para dar profundidad. Solo desktop;
+	   se pausa en hover para no pelear con el "lift". */
+	@media (min-width: 768px) {
+		.tiltshot {
+			animation: tiltshot-float 6s ease-in-out infinite;
+		}
+		.tiltshot--flip {
+			animation-duration: 7s;
+			animation-delay: -2.5s;
+		}
+		.tiltshot :global([data-float]) {
+			animation: tiltshot-float-soft 5s ease-in-out infinite;
+		}
+		.tiltshot:hover,
+		.tiltshot:hover :global([data-float]) {
+			animation-play-state: paused;
+		}
+	}
+
 	.tiltshot__img {
 		transform: rotateY(-14deg) rotate(1.5deg);
 		transform-origin: center;
@@ -94,6 +136,10 @@ const {
 		}
 		.tiltshot:hover :global([data-float]) {
 			transform: translateY(-4px) rotate(var(--float-rot-hover, 0deg));
+			translate: 0;
+			transition:
+				transform 0.5s ease,
+				translate 0.3s ease;
 		}
 	}
 
@@ -105,8 +151,11 @@ const {
 	}
 
 	@media (prefers-reduced-motion: reduce) {
+		.tiltshot,
+		.tiltshot--flip,
 		.tiltshot__img,
 		.tiltshot :global([data-float]) {
+			animation: none;
 			transition: none;
 		}
 	}
