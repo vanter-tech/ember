@@ -39,7 +39,6 @@ export const waiter = {
   totalLabel: 'Total',
   subtotalLabel: 'Subtotal',
   taxesLabel: 'Taxes (10%)',
-  tipLabel: 'Propina (15%)',
   chargeMesaLabel: 'Cobrar Mesa',
   waitingForDeliveryLabel: 'Esperando entrega de pedidos',
   closingTableLabel: 'Cerrando',

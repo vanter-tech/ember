@@ -149,8 +149,7 @@ export const TableInformation = () => {
     itemsToWaiter.reduce((total, item) => total + (item.price ?? 0), 0) ??
     0
   const taxes = subtotal * 0.1
-  const tip = subtotal * 0.15
-  const total = taxes + tip + subtotal
+  const total = subtotal + taxes
 
   return (
     <>
@@ -482,16 +481,10 @@ export const TableInformation = () => {
                       ${subtotal.toFixed(2)}
                     </span>
                   </div>
-                  <div className="flex justify-between text-xl text-gray-500 pt-4 pl-4 pr-4">
+                  <div className="flex justify-between text-xl text-gray-500 p-4">
                     <span>{t('taxesLabel')}</span>
                     <span className="text-xl font-bold text-[#8B0000]">
                       ${taxes.toFixed(2)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-xl text-gray-500 p-4">
-                    <span>{t('tipLabel')}</span>
-                    <span className="text-xl font-bold text-[#8B0000]">
-                      ${tip.toFixed(2)}
                     </span>
                   </div>
                 </CardContent>
