@@ -1,4 +1,4 @@
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, Navigate } from 'react-router-dom'
 import { PlatformProtectedRoute } from '@/components/PlatformProtectedRoute'
 import { PlatformLayout } from '@/layouts/PlatformLayout'
 import ConsoleLogin from './ConsoleLogin'
@@ -21,6 +21,7 @@ export default function ConsoleApp() {
           <Route path="password" element={<ConsolePasswordChange />} />
         </Route>
       </Route>
+      <Route path="*" element={<Navigate to="/console/login" replace />} />
     </Routes>
   )
 }

@@ -1,9 +1,15 @@
-import { Link, Outlet } from 'react-router-dom'
+import { Link, Outlet, useNavigate } from 'react-router-dom'
 import { usePlatformAuthStore } from '@/store/platformAuthStore'
 import { Button } from '@/components/ui/button'
 
 export const PlatformLayout = () => {
+  const navigate = useNavigate()
   const { name, email, logout } = usePlatformAuthStore()
+
+  const handleLogout = () => {
+    logout()
+    navigate('/console/login', { replace: true })
+  }
 
   return (
     <div className="min-h-screen bg-zinc-50/50">
@@ -14,7 +20,7 @@ export const PlatformLayout = () => {
           <Link to="/console/password" className="hover:underline">
             Cambiar contraseña
           </Link>
-          <Button variant="outline" size="sm" onClick={logout}>
+          <Button variant="outline" size="sm" onClick={handleLogout}>
             Log out
           </Button>
         </div>
