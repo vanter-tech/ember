@@ -1,7 +1,7 @@
 # PROGRESS.md — Active Execution State
 
 ## Current Execution State
-- **Active effort (branch `feat/waiter-quick-login-table-actions` off `main`, brainstormed 2026-09-03):** 3 workstreams from a user bug/feature report — **(A)** `/console` logout blank-redirect bug (DONE, report 335); **(B)** waiter quick-login (device-cached profile chips on `/login` → PIN modal with password fallback; backend `pin_hash` on `users` + `POST /auth/login/pin` + `POST/DELETE /auth/pin`); **(C)** wire the 3 dead `TableInformation.tsx` header buttons — Add item (new `POST /sessions/{id}/waiter-items`, WAITER), Print bill (on-demand `BILL_RECEIPT` job, only once the bill is fully paid; the CLOSED-status auto-redirect is replaced by a "mesa pagada y cerrada" stay-on-page state, re-entry blocked), Transfer table (new `GET /identity/users?role=WAITER` + `POST /sessions/{id}/transfer`, reassigns `Session.waiterId`, broadcasts on `/topic/waiter/{tenantId}`). B and C get their own design docs → plans next.
+- **Active effort: EMB-FEAT (branch `feat/waiter-quick-login-table-actions` off `main`, brainstormed 2026-09-03).** From a user bug/feature report — `/console` logout blank-redirect (DONE, EMB-FEAT-00 / report 335), waiter quick-login with device-cached chips + PIN, and the 3 dead `TableInformation.tsx` header buttons (add item / print paid bill / transfer table). 22 numbered tasks EMB-FEAT-01..22 across two plans; see the "EMB-FEAT" block in Task Queue Status. **Current Active Task: EMB-FEAT-01** (next up — nothing implemented past EMB-FEAT-00 yet). Execute strictly in order, one squashed commit per task, tests green at each.
 - **Last Completed Task (report 335, fix-console-logout-blank-redirect, branch `feat/waiter-quick-login-table-actions` off `main`):** logging out of `/console` left a blank page with `/login` appended. `PlatformProtectedRoute` returned `<Navigate to="login" replace />` (relative) → from `/console/restaurants/5` it resolved to `/console/restaurants/5/login`, unmatched in `ConsoleApp`'s catch-all-less `<Routes>` → blank. Fixed: absolute `to="/console/login"`, a `path="*"` redirect route in `ConsoleApp`, and a `handleLogout` in `PlatformLayout` that navigates explicitly after `logout()`. `pnpm run build` PASS. Predecessor: report 334.
 - **Last Completed Task (report 334, feat-waiter-table-detail-section-tour, branch `fix/waiter-remove-hardcoded-tip` off `main`):** the "?" tutorial button never showed on `/waiter/tables/:id` — `TopNav` (via `WaiterLayout`) gates it on `activeTourSection`, only set when a mounted `<SectionTour>` announces itself, and `TableInformation.tsx` mounted none (reports 216–218's rollout skipped this route). Added `<SectionTour sectionId="waiter-table-detail" steps={tourSteps} ready={!!sessionData} />` + a 5-step `Step[]` array + 5 anchor ids (`#table-tour-actions`/`-orders`/`-participants`/`-activity`/`-bill`) + 10 i18n keys in `locales/{es,en}/waiter.ts`. No changes to `SectionTour`/`TopNav`/`uiStore`/`sectionTourStore` — the view just opts into the existing machinery. `pnpm run build` PASS (2847 modules), `pnpm run test:run` 41/41. Predecessor: report 333.
 - **Last Completed Task (report 333, fix-waiter-table-view-action-button-width, branch `fix/waiter-remove-hardcoded-tip` off `main`):** the 3 header action buttons in `TableInformation.tsx` (`:184-199`, Imprimir cuenta/Transferir/Agregar platillo) had fixed `w-38` (152px), tuned for the short EN labels; shadcn `Button`'s `whitespace-nowrap` made the longer ES text overflow the pill. Swapped `w-38 h-18` → `px-6 h-18` on all 3 so each pill hugs its content in either locale. Only classNames changed; `pnpm run build` PASS. Predecessor: report 332.
@@ -156,10 +156,33 @@
 - [x] **Completed through report 179 (Milestones 1–5, EMB-PC, EMB-LP, EMB-CR, EMB-PAY, EMB-STAFF, EMB-RV, EMB-CLP, EMB-CLH, EMB-i18N-01..07, EMB-ACC built-then-reverted, plus misc bugfixes/UI polish):** full core platform — multi-tenancy, catalog, session/cart, KDS, waiter/floor + cash register, refunds/voids, payment cycle, staff CRUD, admin analytics, loyalty program + history, platform-operator console, Astro landing site, i18n infra (ES/EN), settings sidebar (billing/ticket/loyalty subtabs). See Active Context bullets above for architecture/decisions detail.
 - [x] **EMB-i18N-08 (COMPLETE, report 181):** Validation (zod) + toast (`react-hot-toast`) copy, all roles. See Active Context bullet for the schema-factory pattern.
 
-### Waiter quick-login + table-detail actions (branch `feat/waiter-quick-login-table-actions`, brainstormed 2026-09-03)
-- [x] A: `/console` logout blank-redirect bug — absolute `/console/login` redirect + catch-all route + explicit navigate on logout. (report 335)
-- [ ] B: waiter quick-login (PIN + password fallback) — design doc `docs/superpowers/specs/2026-09-03-waiter-quick-login-design.md` → plan → impl.
-- [ ] C: table-detail action buttons (add item / print paid bill / transfer table) — design doc `docs/superpowers/specs/2026-09-03-waiter-table-detail-actions-design.md` → plan → impl.
+### EMB-FEAT — Waiter quick-login + table-detail actions (branch `feat/waiter-quick-login-table-actions`, brainstormed 2026-09-03)
+Specs: `docs/superpowers/specs/2026-09-03-waiter-quick-login-design.md`, `.../2026-09-03-waiter-table-detail-actions-design.md`
+Plans: `docs/superpowers/plans/2026-09-03-waiter-quick-login.md` (EMB-FEAT-01..11), `.../2026-09-03-waiter-table-detail-actions.md` (EMB-FEAT-12..22)
+Execute one task at a time in order; each ends with `./mvnw test` (backend) and/or `pnpm run build && pnpm run lint && pnpm run test:run` (frontend) green + one squashed commit.
+- [x] EMB-FEAT-00: `/console` logout blank-redirect bug — absolute `/console/login` redirect + catch-all route + explicit navigate on logout. (report 335)
+- [ ] EMB-FEAT-01: DB migration `V6__user_pin.sql` + `User.pinHash`/`pinUpdatedAt` columns.
+- [ ] EMB-FEAT-02: `PinAttemptGuard` — in-memory per-email PIN lockout (5 fails / 15 min → `PinLockedException`).
+- [ ] EMB-FEAT-03: `POST /auth/login/pin` — `AuthService.loginWithPin` + endpoint + `PIN_NOT_SET`/`PIN_LOCKED` error codes + rate-limit path.
+- [ ] EMB-FEAT-04: `POST`/`DELETE /account/pin` — authenticated `AuthService.setPin`/`clearPin` + `AccountController`.
+- [ ] EMB-FEAT-05: Frontend `authService.loginPin`/`setPin`/`clearPin` + inline request types.
+- [ ] EMB-FEAT-06: `quickAccessStore.ts` — device-local (localStorage) profile chip list, cap 6, LRU, `pinDismissed`.
+- [ ] EMB-FEAT-07: Extract `navigateForRole()` from `Login.tsx` (keep CUSTOMER resume-session branch) + test.
+- [ ] EMB-FEAT-08: `Login.tsx` — render quick-access chips + `remember()` after a successful password login.
+- [ ] EMB-FEAT-09: `QuickLoginModal.tsx` — PIN entry, password fallback on `PIN_NOT_SET`/`PIN_LOCKED`/user choice.
+- [ ] EMB-FEAT-10: `SetPinPrompt.tsx` — post-login "create a PIN" nudge + Waiter/Admin layout header entry.
+- [ ] EMB-FEAT-11: Plan B — report + PROGRESS.md + full backend/frontend verification.
+- [ ] EMB-FEAT-12: `SessionService.addItemAsWaiter` — item at `PENDING`, attributed to a participant or `"Mesa"`, fires kitchen events; `409` if a bill exists.
+- [ ] EMB-FEAT-13: `POST /sessions/{id}/waiter-items` (WAITER) → `SessionDetailResponseDto`.
+- [ ] EMB-FEAT-14: Frontend `AddItemModal` — searchable menu list + minimal modifier picker + qty + participant selector; wire the "Agregar platillo" button.
+- [ ] EMB-FEAT-15: Extract `ReceiptRenderer` from `PrintingEventListener` (no behavior change) + characterization test.
+- [ ] EMB-FEAT-16: `POST /printing/bills/{billId}/receipt` (WAITER/ADMIN) — on-demand `BILL_RECEIPT` job, `409 BILL_NOT_PAID` unless `Bill.status == PAID`.
+- [ ] EMB-FEAT-17: `TableTransferred` event + `SessionActivity.TABLE_TRANSFERRED` + `SessionService.transferTable` + WS listeners.
+- [ ] EMB-FEAT-18: `GET /identity/waiters` (`WaiterDirectoryController`) + `POST /sessions/{id}/transfer` (WAITER).
+- [ ] EMB-FEAT-19: `TableInformation.tsx` — remove the CLOSED auto-redirect; add the "mesa pagada y cerrada" stay-state; block re-entry on fresh mount.
+- [ ] EMB-FEAT-20: Frontend — wire the "Imprimir cuenta" button (`printingService.printBillReceipt`), enabled only when `status === 'CLOSED'`.
+- [ ] EMB-FEAT-21: Frontend `TransferTableModal` (excludes self, navigates away on success) + `websocket.ts` `TABLE_TRANSFERRED` handler; wire the "Transferir" button.
+- [ ] EMB-FEAT-22: Plan C — report + PROGRESS.md + full verification + 2-device manual smoke.
 
 ### SaaS feature-gap initiative (brainstormed 2026-08-22) — closes gaps before Ember Hub (see `docs/superpowers/specs/ember_hub.md`)
 
