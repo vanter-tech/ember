@@ -64,6 +64,14 @@ public class User {
     @Builder.Default
     private BigDecimal pendingHours = BigDecimal.ZERO;
 
+    /** BCrypt hash of the user's 4-6 digit quick-login PIN. Null when no PIN is set. */
+    @JsonIgnore
+    @Column(name = "pin_hash", length = 60)
+    private String pinHash;
+
+    @Column(name = "pin_updated_at")
+    private Instant pinUpdatedAt;
+
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
