@@ -39,13 +39,4 @@ export const auth = {
   quickLoginPinNotSetHint: 'No tienes un PIN configurado. Ingresa tu contraseña.',
   quickLoginPinLockedHint: 'Demasiados intentos. Ingresa tu contraseña.',
   quickLoginSubmit: 'Entrar',
-  setPinCtaTitle: 'Crea un PIN para entrar más rápido',
-  setPinCurrentPassword: 'Contraseña actual',
-  setPinNewPin: 'Nuevo PIN (4-6 dígitos)',
-  setPinConfirm: 'Confirmar PIN',
-  setPinMismatch: 'Los PIN no coinciden',
-  setPinSavedToast: 'PIN guardado',
-  setPinNotNow: 'Ahora no',
-  setPinSave: 'Guardar PIN',
-  setPinMenuItem: 'Configurar PIN de acceso rápido',
 } satisfies typeof enAuth

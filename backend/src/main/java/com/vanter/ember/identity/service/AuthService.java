@@ -7,14 +7,12 @@ import com.vanter.ember.identity.model.dto.AuthResponse;
 import com.vanter.ember.identity.model.dto.LoginRequest;
 import com.vanter.ember.identity.model.dto.PinLoginRequest;
 import com.vanter.ember.identity.model.dto.RegisterRequest;
-import com.vanter.ember.identity.model.dto.SetPinRequest;
 import com.vanter.ember.identity.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -78,25 +76,6 @@ public class AuthService {
 
         pinAttemptGuard.recordSuccess(request.getEmail());
         return buildResponse(user, tenantIdOf(user));
-    }
-
-    public void setPin(String email, SetPinRequest request) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new BadCredentialsException("Invalid credentials"));
-        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPasswordHash())) {
-            throw new BadCredentialsException("Invalid credentials");
-        }
-        user.setPinHash(passwordEncoder.encode(request.getPin()));
-        user.setPinUpdatedAt(Instant.now());
-        userRepository.save(user);
-    }
-
-    public void clearPin(String email) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new BadCredentialsException("Invalid credentials"));
-        user.setPinHash(null);
-        user.setPinUpdatedAt(null);
-        userRepository.save(user);
     }
 
     /**

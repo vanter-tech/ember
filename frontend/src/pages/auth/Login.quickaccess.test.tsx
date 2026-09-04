@@ -14,7 +14,7 @@ const renderLogin = () =>
   )
 
 describe('Login quick-access chips', () => {
-  beforeEach(() => useQuickAccessStore.setState({ profiles: [], pinDismissed: [] }))
+  beforeEach(() => useQuickAccessStore.setState({ profiles: [] }))
 
   test('no chips section when store empty; form is visible', () => {
     renderLogin()
@@ -36,7 +36,6 @@ describe('Login quick-access chips', () => {
           lastUsedAt: 1,
         },
       ],
-      pinDismissed: [],
     })
     renderLogin()
     expect(screen.getByText('Juan Perez')).toBeVisible()

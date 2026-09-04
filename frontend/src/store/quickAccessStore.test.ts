@@ -1,7 +1,7 @@
 import { describe, test, expect, beforeEach } from 'vitest'
 import { useQuickAccessStore } from '@/store/quickAccessStore'
 
-const reset = () => useQuickAccessStore.setState({ profiles: [], pinDismissed: [] })
+const reset = () => useQuickAccessStore.setState({ profiles: [] })
 
 describe('quickAccessStore', () => {
   beforeEach(reset)
@@ -47,12 +47,5 @@ describe('quickAccessStore', () => {
     expect(useQuickAccessStore.getState().profiles.map((p) => p.email)).toEqual(['b@x.com'])
     s.clear()
     expect(useQuickAccessStore.getState().profiles).toHaveLength(0)
-  })
-
-  test('dismissPinPrompt records the email once', () => {
-    const s = useQuickAccessStore.getState()
-    s.dismissPinPrompt('a@x.com')
-    s.dismissPinPrompt('a@x.com')
-    expect(useQuickAccessStore.getState().pinDismissed).toEqual(['a@x.com'])
   })
 })

@@ -37,13 +37,4 @@ export const auth = {
   quickLoginPinNotSetHint: "You don't have a PIN set. Enter your password.",
   quickLoginPinLockedHint: 'Too many attempts. Enter your password.',
   quickLoginSubmit: 'Sign in',
-  setPinCtaTitle: 'Create a PIN for faster sign-in',
-  setPinCurrentPassword: 'Current password',
-  setPinNewPin: 'New PIN (4-6 digits)',
-  setPinConfirm: 'Confirm PIN',
-  setPinMismatch: 'PINs do not match',
-  setPinSavedToast: 'PIN saved',
-  setPinNotNow: 'Not now',
-  setPinSave: 'Save PIN',
-  setPinMenuItem: 'Set up quick-access PIN',
 }

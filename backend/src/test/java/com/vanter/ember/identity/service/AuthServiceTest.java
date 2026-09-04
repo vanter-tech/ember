@@ -6,7 +6,6 @@ import com.vanter.ember.identity.model.dto.AuthResponse;
 import com.vanter.ember.identity.model.dto.LoginRequest;
 import com.vanter.ember.identity.model.dto.PinLoginRequest;
 import com.vanter.ember.identity.model.dto.RegisterRequest;
-import com.vanter.ember.identity.model.dto.SetPinRequest;
 import com.vanter.ember.identity.repository.UserRepository;
 import com.vanter.ember.restaurant.model.Restaurant;
 import org.junit.jupiter.api.Test;
@@ -270,54 +269,5 @@ class AuthServiceTest {
         req.setEmail("w@test.com"); req.setPin("1234");
 
         assertThatThrownBy(() -> authService.loginWithPin(req)).isInstanceOf(BadCredentialsException.class);
-    }
-
-    @Test
-    void setPin_storesBcryptHashAndTimestamp_whenCurrentPasswordMatches() {
-        User user = User.builder().id("u1").email("w@test.com").name("W")
-                .role(Role.WAITER).passwordHash("pwHash").active(true).build();
-        when(userRepository.findByEmail("w@test.com")).thenReturn(Optional.of(user));
-        when(passwordEncoder.matches("realpw", "pwHash")).thenReturn(true);
-        when(passwordEncoder.encode("1234")).thenReturn("pinHash");
-
-        SetPinRequest req = new SetPinRequest();
-        req.setCurrentPassword("realpw"); req.setPin("1234");
-
-        authService.setPin("w@test.com", req);
-
-        ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
-        verify(userRepository).save(captor.capture());
-        assertThat(captor.getValue().getPinHash()).isEqualTo("pinHash");
-        assertThat(captor.getValue().getPinUpdatedAt()).isNotNull();
-    }
-
-    @Test
-    void setPin_throws_whenCurrentPasswordWrong() {
-        User user = User.builder().id("u1").email("w@test.com").name("W")
-                .role(Role.WAITER).passwordHash("pwHash").active(true).build();
-        when(userRepository.findByEmail("w@test.com")).thenReturn(Optional.of(user));
-        when(passwordEncoder.matches("bad", "pwHash")).thenReturn(false);
-
-        SetPinRequest req = new SetPinRequest();
-        req.setCurrentPassword("bad"); req.setPin("1234");
-
-        assertThatThrownBy(() -> authService.setPin("w@test.com", req))
-                .isInstanceOf(BadCredentialsException.class);
-        verify(userRepository, org.mockito.Mockito.never()).save(any());
-    }
-
-    @Test
-    void clearPin_nullsBothColumns() {
-        User user = User.builder().id("u1").email("w@test.com").name("W")
-                .role(Role.WAITER).passwordHash("pwHash").pinHash("pinHash")
-                .pinUpdatedAt(java.time.Instant.now()).active(true).build();
-        when(userRepository.findByEmail("w@test.com")).thenReturn(Optional.of(user));
-
-        authService.clearPin("w@test.com");
-
-        ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
-        verify(userRepository).save(captor.capture());
-        assertThat(captor.getValue().getPinHash()).isNull();
-        assertThat(captor.getValue().getPinUpdatedAt()).isNull();
     }
 }

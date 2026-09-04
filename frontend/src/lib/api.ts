@@ -191,14 +191,6 @@ export const authService = {
     const { data } = await api.post<LoginResponse>('/auth/login/pin', body)
     return data
   },
-
-  setPin: async (body: { currentPassword: string; pin: string }): Promise<void> => {
-    await api.post<void>('/account/pin', body)
-  },
-
-  clearPin: async (): Promise<void> => {
-    await api.delete<void>('/account/pin')
-  },
 }
 
 export const categoryService = {
@@ -590,6 +582,12 @@ export const staffService = {
   },
   updateRole: async (userId: string, role: StaffRole): Promise<void> => {
     await api.patch(`/admin/users/${userId}/role`, { role })
+  },
+  setPin: async (userId: string, pin: string): Promise<void> => {
+    await api.put<void>(`/admin/staff/${userId}/pin`, { pin })
+  },
+  clearPin: async (userId: string): Promise<void> => {
+    await api.delete<void>(`/admin/staff/${userId}/pin`)
   },
 }
 

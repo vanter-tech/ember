@@ -69,6 +69,8 @@ class SecurityAuditTest {
         "PATCH, /api/admin/users/u-1/role",
         "GET,  /api/admin/staff",
         "PATCH, /api/admin/staff/u-1",
+        "PUT,  /admin/staff/u-1/pin",
+        "DELETE, /admin/staff/u-1/pin",
         "GET,  /api/admin/analytics/range",
         "GET,  /api/admin/analytics/summary",
         "GET,  /api/admin/analytics/sales",

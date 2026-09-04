@@ -12,11 +12,9 @@ export interface QuickAccessProfile {
 
 interface QuickAccessState {
   profiles: QuickAccessProfile[]
-  pinDismissed: string[]
   remember: (p: { email: string; name: string; role: string }) => void
   forget: (email: string) => void
   clear: () => void
-  dismissPinPrompt: (email: string) => void
 }
 
 const MAX_PROFILES = 6
@@ -34,7 +32,6 @@ export const useQuickAccessStore = create<QuickAccessState>()(
   persist(
     (set) => ({
       profiles: [],
-      pinDismissed: [],
 
       remember: ({ email, name, role }) =>
         set((state) => {
@@ -61,12 +58,6 @@ export const useQuickAccessStore = create<QuickAccessState>()(
         })),
 
       clear: () => set({ profiles: [] }),
-
-      dismissPinPrompt: (email) =>
-        set((state) =>
-          state.pinDismissed.includes(email)
-            ? state
-            : { pinDismissed: [...state.pinDismissed, email] }),
     }),
     { name: 'ember-quick-access' }
   )

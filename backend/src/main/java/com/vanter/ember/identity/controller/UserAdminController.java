@@ -1,6 +1,7 @@
 package com.vanter.ember.identity.controller;
 
 import com.vanter.ember.config.TenantContextHolder;
+import com.vanter.ember.identity.dto.AdminSetPinRequest;
 import com.vanter.ember.identity.dto.CreateStaffRequest;
 import com.vanter.ember.identity.dto.StaffMemberResponse;
 import com.vanter.ember.identity.dto.UpdateStaffProfileRequest;
@@ -14,10 +15,12 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -62,5 +65,22 @@ public class UserAdminController {
             @Valid @RequestBody UpdateStaffProfileRequest request) {
         return userAdminService.updateProfile(
                 userId, TenantContextHolder.requireTenantId(), request);
+    }
+
+    @Operation(summary = "Set or replace a staff member's quick-login PIN (ADMIN)")
+    @PutMapping("/staff/{userId}/pin")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("hasRole('ADMIN')")
+    public void setStaffPin(@PathVariable String userId,
+                            @Valid @RequestBody AdminSetPinRequest request) {
+        userAdminService.setPin(userId, TenantContextHolder.requireTenantId(), request.pin());
+    }
+
+    @Operation(summary = "Remove a staff member's quick-login PIN (ADMIN)")
+    @DeleteMapping("/staff/{userId}/pin")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("hasRole('ADMIN')")
+    public void clearStaffPin(@PathVariable String userId) {
+        userAdminService.clearPin(userId, TenantContextHolder.requireTenantId());
     }
 }

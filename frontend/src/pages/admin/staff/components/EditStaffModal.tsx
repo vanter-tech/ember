@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { z } from 'zod'
@@ -47,6 +47,120 @@ const editStaffSchemaFactory = (t: ReturnType<typeof useTranslation<'admin'>>['t
   })
 
 type EditStaffInputs = z.infer<ReturnType<typeof editStaffSchemaFactory>>
+
+/**
+ * Admin-only quick-login PIN control for a staff account. Lives inside the edit modal ("each
+ * account's config") and is the ONLY place a PIN can be assigned — the old self-service flow in
+ * the layout headers was removed. Writes go straight through, independent of the profile form.
+ */
+const StaffPinSection = ({
+  userId,
+  hasPin,
+}: {
+  userId: string
+  hasPin: boolean
+}) => {
+  const { t } = useTranslation('admin')
+  const queryClient = useQueryClient()
+  const [pin, setPin] = useState('')
+  const [confirmPin, setConfirmPin] = useState('')
+  const [error, setError] = useState<string | null>(null)
+
+  const reset = () => {
+    setPin('')
+    setConfirmPin('')
+    setError(null)
+  }
+
+  const setMutation = useMutation({
+    mutationFn: () => staffService.setPin(userId, pin),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['staff'] })
+      toast.success(t('staffPinSavedToast'))
+      reset()
+    },
+    onError: () => toast.error(t('staffPinErrorToast')),
+  })
+
+  const clearMutation = useMutation({
+    mutationFn: () => staffService.clearPin(userId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['staff'] })
+      toast.success(t('staffPinRemovedToast'))
+      reset()
+    },
+    onError: () => toast.error(t('staffPinErrorToast')),
+  })
+
+  const busy = setMutation.isPending || clearMutation.isPending
+
+  const submit = () => {
+    if (!/^\d{4,6}$/.test(pin)) {
+      setError(t('staffPinFormatError'))
+      return
+    }
+    if (pin !== confirmPin) {
+      setError(t('staffPinMismatchError'))
+      return
+    }
+    setError(null)
+    setMutation.mutate()
+  }
+
+  return (
+    <div className="sm:col-span-2 flex flex-col gap-3 rounded-lg border p-4">
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-sm font-medium">{t('staffPinSectionTitle')}</span>
+        <span
+          className={`rounded-full px-2 py-0.5 text-xs ${
+            hasPin ? 'bg-emerald-100 text-emerald-700' : 'bg-zinc-100 text-zinc-500'
+          }`}
+        >
+          {hasPin ? t('staffPinSetStatus') : t('staffPinNoneStatus')}
+        </span>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <Input
+          type="text"
+          inputMode="numeric"
+          maxLength={6}
+          className="rounded-xl"
+          placeholder={t('staffPinNewLabel')}
+          aria-label={t('staffPinNewLabel')}
+          value={pin}
+          onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
+        />
+        <Input
+          type="text"
+          inputMode="numeric"
+          maxLength={6}
+          className="rounded-xl"
+          placeholder={t('staffPinConfirmLabel')}
+          aria-label={t('staffPinConfirmLabel')}
+          value={confirmPin}
+          onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, ''))}
+        />
+      </div>
+      {error && <p className="text-sm text-destructive">{error}</p>}
+      <div className="flex items-center gap-2">
+        <Button type="button" size="sm" onClick={submit} disabled={busy || !pin}>
+          {hasPin ? t('staffPinUpdateButton') : t('staffPinAddButton')}
+        </Button>
+        {hasPin && (
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => clearMutation.mutate()}
+            disabled={busy}
+          >
+            {t('staffPinRemoveButton')}
+          </Button>
+        )}
+      </div>
+    </div>
+  )
+}
 
 export const EditStaffModal = () => {
   const { activeModal, modalPayload, closeModal } = useUIStore()
@@ -243,6 +357,10 @@ export const EditStaffModal = () => {
                 </FormItem>
               )}
             />
+
+            {member?.id && (
+              <StaffPinSection userId={member.id} hasPin={member.hasPin ?? false} />
+            )}
 
             <DialogFooter className="sm:col-span-2">
               <Button
