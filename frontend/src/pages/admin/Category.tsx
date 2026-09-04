@@ -59,9 +59,8 @@ export const Category = () => {
     <div>
       <div id="category-tour-grid" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {categories.map((Category) => (
-          <Link to={Category.id + '/items'}>
+          <Link key={Category.id} to={Category.id + '/items'}>
             <div
-              key={Category.id}
               className="bg-white rounded-2xl shadow-sm overflow-hidden border
             border-zinc-100 flex flex-col "
             >
