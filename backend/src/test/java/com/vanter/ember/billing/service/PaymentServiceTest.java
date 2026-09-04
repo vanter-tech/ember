@@ -295,15 +295,35 @@ class PaymentServiceTest {
                 .hasMessageContaining("voided");
     }
 
+    @Test
+    void registerPhysicalPayment_throwsWhenSplitAlreadyPaid_QA_E04() {
+        Bill bill = sampleBill();
+        BillSplit split = BillSplit.builder()
+                .id(10L).bill(bill).participantName("Alice")
+                .amount(new BigDecimal("12.50")).status(BillSplitStatus.PAID).build();
+        when(cashShiftRepository.findOpenForUpdate(any())).thenReturn(Optional.of(openShift()));
+        when(billRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(bill));
+        when(billSplitRepository.findByBillIdAndParticipantName(1L, "Alice"))
+                .thenReturn(Optional.of(split));
+
+        assertThatThrownBy(() ->
+                paymentService.registerPhysicalPayment(1L, "Alice", new BigDecimal("12.50"), "alice@ember.local"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("already");
+
+        verify(paymentRepository, never()).save(any());
+    }
+
     // --- initiateDigitalPayment tests ---
 
     @Test
     void initiateDigitalPayment_createsPendingDigitalPayment() {
         Bill bill = sampleBill();
         when(userRepository.findByEmail("alice@ember.local")).thenReturn(Optional.of(waiterUser()));
-        when(billRepository.findById(1L)).thenReturn(Optional.of(bill));
+        when(billRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(bill));
         when(billSplitRepository.findByBillIdAndParticipantName(1L, "Alice"))
                 .thenReturn(Optional.of(unpaidSplit(bill, "Alice", "12.50")));
+        when(paymentRepository.findByBillId(1L)).thenReturn(List.of());
         when(paymentRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         Payment payment = paymentService.initiateDigitalPayment(
@@ -322,9 +342,10 @@ class PaymentServiceTest {
     void initiateDigitalPayment_setsNonNullGatewayRef() {
         Bill bill = sampleBill();
         when(userRepository.findByEmail("alice@ember.local")).thenReturn(Optional.of(waiterUser()));
-        when(billRepository.findById(1L)).thenReturn(Optional.of(bill));
+        when(billRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(bill));
         when(billSplitRepository.findByBillIdAndParticipantName(1L, "Alice"))
                 .thenReturn(Optional.of(unpaidSplit(bill, "Alice", "12.50")));
+        when(paymentRepository.findByBillId(1L)).thenReturn(List.of());
         when(paymentRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         Payment payment = paymentService.initiateDigitalPayment(
@@ -337,9 +358,10 @@ class PaymentServiceTest {
     void initiateDigitalPayment_broadcastsPaymentInitiatedToSessionTopic() {
         Bill bill = sampleBill();
         when(userRepository.findByEmail("alice@ember.local")).thenReturn(Optional.of(waiterUser()));
-        when(billRepository.findById(1L)).thenReturn(Optional.of(bill));
+        when(billRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(bill));
         when(billSplitRepository.findByBillIdAndParticipantName(1L, "Alice"))
                 .thenReturn(Optional.of(unpaidSplit(bill, "Alice", "12.50")));
+        when(paymentRepository.findByBillId(1L)).thenReturn(List.of());
         when(paymentRepository.save(any())).thenAnswer(inv -> {
             Payment p = inv.getArgument(0);
             p.setId(21L);
@@ -361,7 +383,7 @@ class PaymentServiceTest {
 
     @Test
     void initiateDigitalPayment_throwsWhenBillNotFound() {
-        when(billRepository.findById(99L)).thenReturn(Optional.empty());
+        when(billRepository.findByIdForUpdate(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() ->
                 paymentService.initiateDigitalPayment(99L, "Alice", new BigDecimal("12.50"), "alice@ember.local"))
@@ -370,7 +392,7 @@ class PaymentServiceTest {
 
     @Test
     void initiateDigitalPayment_throwsWhenSplitNotFound() {
-        when(billRepository.findById(1L)).thenReturn(Optional.of(sampleBill()));
+        when(billRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(sampleBill()));
         when(billSplitRepository.findByBillIdAndParticipantName(1L, "Alice"))
                 .thenReturn(Optional.empty());
 
@@ -383,9 +405,10 @@ class PaymentServiceTest {
     void initiateDigitalPayment_throwsWhenAmountDoesNotMatchSplit() {
         Bill bill = sampleBill();
         BillSplit split = unpaidSplit(bill, "Alice", "12.50");
-        when(billRepository.findById(1L)).thenReturn(Optional.of(bill));
+        when(billRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(bill));
         when(billSplitRepository.findByBillIdAndParticipantName(1L, "Alice"))
                 .thenReturn(Optional.of(split));
+        when(paymentRepository.findByBillId(1L)).thenReturn(List.of());
 
         assertThatThrownBy(() ->
                 paymentService.initiateDigitalPayment(1L, "Alice", new BigDecimal("5.00"), "alice@ember.local"))
@@ -397,12 +420,64 @@ class PaymentServiceTest {
     void initiateDigitalPayment_throwsWhenBillIsVoided() {
         Bill voided = sampleBill();
         voided.setStatus(BillStatus.VOIDED);
-        when(billRepository.findById(1L)).thenReturn(Optional.of(voided));
+        when(billRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(voided));
 
         assertThatThrownBy(() ->
                 paymentService.initiateDigitalPayment(1L, "Alice", new BigDecimal("12.50"), "alice@ember.local"))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("voided");
+    }
+
+    @Test
+    void initiateDigitalPayment_throwsWhenSplitAlreadyPaid_QA_E04() {
+        Bill bill = sampleBill();
+        BillSplit split = BillSplit.builder()
+                .id(10L).bill(bill).participantName("Alice")
+                .amount(new BigDecimal("12.50")).status(BillSplitStatus.PAID).build();
+        when(billRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(bill));
+        when(billSplitRepository.findByBillIdAndParticipantName(1L, "Alice"))
+                .thenReturn(Optional.of(split));
+
+        assertThatThrownBy(() ->
+                paymentService.initiateDigitalPayment(1L, "Alice", new BigDecimal("12.50"), "alice@ember.local"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("already");
+
+        verify(paymentRepository, never()).save(any());
+    }
+
+    @Test
+    void initiateDigitalPayment_throwsWhenAlreadyPendingForSameParticipant_QA_E04() {
+        Bill bill = sampleBill();
+        BillSplit split = unpaidSplit(bill, "Alice", "12.50");
+        when(billRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(bill));
+        when(billSplitRepository.findByBillIdAndParticipantName(1L, "Alice"))
+                .thenReturn(Optional.of(split));
+        when(paymentRepository.findByBillId(1L)).thenReturn(List.of(pendingDigitalPayment(bill, "Alice")));
+
+        assertThatThrownBy(() ->
+                paymentService.initiateDigitalPayment(1L, "Alice", new BigDecimal("12.50"), "alice@ember.local"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("already pending");
+
+        verify(paymentRepository, never()).save(any());
+    }
+
+    @Test
+    void initiateDigitalPayment_allowsAnotherParticipantWhilePendingForSomeoneElse_QA_E04() {
+        Bill bill = sampleBill();
+        BillSplit split = unpaidSplit(bill, "Bob", "10.00");
+        when(userRepository.findByEmail("alice@ember.local")).thenReturn(Optional.of(waiterUser()));
+        when(billRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(bill));
+        when(billSplitRepository.findByBillIdAndParticipantName(1L, "Bob"))
+                .thenReturn(Optional.of(split));
+        when(paymentRepository.findByBillId(1L)).thenReturn(List.of(pendingDigitalPayment(bill, "Alice")));
+        when(paymentRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        Payment payment = paymentService.initiateDigitalPayment(
+                1L, "Bob", new BigDecimal("10.00"), "alice@ember.local");
+
+        assertThat(payment.getParticipantName()).isEqualTo("Bob");
     }
 
     // --- confirmDigitalPayment tests ---
