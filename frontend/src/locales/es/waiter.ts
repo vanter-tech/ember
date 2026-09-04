@@ -120,6 +120,7 @@ export const waiter = {
   shiftCloseTablesOpenToast: 'No se puede cerrar la caja: {{count}} mesa(s) aún tienen una sesión abierta.',
   cannotRemoveSentItem: 'No se puede quitar: el artículo ya fue enviado a cocina.',
   tableClosedPaidToast: 'Mesa pagada y cerrada.',
+  tablePaidClosedBanner: 'Mesa pagada y cerrada. Puedes imprimir la cuenta antes de salir.',
   tableClosedToast: 'Mesa cerrada.',
   cashPaymentRegisteredToast: 'Pago en efectivo registrado.',
   cashPaymentErrorToast: 'No se pudo registrar el pago. ¿Hay una caja abierta?',

@@ -121,6 +121,7 @@ export const waiter = {
   shiftCloseTablesOpenToast: 'Cannot close the shift: {{count}} table(s) still have an open session.',
   cannotRemoveSentItem: 'Cannot remove: this item has already been sent to the kitchen.',
   tableClosedPaidToast: 'Table paid and closed.',
+  tablePaidClosedBanner: 'Table paid and closed. You can print the bill before leaving.',
   tableClosedToast: 'Table closed.',
   cashPaymentRegisteredToast: 'Cash payment recorded.',
   cashPaymentErrorToast: 'Could not record the payment. Is a shift open?',
