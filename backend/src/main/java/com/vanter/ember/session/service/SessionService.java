@@ -6,6 +6,8 @@ import com.vanter.ember.catalog.model.dto.ModifierGroupResponse;
 import com.vanter.ember.catalog.model.dto.ModifierOptionResponse;
 import com.vanter.ember.catalog.repository.MenuItemRepository;
 import com.vanter.ember.catalog.service.MenuItemService;
+import com.vanter.ember.billing.model.BillStatus;
+import com.vanter.ember.billing.repository.BillRepository;
 import com.vanter.ember.config.ResourceNotFoundException;
 import com.vanter.ember.config.TenantContextHolder;
 import com.vanter.ember.identity.model.User;
@@ -60,6 +62,7 @@ public class SessionService {
     private final UserRepository userRepository;
     private final MenuItemRepository menuItemRepository;
     private final RestaurantRepository restaurantRepository;
+    private final BillRepository billRepository;
 
     /**
      * Loads a session scoped to the tenant bound to the current request: a session owned by another
@@ -313,6 +316,74 @@ public class SessionService {
                 newItem.getParticipantName(),
                 newItem.getStatus(),
                 saved.getItems()));
+
+        return saved;
+    }
+
+    public Session addItemAsWaiter(String sessionId, Long menuItemId,
+                                   List<Long> selectedOptionIds, String participantName) {
+        Session session = findById(sessionId);
+
+        if (session.getStatus() != SessionStatus.OPEN) {
+            throw new IllegalStateException("Cannot add items to a session that is not open");
+        }
+        if (billRepository.findBySessionIdAndStatusNot(sessionId, BillStatus.VOIDED).isPresent()) {
+            throw new IllegalStateException("Bill already requested for this session");
+        }
+
+        MenuItemResponse menuItem = menuItemService.findById(menuItemId);
+        if (!menuItem.isAvailable()) {
+            throw new IllegalStateException("Menu item " + menuItemId + " is not available");
+        }
+
+        DiningTables table = diningTableRepository.findById(session.getTableId())
+                .orElseThrow(() -> new ResourceNotFoundException("Table not found"));
+
+        Participant named = participantName == null ? null : session.getParticipants().stream()
+                .filter(p -> participantName.equals(p.getName()))
+                .findFirst().orElse(null);
+        String attributedName = named != null ? named.getName() : "Mesa";
+        String attributedId = named != null ? named.getUserId() : null;
+
+        List<SelectedModifier> selectedModifiers = resolveSelectedModifiers(menuItem, selectedOptionIds);
+        BigDecimal totalPrice = menuItem.getPrice().add(selectedModifiers.stream()
+                .map(SelectedModifier::getPriceDelta)
+                .reduce(BigDecimal.ZERO, BigDecimal::add));
+
+        LocalDateTime now = LocalDateTime.now();
+        OrderItem newItem = OrderItem.builder()
+                .id(UUID.randomUUID().toString())
+                .itemId(menuItem.getId())
+                .name(menuItem.getName())
+                .price(totalPrice)
+                .participantId(attributedId)
+                .participantName(attributedName)
+                .status(OrderItemStatus.PENDING)
+                .modifiers(selectedModifiers)
+                .addedAt(now)
+                .build();
+        session.getItems().add(newItem);
+        session.getActivityLog().add(SessionActivity.builder()
+                .type(SessionActivity.Type.ITEM_SENT)
+                .itemName(newItem.getName())
+                .participantName(attributedName)
+                .timestamp(now)
+                .build());
+
+        Session saved = sessionRepository.save(session);
+
+        eventPublisher.publishEvent(new ItemAdded(
+                saved.getId(),
+                newItem.getName(),
+                newItem.getPrice(),
+                newItem.getParticipantName(),
+                newItem.getStatus(),
+                saved.getItems()));
+        eventPublisher.publishEvent(new KitchenItemsConfirmed(
+                saved.getTenantId(),
+                saved.getId(),
+                table.getTableNumber(),
+                List.of(newItem)));
 
         return saved;
     }
