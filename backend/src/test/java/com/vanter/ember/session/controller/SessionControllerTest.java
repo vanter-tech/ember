@@ -15,6 +15,7 @@ import com.vanter.ember.session.dto.ExpandCapacityRequest;
 import com.vanter.ember.session.dto.JoinSessionRequest;
 import com.vanter.ember.session.dto.ParticipantDto;
 import com.vanter.ember.session.dto.SessionDetailResponseDto;
+import com.vanter.ember.session.dto.TransferTableRequest;
 import com.vanter.ember.restaurant.repository.RestaurantRepository;
 import com.vanter.ember.session.exception.TooManyParticipantsException;
 import com.vanter.ember.session.model.Participant;
@@ -390,6 +391,40 @@ class SessionControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"selectedOptionIds\":[]}"))
                 .andExpect(status().isBadRequest());
+    }
+
+    // --- POST /sessions/{id}/transfer ---
+
+    @Test
+    @WithMockUser(username = "waiter@test.com", roles = "WAITER")
+    void transfer_returnsSessionDetail() throws Exception {
+        when(sessionService.transferTable(eq("sess-1"), eq("waiter@test.com"), eq("u9")))
+                .thenReturn(sampleSession());
+        when(sessionService.getSessionDetails("sess-1")).thenReturn(sampleSessionDetail(List.of()));
+
+        mockMvc.perform(post("/sessions/sess-1/transfer")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new TransferTableRequest("u9"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value("sess-1"));
+    }
+
+    @Test
+    @WithMockUser(username = "waiter@test.com", roles = "WAITER")
+    void transfer_badRequestWhenTargetMissing() throws Exception {
+        mockMvc.perform(post("/sessions/sess-1/transfer")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser(roles = "CUSTOMER")
+    void transfer_forbiddenForCustomer() throws Exception {
+        mockMvc.perform(post("/sessions/sess-1/transfer")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new TransferTableRequest("u9"))))
+                .andExpect(status().isForbidden());
     }
 
     // --- DELETE /sessions/{id}/items/{itemId} ---

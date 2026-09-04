@@ -167,6 +167,16 @@ public class SessionController {
         return sessionService.getSessionDetails(id);
     }
 
+    @Operation(summary = "Transfer this table to another waiter (WAITER)")
+    @PostMapping("/{id}/transfer")
+    @PreAuthorize("hasRole('WAITER')")
+    public SessionDetailResponseDto transfer(@PathVariable String id,
+                                             @Valid @RequestBody TransferTableRequest request,
+                                             Authentication authentication) {
+        sessionService.transferTable(id, authentication.getName(), request.targetWaiterId());
+        return sessionService.getSessionDetails(id);
+    }
+
     @Operation(summary = "Send item to KITCHEN")
     @PostMapping("/{sessionId}/participants/{userId}/confirm")
     @PreAuthorize("hasRole('CUSTOMER')")
