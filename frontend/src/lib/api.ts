@@ -186,6 +186,19 @@ export const authService = {
     const { data } = await api.post<LoginResponse>('/auth/register', details)
     return data
   },
+
+  loginPin: async (body: { email: string; pin: string }): Promise<LoginResponse> => {
+    const { data } = await api.post<LoginResponse>('/auth/login/pin', body)
+    return data
+  },
+
+  setPin: async (body: { currentPassword: string; pin: string }): Promise<void> => {
+    await api.post<void>('/account/pin', body)
+  },
+
+  clearPin: async (): Promise<void> => {
+    await api.delete<void>('/account/pin')
+  },
 }
 
 export const categoryService = {
