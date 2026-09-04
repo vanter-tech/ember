@@ -32,4 +32,11 @@ export const auth = {
   editChips: 'Editar',
   doneEditingChips: 'Listo',
   removeChipAria: 'Quitar {{name}}',
+  quickLoginPinLabel: 'PIN',
+  quickLoginPinPlaceholder: 'PIN de 4 a 6 dígitos',
+  quickLoginPinIncorrect: 'PIN incorrecto',
+  quickLoginPreferPassword: 'Prefiero mi contraseña',
+  quickLoginPinNotSetHint: 'No tienes un PIN configurado. Ingresa tu contraseña.',
+  quickLoginPinLockedHint: 'Demasiados intentos. Ingresa tu contraseña.',
+  quickLoginSubmit: 'Entrar',
 } satisfies typeof enAuth

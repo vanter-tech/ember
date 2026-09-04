@@ -30,4 +30,11 @@ export const auth = {
   editChips: 'Edit',
   doneEditingChips: 'Done',
   removeChipAria: 'Remove {{name}}',
+  quickLoginPinLabel: 'PIN',
+  quickLoginPinPlaceholder: '4 to 6 digit PIN',
+  quickLoginPinIncorrect: 'Incorrect PIN',
+  quickLoginPreferPassword: 'Use my password instead',
+  quickLoginPinNotSetHint: "You don't have a PIN set. Enter your password.",
+  quickLoginPinLockedHint: 'Too many attempts. Enter your password.',
+  quickLoginSubmit: 'Sign in',
 }
