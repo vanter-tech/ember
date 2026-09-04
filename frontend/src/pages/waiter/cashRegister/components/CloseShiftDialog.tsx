@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import toast from 'react-hot-toast'
 import axios from 'axios'
+import { useNavigate } from 'react-router-dom'
 import {
   Dialog,
   DialogContent,
@@ -39,6 +40,7 @@ const extractOpenTablesCount = (detail: unknown): number | null => {
 export const CloseShiftDialog = () => {
   const { t } = useTranslation('waiter')
   const { activeModal, modalPayload, closeModal } = useUIStore()
+  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const shiftId = modalPayload?.shiftId as number | undefined
   const [result, setResult] = useState<CashShiftResponse | null>(null)
@@ -48,6 +50,14 @@ export const CloseShiftDialog = () => {
     resolver: zodResolver(closeShiftSchema),
     defaultValues: { countedCash: 0 },
   })
+
+  const handleOpenChange = (isOpen: boolean) => {
+    if (!isOpen) {
+      form.reset()
+      setResult(null)
+      closeModal()
+    }
+  }
 
   const mutation = useMutation({
     mutationFn: (data: CloseShiftInputs) => cashShiftService.close(shiftId!, data.countedCash),
@@ -60,20 +70,17 @@ export const CloseShiftDialog = () => {
         ? extractOpenTablesCount(error.response?.data?.detail)
         : null
       if (count !== null) {
+        // The shift can't close until these tables are closed. Dismiss this modal
+        // and send the waiter to the floor so they aren't trapped behind it (the
+        // stale-shift alert re-appears once they're done).
         toast.error(t('shiftCloseTablesOpenToast', { count }))
+        handleOpenChange(false)
+        navigate('/waiter/tables')
       } else {
         toast.error(t('shiftCloseErrorToast'))
       }
     },
   })
-
-  const handleOpenChange = (isOpen: boolean) => {
-    if (!isOpen) {
-      form.reset()
-      setResult(null)
-      closeModal()
-    }
-  }
 
   return (
     <Dialog open={activeModal === 'CLOSE_SHIFT'} onOpenChange={handleOpenChange}>

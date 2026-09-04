@@ -56,7 +56,10 @@ export const CashShiftSentinel = () => {
   const suppressed = now.getTime() < dismissedUntil
   const showPreWarning = alert === 'PRE_WARNING' && !suppressed
   const showOverdue = alert === 'OVERDUE' && !suppressed
-  const showStale = alert === 'STALE'
+  // STALE is dismissible too: the waiter often has to leave this screen to close
+  // the still-open tables before the shift can be closed. Snoozing lets them do
+  // that; the modal returns on the next 30 s tick once the snooze lapses.
+  const showStale = alert === 'STALE' && !suppressed
 
   if (!shift) return null
 
@@ -106,7 +109,7 @@ export const CashShiftSentinel = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      <AlertDialog open={showStale}>
+      <AlertDialog open={showStale} onOpenChange={(o) => !o && snooze()}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
@@ -125,6 +128,7 @@ export const CashShiftSentinel = () => {
             </p>
           </div>
           <AlertDialogFooter>
+            <AlertDialogCancel onClick={snooze}>{t('cashShiftLaterButton')}</AlertDialogCancel>
             <AlertDialogAction onClick={closeShift}>
               {t('cashShiftStaleCloseButton', { date: shift.businessDay ?? '' })}
             </AlertDialogAction>

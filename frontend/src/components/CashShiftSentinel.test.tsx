@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { describe, test, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { CashShiftSentinel } from '@/components/CashShiftSentinel'
 import { useUIStore } from '@/store/uiStore'
@@ -22,7 +23,11 @@ vi.mock('@/lib/api', async (importOriginal) => {
 
 const wrap = (ui: ReactNode) => {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-  return render(<QueryClientProvider client={qc}>{ui}</QueryClientProvider>)
+  return render(
+    <QueryClientProvider client={qc}>
+      <MemoryRouter>{ui}</MemoryRouter>
+    </QueryClientProvider>,
+  )
 }
 
 describe('CashShiftSentinel', () => {
@@ -52,5 +57,18 @@ describe('CashShiftSentinel', () => {
 
     // CloseShiftDialog's title ("Arqueo de turno") must now be on screen.
     expect(await screen.findByText('Arqueo de turno')).toBeVisible()
+  })
+
+  test('the stale-shift alert can be dismissed with "Ahora no"', async () => {
+    wrap(<CashShiftSentinel />)
+
+    const dismiss = await screen.findByRole('button', { name: 'Ahora no' })
+    fireEvent.click(dismiss)
+
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('button', { name: /Cerrar caja del 2020-01-01/ }),
+      ).not.toBeInTheDocument(),
+    )
   })
 })
