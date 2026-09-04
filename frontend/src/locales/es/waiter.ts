@@ -195,4 +195,10 @@ export const waiter = {
   addItemSuccessToast: 'Platillo agregado y enviado a cocina',
   addItemErrorToast: 'No se pudo agregar el platillo',
   addItemBillExistsToast: 'La cuenta ya fue solicitada. Anúlala para agregar platillos.',
+  transferModalTitle: 'Transferir mesa',
+  transferModalDescription: 'Selecciona el mesero que se hará cargo de esta mesa.',
+  transferNoWaiters: 'No hay otros meseros activos',
+  transferSubmit: 'Transferir',
+  transferSuccessToast: 'Mesa transferida a {{name}}',
+  transferErrorToast: 'No se pudo transferir la mesa',
 }

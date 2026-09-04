@@ -454,6 +454,21 @@ export const SessionTableService = {
     await api.post<void>(`/sessions/${sessionId}/waiter-items`, body)
   },
 
+  // Active waiters in the tenant, for the transfer-table picker. Narrow summary — never
+  // the full User (no passwordHash/pinHash).
+  listWaiters: async (): Promise<{ id: string; name: string; email: string }[]> => {
+    const { data } = await api.get<{ id: string; name: string; email: string }[]>(
+      '/identity/waiters',
+    )
+    return data
+  },
+
+  // Hand an open table to another waiter. Reassigns Session.waiterId and broadcasts on
+  // /topic/session/{id} + /topic/waiter/{tenantId}.
+  transferTable: async (sessionId: string, targetWaiterId: string): Promise<void> => {
+    await api.post<void>(`/sessions/${sessionId}/transfer`, { targetWaiterId })
+  },
+
   confirmMyOrders: async(sessionId: string, userId: string): Promise<void> => {
      await api.post<void>(`/sessions/${sessionId}/participants/${userId}/confirm`)
   },

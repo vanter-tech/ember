@@ -9,7 +9,7 @@ export type ModalType = 'CREATE_CATEGORY' | 'EDIT_CATEGORY' | 'DELETE_CATEGORY' 
                          'CREATE_PRINT_AGENT' | 'ADD_PRINTER' |
                          'CREATE_MODIFIER_GROUP' | 'EDIT_MODIFIER_GROUP' |
                          'CREATE_INVENTORY_ITEM' | 'EDIT_INVENTORY_ITEM' |
-                         'ADD_ITEM' | null;
+                         'ADD_ITEM' | 'TRANSFER_TABLE' | null;
 
 export type SettingsType = 'BRANDING' | 'MENU' | 'BILLING' | 'PAYMENT_GATEWAY' | 'TICKET' | 'PRINTING' | 'HARDWARE'|
                             'SPACE'| 'HORARIO'| 'FIDELIZACION' | 'LOYALTY_REWARDS'| null;

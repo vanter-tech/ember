@@ -31,6 +31,7 @@ import {
 import { useUIStore } from '@/store/uiStore'
 import { GlobalDeleteModal } from '../../components/GlobalDeleteModal'
 import { AddItemModal } from './components/AddItemModal'
+import { TransferTableModal } from './components/TransferTableModal'
 import { ChargeTableModal } from './components/ChargeTableModal'
 import { VoidBillModal } from './components/VoidBillModal'
 import { RefundPaymentModal } from './components/RefundPaymentModal'
@@ -233,6 +234,12 @@ export const TableInformation = () => {
             variant="secondary"
             className="rounded-full bg-gray-100 hover:bg-gray-200 text-1xl px-6 h-18"
             disabled={actionsDisabled}
+            onClick={() =>
+              openModal('TRANSFER_TABLE', {
+                sessionId: id,
+                currentWaiterEmail: sessionData?.waiterId,
+              })
+            }
           >
             <ArrowRightLeft className="w-4 h-4 mr-2" /> {t('transferLabel')}
           </Button>
@@ -580,6 +587,7 @@ export const TableInformation = () => {
         </div>
         <GlobalDeleteModal/>
         <AddItemModal/>
+        <TransferTableModal/>
         <ChargeTableModal/>
         <VoidBillModal />
         <RefundPaymentModal />

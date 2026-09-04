@@ -195,4 +195,10 @@ export const waiter = {
   addItemSuccessToast: 'Item added and sent to the kitchen',
   addItemErrorToast: 'Could not add the item',
   addItemBillExistsToast: 'The bill was already requested. Void it to add items.',
+  transferModalTitle: 'Transfer table',
+  transferModalDescription: 'Pick the waiter who will take over this table.',
+  transferNoWaiters: 'No other active waiters',
+  transferSubmit: 'Transfer',
+  transferSuccessToast: 'Table transferred to {{name}}',
+  transferErrorToast: 'Could not transfer the table',
 } satisfies typeof esWaiter
