@@ -47,7 +47,7 @@ export const customer = {
   comandaHistoryTitle: 'Historial',
   comandaNoHistory: 'Aún no has enviado ningún pedido.',
   comandaSentBadge: 'Enviado',
-  comandaServiceLabel: 'Servicio (10%)',
+  comandaServiceLabel: 'Servicio ({{rate}}%)',
   comandaTotalLabel: 'Total',
   comandaSending: 'Enviando...',
   comandaSendToKitchen: 'Enviar a cocina',

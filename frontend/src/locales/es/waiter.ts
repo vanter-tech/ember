@@ -38,7 +38,7 @@ export const waiter = {
   markPaidButton: 'Marcar pagado',
   totalLabel: 'Total',
   subtotalLabel: 'Subtotal',
-  taxesLabel: 'Impuestos (10%)',
+  taxesLabel: 'Impuestos ({{rate}}%)',
   chargeMesaLabel: 'Cobrar Mesa',
   waitingForDeliveryLabel: 'Esperando entrega de pedidos',
   closingTableLabel: 'Cerrando',

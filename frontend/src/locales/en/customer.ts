@@ -49,7 +49,7 @@ export const customer = {
   comandaHistoryTitle: 'History',
   comandaNoHistory: "You haven't sent any orders yet.",
   comandaSentBadge: 'Sent',
-  comandaServiceLabel: 'Service (10%)',
+  comandaServiceLabel: 'Service ({{rate}}%)',
   comandaTotalLabel: 'Total',
   comandaSending: 'Sending...',
   comandaSendToKitchen: 'Send to kitchen',

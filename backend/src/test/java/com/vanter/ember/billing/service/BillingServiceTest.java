@@ -19,6 +19,9 @@ import com.vanter.ember.session.model.Participant;
 import com.vanter.ember.session.model.Session;
 import com.vanter.ember.session.model.SessionStatus;
 import com.vanter.ember.session.service.SessionService;
+import com.vanter.ember.settings.model.RestaurantSettings;
+import com.vanter.ember.settings.model.SettingsPayload;
+import com.vanter.ember.settings.service.SettingService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,6 +44,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -53,13 +57,26 @@ class BillingServiceTest {
     @Mock PaymentRepository paymentRepository;
     @Mock UserRepository userRepository;
     @Mock SimpMessagingTemplate messagingTemplate;
+    @Mock SettingService settingService;
     @InjectMocks BillingService billingService;
 
     private static final UUID TENANT_ID = UUID.randomUUID();
 
+    private static RestaurantSettings settingsWithTaxRate(Double taxRatePercent) {
+        RestaurantSettings settings = new RestaurantSettings();
+        SettingsPayload payload = new SettingsPayload();
+        payload.getBilling().setTaxRate(taxRatePercent);
+        settings.setPayload(payload);
+        return settings;
+    }
+
     @BeforeEach
     void bindTenant() {
         TenantContextHolder.setTenantId(TENANT_ID);
+        // Most tests don't care about tax — default to 0% here (via `lenient` so voidBill/etc.
+        // tests that never reach taxMultiplier() don't trip strict-stubbing) and override per-test
+        // where the tax calculation itself (E-05) is what's under test.
+        lenient().when(settingService.getSettings(TENANT_ID)).thenReturn(settingsWithTaxRate(0.0));
     }
 
     @AfterEach
@@ -194,6 +211,31 @@ class BillingServiceTest {
         assertThat(saved.getCreatedAt()).isNotNull();
     }
 
+    @Test
+    void calculateBill_appliesConfiguredTaxRate_QA_E05() {
+        when(settingService.getSettings(TENANT_ID)).thenReturn(settingsWithTaxRate(16.0));
+        when(sessionService.findById("sess-1")).thenReturn(sessionWithMixedItems());
+        when(billRepository.findBySessionIdAndStatusNot("sess-1", BillStatus.VOIDED)).thenReturn(Optional.empty());
+        when(billRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        Bill bill = billingService.calculateBill("sess-1", SplitMethod.BY_CONSUMPTION);
+
+        // subtotal 22.50 * 1.16 = 26.10
+        assertThat(bill.getTotal()).isEqualByComparingTo("26.10");
+    }
+
+    @Test
+    void calculateBill_treatsMissingTaxRateAsZero_QA_E05() {
+        when(settingService.getSettings(TENANT_ID)).thenReturn(settingsWithTaxRate(null));
+        when(sessionService.findById("sess-1")).thenReturn(sessionWithMixedItems());
+        when(billRepository.findBySessionIdAndStatusNot("sess-1", BillStatus.VOIDED)).thenReturn(Optional.empty());
+        when(billRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        Bill bill = billingService.calculateBill("sess-1", SplitMethod.BY_CONSUMPTION);
+
+        assertThat(bill.getTotal()).isEqualByComparingTo("22.50");
+    }
+
     // --- splitByConsumption tests ---
 
     private Bill savedBill() {
@@ -228,6 +270,24 @@ class BillingServiceTest {
                 .filter(s -> "Bob".equals(s.getParticipantName())).findFirst().orElseThrow();
         assertThat(alice.getAmount()).isEqualByComparingTo("12.50");
         assertThat(bob.getAmount()).isEqualByComparingTo("10.00");
+    }
+
+    @Test
+    void splitByConsumption_appliesConfiguredTaxRateProportionally_QA_E05() {
+        when(settingService.getSettings(TENANT_ID)).thenReturn(settingsWithTaxRate(16.0));
+        when(billRepository.findById(1L)).thenReturn(Optional.of(savedBill()));
+        when(sessionService.findById("sess-1")).thenReturn(sessionWithMixedItems());
+        when(billSplitRepository.saveAll(anyList())).thenAnswer(inv -> inv.getArgument(0));
+
+        List<BillSplit> splits = billingService.splitByConsumption(1L);
+
+        BillSplit alice = splits.stream()
+                .filter(s -> "Alice".equals(s.getParticipantName())).findFirst().orElseThrow();
+        BillSplit bob = splits.stream()
+                .filter(s -> "Bob".equals(s.getParticipantName())).findFirst().orElseThrow();
+        // 12.50 * 1.16 = 14.50, 10.00 * 1.16 = 11.60 — sum matches a 16%-taxed bill total.
+        assertThat(alice.getAmount()).isEqualByComparingTo("14.50");
+        assertThat(bob.getAmount()).isEqualByComparingTo("11.60");
     }
 
     @Test

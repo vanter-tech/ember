@@ -40,7 +40,7 @@ export const waiter = {
   markPaidButton: 'Mark as paid',
   totalLabel: 'Total',
   subtotalLabel: 'Subtotal',
-  taxesLabel: 'Taxes (10%)',
+  taxesLabel: 'Taxes ({{rate}}%)',
   chargeMesaLabel: 'Charge Table',
   waitingForDeliveryLabel: 'Waiting for order delivery',
   closingTableLabel: 'Closing',
