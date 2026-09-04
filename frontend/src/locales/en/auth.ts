@@ -25,4 +25,9 @@ export const auth = {
   registerSuccessToast: 'Registration successful!',
   tooManyRegisterAttemptsToast: 'Too many registration attempts. Please try again later.',
   registerErrorToast: 'An error occurred during registration.',
+  quickStartTitle: 'Quick start',
+  useAnotherAccount: 'Use another account',
+  editChips: 'Edit',
+  doneEditingChips: 'Done',
+  removeChipAria: 'Remove {{name}}',
 }

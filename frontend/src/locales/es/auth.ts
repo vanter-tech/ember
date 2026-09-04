@@ -27,4 +27,9 @@ export const auth = {
   registerSuccessToast: '¡Registro exitoso!',
   tooManyRegisterAttemptsToast: 'Demasiados intentos de registro. Intenta de nuevo más tarde.',
   registerErrorToast: 'Ocurrió un error durante el registro.',
+  quickStartTitle: 'Inicio rápido',
+  useAnotherAccount: 'Usar otra cuenta',
+  editChips: 'Editar',
+  doneEditingChips: 'Listo',
+  removeChipAria: 'Quitar {{name}}',
 } satisfies typeof enAuth
