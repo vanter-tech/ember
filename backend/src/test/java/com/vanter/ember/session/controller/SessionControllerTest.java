@@ -41,6 +41,7 @@ import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -361,7 +362,7 @@ class SessionControllerTest {
     @Test
     @WithMockUser(username = "waiter@test.com", roles = "WAITER")
     void addWaiterItem_returnsSessionDetail() throws Exception {
-        when(sessionService.addItemAsWaiter(eq("sess-1"), eq(10L), any(), any()))
+        when(sessionService.addItemAsWaiter(eq("sess-1"), eq("waiter@test.com"), eq(10L), any(), any()))
                 .thenReturn(sampleSession());
         when(sessionService.getSessionDetails("sess-1")).thenReturn(sampleSessionDetail(List.of()));
 
@@ -454,6 +455,30 @@ class SessionControllerTest {
     @Test
     void removeItem_unauthenticatedReturns401() throws Exception {
         mockMvc.perform(delete("/sessions/sess-1/items/order-item-1"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    // --- DELETE /sessions/{sessionId}/cancel ---
+
+    @Test
+    @WithMockUser(username = "waiter@test.com", roles = "WAITER")
+    void closeEmptySession_forwardsAuthenticatedCallerToService() throws Exception {
+        mockMvc.perform(delete("/sessions/sess-1/cancel"))
+                .andExpect(status().isNoContent());
+
+        verify(sessionService).closeEmptySession("sess-1", "waiter@test.com");
+    }
+
+    @Test
+    @WithMockUser(roles = "CUSTOMER")
+    void closeEmptySession_forbiddenForCustomer() throws Exception {
+        mockMvc.perform(delete("/sessions/sess-1/cancel"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void closeEmptySession_unauthenticatedReturns401() throws Exception {
+        mockMvc.perform(delete("/sessions/sess-1/cancel"))
                 .andExpect(status().isUnauthorized());
     }
 }

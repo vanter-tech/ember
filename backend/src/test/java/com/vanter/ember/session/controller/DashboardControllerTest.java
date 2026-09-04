@@ -56,7 +56,7 @@ class DashboardControllerTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "WAITER")
     void liveStatus_usesTenantFromContext() throws Exception {
         TenantContextHolder.setTenantId(TENANT_ID);
         when(dashboardService.getLiveStatus(TENANT_ID)).thenReturn(List.of(table(1)));
@@ -69,7 +69,7 @@ class DashboardControllerTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "WAITER")
     void liveStatus_ignoresClientSuppliedRestaurantId() throws Exception {
         TenantContextHolder.setTenantId(TENANT_ID);
         when(dashboardService.getLiveStatus(TENANT_ID)).thenReturn(List.of());
@@ -82,7 +82,7 @@ class DashboardControllerTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "WAITER")
     void liveStatus_withoutTenantBound_isRejected() throws Exception {
         mockMvc.perform(get("/dashboard/status").param("restaurantId", OTHER_TENANT_ID.toString()))
                 .andExpect(status().isConflict());
@@ -94,6 +94,28 @@ class DashboardControllerTest {
     void liveStatus_withoutAuthentication_isUnauthorized() throws Exception {
         mockMvc.perform(get("/dashboard/status"))
                 .andExpect(status().isUnauthorized());
+
+        verify(dashboardService, never()).getLiveStatus(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    @WithMockUser(roles = "CUSTOMER")
+    void liveStatus_forbiddenForCustomer() throws Exception {
+        TenantContextHolder.setTenantId(TENANT_ID);
+
+        mockMvc.perform(get("/dashboard/status"))
+                .andExpect(status().isForbidden());
+
+        verify(dashboardService, never()).getLiveStatus(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    @WithMockUser(roles = "KITCHEN")
+    void liveStatus_forbiddenForKitchen() throws Exception {
+        TenantContextHolder.setTenantId(TENANT_ID);
+
+        mockMvc.perform(get("/dashboard/status"))
+                .andExpect(status().isForbidden());
 
         verify(dashboardService, never()).getLiveStatus(org.mockito.ArgumentMatchers.any());
     }
