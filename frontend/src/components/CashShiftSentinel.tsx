@@ -9,6 +9,7 @@ import { cashShiftService } from '@/lib/api'
 import { useUIStore } from '@/store/uiStore'
 import { useTranslation } from '@/lib/i18n'
 import { deriveCashShiftAlert, REMINDER_INTERVAL_MS } from '@/lib/cashShiftAlert'
+import { CloseShiftDialog } from '@/pages/waiter/cashRegister/components/CloseShiftDialog'
 
 export const CashShiftSentinel = () => {
   const { t } = useTranslation('waiter')
@@ -65,6 +66,10 @@ export const CashShiftSentinel = () => {
 
   return (
     <>
+      {/* Mounted here (not just on the cash-register page) so the "Cerrar caja"
+          action in the alerts below works from any screen the sentinel shows on. */}
+      <CloseShiftDialog />
+
       <AlertDialog open={showPreWarning} onOpenChange={(o) => !o && snooze()}>
         <AlertDialogContent>
           <AlertDialogHeader>
