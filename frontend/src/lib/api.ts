@@ -186,6 +186,11 @@ export const authService = {
     const { data } = await api.post<LoginResponse>('/auth/register', details)
     return data
   },
+
+  loginPin: async (body: { email: string; pin: string }): Promise<LoginResponse> => {
+    const { data } = await api.post<LoginResponse>('/auth/login/pin', body)
+    return data
+  },
 }
 
 export const categoryService = {
@@ -432,6 +437,30 @@ export const SessionTableService = {
     return data
   },
 
+  // Waiter adds a menu item straight to the kitchen (created at PENDING, fires the same
+  // kitchen events a customer confirm does). participantName null = attributed to "Mesa".
+  addWaiterItem: async (
+    sessionId: string,
+    body: { menuItemId: number; selectedOptionIds: number[]; participantName: string | null },
+  ): Promise<void> => {
+    await api.post<void>(`/sessions/${sessionId}/waiter-items`, body)
+  },
+
+  // Active waiters in the tenant, for the transfer-table picker. Narrow summary — never
+  // the full User (no passwordHash/pinHash).
+  listWaiters: async (): Promise<{ id: string; name: string; email: string }[]> => {
+    const { data } = await api.get<{ id: string; name: string; email: string }[]>(
+      '/identity/waiters',
+    )
+    return data
+  },
+
+  // Hand an open table to another waiter. Reassigns Session.waiterId and broadcasts on
+  // /topic/session/{id} + /topic/waiter/{tenantId}.
+  transferTable: async (sessionId: string, targetWaiterId: string): Promise<void> => {
+    await api.post<void>(`/sessions/${sessionId}/transfer`, { targetWaiterId })
+  },
+
   confirmMyOrders: async(sessionId: string, userId: string): Promise<void> => {
      await api.post<void>(`/sessions/${sessionId}/participants/${userId}/confirm`)
   },
@@ -554,6 +583,12 @@ export const staffService = {
   updateRole: async (userId: string, role: StaffRole): Promise<void> => {
     await api.patch(`/admin/users/${userId}/role`, { role })
   },
+  setPin: async (userId: string, pin: string): Promise<void> => {
+    await api.put<void>(`/admin/staff/${userId}/pin`, { pin })
+  },
+  clearPin: async (userId: string): Promise<void> => {
+    await api.delete<void>(`/admin/staff/${userId}/pin`)
+  },
 }
 
 export type CashMovementType = components['schemas']['RecordMovementRequest']['type']
@@ -673,6 +708,14 @@ export const printingService = {
   },
   retryJob: async (jobId: string): Promise<void> => {
     await api.post(`/printing/jobs/${jobId}/retry`)
+  },
+  printBillReceipt: async (
+    billId: number
+  ): Promise<{ jobId: string; status: string }> => {
+    const { data } = await api.post<{ jobId: string; status: string }>(
+      `/printing/bills/${billId}/receipt`
+    )
+    return data
   },
 }
 

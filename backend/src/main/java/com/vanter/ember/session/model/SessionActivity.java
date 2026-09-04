@@ -14,7 +14,8 @@ public class SessionActivity {
 
     public enum Type {
         ITEM_SENT,
-        ITEM_DELETED
+        ITEM_DELETED,
+        TABLE_TRANSFERRED
     }
 
     private Type type;

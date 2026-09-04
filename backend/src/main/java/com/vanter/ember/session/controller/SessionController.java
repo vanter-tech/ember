@@ -157,6 +157,26 @@ public class SessionController {
         return sessionService.addItem(id, authentication.getName(), request.menuItemId(), request.selectedOptionIds());
     }
 
+    @Operation(summary = "Add a menu item to the table straight to the kitchen (WAITER)")
+    @PostMapping("/{id}/waiter-items")
+    @PreAuthorize("hasRole('WAITER')")
+    public SessionDetailResponseDto addWaiterItem(@PathVariable String id,
+                                                  @Valid @RequestBody AddWaiterItemRequest request) {
+        sessionService.addItemAsWaiter(
+                id, request.menuItemId(), request.selectedOptionIds(), request.participantName());
+        return sessionService.getSessionDetails(id);
+    }
+
+    @Operation(summary = "Transfer this table to another waiter (WAITER)")
+    @PostMapping("/{id}/transfer")
+    @PreAuthorize("hasRole('WAITER')")
+    public SessionDetailResponseDto transfer(@PathVariable String id,
+                                             @Valid @RequestBody TransferTableRequest request,
+                                             Authentication authentication) {
+        sessionService.transferTable(id, authentication.getName(), request.targetWaiterId());
+        return sessionService.getSessionDetails(id);
+    }
+
     @Operation(summary = "Send item to KITCHEN")
     @PostMapping("/{sessionId}/participants/{userId}/confirm")
     @PreAuthorize("hasRole('CUSTOMER')")

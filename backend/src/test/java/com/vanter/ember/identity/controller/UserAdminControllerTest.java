@@ -29,10 +29,13 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -126,7 +129,7 @@ class UserAdminControllerTest {
         TenantContextHolder.setTenantId(TENANT_ID);
         when(userAdminService.create(eq(TENANT_ID), any())).thenReturn(new StaffMemberResponse(
                 "u-new", "Ana", "ana@test.com", Role.WAITER, Instant.now(),
-                true, null, null, null, null, null, BigDecimal.ZERO));
+                true, null, null, null, null, null, BigDecimal.ZERO, false));
 
         CreateStaffRequest request = new CreateStaffRequest(
                 "Ana", "ana@test.com", "Sup3r$ecret", Role.WAITER,
@@ -193,7 +196,7 @@ class UserAdminControllerTest {
         TenantContextHolder.setTenantId(TENANT_ID);
         when(userAdminService.getStaff(TENANT_ID)).thenReturn(List.of(new StaffMemberResponse(
                 "u-1", "Ana", "ana@test.com", Role.WAITER, Instant.now(),
-                true, "Mesera", "Mañana", "Tiempo completo", null, null, BigDecimal.ZERO)));
+                true, "Mesera", "Mañana", "Tiempo completo", null, null, BigDecimal.ZERO, false)));
 
         mockMvc.perform(get("/admin/staff"))
                 .andExpect(status().isOk())
@@ -223,7 +226,7 @@ class UserAdminControllerTest {
         when(userAdminService.updateProfile(eq("u-1"), eq(TENANT_ID), any())).thenReturn(
                 new StaffMemberResponse(
                         "u-1", "Ana", "ana@test.com", Role.WAITER, Instant.now(),
-                        false, "Mesera", null, null, null, null, BigDecimal.ZERO));
+                        false, "Mesera", null, null, null, null, BigDecimal.ZERO, false));
 
         mockMvc.perform(patch("/admin/staff/u-1")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -240,6 +243,67 @@ class UserAdminControllerTest {
         mockMvc.perform(patch("/admin/staff/u-1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"active\": false}"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void setStaffPin_noContentForAdmin() throws Exception {
+        TenantContextHolder.setTenantId(TENANT_ID);
+
+        mockMvc.perform(put("/admin/staff/u-1/pin")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"pin\":\"1234\"}"))
+                .andExpect(status().isNoContent());
+        verify(userAdminService).setPin("u-1", TENANT_ID, "1234");
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void setStaffPin_returns400ForMalformedPin() throws Exception {
+        TenantContextHolder.setTenantId(TENANT_ID);
+
+        mockMvc.perform(put("/admin/staff/u-1/pin")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"pin\":\"abc\"}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser(roles = "WAITER")
+    void setStaffPin_forbiddenForWaiter() throws Exception {
+        TenantContextHolder.setTenantId(TENANT_ID);
+
+        mockMvc.perform(put("/admin/staff/u-1/pin")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"pin\":\"1234\"}"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void setStaffPin_unauthenticatedReturns401() throws Exception {
+        mockMvc.perform(put("/admin/staff/u-1/pin")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"pin\":\"1234\"}"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void clearStaffPin_noContentForAdmin() throws Exception {
+        TenantContextHolder.setTenantId(TENANT_ID);
+
+        mockMvc.perform(delete("/admin/staff/u-1/pin"))
+                .andExpect(status().isNoContent());
+        verify(userAdminService).clearPin("u-1", TENANT_ID);
+    }
+
+    @Test
+    @WithMockUser(roles = "WAITER")
+    void clearStaffPin_forbiddenForWaiter() throws Exception {
+        TenantContextHolder.setTenantId(TENANT_ID);
+
+        mockMvc.perform(delete("/admin/staff/u-1/pin"))
                 .andExpect(status().isForbidden());
     }
 }

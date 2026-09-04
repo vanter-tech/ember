@@ -228,4 +228,53 @@ class UserAdminServiceTest {
                 new UpdateStaffProfileRequest(false, null, null, null, null, null, null, null, null)))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
+
+    @Test
+    void setPin_storesBcryptHashAndTimestamp_withoutAnyPasswordCheck() {
+        User existing = waiterFor(TENANT_A);
+        when(userRepository.findById("u-1")).thenReturn(Optional.of(existing));
+        when(passwordEncoder.encode("1234")).thenReturn("pinHash");
+        when(userRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        userAdminService.setPin("u-1", TENANT_A, "1234");
+
+        ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(captor.capture());
+        assertThat(captor.getValue().getPinHash()).isEqualTo("pinHash");
+        assertThat(captor.getValue().getPinUpdatedAt()).isNotNull();
+    }
+
+    @Test
+    void setPin_throwsWhenUserBelongsToAnotherTenant() {
+        when(userRepository.findById("u-1")).thenReturn(Optional.of(waiterFor(UUID.randomUUID())));
+
+        assertThatThrownBy(() -> userAdminService.setPin("u-1", TENANT_A, "1234"))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void clearPin_nullsBothColumns() {
+        User existing = waiterFor(TENANT_A);
+        existing.setPinHash("pinHash");
+        existing.setPinUpdatedAt(java.time.Instant.now());
+        when(userRepository.findById("u-1")).thenReturn(Optional.of(existing));
+        when(userRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        userAdminService.clearPin("u-1", TENANT_A);
+
+        ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(captor.capture());
+        assertThat(captor.getValue().getPinHash()).isNull();
+        assertThat(captor.getValue().getPinUpdatedAt()).isNull();
+    }
+
+    @Test
+    void getStaff_reportsHasPinWhenPinHashPresent() {
+        User withPin = waiterFor(TENANT_A);
+        withPin.setPinHash("pinHash");
+        when(userRepository.findByRestaurantId_IdAndRoleNotOrderByNameAsc(TENANT_A, Role.CUSTOMER))
+                .thenReturn(List.of(withPin));
+
+        assertThat(userAdminService.getStaff(TENANT_A).get(0).hasPin()).isTrue();
+    }
 }

@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -6,8 +6,13 @@ import { useNavigate, Link } from 'react-router-dom'
 import axios from 'axios'
 import toast from 'react-hot-toast'
 import { useAuthStore } from '../../store/authStore'
-import { useSessionStore } from '@/store/sessionStore'
-import { authService, SessionTableService } from '@/lib/api'
+import {
+  useQuickAccessStore,
+  type QuickAccessProfile,
+} from '@/store/quickAccessStore'
+import { authService } from '@/lib/api'
+import { navigateForRole } from './navigateForRole'
+import { QuickLoginModal } from './QuickLoginModal'
 import { LanguageSwitcher } from '@/components/LanguageSwitcher'
 import { useTranslation } from '@/lib/i18n'
 
@@ -49,6 +54,12 @@ export const Login = () => {
   const { t: tCommon } = useTranslation('common')
   const loginSchema = useMemo(() => createLoginSchema(tAuth), [tAuth])
 
+  const { profiles, forget, remember } = useQuickAccessStore()
+  const [showForm, setShowForm] = useState(false)
+  const [editing, setEditing] = useState(false)
+  const [activeChip, setActiveChip] = useState<QuickAccessProfile | null>(null)
+  const chipsVisible = profiles.length > 0 && !showForm
+
   const form = useForm<LoginFormInputs>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -61,40 +72,13 @@ export const Login = () => {
     try {
       const response = await authService.login(data)
       setAuth(response)
+      remember({
+        email: data.email,
+        name: response.name ?? data.email,
+        role: response.role ?? '',
+      })
       toast.success(tAuth('loginSuccessToast'))
-      switch (response.role) {
-        case 'ADMIN':
-          navigate('/admin', { replace: true })
-          break
-        case 'CUSTOMER': {
-          // A customer's login token is tenant-less. If they left a table open (the session id
-          // survives logout in its own persisted store), re-attach to it and swap in a token
-          // re-scoped to that restaurant instead of bouncing them to the home screen.
-          const openSessionId = useSessionStore.getState().id
-          if (openSessionId) {
-            try {
-              const resumed = await SessionTableService.resumeSession(openSessionId)
-              if (resumed.token) setAuth({ token: resumed.token })
-              if (resumed.session) useSessionStore.getState().setSession(resumed.session)
-              toast.success(tAuth('sessionResumedToast'))
-              navigate('/customer/menu', { replace: true })
-              break
-            } catch {
-              useSessionStore.getState().clearSession()
-            }
-          }
-          navigate('/customer/home', { replace: true })
-          break
-        }
-        case 'WAITER':
-          navigate('/waiter', { replace: true })
-          break
-        case 'KITCHEN':
-          navigate('/kitchen', { replace: true })
-          break
-        default:
-          break
-      }
+      await navigateForRole(response, navigate, { tAuth })
     } catch (error) {
       if (axios.isAxiosError(error) && error.response?.status === 401) {
         toast.error(tAuth('unauthorizedToast'), {
@@ -132,8 +116,71 @@ export const Login = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {profiles.length > 0 && (
+            <div className="mb-6" hidden={showForm}>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-semibold text-zinc-600">
+                  {tAuth('quickStartTitle')}
+                </span>
+                <button
+                  type="button"
+                  className="text-xs text-zinc-500 hover:underline"
+                  onClick={() => setEditing((e) => !e)}
+                >
+                  {editing ? tAuth('doneEditingChips') : tAuth('editChips')}
+                </button>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {profiles.map((p) => (
+                  <div key={p.email} className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setActiveChip(p)}
+                      className="w-full flex items-center gap-2 rounded-2xl border p-2 hover:bg-zinc-50"
+                    >
+                      <span
+                        className="flex h-9 w-9 items-center justify-center rounded-full text-white text-sm font-bold"
+                        style={{ backgroundColor: `hsl(${p.colorSeed} 55% 45%)` }}
+                      >
+                        {p.initials}
+                      </span>
+                      <span className="flex flex-col text-left">
+                        <span className="text-sm font-medium text-zinc-800 truncate">
+                          {p.name}
+                        </span>
+                        <span className="text-[10px] uppercase tracking-wide text-zinc-400">
+                          {p.role}
+                        </span>
+                      </span>
+                    </button>
+                    {editing && (
+                      <button
+                        type="button"
+                        aria-label={tAuth('removeChipAria', { name: p.name })}
+                        onClick={() => forget(p.email)}
+                        className="absolute -right-1 -top-1 h-5 w-5 rounded-full bg-zinc-700 text-white text-xs"
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <button
+                type="button"
+                className="mt-3 text-sm text-zinc-600 hover:underline"
+                onClick={() => setShowForm(true)}
+              >
+                {tAuth('useAnotherAccount')}
+              </button>
+            </div>
+          )}
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <form
+              onSubmit={form.handleSubmit(onSubmit)}
+              className="space-y-6"
+              hidden={chipsVisible}
+            >
               <FormField
                 control={form.control}
                 name="email"
@@ -237,6 +284,12 @@ export const Login = () => {
               )}
             </form>
           </Form>
+          {activeChip && (
+            <QuickLoginModal
+              profile={activeChip}
+              onClose={() => setActiveChip(null)}
+            />
+          )}
         </CardContent>
       </Card>
     </div>

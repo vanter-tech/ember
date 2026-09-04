@@ -9,11 +9,13 @@ import com.vanter.ember.identity.model.dto.AuthResponse;
 import com.vanter.ember.identity.service.AuthService;
 import com.vanter.ember.identity.service.JwtService;
 import com.vanter.ember.session.dto.AddItemRequest;
+import com.vanter.ember.session.dto.AddWaiterItemRequest;
 import com.vanter.ember.session.dto.CreateSessionRequest;
 import com.vanter.ember.session.dto.ExpandCapacityRequest;
 import com.vanter.ember.session.dto.JoinSessionRequest;
 import com.vanter.ember.session.dto.ParticipantDto;
 import com.vanter.ember.session.dto.SessionDetailResponseDto;
+import com.vanter.ember.session.dto.TransferTableRequest;
 import com.vanter.ember.restaurant.repository.RestaurantRepository;
 import com.vanter.ember.session.exception.TooManyParticipantsException;
 import com.vanter.ember.session.model.Participant;
@@ -352,6 +354,77 @@ class SessionControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new AddItemRequest(10L, null))))
                 .andExpect(status().isUnauthorized());
+    }
+
+    // --- POST /sessions/{id}/waiter-items ---
+
+    @Test
+    @WithMockUser(username = "waiter@test.com", roles = "WAITER")
+    void addWaiterItem_returnsSessionDetail() throws Exception {
+        when(sessionService.addItemAsWaiter(eq("sess-1"), eq(10L), any(), any()))
+                .thenReturn(sampleSession());
+        when(sessionService.getSessionDetails("sess-1")).thenReturn(sampleSessionDetail(List.of()));
+
+        mockMvc.perform(post("/sessions/sess-1/waiter-items")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                new AddWaiterItemRequest(10L, List.of(), null))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value("sess-1"))
+                .andExpect(jsonPath("$.status").value("OPEN"));
+    }
+
+    @Test
+    @WithMockUser(roles = "CUSTOMER")
+    void addWaiterItem_forbiddenForCustomer() throws Exception {
+        mockMvc.perform(post("/sessions/sess-1/waiter-items")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                new AddWaiterItemRequest(10L, List.of(), null))))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "WAITER")
+    void addWaiterItem_badRequestWhenMenuItemIdMissing() throws Exception {
+        mockMvc.perform(post("/sessions/sess-1/waiter-items")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"selectedOptionIds\":[]}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    // --- POST /sessions/{id}/transfer ---
+
+    @Test
+    @WithMockUser(username = "waiter@test.com", roles = "WAITER")
+    void transfer_returnsSessionDetail() throws Exception {
+        when(sessionService.transferTable(eq("sess-1"), eq("waiter@test.com"), eq("u9")))
+                .thenReturn(sampleSession());
+        when(sessionService.getSessionDetails("sess-1")).thenReturn(sampleSessionDetail(List.of()));
+
+        mockMvc.perform(post("/sessions/sess-1/transfer")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new TransferTableRequest("u9"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value("sess-1"));
+    }
+
+    @Test
+    @WithMockUser(username = "waiter@test.com", roles = "WAITER")
+    void transfer_badRequestWhenTargetMissing() throws Exception {
+        mockMvc.perform(post("/sessions/sess-1/transfer")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser(roles = "CUSTOMER")
+    void transfer_forbiddenForCustomer() throws Exception {
+        mockMvc.perform(post("/sessions/sess-1/transfer")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new TransferTableRequest("u9"))))
+                .andExpect(status().isForbidden());
     }
 
     // --- DELETE /sessions/{id}/items/{itemId} ---

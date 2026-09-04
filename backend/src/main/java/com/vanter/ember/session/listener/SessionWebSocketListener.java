@@ -42,4 +42,9 @@ public class SessionWebSocketListener {
         messagingTemplate.convertAndSend("/topic/session/" + event.sessionId(), event);
     }
 
+    @EventListener
+    public void onTableTransferred(TableTransferred event) {
+        messagingTemplate.convertAndSend("/topic/session/" + event.sessionId(), event);
+    }
+
 }

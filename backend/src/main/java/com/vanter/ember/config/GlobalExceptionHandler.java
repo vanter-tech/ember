@@ -67,6 +67,14 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return problem(HttpStatus.CONFLICT, ex.getMessage(), request.getRequestURI());
     }
 
+    @ExceptionHandler(com.vanter.ember.printing.exception.BillNotPaidException.class)
+    public ProblemDetail handleBillNotPaid(
+            com.vanter.ember.printing.exception.BillNotPaidException ex, HttpServletRequest request) {
+        ProblemDetail problem = problem(HttpStatus.CONFLICT, ex.getMessage(), request.getRequestURI());
+        problem.setProperty("code", "BILL_NOT_PAID");
+        return problem;
+    }
+
     @ExceptionHandler(com.vanter.ember.cashregister.exception.CashShiftOverdueException.class)
     public ProblemDetail handleCashShiftOverdue(
             com.vanter.ember.cashregister.exception.CashShiftOverdueException ex, HttpServletRequest request) {
@@ -78,6 +86,22 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(BadCredentialsException.class)
     public ProblemDetail handleBadCredentials(BadCredentialsException ex, HttpServletRequest request) {
         return problem(HttpStatus.UNAUTHORIZED, "Invalid credentials", request.getRequestURI());
+    }
+
+    @ExceptionHandler(com.vanter.ember.identity.exception.PinNotSetException.class)
+    public ProblemDetail handlePinNotSet(
+            com.vanter.ember.identity.exception.PinNotSetException ex, HttpServletRequest request) {
+        ProblemDetail problem = problem(HttpStatus.CONFLICT, ex.getMessage(), request.getRequestURI());
+        problem.setProperty("code", "PIN_NOT_SET");
+        return problem;
+    }
+
+    @ExceptionHandler(com.vanter.ember.identity.exception.PinLockedException.class)
+    public ProblemDetail handlePinLocked(
+            com.vanter.ember.identity.exception.PinLockedException ex, HttpServletRequest request) {
+        ProblemDetail problem = problem(HttpStatus.LOCKED, ex.getMessage(), request.getRequestURI());
+        problem.setProperty("code", "PIN_LOCKED");
+        return problem;
     }
 
     /**

@@ -5,7 +5,7 @@ export const PlatformProtectedRoute = () => {
   const { token } = usePlatformAuthStore()
 
   if (!token) {
-    return <Navigate to="login" replace />
+    return <Navigate to="/console/login" replace />
   }
 
   return <Outlet />

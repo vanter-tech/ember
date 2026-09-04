@@ -16,4 +16,5 @@ public record StaffMemberResponse(
         String contractType,
         String location,
         BigDecimal efficiencyPercentage,
-        BigDecimal pendingHours) {}
+        BigDecimal pendingHours,
+        boolean hasPin) {}

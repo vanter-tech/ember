@@ -1,5 +1,4 @@
 import { FloatingNav } from '@/components/FloatingNav'
-import { CashShiftSentinel } from '@/components/CashShiftSentinel'
 import { TopNav } from '@/components/TopNav'
 import { Outlet } from 'react-router-dom'
 import { useOnboardingGate } from '@/hooks/useOnboardingGate'
@@ -23,7 +22,6 @@ export const AdminLayout = () => {
           <Outlet/>
       </main>
       <FloatingNav />
-      <CashShiftSentinel />
     </div>
   )
 }

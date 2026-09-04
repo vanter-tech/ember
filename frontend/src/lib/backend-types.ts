@@ -1981,6 +1981,7 @@ export interface components {
             location?: string;
             efficiencyPercentage?: number;
             pendingHours?: number;
+            hasPin?: boolean;
         };
         ExpandCapacityRequest: {
             /** Format: int32 */

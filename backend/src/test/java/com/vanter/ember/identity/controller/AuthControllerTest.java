@@ -144,4 +144,49 @@ class AuthControllerTest {
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isUnauthorized());
     }
+
+    @Test
+    void loginWithPin_200_onSuccess() throws Exception {
+        when(authService.loginWithPin(any())).thenReturn(
+                AuthResponse.builder().token("jwt").userId("u1").name("W").role("WAITER").build());
+
+        mockMvc.perform(post("/auth/login/pin")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"w@test.com\",\"pin\":\"1234\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.token").value("jwt"))
+                .andExpect(jsonPath("$.role").value("WAITER"));
+    }
+
+    @Test
+    void loginWithPin_409_withCode_whenPinNotSet() throws Exception {
+        when(authService.loginWithPin(any()))
+                .thenThrow(new com.vanter.ember.identity.exception.PinNotSetException());
+
+        mockMvc.perform(post("/auth/login/pin")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"w@test.com\",\"pin\":\"1234\"}"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("PIN_NOT_SET"));
+    }
+
+    @Test
+    void loginWithPin_423_withCode_whenLocked() throws Exception {
+        when(authService.loginWithPin(any()))
+                .thenThrow(new com.vanter.ember.identity.exception.PinLockedException());
+
+        mockMvc.perform(post("/auth/login/pin")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"w@test.com\",\"pin\":\"1234\"}"))
+                .andExpect(status().isLocked())
+                .andExpect(jsonPath("$.code").value("PIN_LOCKED"));
+    }
+
+    @Test
+    void loginWithPin_400_whenPinMalformed() throws Exception {
+        mockMvc.perform(post("/auth/login/pin")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"w@test.com\",\"pin\":\"12\"}"))
+                .andExpect(status().isBadRequest());
+    }
 }

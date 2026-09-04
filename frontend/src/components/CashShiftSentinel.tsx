@@ -9,6 +9,7 @@ import { cashShiftService } from '@/lib/api'
 import { useUIStore } from '@/store/uiStore'
 import { useTranslation } from '@/lib/i18n'
 import { deriveCashShiftAlert, REMINDER_INTERVAL_MS } from '@/lib/cashShiftAlert'
+import { CloseShiftDialog } from '@/pages/waiter/cashRegister/components/CloseShiftDialog'
 
 export const CashShiftSentinel = () => {
   const { t } = useTranslation('waiter')
@@ -55,7 +56,10 @@ export const CashShiftSentinel = () => {
   const suppressed = now.getTime() < dismissedUntil
   const showPreWarning = alert === 'PRE_WARNING' && !suppressed
   const showOverdue = alert === 'OVERDUE' && !suppressed
-  const showStale = alert === 'STALE'
+  // STALE is dismissible too: the waiter often has to leave this screen to close
+  // the still-open tables before the shift can be closed. Snoozing lets them do
+  // that; the modal returns on the next 30 s tick once the snooze lapses.
+  const showStale = alert === 'STALE' && !suppressed
 
   if (!shift) return null
 
@@ -65,6 +69,10 @@ export const CashShiftSentinel = () => {
 
   return (
     <>
+      {/* Mounted here (not just on the cash-register page) so the "Cerrar caja"
+          action in the alerts below works from any screen the sentinel shows on. */}
+      <CloseShiftDialog />
+
       <AlertDialog open={showPreWarning} onOpenChange={(o) => !o && snooze()}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -101,7 +109,7 @@ export const CashShiftSentinel = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      <AlertDialog open={showStale}>
+      <AlertDialog open={showStale} onOpenChange={(o) => !o && snooze()}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
@@ -120,6 +128,7 @@ export const CashShiftSentinel = () => {
             </p>
           </div>
           <AlertDialogFooter>
+            <AlertDialogCancel onClick={snooze}>{t('cashShiftLaterButton')}</AlertDialogCancel>
             <AlertDialogAction onClick={closeShift}>
               {t('cashShiftStaleCloseButton', { date: shift.businessDay ?? '' })}
             </AlertDialogAction>

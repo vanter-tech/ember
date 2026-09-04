@@ -9,6 +9,7 @@ import com.vanter.ember.identity.model.User;
 import com.vanter.ember.identity.repository.UserRepository;
 import com.vanter.ember.restaurant.model.Restaurant;
 import com.vanter.ember.restaurant.repository.RestaurantRepository;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -97,6 +98,35 @@ public class UserAdminService {
         return toStaffResponse(userRepository.save(user));
     }
 
+    /**
+     * Sets (or replaces) a staff member's quick-login PIN. Admin-only: no current-password check —
+     * the caller is the tenant's ADMIN and cannot know the employee's password. Same tenant-scope
+     * guard as {@link #updateProfile}.
+     */
+    public void setPin(String userId, UUID tenantId, String pin) {
+        User user = requireTenantUser(userId, tenantId);
+        user.setPinHash(passwordEncoder.encode(pin));
+        user.setPinUpdatedAt(Instant.now());
+        userRepository.save(user);
+    }
+
+    /** Removes a staff member's quick-login PIN. Admin-only, tenant-scoped. */
+    public void clearPin(String userId, UUID tenantId) {
+        User user = requireTenantUser(userId, tenantId);
+        user.setPinHash(null);
+        user.setPinUpdatedAt(null);
+        userRepository.save(user);
+    }
+
+    private User requireTenantUser(String userId, UUID tenantId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + userId));
+        if (user.getRestaurantId() == null || !user.getRestaurantId().getId().equals(tenantId)) {
+            throw new ResourceNotFoundException("User not found: " + userId);
+        }
+        return user;
+    }
+
     private static StaffMemberResponse toStaffResponse(User user) {
         return new StaffMemberResponse(
                 user.getId(),
@@ -110,6 +140,7 @@ public class UserAdminService {
                 user.getContractType(),
                 user.getLocation(),
                 user.getEfficiencyPercentage(),
-                user.getPendingHours());
+                user.getPendingHours(),
+                user.getPinHash() != null);
     }
 }

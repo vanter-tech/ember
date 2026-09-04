@@ -2,8 +2,11 @@ package com.vanter.ember.session.service;
 
 import com.vanter.ember.catalog.model.dto.MenuItemResponse;
 import com.vanter.ember.catalog.service.MenuItemService;
+import com.vanter.ember.billing.model.Bill;
+import com.vanter.ember.billing.repository.BillRepository;
 import com.vanter.ember.config.ResourceNotFoundException;
 import com.vanter.ember.config.TenantContextHolder;
+import com.vanter.ember.identity.model.Role;
 import com.vanter.ember.identity.model.User;
 import com.vanter.ember.identity.repository.UserRepository;
 import com.vanter.ember.kitchen.event.KitchenItemUpdated;
@@ -17,6 +20,7 @@ import com.vanter.ember.session.event.ParticipantJoined;
 import com.vanter.ember.session.event.ParticipantLeft;
 import com.vanter.ember.session.event.SessionClosed;
 import com.vanter.ember.session.event.SessionOpened;
+import com.vanter.ember.session.event.TableTransferred;
 import com.vanter.ember.session.exception.TooManyParticipantsException;
 import com.vanter.ember.session.model.OrderItem;
 import com.vanter.ember.session.model.OrderItemStatus;
@@ -51,6 +55,8 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -69,6 +75,7 @@ class SessionServiceTest {
     @Mock QrTokenService qrTokenService;
     @Mock UserRepository userRepository;
     @Mock RestaurantRepository restaurantRepository;
+    @Mock BillRepository billRepository;
     @InjectMocks SessionService sessionService;
 
     private DiningTables diningTable() {
@@ -417,6 +424,119 @@ class SessionServiceTest {
         assertThat(item.getParticipantName()).isEqualTo("Alice");
         assertThat(item.getStatus()).isEqualTo(OrderItemStatus.DRAFT);
         assertThat(item.getAddedAt()).isNotNull();
+    }
+
+    @Test
+    void addItemAsWaiter_addsPendingItemAttributedToMesa_andPublishesKitchenEvent() {
+        Session session = openSessionWithParticipant("user-1");
+        when(sessionRepository.findByIdAndTenantId("sess-1", RESTAURANT_ID)).thenReturn(Optional.of(session));
+        when(billRepository.findBySessionIdAndStatusNot(eq("sess-1"), any())).thenReturn(Optional.empty());
+        when(menuItemService.findById(10L)).thenReturn(availableMenuItem());
+        when(diningTableRepository.findById(TABLE_ID)).thenReturn(Optional.of(diningTable()));
+        when(sessionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        Session result = sessionService.addItemAsWaiter("sess-1", 10L, List.of(), null);
+
+        OrderItem added = result.getItems().get(result.getItems().size() - 1);
+        assertThat(added.getStatus()).isEqualTo(OrderItemStatus.PENDING);
+        assertThat(added.getParticipantName()).isEqualTo("Mesa");
+        assertThat(added.getParticipantId()).isNull();
+        assertThat(result.getActivityLog())
+                .anyMatch(a -> a.getType() == SessionActivity.Type.ITEM_SENT);
+        verify(eventPublisher).publishEvent(isA(KitchenItemsConfirmed.class));
+        verify(eventPublisher).publishEvent(isA(ItemAdded.class));
+    }
+
+    @Test
+    void addItemAsWaiter_attributesToNamedParticipant_whenNameMatches() {
+        Session session = openSessionWithParticipant("user-1");
+        when(sessionRepository.findByIdAndTenantId("sess-1", RESTAURANT_ID)).thenReturn(Optional.of(session));
+        when(billRepository.findBySessionIdAndStatusNot(eq("sess-1"), any())).thenReturn(Optional.empty());
+        when(menuItemService.findById(10L)).thenReturn(availableMenuItem());
+        when(diningTableRepository.findById(TABLE_ID)).thenReturn(Optional.of(diningTable()));
+        when(sessionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        Session result = sessionService.addItemAsWaiter("sess-1", 10L, List.of(), "Alice");
+
+        OrderItem added = result.getItems().get(result.getItems().size() - 1);
+        assertThat(added.getParticipantName()).isEqualTo("Alice");
+        assertThat(added.getParticipantId()).isEqualTo("user-1");
+    }
+
+    @Test
+    void addItemAsWaiter_rejects_whenSessionNotOpen() {
+        Session session = openSessionWithParticipant("user-1");
+        session.setStatus(SessionStatus.CLOSED);
+        when(sessionRepository.findByIdAndTenantId("sess-1", RESTAURANT_ID)).thenReturn(Optional.of(session));
+
+        assertThatThrownBy(() -> sessionService.addItemAsWaiter("sess-1", 10L, List.of(), null))
+                .isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    void addItemAsWaiter_rejects_whenBillAlreadyExists() {
+        Session session = openSessionWithParticipant("user-1");
+        when(sessionRepository.findByIdAndTenantId("sess-1", RESTAURANT_ID)).thenReturn(Optional.of(session));
+        when(billRepository.findBySessionIdAndStatusNot(eq("sess-1"), any()))
+                .thenReturn(Optional.of(new Bill()));
+
+        assertThatThrownBy(() -> sessionService.addItemAsWaiter("sess-1", 10L, List.of(), null))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Bill already requested");
+    }
+
+    // --- transferTable tests ---
+
+    @Test
+    void transferTable_reassignsWaiterAndPublishesEvent() {
+        Session session = openSessionWithParticipant("user-1");
+        session.setWaiterId("old@test.com");
+        when(sessionRepository.findByIdAndTenantId("sess-1", RESTAURANT_ID)).thenReturn(Optional.of(session));
+        User target = User.builder().id("u9").email("new@test.com").name("Nueva")
+                .role(Role.WAITER).active(true).build();
+        when(userRepository.findById("u9")).thenReturn(Optional.of(target));
+        when(sessionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        Session result = sessionService.transferTable("sess-1", "old@test.com", "u9");
+
+        assertThat(result.getWaiterId()).isEqualTo("new@test.com");
+        assertThat(result.getActivityLog())
+                .anyMatch(a -> a.getType() == SessionActivity.Type.TABLE_TRANSFERRED);
+        verify(eventPublisher).publishEvent(isA(TableTransferred.class));
+    }
+
+    @Test
+    void transferTable_rejects_whenCallerNotOwner() {
+        Session session = openSessionWithParticipant("user-1");
+        session.setWaiterId("owner@test.com");
+        when(sessionRepository.findByIdAndTenantId("sess-1", RESTAURANT_ID)).thenReturn(Optional.of(session));
+
+        assertThatThrownBy(() -> sessionService.transferTable("sess-1", "intruder@test.com", "u9"))
+                .isInstanceOf(AccessDeniedException.class);
+    }
+
+    @Test
+    void transferTable_rejects_whenTargetNotWaiter() {
+        Session session = openSessionWithParticipant("user-1");
+        session.setWaiterId("old@test.com");
+        when(sessionRepository.findByIdAndTenantId("sess-1", RESTAURANT_ID)).thenReturn(Optional.of(session));
+        when(userRepository.findById("u9")).thenReturn(Optional.of(
+                User.builder().id("u9").email("k@test.com").name("Kite")
+                        .role(Role.KITCHEN).active(true).build()));
+
+        assertThatThrownBy(() -> sessionService.transferTable("sess-1", "old@test.com", "u9"))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void transferTable_rejects_whenSessionClosed() {
+        Session session = openSessionWithParticipant("user-1");
+        session.setStatus(SessionStatus.CLOSED);
+        session.setWaiterId("old@test.com");
+        when(sessionRepository.findByIdAndTenantId("sess-1", RESTAURANT_ID)).thenReturn(Optional.of(session));
+
+        assertThatThrownBy(() -> sessionService.transferTable("sess-1", "old@test.com", "u9"))
+                .isInstanceOf(IllegalStateException.class);
     }
 
     @Test

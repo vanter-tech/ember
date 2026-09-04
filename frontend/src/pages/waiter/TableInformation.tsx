@@ -1,7 +1,7 @@
 import { useParams, Link } from 'react-router-dom'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { SessionTableService, billingService, type WaiterBillState } from '@/lib/api'
+import { SessionTableService, billingService, printingService, type WaiterBillState } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import {
   ArrowLeft,
@@ -30,6 +30,8 @@ import {
 } from '@/components/ui/card'
 import { useUIStore } from '@/store/uiStore'
 import { GlobalDeleteModal } from '../../components/GlobalDeleteModal'
+import { AddItemModal } from './components/AddItemModal'
+import { TransferTableModal } from './components/TransferTableModal'
 import { ChargeTableModal } from './components/ChargeTableModal'
 import { VoidBillModal } from './components/VoidBillModal'
 import { RefundPaymentModal } from './components/RefundPaymentModal'
@@ -73,12 +75,19 @@ export const TableInformation = () => {
     }
   }, [id, isConnected, stompClient, subscribeToWaiterSession, unsubscribeFromWaiterSession])
 
+  // Track whether this session was ever seen OPEN while mounted, so a later
+  // OPEN -> CLOSED transition keeps the waiter here (stay-state banner) instead
+  // of bouncing them to the table list. React-sanctioned render-phase setState.
+  const [wasOpen, setWasOpen] = useState(false)
+  if (sessionData?.status === 'OPEN' && !wasOpen) {
+    setWasOpen(true)
+  }
+
   useEffect(() => {
-    if (sessionData?.status === 'CLOSED') {
-      toast.success(t('tableClosedPaidToast'))
-      navigate('/waiter/tables')
+    if (sessionData?.status === 'CLOSED' && !wasOpen) {
+      navigate('/waiter/tables', { replace: true })
     }
-  }, [sessionData?.status, navigate])
+  }, [sessionData?.status, wasOpen, navigate])
 
   useEffect(() => {
     if (!lastBillRedistribution) return
@@ -138,6 +147,15 @@ export const TableInformation = () => {
     onError: () => toast.error(t('tableSettleErrorToast')),
   })
 
+  const printBillMutation = useMutation({
+    mutationFn: (billId: number) => printingService.printBillReceipt(billId),
+    onSuccess: (res) =>
+      toast.success(
+        res.status === 'PENDING' ? t('printQueuedNoAgentToast') : t('printSentToast'),
+      ),
+    onError: () => toast.error(t('printFailedToast')),
+  })
+
   if (isLoadingData) {
     return <div className="p-6 text-zinc-500">{t('loadingDashboard')}</div>
   }
@@ -153,6 +171,9 @@ export const TableInformation = () => {
   const taxes = subtotal * 0.1
   const total = subtotal + taxes
 
+  const isClosedStayState = sessionData?.status === 'CLOSED' && wasOpen
+  const actionsDisabled = sessionData?.status !== 'OPEN'
+
   const tourSteps: Step[] = [
     { target: '#table-tour-actions', title: t('tourTableActionsTitle'), content: t('tourTableActionsContent'), skipBeacon: true },
     { target: '#table-tour-orders', title: t('tourTableOrdersTitle'), content: t('tourTableOrdersContent') },
@@ -164,6 +185,11 @@ export const TableInformation = () => {
   return (
     <>
       <SectionTour sectionId="waiter-table-detail" steps={tourSteps} ready={!!sessionData} />
+      {isClosedStayState && (
+        <div className="mb-4 rounded-2xl bg-amber-50 border border-amber-200 px-5 py-3 text-amber-800 font-medium">
+          {t('tablePaidClosedBanner')}
+        </div>
+      )}
       <div className="flex justify-between items-start mb-6">
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-4 p-5 pb-0">
@@ -195,17 +221,39 @@ export const TableInformation = () => {
           <Button
             variant="secondary"
             className="rounded-full bg-gray-100 hover:bg-gray-200 text-1xl px-6 h-18"
+            disabled={
+              !billData ||
+              sessionData?.status !== 'CLOSED' ||
+              printBillMutation.isPending
+            }
+            onClick={() => billData && printBillMutation.mutate(billData.id)}
           >
             <Printer className="w-4 h-4 mr-2" /> {t('printBillLabel')}
           </Button>
           <Button
             variant="secondary"
             className="rounded-full bg-gray-100 hover:bg-gray-200 text-1xl px-6 h-18"
+            disabled={actionsDisabled}
+            onClick={() =>
+              openModal('TRANSFER_TABLE', {
+                sessionId: id,
+                currentWaiterEmail: sessionData?.waiterId,
+              })
+            }
           >
             <ArrowRightLeft className="w-4 h-4 mr-2" /> {t('transferLabel')}
           </Button>
           {/* Botón principal rojo */}
-          <Button className="rounded-full bg-[#8B0000] hover:bg-[#700000] text-1xl text-white px-6 h-18">
+          <Button
+            className="rounded-full bg-[#8B0000] hover:bg-[#700000] text-1xl text-white px-6 h-18"
+            disabled={actionsDisabled}
+            onClick={() =>
+              openModal('ADD_ITEM', {
+                sessionId: id,
+                participants: sessionData?.participants ?? [],
+              })
+            }
+          >
             <Plus className="w-4 h-4 mr-2" /> {t('addItemLabel')}
           </Button>
         </div>
@@ -254,7 +302,7 @@ export const TableInformation = () => {
                       <Button
                         className=""
                         variant={'destructive'}
-                        disabled={isSentToKitchen}
+                        disabled={isSentToKitchen || actionsDisabled}
                         title={isSentToKitchen ? t('cannotRemoveSentItem') : undefined}
                         onClick={(e) => {
                           e.preventDefault()
@@ -409,7 +457,7 @@ export const TableInformation = () => {
                               onClick={() =>
                                 redistributeSplitMutation.mutate(split.participantName!)
                               }
-                              disabled={redistributeSplitMutation.isPending}
+                              disabled={redistributeSplitMutation.isPending || actionsDisabled}
                             >
                               <UserMinus className="w-4 h-4" />
                             </Button>
@@ -440,7 +488,7 @@ export const TableInformation = () => {
                               onClick={() =>
                                 confirmDigitalPaymentMutation.mutate(pendingDigital.id)
                               }
-                              disabled={confirmDigitalPaymentMutation.isPending}
+                              disabled={confirmDigitalPaymentMutation.isPending || actionsDisabled}
                             >
                               <CreditCard className="w-4 h-4 mr-2" /> {t('confirmDigitalButton')}
                             </Button>
@@ -454,7 +502,7 @@ export const TableInformation = () => {
                                   amount: split.amount!,
                                 })
                               }
-                              disabled={physicalPaymentMutation.isPending}
+                              disabled={physicalPaymentMutation.isPending || actionsDisabled}
                             >
                               <Banknote className="w-4 h-4 mr-2" /> {t('markPaidButton')}
                             </Button>
@@ -475,7 +523,7 @@ export const TableInformation = () => {
                     variant="secondary"
                     className="w-full"
                     onClick={() => settleAndCloseMutation.mutate()}
-                    disabled={settleAndCloseMutation.isPending}
+                    disabled={settleAndCloseMutation.isPending || actionsDisabled}
                   >
                     {settleAndCloseMutation.isPending
                       ? t('closingTableLabel')
@@ -509,7 +557,7 @@ export const TableInformation = () => {
                   {hasItems ? (
                     <Button
                       className="w-full h-15 text-2xl font-bold"
-                      disabled={!hasBillableItems}
+                      disabled={!hasBillableItems || actionsDisabled}
                       onClick={() =>
                         openModal('CHARGE_TABLE', {
                           sessionId: id,
@@ -527,7 +575,7 @@ export const TableInformation = () => {
                       onClick={() => {
                         mutation.mutate(id!)
                       }}
-                      disabled={mutation.isPending}
+                      disabled={mutation.isPending || actionsDisabled}
                     >
                       {mutation.isPending ? t('closingTableLabel') : t('closeTableButton')}
                     </Button>
@@ -538,6 +586,8 @@ export const TableInformation = () => {
           </Card>
         </div>
         <GlobalDeleteModal/>
+        <AddItemModal/>
+        <TransferTableModal/>
         <ChargeTableModal/>
         <VoidBillModal />
         <RefundPaymentModal />

@@ -9,7 +9,6 @@ import { formatCurrency } from '@/lib/format'
 import { RotateCcw } from 'lucide-react'
 import { OpenShiftDialog } from './components/OpenShiftDialog'
 import { MovementDialog } from './components/MovementDialog'
-import { CloseShiftDialog } from './components/CloseShiftDialog'
 import { RefundPaymentModal } from '@/pages/waiter/components/RefundPaymentModal'
 import { SectionTour } from '@/components/tours/SectionTour'
 import { useTranslation } from '@/lib/i18n'
@@ -194,7 +193,7 @@ export const CashRegister = () => {
 
       <OpenShiftDialog />
       <MovementDialog />
-      <CloseShiftDialog />
+      {/* CloseShiftDialog is mounted globally by CashShiftSentinel (WaiterLayout). */}
       <RefundPaymentModal />
       <SectionTour sectionId="waiter-cash-register" steps={tourSteps} />
     </div>

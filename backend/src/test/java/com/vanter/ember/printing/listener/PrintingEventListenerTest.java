@@ -11,6 +11,7 @@ import com.vanter.ember.printing.model.PrintJob;
 import com.vanter.ember.printing.model.PrintJobStatus;
 import com.vanter.ember.printing.repository.PrintJobRepository;
 import com.vanter.ember.printing.service.PrintDispatchService;
+import com.vanter.ember.printing.service.ReceiptRenderer;
 import com.vanter.ember.session.event.KitchenItemsConfirmed;
 import com.vanter.ember.session.model.OrderItem;
 import com.vanter.ember.settings.model.RestaurantSettings;
@@ -33,6 +34,7 @@ class PrintingEventListenerTest {
     @Mock SettingService settingService;
     @Mock PrintJobRepository printJobRepository;
     @Mock PrintDispatchService printDispatchService;
+    @Mock ReceiptRenderer receiptRenderer;
     @InjectMocks PrintingEventListener printingEventListener;
 
     private static final UUID TENANT_ID = UUID.randomUUID();

@@ -2,6 +2,7 @@ package com.vanter.ember.identity.controller;
 
 import com.vanter.ember.identity.model.dto.AuthResponse;
 import com.vanter.ember.identity.model.dto.LoginRequest;
+import com.vanter.ember.identity.model.dto.PinLoginRequest;
 import com.vanter.ember.identity.model.dto.RegisterRequest;
 import com.vanter.ember.identity.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -32,5 +33,11 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
         return ResponseEntity.ok(authService.login(request));
+    }
+
+    @Operation(summary = "Login with a quick-access PIN")
+    @PostMapping("/login/pin")
+    public ResponseEntity<AuthResponse> loginWithPin(@Valid @RequestBody PinLoginRequest request) {
+        return ResponseEntity.ok(authService.loginWithPin(request));
     }
 }
