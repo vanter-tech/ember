@@ -9,7 +9,7 @@ describe('WaiterTour', () => {
   beforeEach(() => {
     useAuthStore.setState({ userId: 'waiter-1' })
     useSectionTourStore.setState({ seenByKey: {} })
-    useUIStore.setState({ requestedTourSection: null, activeTourSection: null })
+    useUIStore.setState({ requestedTourSection: null, activeTourSection: null, cashShiftAlertOpen: false })
     document.body.innerHTML =
       '<div id="waiter-tour-grid"></div><div id="waiter-tour-panel"></div>'
   })
@@ -41,5 +41,16 @@ describe('WaiterTour', () => {
     render(<WaiterTour tableIds={['table-1']} onSelectFirstTable={() => {}} />)
 
     expect(screen.getByText('Tus mesas')).toBeInTheDocument()
+  })
+
+  // QA_SIMULATION_REPORT.md E-17: observed live — CashShiftSentinel's stale-shift alert and this
+  // tour's first step appeared stacked on top of each other on the very first /waiter/tables
+  // render after login. The tour must hold off while that alert is up.
+  test('does not render while a cash-shift alert is open, even with tables present', () => {
+    useUIStore.setState({ cashShiftAlertOpen: true })
+
+    render(<WaiterTour tableIds={['table-1']} onSelectFirstTable={() => {}} />)
+
+    expect(screen.queryByText('Tus mesas')).not.toBeInTheDocument()
   })
 })
