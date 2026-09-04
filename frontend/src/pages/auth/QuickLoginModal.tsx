@@ -17,7 +17,9 @@ import {
   type QuickAccessProfile,
 } from '@/store/quickAccessStore'
 import { navigateForRole } from './navigateForRole'
+import { SetPinPrompt } from './SetPinPrompt'
 import { useTranslation } from '@/lib/i18n'
+import type { LoginResponse } from '@/lib/api'
 
 export const QuickLoginModal = ({
   profile,
@@ -35,6 +37,7 @@ export const QuickLoginModal = ({
   const [hint, setHint] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [pendingRes, setPendingRes] = useState<LoginResponse | null>(null)
 
   const submit = async () => {
     setBusy(true)
@@ -51,6 +54,13 @@ export const QuickLoginModal = ({
         role: res.role ?? profile.role,
       })
       toast.success(tAuth('loginSuccessToast'))
+      if (
+        mode === 'password' &&
+        !useQuickAccessStore.getState().pinDismissed.includes(profile.email)
+      ) {
+        setPendingRes(res)
+        return
+      }
       onClose()
       await navigateForRole(res, navigate, { tAuth })
     } catch (err) {
@@ -78,6 +88,20 @@ export const QuickLoginModal = ({
 
   const fieldLabel =
     mode === 'pin' ? tAuth('quickLoginPinLabel') : tAuth('passwordPlaceholder')
+
+  if (pendingRes) {
+    return (
+      <SetPinPrompt
+        email={profile.email}
+        defaultPassword={value}
+        onDone={() => {
+          useQuickAccessStore.getState().dismissPinPrompt(profile.email)
+          onClose()
+          void navigateForRole(pendingRes, navigate, { tAuth })
+        }}
+      />
+    )
+  }
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
