@@ -20,10 +20,8 @@ vi.mock('@/lib/api', async (importOriginal) => {
   }
 })
 
-const wrap = (ui: ReactNode) => {
-  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-  return render(<QueryClientProvider client={qc}>{ui}</QueryClientProvider>)
-}
+const wrap = (ui: ReactNode, qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })) =>
+  render(<QueryClientProvider client={qc}>{ui}</QueryClientProvider>)
 
 const member = (over: Record<string, unknown> = {}) => ({
   id: 'u-1',
@@ -85,5 +83,23 @@ describe('EditStaffModal — quick-login PIN section', () => {
     await waitFor(() =>
       expect(staffService.clearPin).toHaveBeenCalledWith('u-1'),
     )
+  })
+
+  // QA_SIMULATION_REPORT.md E-13: `modalPayload` is a one-time snapshot taken when "Profile" was
+  // clicked. Saving a PIN invalidates the `['staff']` query in the background, but the modal used
+  // to keep reading that frozen snapshot — the badge stayed "Sin PIN" even after the cache (and
+  // the server) already had `hasPin: true`. It must reflect the live cache, not the snapshot.
+  test('reflects a fresher hasPin from the ["staff"] cache over the stale modalPayload snapshot', () => {
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    qc.setQueryData(['staff'], [member({ hasPin: true })])
+    useUIStore.setState({
+      activeModal: 'EDIT_STAFF',
+      modalPayload: member({ hasPin: false }), // stale snapshot from before the PIN was saved
+    })
+
+    wrap(<EditStaffModal />, qc)
+
+    expect(screen.getByText('PIN configurado')).toBeVisible()
+    expect(screen.queryByText('Sin PIN')).not.toBeInTheDocument()
   })
 })

@@ -29,7 +29,7 @@ import {
 import { Switch } from '@/components/ui/switch'
 import { useUIStore } from '@/store/uiStore'
 import { useAuthStore } from '@/store/authStore'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { staffService, type StaffMemberResponse, type StaffRole } from '@/lib/api'
 import { ROLE_LABELS } from '../types'
 import { useTranslation } from '@/lib/i18n'
@@ -167,7 +167,18 @@ export const EditStaffModal = () => {
   const queryClient = useQueryClient()
   const { t } = useTranslation('admin')
   const currentUserId = useAuthStore((state) => state.userId)
-  const member = modalPayload as StaffMemberResponse | null
+  const modalMember = modalPayload as StaffMemberResponse | null
+  // QA_SIMULATION_REPORT.md E-13: `modalPayload` is a one-time snapshot of the staff row taken
+  // when "Profile" was clicked. Saving a PIN below invalidates the `['staff']` query and refetches
+  // it, but that snapshot never updates — the modal kept showing "No PIN" even after a successful
+  // save, until it was closed and reopened. Subscribing to the same cache (without triggering our
+  // own fetch — Staff.tsx already owns that) and reading the live row by id keeps this in sync.
+  const { data: staffList } = useQuery({
+    queryKey: ['staff'],
+    queryFn: staffService.getAll,
+    enabled: false,
+  })
+  const member = staffList?.find((s) => s.id === modalMember?.id) ?? modalMember
   const editStaffSchema = useMemo(() => editStaffSchemaFactory(t), [t])
 
   // Guard against an admin locking themselves out of the panel by demoting their own account.
