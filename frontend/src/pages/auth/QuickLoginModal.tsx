@@ -90,9 +90,13 @@ export const QuickLoginModal = ({
             >
               {profile.initials}
             </span>
+            {/* QA_SIMULATION_REPORT.md E-21: this dialog opens before any PIN/password is
+                verified, on a device this feature is explicitly built to be shared across staff
+                (report 341/343) — showing the raw email here handed a real employee address to
+                anyone who clicks a chip. Name + avatar + role is enough to confirm "that's me". */}
             <span className="flex flex-col">
               <span className="text-base font-semibold">{profile.name}</span>
-              <span className="text-xs text-zinc-400">{profile.email}</span>
+              <span className="text-xs text-zinc-400 uppercase tracking-wide">{profile.role}</span>
             </span>
           </DialogTitle>
         </DialogHeader>
