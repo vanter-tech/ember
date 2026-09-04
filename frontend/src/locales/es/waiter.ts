@@ -182,4 +182,13 @@ export const waiter = {
   cashShiftOpenTodayButton: 'Abrir turno de hoy',
   cashShiftOverduePaymentToast: 'La caja venció. Prolóngala o ciérrala para cobrar.',
   cashShiftOverdueMovementBlocked: 'La caja venció. Prolóngala o ciérrala para registrar movimientos.',
+  addItemModalTitle: 'Agregar platillo',
+  addItemSearchPlaceholder: 'Buscar platillo...',
+  addItemParticipantLabel: 'Asignar a',
+  addItemParticipantMesa: 'Mesa (general)',
+  addItemQuantityLabel: 'Cantidad',
+  addItemSubmit: 'Agregar a la comanda',
+  addItemSuccessToast: 'Platillo agregado y enviado a cocina',
+  addItemErrorToast: 'No se pudo agregar el platillo',
+  addItemBillExistsToast: 'La cuenta ya fue solicitada. Anúlala para agregar platillos.',
 }

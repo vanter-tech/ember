@@ -182,4 +182,13 @@ export const waiter = {
   cashShiftOpenTodayButton: "Open today's shift",
   cashShiftOverduePaymentToast: 'The register expired. Extend or close it to charge.',
   cashShiftOverdueMovementBlocked: 'The register expired. Extend or close it to record movements.',
+  addItemModalTitle: 'Add item',
+  addItemSearchPlaceholder: 'Search item...',
+  addItemParticipantLabel: 'Assign to',
+  addItemParticipantMesa: 'Table (shared)',
+  addItemQuantityLabel: 'Quantity',
+  addItemSubmit: 'Add to the order',
+  addItemSuccessToast: 'Item added and sent to the kitchen',
+  addItemErrorToast: 'Could not add the item',
+  addItemBillExistsToast: 'The bill was already requested. Void it to add items.',
 } satisfies typeof esWaiter

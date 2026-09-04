@@ -445,6 +445,15 @@ export const SessionTableService = {
     return data
   },
 
+  // Waiter adds a menu item straight to the kitchen (created at PENDING, fires the same
+  // kitchen events a customer confirm does). participantName null = attributed to "Mesa".
+  addWaiterItem: async (
+    sessionId: string,
+    body: { menuItemId: number; selectedOptionIds: number[]; participantName: string | null },
+  ): Promise<void> => {
+    await api.post<void>(`/sessions/${sessionId}/waiter-items`, body)
+  },
+
   confirmMyOrders: async(sessionId: string, userId: string): Promise<void> => {
      await api.post<void>(`/sessions/${sessionId}/participants/${userId}/confirm`)
   },

@@ -30,6 +30,7 @@ import {
 } from '@/components/ui/card'
 import { useUIStore } from '@/store/uiStore'
 import { GlobalDeleteModal } from '../../components/GlobalDeleteModal'
+import { AddItemModal } from './components/AddItemModal'
 import { ChargeTableModal } from './components/ChargeTableModal'
 import { VoidBillModal } from './components/VoidBillModal'
 import { RefundPaymentModal } from './components/RefundPaymentModal'
@@ -205,7 +206,16 @@ export const TableInformation = () => {
             <ArrowRightLeft className="w-4 h-4 mr-2" /> {t('transferLabel')}
           </Button>
           {/* Botón principal rojo */}
-          <Button className="rounded-full bg-[#8B0000] hover:bg-[#700000] text-1xl text-white px-6 h-18">
+          <Button
+            className="rounded-full bg-[#8B0000] hover:bg-[#700000] text-1xl text-white px-6 h-18"
+            disabled={sessionData?.status !== 'OPEN'}
+            onClick={() =>
+              openModal('ADD_ITEM', {
+                sessionId: id,
+                participants: sessionData?.participants ?? [],
+              })
+            }
+          >
             <Plus className="w-4 h-4 mr-2" /> {t('addItemLabel')}
           </Button>
         </div>
@@ -538,6 +548,7 @@ export const TableInformation = () => {
           </Card>
         </div>
         <GlobalDeleteModal/>
+        <AddItemModal/>
         <ChargeTableModal/>
         <VoidBillModal />
         <RefundPaymentModal />
