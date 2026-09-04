@@ -125,7 +125,7 @@ export const admin = {
   efficiencyLabel: 'Eficiencia',
   inactiveStatusLabel: 'Inactivo',
   profileButton: 'Perfil',
-  moreOptionsAriaLabel: 'Más opciones',
+  deactivateStaffAriaLabel: 'Desactivar',
   addNewRoleButton: 'Agregar nuevo rol',
   noStaffMatchesFilter: 'Ningún empleado coincide con la búsqueda o el filtro seleccionado.',
   staffPageTitle: 'Gestión de Personal',

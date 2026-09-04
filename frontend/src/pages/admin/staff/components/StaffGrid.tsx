@@ -6,10 +6,10 @@ interface StaffGridProps {
   members: StaffMemberResponse[]
   onAddRole?: () => void
   onViewProfile?: (member: StaffMemberResponse) => void
-  onOpenActions?: (member: StaffMemberResponse) => void
+  onDeactivate?: (member: StaffMemberResponse) => void
 }
 
-export const StaffGrid = ({ members, onAddRole, onViewProfile, onOpenActions }: StaffGridProps) => {
+export const StaffGrid = ({ members, onAddRole, onViewProfile, onDeactivate }: StaffGridProps) => {
   const { t } = useTranslation('admin')
   if (members.length === 0) {
     return (
@@ -26,7 +26,7 @@ export const StaffGrid = ({ members, onAddRole, onViewProfile, onOpenActions }: 
           key={member.id}
           member={member}
           onViewProfile={onViewProfile}
-          onOpenActions={onOpenActions}
+          onDeactivate={onDeactivate}
         />
       ))}
       <AddStaffCard onClick={onAddRole} />
