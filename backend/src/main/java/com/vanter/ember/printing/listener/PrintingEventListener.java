@@ -8,6 +8,7 @@ import com.vanter.ember.printing.model.PrintJobStatus;
 import com.vanter.ember.printing.model.PrinterRole;
 import com.vanter.ember.printing.repository.PrintJobRepository;
 import com.vanter.ember.printing.service.PrintDispatchService;
+import com.vanter.ember.printing.service.ReceiptRenderer;
 import com.vanter.ember.session.event.KitchenItemsConfirmed;
 import com.vanter.ember.session.model.OrderItem;
 import com.vanter.ember.settings.model.SettingsPayload;
@@ -32,6 +33,7 @@ public class PrintingEventListener {
     private final SettingService settingService;
     private final PrintJobRepository printJobRepository;
     private final PrintDispatchService printDispatchService;
+    private final ReceiptRenderer receiptRenderer;
 
     @EventListener
     public void onKitchenItemsConfirmed(KitchenItemsConfirmed event) {
@@ -51,7 +53,7 @@ public class PrintingEventListener {
             return;
         }
         createAndDispatch(PrinterRole.RECEIPT, PrintJobSourceType.BILL_RECEIPT,
-                String.valueOf(event.billId()), renderReceiptPayload(event, settings));
+                String.valueOf(event.billId()), receiptRenderer.render(event.billId(), settings));
     }
 
     private void createAndDispatch(
@@ -87,20 +89,6 @@ public class PrintingEventListener {
             for (var modifier : item.getModifiers()) {
                 sb.append("  · ").append(modifier.getOptionName()).append('\n');
             }
-        }
-        return sb.toString();
-    }
-
-    private String renderReceiptPayload(PaymentCompleted event, SettingsPayload settings) {
-        StringBuilder sb = new StringBuilder();
-        String header = settings.getTicket().getHeaderMessage();
-        if (header != null && !header.isBlank()) {
-            sb.append(header).append('\n');
-        }
-        sb.append("Bill #").append(event.billId()).append('\n');
-        String footer = settings.getTicket().getFooterMessage();
-        if (footer != null && !footer.isBlank()) {
-            sb.append(footer).append('\n');
         }
         return sb.toString();
     }
