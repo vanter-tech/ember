@@ -696,6 +696,14 @@ export const printingService = {
   retryJob: async (jobId: string): Promise<void> => {
     await api.post(`/printing/jobs/${jobId}/retry`)
   },
+  printBillReceipt: async (
+    billId: number
+  ): Promise<{ jobId: string; status: string }> => {
+    const { data } = await api.post<{ jobId: string; status: string }>(
+      `/printing/bills/${billId}/receipt`
+    )
+    return data
+  },
 }
 
 export const billingService = {

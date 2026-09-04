@@ -1,7 +1,7 @@
 import { useParams, Link } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { SessionTableService, billingService, type WaiterBillState } from '@/lib/api'
+import { SessionTableService, billingService, printingService, type WaiterBillState } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import {
   ArrowLeft,
@@ -146,6 +146,15 @@ export const TableInformation = () => {
     onError: () => toast.error(t('tableSettleErrorToast')),
   })
 
+  const printBillMutation = useMutation({
+    mutationFn: (billId: number) => printingService.printBillReceipt(billId),
+    onSuccess: (res) =>
+      toast.success(
+        res.status === 'PENDING' ? t('printQueuedNoAgentToast') : t('printSentToast'),
+      ),
+    onError: () => toast.error(t('printFailedToast')),
+  })
+
   if (isLoadingData) {
     return <div className="p-6 text-zinc-500">{t('loadingDashboard')}</div>
   }
@@ -211,6 +220,12 @@ export const TableInformation = () => {
           <Button
             variant="secondary"
             className="rounded-full bg-gray-100 hover:bg-gray-200 text-1xl px-6 h-18"
+            disabled={
+              !billData ||
+              sessionData?.status !== 'CLOSED' ||
+              printBillMutation.isPending
+            }
+            onClick={() => billData && printBillMutation.mutate(billData.id)}
           >
             <Printer className="w-4 h-4 mr-2" /> {t('printBillLabel')}
           </Button>
