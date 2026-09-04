@@ -62,8 +62,14 @@ public class RateLimitProperties {
      * <p>{@code /sessions/join} (QA_SIMULATION_REPORT.md E-15) takes a 5-character table code
      * looked up across every tenant with no other throttle — a customer's own auth doesn't
      * exempt it, the filter only matches on path.
+     *
+     * <p>{@code /printing/agents/token} (QA_SIMULATION_REPORT.md E-22, derived from the earlier
+     * static audit, not re-verified live this session) is {@code permitAll} and
+     * {@link com.vanter.ember.printing.service.PrintAgentService#authenticateByApiKey} scans
+     * every {@code ACTIVE} print agent across the whole platform with one BCrypt comparison
+     * each — an anonymous caller can burn real CPU per request with no other throttle in place.
      */
     private List<String> paths = new ArrayList<>(
             List.of("/auth/login", "/auth/login/pin", "/auth/register", "/platform/auth/login",
-                    "/hub-activations", "/hub-heartbeat", "/sessions/join"));
+                    "/hub-activations", "/hub-heartbeat", "/sessions/join", "/printing/agents/token"));
 }
