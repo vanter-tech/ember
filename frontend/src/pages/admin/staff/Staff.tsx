@@ -77,7 +77,7 @@ export const Staff = () => {
               members={filteredStaff}
               onAddRole={() => openModal('CREATE_STAFF')}
               onViewProfile={(member: StaffMemberResponse) => openModal('EDIT_STAFF', member)}
-              onOpenActions={(member: StaffMemberResponse) => openModal('DELETE_STAFF', member)}
+              onDeactivate={(member: StaffMemberResponse) => openModal('DELETE_STAFF', member)}
             />
           </div>
           <StaffKpis members={staff} />

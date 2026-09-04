@@ -29,6 +29,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { useUIStore } from '@/store/uiStore'
+import { useSettingStore } from '@/store/settingStore'
 import { GlobalDeleteModal } from '../../components/GlobalDeleteModal'
 import { AddItemModal } from './components/AddItemModal'
 import { TransferTableModal } from './components/TransferTableModal'
@@ -46,6 +47,7 @@ export const TableInformation = () => {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const { openModal } = useUIStore()
+  const { settings } = useSettingStore()
   const {
     isConnected,
     stompClient,
@@ -168,7 +170,11 @@ export const TableInformation = () => {
   const subtotal =
     itemsToWaiter.reduce((total, item) => total + (item.price ?? 0), 0) ??
     0
-  const taxes = subtotal * 0.1
+  // QA_SIMULATION_REPORT.md E-05: this used to be a hardcoded 10% regardless of what the
+  // restaurant actually configured in Settings > Billing — now it mirrors the real tax rate the
+  // backend applies in BillingService.calculateBill.
+  const taxRatePercent = settings?.billing?.taxRate ?? 0
+  const taxes = subtotal * (taxRatePercent / 100)
   const total = subtotal + taxes
 
   const isClosedStayState = sessionData?.status === 'CLOSED' && wasOpen
@@ -541,7 +547,7 @@ export const TableInformation = () => {
                     </span>
                   </div>
                   <div className="flex justify-between text-xl text-gray-500 p-4">
-                    <span>{t('taxesLabel')}</span>
+                    <span>{t('taxesLabel', { rate: taxRatePercent })}</span>
                     <span className="text-xl font-bold text-[#8B0000]">
                       ${taxes.toFixed(2)}
                     </span>

@@ -435,7 +435,7 @@ class SessionServiceTest {
         when(diningTableRepository.findById(TABLE_ID)).thenReturn(Optional.of(diningTable()));
         when(sessionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        Session result = sessionService.addItemAsWaiter("sess-1", 10L, List.of(), null);
+        Session result = sessionService.addItemAsWaiter("sess-1", "waiter@test.com", 10L, List.of(), null);
 
         OrderItem added = result.getItems().get(result.getItems().size() - 1);
         assertThat(added.getStatus()).isEqualTo(OrderItemStatus.PENDING);
@@ -456,7 +456,7 @@ class SessionServiceTest {
         when(diningTableRepository.findById(TABLE_ID)).thenReturn(Optional.of(diningTable()));
         when(sessionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        Session result = sessionService.addItemAsWaiter("sess-1", 10L, List.of(), "Alice");
+        Session result = sessionService.addItemAsWaiter("sess-1", "waiter@test.com", 10L, List.of(), "Alice");
 
         OrderItem added = result.getItems().get(result.getItems().size() - 1);
         assertThat(added.getParticipantName()).isEqualTo("Alice");
@@ -469,7 +469,7 @@ class SessionServiceTest {
         session.setStatus(SessionStatus.CLOSED);
         when(sessionRepository.findByIdAndTenantId("sess-1", RESTAURANT_ID)).thenReturn(Optional.of(session));
 
-        assertThatThrownBy(() -> sessionService.addItemAsWaiter("sess-1", 10L, List.of(), null))
+        assertThatThrownBy(() -> sessionService.addItemAsWaiter("sess-1", "waiter@test.com", 10L, List.of(), null))
                 .isInstanceOf(IllegalStateException.class);
     }
 
@@ -480,9 +480,18 @@ class SessionServiceTest {
         when(billRepository.findBySessionIdAndStatusNot(eq("sess-1"), any()))
                 .thenReturn(Optional.of(new Bill()));
 
-        assertThatThrownBy(() -> sessionService.addItemAsWaiter("sess-1", 10L, List.of(), null))
+        assertThatThrownBy(() -> sessionService.addItemAsWaiter("sess-1", "waiter@test.com", 10L, List.of(), null))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Bill already requested");
+    }
+
+    @Test
+    void addItemAsWaiter_rejects_whenCallerIsNotTheAssignedWaiter() {
+        Session session = openSessionWithParticipant("user-1");
+        when(sessionRepository.findByIdAndTenantId("sess-1", RESTAURANT_ID)).thenReturn(Optional.of(session));
+
+        assertThatThrownBy(() -> sessionService.addItemAsWaiter("sess-1", "other-waiter@test.com", 10L, List.of(), null))
+                .isInstanceOf(AccessDeniedException.class);
     }
 
     // --- transferTable tests ---
@@ -837,6 +846,55 @@ class SessionServiceTest {
 
         assertThatThrownBy(() -> sessionService.closeSession("sess-999"))
                 .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    // --- closeEmptySession tests ---
+
+    @Test
+    void closeEmptySession_closesSession_whenCallerIsAssignedWaiter() {
+        Session session = Session.builder()
+                .id("sess-1").tenantId(RESTAURANT_ID).tableId(TABLE_ID).waiterId("waiter@test.com")
+                .status(SessionStatus.OPEN).maxParticipants(4)
+                .items(new ArrayList<>())
+                .createdAt(LocalDateTime.now()).build();
+        when(sessionRepository.findByIdAndTenantId("sess-1", RESTAURANT_ID)).thenReturn(Optional.of(session));
+        when(sessionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        sessionService.closeEmptySession("sess-1", "waiter@test.com");
+
+        ArgumentCaptor<Session> captor = ArgumentCaptor.forClass(Session.class);
+        verify(sessionRepository).save(captor.capture());
+        assertThat(captor.getValue().getStatus()).isEqualTo(SessionStatus.CLOSED);
+    }
+
+    @Test
+    void closeEmptySession_rejects_whenCallerIsNotTheAssignedWaiter() {
+        Session session = Session.builder()
+                .id("sess-1").tenantId(RESTAURANT_ID).tableId(TABLE_ID).waiterId("waiter@test.com")
+                .status(SessionStatus.OPEN).maxParticipants(4)
+                .items(new ArrayList<>())
+                .createdAt(LocalDateTime.now()).build();
+        when(sessionRepository.findByIdAndTenantId("sess-1", RESTAURANT_ID)).thenReturn(Optional.of(session));
+
+        assertThatThrownBy(() -> sessionService.closeEmptySession("sess-1", "other-waiter@test.com"))
+                .isInstanceOf(AccessDeniedException.class);
+
+        verify(sessionRepository, never()).save(any());
+    }
+
+    @Test
+    void closeEmptySession_rejects_whenSessionHasBillableItems() {
+        Session session = Session.builder()
+                .id("sess-1").tenantId(RESTAURANT_ID).tableId(TABLE_ID).waiterId("waiter@test.com")
+                .status(SessionStatus.OPEN).maxParticipants(4)
+                .items(new ArrayList<>(List.of(OrderItem.builder()
+                        .id("item-1").name("Tacos").status(OrderItemStatus.PENDING).build())))
+                .createdAt(LocalDateTime.now()).build();
+        when(sessionRepository.findByIdAndTenantId("sess-1", RESTAURANT_ID)).thenReturn(Optional.of(session));
+
+        assertThatThrownBy(() -> sessionService.closeEmptySession("sess-1", "waiter@test.com"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("billable items");
     }
 
     // --- confirmDraftsForUser tests ---

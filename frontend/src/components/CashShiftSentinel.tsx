@@ -13,7 +13,7 @@ import { CloseShiftDialog } from '@/pages/waiter/cashRegister/components/CloseSh
 
 export const CashShiftSentinel = () => {
   const { t } = useTranslation('waiter')
-  const { openModal } = useUIStore()
+  const { openModal, setCashShiftAlertOpen } = useUIStore()
   const queryClient = useQueryClient()
   const [now, setNow] = useState(() => new Date())
   // A timestamp; PRE_WARNING / OVERDUE modals are suppressed while now < dismissedUntil.
@@ -60,6 +60,14 @@ export const CashShiftSentinel = () => {
   // the still-open tables before the shift can be closed. Snoozing lets them do
   // that; the modal returns on the next 30 s tick once the snooze lapses.
   const showStale = alert === 'STALE' && !suppressed
+  const showAnyAlert = showPreWarning || showOverdue || showStale
+
+  // QA_SIMULATION_REPORT.md E-17: let WaiterTour (and any future consumer) know a blocking
+  // alert is up, so it can hold off starting rather than stacking on top of this one.
+  useEffect(() => {
+    setCashShiftAlertOpen(showAnyAlert)
+  }, [showAnyAlert, setCashShiftAlertOpen])
+  useEffect(() => () => setCashShiftAlertOpen(false), [setCashShiftAlertOpen])
 
   if (!shift) return null
 

@@ -1,6 +1,7 @@
 package com.vanter.ember.config;
 
 import com.vanter.ember.identity.service.JwtService;
+import com.vanter.ember.session.service.SessionService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -27,6 +28,8 @@ import org.springframework.messaging.MessageDeliveryException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -36,12 +39,19 @@ class JwtChannelInterceptorTest {
 
     @Mock JwtService jwtService;
     @Mock UserDetailsService userDetailsService;
+    @Mock SessionService sessionService;
     @Mock MessageChannel channel;
     @InjectMocks JwtChannelInterceptor interceptor;
 
     private UserDetails waiter() {
         return new User("waiter@test.com", "",
                 List.of(new SimpleGrantedAuthority("ROLE_WAITER")));
+    }
+
+    private static UsernamePasswordAuthenticationToken authOf(String username, String role) {
+        return new UsernamePasswordAuthenticationToken(
+                new User(username, "", List.of(new SimpleGrantedAuthority("ROLE_" + role))),
+                null, List.of(new SimpleGrantedAuthority("ROLE_" + role)));
     }
 
     private Message<byte[]> connectMessage(String authHeader) {
@@ -68,6 +78,24 @@ class JwtChannelInterceptorTest {
         StompHeaderAccessor accessor = StompHeaderAccessor.create(StompCommand.SUBSCRIBE);
         if (sessionAttributes != null) {
             accessor.setSessionAttributes(sessionAttributes);
+        }
+        accessor.setLeaveMutable(true);
+        return MessageBuilder.createMessage(new byte[0], accessor.getMessageHeaders());
+    }
+
+    /**
+     * A SUBSCRIBE frame carrying a destination, the tenant bound at CONNECT time (session
+     * attribute), and the authenticated user set at CONNECT time.
+     */
+    private Message<byte[]> subscribeMessage(String destination, UUID boundTenantId,
+                                             UsernamePasswordAuthenticationToken user) {
+        StompHeaderAccessor accessor = StompHeaderAccessor.create(StompCommand.SUBSCRIBE);
+        accessor.setDestination(destination);
+        Map<String, Object> sessionAttributes = new HashMap<>();
+        sessionAttributes.put(JwtChannelInterceptor.TENANT_SESSION_ATTRIBUTE, boundTenantId);
+        accessor.setSessionAttributes(sessionAttributes);
+        if (user != null) {
+            accessor.setUser(user);
         }
         accessor.setLeaveMutable(true);
         return MessageBuilder.createMessage(new byte[0], accessor.getMessageHeaders());
@@ -163,5 +191,120 @@ class JwtChannelInterceptorTest {
         interceptor.afterSendCompletion(subscribeMessage(), channel, true, null);
 
         assertThat(TenantContextHolder.getTenantId()).isNull();
+    }
+
+    // --- SUBSCRIBE destination authorization (QA_SIMULATION_REPORT.md E-01) ---
+
+    @Test
+    void subscribe_toOwnTenantWaiterTopic_asWaiter_isAllowed() {
+        UUID tenantId = UUID.randomUUID();
+
+        Message<?> result = interceptor.preSend(
+                subscribeMessage("/topic/waiter/" + tenantId, tenantId, authOf("w@test.com", "WAITER")), channel);
+
+        assertThat(result).isNotNull();
+    }
+
+    @Test
+    void subscribe_toAnotherTenantsWaiterTopic_isRejected() {
+        UUID ownTenant = UUID.randomUUID();
+        UUID otherTenant = UUID.randomUUID();
+
+        Message<byte[]> subscribe =
+                subscribeMessage("/topic/waiter/" + otherTenant, ownTenant, authOf("w@test.com", "WAITER"));
+
+        assertThatThrownBy(() -> interceptor.preSend(subscribe, channel))
+                .isInstanceOf(MessageDeliveryException.class);
+    }
+
+    @Test
+    void subscribe_toWaiterTopic_asCustomer_isRejected() {
+        UUID tenantId = UUID.randomUUID();
+
+        Message<byte[]> subscribe =
+                subscribeMessage("/topic/waiter/" + tenantId, tenantId, authOf("c@test.com", "CUSTOMER"));
+
+        assertThatThrownBy(() -> interceptor.preSend(subscribe, channel))
+                .isInstanceOf(MessageDeliveryException.class);
+    }
+
+    @Test
+    void subscribe_toKitchenTopic_asWaiter_isRejected() {
+        UUID tenantId = UUID.randomUUID();
+
+        Message<byte[]> subscribe =
+                subscribeMessage("/topic/kitchen/" + tenantId, tenantId, authOf("w@test.com", "WAITER"));
+
+        assertThatThrownBy(() -> interceptor.preSend(subscribe, channel))
+                .isInstanceOf(MessageDeliveryException.class);
+    }
+
+    @Test
+    void subscribe_toKitchenTopic_asKitchen_isAllowed() {
+        UUID tenantId = UUID.randomUUID();
+
+        Message<?> result = interceptor.preSend(
+                subscribeMessage("/topic/kitchen/" + tenantId, tenantId, authOf("k@test.com", "KITCHEN")), channel);
+
+        assertThat(result).isNotNull();
+    }
+
+    @Test
+    void subscribe_toSessionTopic_asStaffOfTheSameTenant_isAllowed() {
+        UUID tenantId = UUID.randomUUID();
+        when(sessionService.findById("sess-1")).thenReturn(null);
+
+        Message<?> result = interceptor.preSend(
+                subscribeMessage("/topic/session/sess-1", tenantId, authOf("w@test.com", "WAITER")), channel);
+
+        assertThat(result).isNotNull();
+    }
+
+    @Test
+    void subscribe_toSessionTopic_notFoundUnderBoundTenant_isRejected() {
+        UUID tenantId = UUID.randomUUID();
+        when(sessionService.findById("sess-other-tenant")).thenThrow(new ResourceNotFoundException("not found"));
+
+        Message<byte[]> subscribe = subscribeMessage(
+                "/topic/session/sess-other-tenant", tenantId, authOf("c@test.com", "CUSTOMER"));
+
+        assertThatThrownBy(() -> interceptor.preSend(subscribe, channel))
+                .isInstanceOf(MessageDeliveryException.class);
+        verify(sessionService, never()).isParticipant(any(), any());
+    }
+
+    @Test
+    void subscribe_toSessionTopic_asParticipant_isAllowed() {
+        UUID tenantId = UUID.randomUUID();
+        when(sessionService.findById("sess-1")).thenReturn(null);
+        when(sessionService.isParticipant("sess-1", "diner@test.com")).thenReturn(true);
+
+        Message<?> result = interceptor.preSend(
+                subscribeMessage("/topic/session/sess-1", tenantId, authOf("diner@test.com", "CUSTOMER")), channel);
+
+        assertThat(result).isNotNull();
+    }
+
+    @Test
+    void subscribe_toSessionTopic_asNonParticipantCustomer_isRejected() {
+        UUID tenantId = UUID.randomUUID();
+        when(sessionService.findById("sess-1")).thenReturn(null);
+        when(sessionService.isParticipant(eq("sess-1"), any())).thenReturn(false);
+
+        Message<byte[]> subscribe = subscribeMessage(
+                "/topic/session/sess-1", tenantId, authOf("stranger@test.com", "CUSTOMER"));
+
+        assertThatThrownBy(() -> interceptor.preSend(subscribe, channel))
+                .isInstanceOf(MessageDeliveryException.class);
+    }
+
+    @Test
+    void subscribe_toUnrelatedDestination_isUnaffected() {
+        UUID tenantId = UUID.randomUUID();
+
+        Message<?> result = interceptor.preSend(
+                subscribeMessage("/user/queue/notifications", tenantId, authOf("c@test.com", "CUSTOMER")), channel);
+
+        assertThat(result).isNotNull();
     }
 }

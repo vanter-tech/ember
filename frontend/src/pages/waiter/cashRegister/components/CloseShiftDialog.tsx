@@ -10,6 +10,7 @@ import { useNavigate } from 'react-router-dom'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -92,9 +93,7 @@ export const CloseShiftDialog = () => {
         {!result ? (
           <Form {...form}>
             <form onSubmit={form.handleSubmit((data) => mutation.mutate(data))} className="space-y-5">
-              <p className="text-sm text-muted-foreground">
-                {t('closeShiftDescription')}
-              </p>
+              <DialogDescription>{t('closeShiftDescription')}</DialogDescription>
               <FormField
                 control={form.control}
                 name="countedCash"

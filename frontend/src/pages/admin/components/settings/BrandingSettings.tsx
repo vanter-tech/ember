@@ -162,8 +162,8 @@ export const BrandingSettings = () => {
           <div className="space-y-2">
             <Label>{t('businessHoursLabel')}</Label>
             <div className="flex items-center gap-3">
-              <Input type="time" defaultValue="12:00"
-              value={draftBranding?.openingTime ?? settings?.branding?.openingTime ?? ''}
+              <Input type="time"
+              value={draftBranding?.openingTime ?? settings?.branding?.openingTime ?? '12:00'}
               onChange={(e) =>
                 setDraftBranding({
                     ...draftBranding,
@@ -172,8 +172,8 @@ export const BrandingSettings = () => {
               }
               />
               <span className="text-sm text-zinc-500 font-medium">{t('timeRangeSeparator')}</span>
-              <Input type="time" defaultValue="23:00"
-              value={draftBranding?.closingTime ?? settings?.branding?.closingTime ?? ''}
+              <Input type="time"
+              value={draftBranding?.closingTime ?? settings?.branding?.closingTime ?? '23:00'}
               onChange={(e) =>
                 setDraftBranding({
                     ...draftBranding,

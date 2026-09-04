@@ -1,4 +1,4 @@
-import { MoreHorizontal, Plus } from 'lucide-react'
+import { Plus, UserX } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -19,10 +19,10 @@ const getInitials = (name: string) =>
 interface StaffCardProps {
   member: StaffMemberResponse
   onViewProfile?: (member: StaffMemberResponse) => void
-  onOpenActions?: (member: StaffMemberResponse) => void
+  onDeactivate?: (member: StaffMemberResponse) => void
 }
 
-export const StaffCard = ({ member, onViewProfile, onOpenActions }: StaffCardProps) => {
+export const StaffCard = ({ member, onViewProfile, onDeactivate }: StaffCardProps) => {
   const { t } = useTranslation('admin')
   const name = member.name ?? ''
   const roleKey = member.role ?? ''
@@ -89,10 +89,11 @@ export const StaffCard = ({ member, onViewProfile, onOpenActions }: StaffCardPro
             type="button"
             variant="ghost"
             size="icon-sm"
-            onClick={() => onOpenActions?.(member)}
-            aria-label={t('moreOptionsAriaLabel')}
+            onClick={() => onDeactivate?.(member)}
+            aria-label={t('deactivateStaffAriaLabel')}
+            title={t('deactivateStaffAriaLabel')}
           >
-            <MoreHorizontal className="h-4 w-4" />
+            <UserX className="h-4 w-4" />
           </Button>
         </div>
       </CardContent>

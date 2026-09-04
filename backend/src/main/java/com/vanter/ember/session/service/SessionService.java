@@ -321,9 +321,13 @@ public class SessionService {
         return saved;
     }
 
-    public Session addItemAsWaiter(String sessionId, Long menuItemId,
+    public Session addItemAsWaiter(String sessionId, String requestingWaiter, Long menuItemId,
                                    List<Long> selectedOptionIds, String participantName) {
         Session session = findById(sessionId);
+
+        if (!session.getWaiterId().equals(requestingWaiter)) {
+            throw new AccessDeniedException("Only the assigned waiter can add items to this table");
+        }
 
         if (session.getStatus() != SessionStatus.OPEN) {
             throw new IllegalStateException("Cannot add items to a session that is not open");
@@ -484,9 +488,12 @@ public class SessionService {
         ));
     }
 
-    public void closeEmptySession(String sessionId){
+    public void closeEmptySession(String sessionId, String requestingWaiter){
         Session session = findById(sessionId);
 
+        if (!session.getWaiterId().equals(requestingWaiter)) {
+            throw new AccessDeniedException("Only the assigned waiter can cancel this table");
+        }
 
         boolean orderConfirmed = session.getItems().stream().anyMatch((item) -> item.getStatus() != OrderItemStatus.DRAFT);
 
@@ -518,7 +525,7 @@ public class SessionService {
 
         boolean isWaiter = session.getWaiterId().equals(user.getEmail());
 
-        boolean isOwner = item.getParticipantId().equals(user.getId());
+        boolean isOwner = user.getId().equals(item.getParticipantId());
         if (!isWaiter && !isOwner) {
             throw new IllegalStateException(
                     "Only the item's owner or the session waiter can remove it" );
@@ -556,8 +563,8 @@ public class SessionService {
                 .orElseThrow(() -> new ResourceNotFoundException("Table not found"));
 
         List<OrderItem> drafts = session.getItems().stream()
-                .filter(item  -> item.getParticipantId().equals(userId))
                 .filter(item -> item.getStatus() == OrderItemStatus.DRAFT)
+                .filter(item -> userId.equals(item.getParticipantId()))
                 .toList();
 
         if(!drafts.isEmpty()){

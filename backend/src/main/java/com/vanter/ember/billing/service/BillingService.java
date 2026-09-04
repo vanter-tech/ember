@@ -11,6 +11,7 @@ import com.vanter.ember.billing.repository.BillRepository;
 import com.vanter.ember.billing.repository.BillSplitRepository;
 import com.vanter.ember.billing.repository.PaymentRepository;
 import com.vanter.ember.config.ResourceNotFoundException;
+import com.vanter.ember.config.TenantContextHolder;
 import com.vanter.ember.identity.model.User;
 import com.vanter.ember.identity.repository.UserRepository;
 import com.vanter.ember.session.model.OrderItem;
@@ -18,6 +19,7 @@ import com.vanter.ember.session.model.OrderItemStatus;
 import com.vanter.ember.session.model.Session;
 import com.vanter.ember.session.model.SessionStatus;
 import com.vanter.ember.session.service.SessionService;
+import com.vanter.ember.settings.service.SettingService;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
@@ -40,6 +42,7 @@ public class BillingService {
     private final PaymentRepository paymentRepository;
     private final UserRepository userRepository;
     private final SimpMessagingTemplate messagingTemplate;
+    private final SettingService settingService;
 
     @Transactional
     public Bill calculateBill(String sessionId, SplitMethod splitMethod) {
@@ -61,9 +64,10 @@ public class BillingService {
             throw new IllegalStateException("No billable items in session: " + sessionId);
         }
 
-        BigDecimal total = billableItems.stream()
+        BigDecimal subtotal = billableItems.stream()
                 .map(OrderItem::getPrice)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal total = subtotal.multiply(taxMultiplier()).setScale(2, RoundingMode.HALF_UP);
 
         return billRepository.save(Bill.builder()
                 .sessionId(sessionId)
@@ -98,6 +102,20 @@ public class BillingService {
         return saved;
     }
 
+    /**
+     * QA_SIMULATION_REPORT.md E-05: {@code calculateBill} used to ignore the tenant's configured
+     * Settings &gt; Billing &gt; "Tax rate (%)" entirely — every bill was invoiced at the bare
+     * item subtotal no matter what the admin configured. {@code taxRate} is a percentage (e.g.
+     * {@code 16} means 16%), matching the admin UI's "Tax rate (%)" field and {@code TaxRule.rate}
+     * ({@code @Min(0) @Max(100)}), not a 0-1 fraction.
+     */
+    private BigDecimal taxMultiplier() {
+        Double taxRatePercent = settingService.getSettings(TenantContextHolder.requireTenantId())
+                .getPayload().getBilling().getTaxRate();
+        BigDecimal rate = taxRatePercent == null ? BigDecimal.ZERO : BigDecimal.valueOf(taxRatePercent);
+        return BigDecimal.ONE.add(rate.divide(BigDecimal.valueOf(100)));
+    }
+
     private String resolveUserId(String email) {
         return userRepository.findByEmail(email)
                 .map(User::getId)
@@ -117,11 +135,14 @@ public class BillingService {
                         OrderItem::getParticipantName,
                         Collectors.reducing(BigDecimal.ZERO, OrderItem::getPrice, BigDecimal::add)));
 
+        // Same multiplier calculateBill applied to the bill's own total (E-05) — otherwise the
+        // sum of per-participant splits would silently drift below the tax-inclusive bill total.
+        BigDecimal taxMultiplier = taxMultiplier();
         List<BillSplit> splits = amountByParticipant.entrySet().stream()
                 .map(e -> BillSplit.builder()
                         .bill(bill)
                         .participantName(e.getKey())
-                        .amount(e.getValue())
+                        .amount(e.getValue().multiply(taxMultiplier).setScale(2, RoundingMode.HALF_UP))
                         .status(BillSplitStatus.UNPAID)
                         .build())
                 .toList();

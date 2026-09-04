@@ -38,6 +38,11 @@ interface UIState {
   activeTourSection: string | null
   // Set only by the "?" button; SectionTour clears it once its own tour finishes/skips.
   requestedTourSection: string | null
+  // QA_SIMULATION_REPORT.md E-17: whether CashShiftSentinel currently has a blocking
+  // pre-warning/overdue/stale AlertDialog open — set by the sentinel itself so any page's own
+  // onboarding tour (e.g. WaiterTour on /waiter/tables) can hold off starting until it's
+  // dismissed, instead of both overlays fighting for attention at once.
+  cashShiftAlertOpen: boolean
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- see modalPayload above
   openModal: (modal: ModalType, payload?: any) => void
   closeModal: () => void
@@ -47,6 +52,7 @@ interface UIState {
   setActiveTourSection: (sectionId: string | null) => void
   requestTour: (sectionId: string) => void
   clearTourRequest: () => void
+  setCashShiftAlertOpen: (open: boolean) => void
 }
 
 export const useUIStore = create<UIState>((set) => ({
@@ -58,6 +64,7 @@ export const useUIStore = create<UIState>((set) => ({
     activeInventoryHubSection: null,
     activeTourSection: null,
     requestedTourSection: null,
+    cashShiftAlertOpen: false,
 
 
   openModal: (modal, payload = null) => set({
@@ -82,7 +89,9 @@ export const useUIStore = create<UIState>((set) => ({
 
   requestTour: (sectionId) => set({ requestedTourSection: sectionId }),
 
-  clearTourRequest: () => set({ requestedTourSection: null })
+  clearTourRequest: () => set({ requestedTourSection: null }),
+
+  setCashShiftAlertOpen: (open) => set({ cashShiftAlertOpen: open })
 
 }));
 

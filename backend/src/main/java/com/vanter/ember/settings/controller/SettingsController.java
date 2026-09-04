@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -18,7 +19,11 @@ public class SettingsController {
 
     private final SettingService settingService;
 
+    // WAITER can read (TopNav shows the branding name on the waiter shell too) and so can a
+    // seated CUSTOMER (needs the real tax rate for their own order preview, E-05) — only ADMIN
+    // may write.
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN','WAITER','CUSTOMER')")
     public ResponseEntity<SettingsPayload> getSettings() {
         UUID restaurantId = TenantContextHolder.requireTenantId();
 
@@ -27,6 +32,7 @@ public class SettingsController {
     }
 
     @PutMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> updateSettings(@RequestBody @Valid SettingsPayload newPayload) {
         UUID restaurantId = TenantContextHolder.requireTenantId();
         settingService.updateSettings(restaurantId, newPayload);

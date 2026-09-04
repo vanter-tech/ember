@@ -161,9 +161,10 @@ public class SessionController {
     @PostMapping("/{id}/waiter-items")
     @PreAuthorize("hasRole('WAITER')")
     public SessionDetailResponseDto addWaiterItem(@PathVariable String id,
-                                                  @Valid @RequestBody AddWaiterItemRequest request) {
-        sessionService.addItemAsWaiter(
-                id, request.menuItemId(), request.selectedOptionIds(), request.participantName());
+                                                  @Valid @RequestBody AddWaiterItemRequest request,
+                                                  Authentication authentication) {
+        sessionService.addItemAsWaiter(id, authentication.getName(),
+                request.menuItemId(), request.selectedOptionIds(), request.participantName());
         return sessionService.getSessionDetails(id);
     }
 
@@ -199,7 +200,7 @@ public class SessionController {
     @PreAuthorize("hasRole('WAITER')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void closeEmptySession(@PathVariable String sessionId, Authentication authentication) {
-        sessionService.closeEmptySession(sessionId);
+        sessionService.closeEmptySession(sessionId, authentication.getName());
     }
 
 }

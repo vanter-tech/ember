@@ -66,4 +66,11 @@ describe('QuickLoginModal', () => {
     fireEvent.click(screen.getByText('Prefiero mi contraseña'))
     expect(screen.getByLabelText('Ingresa tu contraseña')).toBeVisible()
   })
+
+  // QA_SIMULATION_REPORT.md E-21: this dialog is reachable with no PIN/password entered yet, on
+  // a device explicitly shared across staff — it must not hand out the account's real email.
+  test('does not display the profile email before authentication', () => {
+    renderModal()
+    expect(screen.queryByText('juan@x.com')).not.toBeInTheDocument()
+  })
 })

@@ -110,6 +110,7 @@ export default function App() {
 
         <Route element={<ProtectedRoute allowedRoles={['CUSTOMER']} />}>
           <Route path='/customer' element={<CustomerLayout/>}>
+            <Route index element={<Navigate to="home" replace />} />
             <Route path='home' element={<Home/>}/>
             <Route path='menu' element={<Menu/>}/>
             <Route path="menu/:id/comanda" element={<ComandaView/>} />
@@ -119,6 +120,10 @@ export default function App() {
 
         <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
           <Route path="/admin" element={<AdminLayout />}>
+            {/* QA_SIMULATION_REPORT.md E-11: bare /admin (and /waiter, /kitchen below) rendered
+                a blank screen with no feedback after login — no <Route index> matched, so
+                AdminLayout's <Outlet/> had nothing to render. Redirect to the first dock item. */}
+            <Route index element={<Navigate to="inventory" replace />} />
             <Route path="inventory" element={<InventoryHub />}>
               <Route index element={<Inventory />} />
               <Route path="categories" element={<Category />} />
@@ -134,6 +139,7 @@ export default function App() {
 
         <Route element={<ProtectedRoute allowedRoles={['WAITER', 'ADMIN']} />}>
           <Route path="/waiter" element={<WaiterLayout />}>
+            <Route index element={<Navigate to="tables" replace />} />
             <Route path="tables" element={<Tables />} />
             <Route path="tables/:id" element={<TableInformation />} />
             <Route path="cash-register" element={<WaiterCashRegister />} />
@@ -142,6 +148,7 @@ export default function App() {
 
         <Route element={<ProtectedRoute allowedRoles={['KITCHEN', 'ADMIN']} />}>
           <Route path="/kitchen" element={<KitchenLayout/>}>
+            <Route index element={<Navigate to="orders" replace />} />
             <Route path='orders' element={<OrdersDisplays/>}/>
           </Route>
         </Route>

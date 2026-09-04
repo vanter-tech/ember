@@ -18,11 +18,18 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/authStore'
+import { useSettingStore } from '@/store/settingStore'
 import { useTranslation } from '@/lib/i18n'
 
 type SessionItem = NonNullable<
   ReturnType<typeof useSessionStore.getState>['items']
 >[number]
+
+// QA_SIMULATION_REPORT.md E-03: same bug as ItemsFloatingIsland.tsx — a `|| []` literal inside a
+// Zustand selector allocates a new array every render when `items` is undefined, which
+// useSyncExternalStore reads as an ever-changing snapshot and re-renders forever. A module-level
+// constant keeps the fallback reference stable.
+const EMPTY_ITEMS: SessionItem[] = []
 
 const groupByParticipant = (itemsToGroup: SessionItem[]) => {
   const dicc = itemsToGroup.reduce(
@@ -66,12 +73,13 @@ const groupByParticipant = (itemsToGroup: SessionItem[]) => {
 }
 
 export const ComandaView = () => {
-  const items = useSessionStore((state) => state.items || [])
+  const items = useSessionStore((state) => state.items ?? EMPTY_ITEMS)
   const currentId = useAuthStore((state) => state.userId)
   const sessionId = useSessionStore((state) => state.id)
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const { t } = useTranslation('customer')
+  const { settings } = useSettingStore()
 
   const Participants = useMemo(
     () => groupByParticipant(items.filter((item) => item.status === 'DRAFT')),
@@ -128,7 +136,10 @@ export const ComandaView = () => {
 
   const tableSubTotal = items.reduce((acum, item) => acum + (item.price ?? 0), 0)
 
-  const services = tableSubTotal * 0.1
+  // QA_SIMULATION_REPORT.md E-05: same hardcoded-10% bug as TableInformation.tsx, on the
+  // customer's own order-review screen — now mirrors the real tenant-configured tax rate.
+  const taxRatePercent = settings?.billing?.taxRate ?? 0
+  const services = tableSubTotal * (taxRatePercent / 100)
 
   const total = tableSubTotal + services
 
@@ -334,7 +345,7 @@ export const ComandaView = () => {
             </div>
 
             <div className="flex justify-between">
-              <h2 className="text-sm text-gray-500 mt-1">{t('comandaServiceLabel')}</h2>
+              <h2 className="text-sm text-gray-500 mt-1">{t('comandaServiceLabel', { rate: taxRatePercent })}</h2>
 
               <span>${services.toFixed(2)}</span>
             </div>

@@ -84,6 +84,14 @@ public class PaymentService {
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Split not found for participant: " + participantName));
 
+        // QA_SIMULATION_REPORT.md E-04: a retried/duplicated call used to re-mark an already-PAID
+        // split PAID again and save a second CONFIRMED Payment for the same money — the bill under
+        // `bill` is pessimistic-locked above, so this check is race-free against a concurrent call.
+        if (split.getStatus() != BillSplitStatus.UNPAID) {
+            throw new IllegalStateException(
+                    "Split for participant '" + participantName + "' is already " + split.getStatus());
+        }
+
         if (amount.compareTo(split.getAmount()) != 0) {
             throw new IllegalArgumentException(
                     "Payment amount " + amount + " does not match split amount " + split.getAmount());
@@ -121,7 +129,7 @@ public class PaymentService {
     @Transactional
     public Payment initiateDigitalPayment(
             Long billId, String participantName, BigDecimal amount, String processedByEmail) {
-        Bill bill = billRepository.findById(billId)
+        Bill bill = billRepository.findByIdForUpdate(billId)
                 .orElseThrow(() -> new ResourceNotFoundException("Bill not found: " + billId));
         if (bill.getStatus() == BillStatus.VOIDED) {
             throw new IllegalStateException("Cannot register a payment against a voided bill: " + billId);
@@ -130,6 +138,22 @@ public class PaymentService {
         BillSplit split = billSplitRepository.findByBillIdAndParticipantName(billId, participantName)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Split not found for participant: " + participantName));
+
+        // QA_SIMULATION_REPORT.md E-04 (same class of bug as the physical-payment guard above):
+        // reject once the split is settled, and refuse a second concurrent pending intent for the
+        // same participant — both used to be free to create duplicate money on the bill.
+        if (split.getStatus() != BillSplitStatus.UNPAID) {
+            throw new IllegalStateException(
+                    "Split for participant '" + participantName + "' is already " + split.getStatus());
+        }
+        boolean alreadyPending = paymentRepository.findByBillId(billId).stream()
+                .anyMatch(p -> p.getParticipantName().equals(participantName)
+                        && p.getMethod() == PaymentMethod.DIGITAL
+                        && p.getStatus() == PaymentStatus.PENDING);
+        if (alreadyPending) {
+            throw new IllegalStateException(
+                    "A digital payment is already pending for participant '" + participantName + "'");
+        }
 
         if (amount.compareTo(split.getAmount()) != 0) {
             throw new IllegalArgumentException(
