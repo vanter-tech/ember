@@ -80,6 +80,22 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return problem(HttpStatus.UNAUTHORIZED, "Invalid credentials", request.getRequestURI());
     }
 
+    @ExceptionHandler(com.vanter.ember.identity.exception.PinNotSetException.class)
+    public ProblemDetail handlePinNotSet(
+            com.vanter.ember.identity.exception.PinNotSetException ex, HttpServletRequest request) {
+        ProblemDetail problem = problem(HttpStatus.CONFLICT, ex.getMessage(), request.getRequestURI());
+        problem.setProperty("code", "PIN_NOT_SET");
+        return problem;
+    }
+
+    @ExceptionHandler(com.vanter.ember.identity.exception.PinLockedException.class)
+    public ProblemDetail handlePinLocked(
+            com.vanter.ember.identity.exception.PinLockedException ex, HttpServletRequest request) {
+        ProblemDetail problem = problem(HttpStatus.LOCKED, ex.getMessage(), request.getRequestURI());
+        problem.setProperty("code", "PIN_LOCKED");
+        return problem;
+    }
+
     /**
      * Without this, the {@link Exception} catch-all would turn every authentication failure raised
      * inside a controller into a 500 instead of letting it surface as a 401.

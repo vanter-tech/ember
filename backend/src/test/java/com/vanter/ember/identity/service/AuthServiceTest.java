@@ -4,6 +4,7 @@ import com.vanter.ember.identity.model.Role;
 import com.vanter.ember.identity.model.User;
 import com.vanter.ember.identity.model.dto.AuthResponse;
 import com.vanter.ember.identity.model.dto.LoginRequest;
+import com.vanter.ember.identity.model.dto.PinLoginRequest;
 import com.vanter.ember.identity.model.dto.RegisterRequest;
 import com.vanter.ember.identity.repository.UserRepository;
 import com.vanter.ember.restaurant.model.Restaurant;
@@ -33,6 +34,7 @@ class AuthServiceTest {
     @Mock UserRepository userRepository;
     @Mock JwtService jwtService;
     @Mock PasswordEncoder passwordEncoder;
+    @Mock PinAttemptGuard pinAttemptGuard;
     @InjectMocks AuthService authService;
 
     @Test
@@ -206,5 +208,66 @@ class AuthServiceTest {
 
         assertThatThrownBy(() -> authService.login(req))
                 .isInstanceOf(BadCredentialsException.class);
+    }
+
+    @Test
+    void loginWithPin_returnsSameClaimsAsPassword_whenPinMatches() {
+        User user = User.builder().id("u1").name("Waiter").email("w@test.com")
+                .role(Role.WAITER).passwordHash("pw").pinHash("pinHash").active(true).build();
+        when(userRepository.findByEmail("w@test.com")).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("1234", "pinHash")).thenReturn(true);
+        when(jwtService.generateToken(eq("w@test.com"), anyMap())).thenReturn("jwt-123");
+
+        PinLoginRequest req = new PinLoginRequest();
+        req.setEmail("w@test.com"); req.setPin("1234");
+
+        AuthResponse res = authService.loginWithPin(req);
+
+        assertThat(res.getToken()).isEqualTo("jwt-123");
+        assertThat(res.getRole()).isEqualTo("WAITER");
+        assertThat(res.getUserId()).isEqualTo("u1");
+        verify(pinAttemptGuard).assertNotLocked("w@test.com");
+        verify(pinAttemptGuard).recordSuccess("w@test.com");
+    }
+
+    @Test
+    void loginWithPin_throwsPinNotSet_whenPinHashNull() {
+        User user = User.builder().id("u1").email("w@test.com").name("W")
+                .role(Role.WAITER).passwordHash("pw").pinHash(null).active(true).build();
+        when(userRepository.findByEmail("w@test.com")).thenReturn(Optional.of(user));
+
+        PinLoginRequest req = new PinLoginRequest();
+        req.setEmail("w@test.com"); req.setPin("1234");
+
+        assertThatThrownBy(() -> authService.loginWithPin(req))
+                .isInstanceOf(com.vanter.ember.identity.exception.PinNotSetException.class);
+    }
+
+    @Test
+    void loginWithPin_recordsFailureAndThrows_whenPinWrong() {
+        User user = User.builder().id("u1").email("w@test.com").name("W")
+                .role(Role.WAITER).passwordHash("pw").pinHash("pinHash").active(true).build();
+        when(userRepository.findByEmail("w@test.com")).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("9999", "pinHash")).thenReturn(false);
+
+        PinLoginRequest req = new PinLoginRequest();
+        req.setEmail("w@test.com"); req.setPin("9999");
+
+        assertThatThrownBy(() -> authService.loginWithPin(req))
+                .isInstanceOf(BadCredentialsException.class);
+        verify(pinAttemptGuard).recordFailure("w@test.com");
+    }
+
+    @Test
+    void loginWithPin_throws_whenUserInactive() {
+        User user = User.builder().id("u1").email("w@test.com").name("W")
+                .role(Role.WAITER).passwordHash("pw").pinHash("pinHash").active(false).build();
+        when(userRepository.findByEmail("w@test.com")).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("1234", "pinHash")).thenReturn(true);
+
+        PinLoginRequest req = new PinLoginRequest();
+        req.setEmail("w@test.com"); req.setPin("1234");
+
+        assertThatThrownBy(() -> authService.loginWithPin(req)).isInstanceOf(BadCredentialsException.class);
     }
 }

@@ -1,9 +1,11 @@
 package com.vanter.ember.identity.service;
 
+import com.vanter.ember.identity.exception.PinNotSetException;
 import com.vanter.ember.identity.model.Role;
 import com.vanter.ember.identity.model.User;
 import com.vanter.ember.identity.model.dto.AuthResponse;
 import com.vanter.ember.identity.model.dto.LoginRequest;
+import com.vanter.ember.identity.model.dto.PinLoginRequest;
 import com.vanter.ember.identity.model.dto.RegisterRequest;
 import com.vanter.ember.identity.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +24,7 @@ public class AuthService {
     private final UserRepository userRepository;
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
+    private final PinAttemptGuard pinAttemptGuard;
 
     public AuthResponse register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
@@ -52,6 +55,26 @@ public class AuthService {
             throw new BadCredentialsException("Invalid credentials");
         }
 
+        return buildResponse(user, tenantIdOf(user));
+    }
+
+    public AuthResponse loginWithPin(PinLoginRequest request) {
+        pinAttemptGuard.assertNotLocked(request.getEmail());
+
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new BadCredentialsException("Invalid credentials"));
+
+        if (user.getPinHash() == null) {
+            throw new PinNotSetException();
+        }
+
+        if (!passwordEncoder.matches(request.getPin(), user.getPinHash())
+                || !Boolean.TRUE.equals(user.getActive())) {
+            pinAttemptGuard.recordFailure(request.getEmail());
+            throw new BadCredentialsException("Invalid credentials");
+        }
+
+        pinAttemptGuard.recordSuccess(request.getEmail());
         return buildResponse(user, tenantIdOf(user));
     }
 
