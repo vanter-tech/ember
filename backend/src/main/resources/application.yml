@@ -57,7 +57,11 @@ management:
         include: health,info,prometheus
   endpoint:
     health:
-      show-details: always
+      # QA_SIMULATION_REPORT.md E-14: `/actuator/health` is `permitAll` (SecurityConfig) and this
+      # default profile is what Ember Hub runs under on-prem — `always` handed an unauthenticated
+      # caller the DB status and the server's free/total disk space and absolute filesystem path.
+      # `prod` already overrides this to `never`; match that here instead of only in prod.
+      show-details: never
   metrics:
     tags:
       application: ember-saas

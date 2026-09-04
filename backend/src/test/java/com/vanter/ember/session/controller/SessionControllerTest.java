@@ -41,6 +41,7 @@ import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -105,6 +106,29 @@ class SessionControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new CreateSessionRequest(TABLE_ID, 4))))
                 .andExpect(status().isUnauthorized());
+    }
+
+    // --- GET /sessions/{id}/status ---
+
+    @Test
+    @WithMockUser(roles = "CUSTOMER")
+    void getStatus_okForAuthenticatedTenantUser() throws Exception {
+        when(sessionService.getSessionStatus("sess-1")).thenReturn(com.vanter.ember.session.model.SessionStatus.OPEN);
+
+        mockMvc.perform(get("/sessions/sess-1/status"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("OPEN"));
+    }
+
+    @Test
+    void getStatus_unauthenticatedReturns401() throws Exception {
+        // QA_SIMULATION_REPORT.md E-16: this route used to be `permitAll`, but the service call
+        // behind it always requires a bound tenant — an anonymous caller got a 409 leaking the
+        // internal detail "No tenant bound to the current context" instead of a clean 401.
+        mockMvc.perform(get("/sessions/sess-1/status"))
+                .andExpect(status().isUnauthorized());
+
+        verify(sessionService, never()).getSessionStatus(any());
     }
 
     // --- GET /sessions/{id}/qr ---
