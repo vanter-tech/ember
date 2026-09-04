@@ -10,6 +10,7 @@ import com.vanter.ember.billing.model.BillStatus;
 import com.vanter.ember.billing.repository.BillRepository;
 import com.vanter.ember.config.ResourceNotFoundException;
 import com.vanter.ember.config.TenantContextHolder;
+import com.vanter.ember.identity.model.Role;
 import com.vanter.ember.identity.model.User;
 import com.vanter.ember.identity.repository.UserRepository;
 import com.vanter.ember.kitchen.event.KitchenItemUpdated;
@@ -385,6 +386,36 @@ public class SessionService {
                 table.getTableNumber(),
                 List.of(newItem)));
 
+        return saved;
+    }
+
+    public Session transferTable(String sessionId, String callerEmail, String targetWaiterId) {
+        Session session = findById(sessionId);
+        if (session.getStatus() != SessionStatus.OPEN) {
+            throw new IllegalStateException("Only an open table can be transferred");
+        }
+        if (!callerEmail.equals(session.getWaiterId())) {
+            throw new AccessDeniedException("Only the current waiter can transfer this table");
+        }
+        User target = userRepository.findById(targetWaiterId)
+                .orElseThrow(() -> new IllegalArgumentException("Target waiter not found"));
+        if (target.getRole() != Role.WAITER || !Boolean.TRUE.equals(target.getActive())
+                || target.getEmail().equals(session.getWaiterId())) {
+            throw new IllegalArgumentException("Invalid transfer target");
+        }
+
+        String from = session.getWaiterId();
+        session.setWaiterId(target.getEmail());
+        session.getActivityLog().add(SessionActivity.builder()
+                .type(SessionActivity.Type.TABLE_TRANSFERRED)
+                .participantName(target.getName())
+                .timestamp(LocalDateTime.now())
+                .build());
+
+        Session saved = sessionRepository.save(session);
+        eventPublisher.publishEvent(new TableTransferred(
+                saved.getTenantId(), saved.getId(), saved.getTableId(),
+                from, target.getEmail(), target.getName()));
         return saved;
     }
 

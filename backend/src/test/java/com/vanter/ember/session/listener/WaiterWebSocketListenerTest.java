@@ -3,6 +3,7 @@ package com.vanter.ember.session.listener;
 import com.vanter.ember.session.event.ParticipantJoined;
 import com.vanter.ember.session.event.SessionClosed;
 import com.vanter.ember.session.event.SessionOpened;
+import com.vanter.ember.session.event.TableTransferred;
 import com.vanter.ember.session.model.SessionStatus;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -47,6 +48,17 @@ class WaiterWebSocketListenerTest {
                 new SessionClosed(TENANT_ID, "sess-1", UUID.randomUUID(), SessionStatus.CLOSED);
 
         listener.onSessionClosed(event);
+
+        verify(messagingTemplate).convertAndSend("/topic/waiter/" + TENANT_ID, event);
+    }
+
+    @Test
+    void onTableTransferred_sendsToTenantWaiterTopic() {
+        TableTransferred event = new TableTransferred(
+                TENANT_ID, "sess-1", UUID.randomUUID(),
+                "old@test.com", "new@test.com", "Nueva");
+
+        listener.onTableTransferred(event);
 
         verify(messagingTemplate).convertAndSend("/topic/waiter/" + TENANT_ID, event);
     }

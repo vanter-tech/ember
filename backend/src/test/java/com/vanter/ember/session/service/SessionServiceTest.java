@@ -6,6 +6,7 @@ import com.vanter.ember.billing.model.Bill;
 import com.vanter.ember.billing.repository.BillRepository;
 import com.vanter.ember.config.ResourceNotFoundException;
 import com.vanter.ember.config.TenantContextHolder;
+import com.vanter.ember.identity.model.Role;
 import com.vanter.ember.identity.model.User;
 import com.vanter.ember.identity.repository.UserRepository;
 import com.vanter.ember.kitchen.event.KitchenItemUpdated;
@@ -19,6 +20,7 @@ import com.vanter.ember.session.event.ParticipantJoined;
 import com.vanter.ember.session.event.ParticipantLeft;
 import com.vanter.ember.session.event.SessionClosed;
 import com.vanter.ember.session.event.SessionOpened;
+import com.vanter.ember.session.event.TableTransferred;
 import com.vanter.ember.session.exception.TooManyParticipantsException;
 import com.vanter.ember.session.model.OrderItem;
 import com.vanter.ember.session.model.OrderItemStatus;
@@ -481,6 +483,60 @@ class SessionServiceTest {
         assertThatThrownBy(() -> sessionService.addItemAsWaiter("sess-1", 10L, List.of(), null))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Bill already requested");
+    }
+
+    // --- transferTable tests ---
+
+    @Test
+    void transferTable_reassignsWaiterAndPublishesEvent() {
+        Session session = openSessionWithParticipant("user-1");
+        session.setWaiterId("old@test.com");
+        when(sessionRepository.findByIdAndTenantId("sess-1", RESTAURANT_ID)).thenReturn(Optional.of(session));
+        User target = User.builder().id("u9").email("new@test.com").name("Nueva")
+                .role(Role.WAITER).active(true).build();
+        when(userRepository.findById("u9")).thenReturn(Optional.of(target));
+        when(sessionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        Session result = sessionService.transferTable("sess-1", "old@test.com", "u9");
+
+        assertThat(result.getWaiterId()).isEqualTo("new@test.com");
+        assertThat(result.getActivityLog())
+                .anyMatch(a -> a.getType() == SessionActivity.Type.TABLE_TRANSFERRED);
+        verify(eventPublisher).publishEvent(isA(TableTransferred.class));
+    }
+
+    @Test
+    void transferTable_rejects_whenCallerNotOwner() {
+        Session session = openSessionWithParticipant("user-1");
+        session.setWaiterId("owner@test.com");
+        when(sessionRepository.findByIdAndTenantId("sess-1", RESTAURANT_ID)).thenReturn(Optional.of(session));
+
+        assertThatThrownBy(() -> sessionService.transferTable("sess-1", "intruder@test.com", "u9"))
+                .isInstanceOf(AccessDeniedException.class);
+    }
+
+    @Test
+    void transferTable_rejects_whenTargetNotWaiter() {
+        Session session = openSessionWithParticipant("user-1");
+        session.setWaiterId("old@test.com");
+        when(sessionRepository.findByIdAndTenantId("sess-1", RESTAURANT_ID)).thenReturn(Optional.of(session));
+        when(userRepository.findById("u9")).thenReturn(Optional.of(
+                User.builder().id("u9").email("k@test.com").name("Kite")
+                        .role(Role.KITCHEN).active(true).build()));
+
+        assertThatThrownBy(() -> sessionService.transferTable("sess-1", "old@test.com", "u9"))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void transferTable_rejects_whenSessionClosed() {
+        Session session = openSessionWithParticipant("user-1");
+        session.setStatus(SessionStatus.CLOSED);
+        session.setWaiterId("old@test.com");
+        when(sessionRepository.findByIdAndTenantId("sess-1", RESTAURANT_ID)).thenReturn(Optional.of(session));
+
+        assertThatThrownBy(() -> sessionService.transferTable("sess-1", "old@test.com", "u9"))
+                .isInstanceOf(IllegalStateException.class);
     }
 
     @Test

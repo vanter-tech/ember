@@ -2,6 +2,7 @@ package com.vanter.ember.session.listener;
 
 import com.vanter.ember.session.event.ItemAdded;
 import com.vanter.ember.session.event.ParticipantJoined;
+import com.vanter.ember.session.event.TableTransferred;
 import com.vanter.ember.session.model.OrderItemStatus;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -64,5 +65,16 @@ class SessionWebSocketListenerTest {
         listener.onItemAdded(event);
 
         verify(messagingTemplate).convertAndSend("/topic/session/sess-99", event);
+    }
+
+    @Test
+    void onTableTransferred_sendsToSessionTopic() {
+        TableTransferred event = new TableTransferred(
+                TENANT_ID, "sess-1", UUID.randomUUID(),
+                "old@test.com", "new@test.com", "Nueva");
+
+        listener.onTableTransferred(event);
+
+        verify(messagingTemplate).convertAndSend("/topic/session/sess-1", event);
     }
 }
