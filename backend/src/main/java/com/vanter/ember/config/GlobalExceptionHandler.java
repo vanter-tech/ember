@@ -67,6 +67,14 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return problem(HttpStatus.CONFLICT, ex.getMessage(), request.getRequestURI());
     }
 
+    @ExceptionHandler(com.vanter.ember.printing.exception.BillNotPaidException.class)
+    public ProblemDetail handleBillNotPaid(
+            com.vanter.ember.printing.exception.BillNotPaidException ex, HttpServletRequest request) {
+        ProblemDetail problem = problem(HttpStatus.CONFLICT, ex.getMessage(), request.getRequestURI());
+        problem.setProperty("code", "BILL_NOT_PAID");
+        return problem;
+    }
+
     @ExceptionHandler(com.vanter.ember.cashregister.exception.CashShiftOverdueException.class)
     public ProblemDetail handleCashShiftOverdue(
             com.vanter.ember.cashregister.exception.CashShiftOverdueException ex, HttpServletRequest request) {
