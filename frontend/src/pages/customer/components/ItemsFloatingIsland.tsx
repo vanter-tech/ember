@@ -4,10 +4,18 @@ import { ArrowRight } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import { useAuthStore } from "@/store/authStore"
 import { useTranslation } from "@/lib/i18n"
+import type { orderItemDTO } from "@/lib/api"
+
+// QA_SIMULATION_REPORT.md E-03: a `|| []` literal inside the selector allocates a brand-new
+// array every render whenever `items` is undefined (e.g. on first load before any session has
+// been set), so Zustand/useSyncExternalStore sees a "changed" snapshot every time and re-renders
+// forever ("Maximum update depth exceeded"). A module-level constant keeps the fallback reference
+// stable across renders.
+const EMPTY_ITEMS: orderItemDTO[] = []
 
 export const ItemsFloatingIsland = () => {
     const navigate = useNavigate()
-    const items = useSessionStore((state) => state.items  || [])
+    const items = useSessionStore((state) => state.items ?? EMPTY_ITEMS)
     const tableId = useSessionStore((state) => state.tableId)
     const currentId = useAuthStore((state) => state.userId)
     const { t } = useTranslation('customer')
