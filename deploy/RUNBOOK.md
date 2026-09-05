@@ -308,13 +308,9 @@ CH=$(gcloud beta monitoring channels create --display-name="ember ops email" \
 # All autoClose 1800s. Policy JSON committed under deploy/monitoring/.
 ```
 
-**Deferred to HPD-20** *(unblocked 2026-09-01 — `api.ember.vanter.net` resolves
-via the Caddy edge)*. Uptime check:
-`gcloud monitoring uptime create ember-api-ping --resource-type=uptime-url \
---resource-labels=host=api.ember.vanter.net,project_id=ember-prod-vanter \
---path=/v1/public/ping --period=5` plus an alert policy on
-`monitoring.googleapis.com/uptime_check/check_passed`, and the end-to-end test
-(`docker compose stop app` ~6 min → alert email → `start`).
+The uptime check on `/v1/public/ping`, its alert policy, and the
+`docker compose stop app` ~6-min alert test were **done in HPD-20** — see the
+"HPD-20 — executed" block below.
 
 **OS Login quirk.** VM SSH lands in a home dir the login user cannot write to
 (`Could not chdir to home directory … Permission denied`, harmless). Any command that
@@ -534,6 +530,107 @@ A `403` here would mean the `allUsers` → `roles/storage.objectViewer` binding 
 the bucket did not take. End-to-end proof (a real upload from the running app via
 the user-account HMAC key, its URL opened in a browser) is HPD-20 / HPD-22.
 
+#### HPD-20 — executed 2026-09-01
+
+Integration: put the GCS credentials into the live secret, redeploy, prove the
+media path end-to-end, and stand up the uptime check that HPD-14 deferred.
+
+**1. Update `ember-prod-env`.** Drop `TUNNEL_TOKEN` (dead since HPD-17 — the
+compose never reads it), fill the five `MINIO_*` keys with the HPD-16 values.
+
+```bash
+gcloud secrets versions access latest --secret=ember-prod-env > /tmp/prod.env  # umask 077
+# edit /tmp/prod.env:
+#   - delete the TUNNEL_TOKEN line
+#   - MINIO_URL=https://storage.googleapis.com
+#   - MINIO_ACCESS_KEY=<HPD-16 user-account HMAC access key>
+#   - MINIO_SECRET_KEY=<HPD-16 secret>
+#   - MINIO_BUCKET=ember-media-prod
+#   - MINIO_PUBLIC_URL=https://storage.googleapis.com/ember-media-prod
+gcloud secrets versions add ember-prod-env --data-file=/tmp/prod.env
+shred -u /tmp/prod.env
+```
+
+**2. Redeploy.**
+
+```bash
+./deploy/deploy.sh latest         # -> "app healthy"
+```
+
+**3. Smoke** (from a machine off the VM network):
+
+```bash
+curl -s https://api.ember.vanter.net/v1/public/ping                              # -> pong
+curl -s -o /dev/null -w '%{http_code}\n' -X OPTIONS \
+  https://api.ember.vanter.net/v1/auth/login \
+  -H 'Origin: https://app.ember.vanter.net' -H 'Access-Control-Request-Method: POST'  # -> 204
+curl -s -o /dev/null -w '%{http_code}\n' https://api.ember.vanter.net/v1/actuator/health  # -> 403 (HPD-19 block rule)
+```
+
+**4. Media round-trip (this is the real HMAC-key test).** Log in as an admin at
+`https://app.ember.vanter.net`, create a category (or menu item) with an image,
+then check the URL the API returned:
+
+```bash
+curl -sI "<imgUrl from the create response>"
+#   HTTP/2 200
+#   host is storage.googleapis.com/ember-media-prod/<uuid>.jpg
+#   cache-control: public, max-age=31536000, immutable
+```
+
+A `403`/`SignatureDoesNotMatch` in the `app` logs on upload = the HMAC key is
+wrong in the secret; a `WARN "Could not ensure MinIO bucket"` at boot is expected
+and harmless (`minio.manage-bucket=false`, see HPD-16).
+
+**5. Uptime check + alert** (Cloud Shell). HPD-14 deferred this until
+`api.ember.vanter.net` resolved.
+
+```bash
+gcloud monitoring uptime create ember-api-ping \
+  --resource-type=uptime-url \
+  --resource-labels=host=api.ember.vanter.net,project_id=ember-prod-vanter \
+  --path=/v1/public/ping --period=5 --timeout=10 \
+  --matcher-content=pong --matcher-type=contains-string
+
+# Alert on the check failing. Reuse the "ember ops email" channel from HPD-14:
+CH=$(gcloud beta monitoring channels list \
+  --filter='displayName="ember ops email"' --format='value(name)')
+cat > /tmp/alert-uptime.json <<JSON
+{
+  "displayName": "ember api uptime",
+  "combiner": "OR",
+  "conditions": [{
+    "displayName": "ember-api-ping check failing",
+    "conditionThreshold": {
+      "filter": "metric.type=\"monitoring.googleapis.com/uptime_check/check_passed\" AND resource.type=\"uptime_url\" AND metric.label.check_id=\"ember-api-ping\"",
+      "comparison": "COMPARISON_LT", "thresholdValue": 1,
+      "duration": "300s",
+      "aggregations": [{"alignmentPeriod": "300s", "perSeriesAligner": "ALIGN_FRACTION_TRUE"}],
+      "trigger": {"count": 1}
+    }
+  }],
+  "alertStrategy": {"autoClose": "1800s"},
+  "notificationChannels": ["${CH}"]
+}
+JSON
+gcloud alpha monitoring policies create --policy-from-file=/tmp/alert-uptime.json
+```
+
+**6. End-to-end alert test.**
+
+```bash
+gcloud compute ssh ember-prod --zone us-central1-a --tunnel-through-iap --command '
+  cd /opt/ember && sudo docker compose -f docker-compose.prod.yml stop app'
+# wait ~6 min: uptime check goes red, "ember api uptime" fires, email arrives.
+gcloud compute ssh ember-prod --zone us-central1-a --tunnel-through-iap --command '
+  cd /opt/ember && sudo docker compose -f docker-compose.prod.yml start app'
+# check recovers within ~1 period; policy auto-closes after 1800s.
+```
+
+_Fill in once run:_ `deploy.sh` result, the four `curl` outputs, the image
+`curl -sI`, the uptime-check resource name, and the alert-email timestamps
+(down / recovered).
+
 ## Routine deploy
 
 `./deploy/deploy.sh <image-tag>` from a machine with `gcloud` auth + IAP access.
@@ -606,8 +703,10 @@ Pass `latest` (or a bare `0.1.0`), **not** `v0.1.0` — CI publishes
 `:v0.1.0` image, so `git describe --tags` would set an `EMBER_IMAGE_TAG` that
 fails `compose pull`.
 
-- This is how the remaining `MINIO_*` placeholders get swapped for real R2
-  credentials (HPD-16/20). `TUNNEL_TOKEN` is obsolete — delete the line.
+- The `MINIO_*` keys hold the GCS S3-XML credentials (set in HPD-20 — endpoint
+  `https://storage.googleapis.com`, a user-account HMAC key); rotate via the
+  same GCS Interoperability screen, then a new secret version + `deploy.sh latest`.
+  `TUNNEL_TOKEN` is gone from the secret (removed in HPD-20).
 - Rotating the **Caddy Origin Certificate**: create a new one in Cloudflare
   (SSL/TLS → Origin Server), replace `/opt/ember/caddy/origin.pem` +
   `origin.key` on the VM, then

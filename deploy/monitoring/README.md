@@ -26,8 +26,11 @@ for f in cpu mem disk; do
 done
 ```
 
-## Not here yet — HPD-20
+## Uptime check — added in HPD-20
 
-The uptime check on `https://api.ember.vanter.net/v1/public/ping` and its alert
-policy (`monitoring.googleapis.com/uptime_check/check_passed`) are created once the
-Cloudflare Tunnel makes that hostname resolve.
+The uptime check `ember-api-ping` on `https://api.ember.vanter.net/v1/public/ping`
+(content match `pong`, 5-min period) and the `ember api uptime` alert policy on
+`monitoring.googleapis.com/uptime_check/check_passed` (fires when the check fails
+for 5 min, reuses the `ember ops email` channel) were created once the HPD-17
+Caddy edge made the hostname resolve. Exact commands + the `docker compose stop
+app` end-to-end alert test: `deploy/RUNBOOK.md` § "HPD-20 — executed".
