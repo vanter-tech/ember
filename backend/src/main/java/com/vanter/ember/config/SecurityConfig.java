@@ -27,6 +27,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.AuthenticationEntryPoint;
@@ -116,25 +117,33 @@ public class SecurityConfig {
                     chain.doFilter(request, response);
                     return;
                 }
-                // A print-agent token's subject is the agent's own id, not a user email — it
-                // has no corresponding User row, so loadUserByUsername would always throw
-                // UsernameNotFoundException. This token type authenticates the caller (a print
-                // agent hitting one of its own permitAll /printing/agents/** routes) by its
-                // signature alone; it still needs TenantContextHolder bound below, just not a
-                // Spring Security principal.
+                // A non-null `typ` claim marks a token whose subject is NOT a user email — a
+                // print-agent token's subject is the agent's own id, a QR session token's
+                // subject is a session id. Neither has a corresponding User row, so only a
+                // plain user token (no `typ` claim) is a candidate for loadUserByUsername.
+                // These other token types authenticate the caller by their signature alone;
+                // they still need TenantContextHolder bound below, just not a Spring Security
+                // principal.
                 String type = jwtService.extractClaim(token, claims -> claims.get("typ", String.class));
-                if (!"print-agent".equals(type)) {
+                if (type == null) {
                     String email = jwtService.extractSubject(token);
                     if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                        UserDetails userDetails = userDetailsService.loadUserByUsername(email);
-                        // A deactivated staff account's JWT can still be within its validity window —
-                        // simply not authenticating here lets the existing anyRequest().authenticated()
-                        // rule reject it the same way an absent/invalid token already does.
-                        if (userDetails.isEnabled()) {
-                            UsernamePasswordAuthenticationToken authToken =
-                                    new UsernamePasswordAuthenticationToken(
-                                            userDetails, null, userDetails.getAuthorities());
-                            SecurityContextHolder.getContext().setAuthentication(authToken);
+                        try {
+                            UserDetails userDetails = userDetailsService.loadUserByUsername(email);
+                            // A deactivated staff account's JWT can still be within its validity window —
+                            // simply not authenticating here lets the existing anyRequest().authenticated()
+                            // rule reject it the same way an absent/invalid token already does.
+                            if (userDetails.isEnabled()) {
+                                UsernamePasswordAuthenticationToken authToken =
+                                        new UsernamePasswordAuthenticationToken(
+                                                userDetails, null, userDetails.getAuthorities());
+                                SecurityContextHolder.getContext().setAuthentication(authToken);
+                            }
+                        } catch (UsernameNotFoundException ignored) {
+                            // A validly-signed token whose subject isn't a real user email (e.g. an
+                            // untyped or forged non-user token) — skip authentication and let the
+                            // existing anyRequest().authenticated() rule reject it with a clean 401,
+                            // instead of an unhandled exception escaping the filter chain as a 500.
                         }
                     }
                 }

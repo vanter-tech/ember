@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
@@ -99,6 +100,7 @@ export const QuickLoginModal = ({
               <span className="text-xs text-zinc-400 uppercase tracking-wide">{profile.role}</span>
             </span>
           </DialogTitle>
+          <DialogDescription>{tAuth('quickLoginDialogDescription')}</DialogDescription>
         </DialogHeader>
         {hint && <p className="text-sm text-amber-600">{hint}</p>}
         <form

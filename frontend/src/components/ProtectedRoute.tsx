@@ -12,7 +12,11 @@ export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
         return <Navigate to="/login" replace />
     }
 
-    if (role && !allowedRoles.includes(role)) {
+    if (!role) {
+        return <Navigate to="/login" replace />
+    }
+
+    if (!allowedRoles.includes(role)) {
         return (
             <div className="flex flex-col items-center justify-center h-screen text-center">
                 <h1 className="text-6xl font-bold text-red-600">403</h1>

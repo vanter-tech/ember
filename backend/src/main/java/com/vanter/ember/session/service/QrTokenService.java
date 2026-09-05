@@ -18,7 +18,9 @@ public class QrTokenService {
     public String generateQrToken(String sessionId) {
         return jwtService.generateToken(
                 sessionId,
-                Map.of("rid", TenantContextHolder.requireTenantId().toString()),
+                Map.of(
+                        "rid", TenantContextHolder.requireTenantId().toString(),
+                        "typ", "session-qr"),
                 QR_EXPIRY_MS);
     }
 

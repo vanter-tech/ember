@@ -31,13 +31,14 @@ spring:
     # V1__baseline_consolidated.sql, then applies V2+ in order. baseline-on-migrate only matters for
     # a NON-empty, unversioned schema (adopts it as V1, runs V2+). The real dev DB carried an old
     # V15 baseline row and skipped the renumbered V2-V5 forever until it was realigned to this
-    # scheme via docs/db/dev-rebaseline-v5.sql (see report 263). Dev still runs ddl-auto=update;
-    # switching it to `validate` (Flyway as sole owner) is a queued follow-up — see PROGRESS.md.
+    # scheme via docs/db/dev-rebaseline-v5.sql (see report 263).
     baseline-on-migrate: true
     baseline-version: 1
   jpa:
     hibernate:
-      ddl-auto: ${DDL_AUTO:update}
+      # Flyway is the sole schema owner (AUDIT_BLUEPRINT.md F-20); export DDL_AUTO=update locally
+      # only while iterating on an entity before its migration exists.
+      ddl-auto: ${DDL_AUTO:validate}
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
