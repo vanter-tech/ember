@@ -92,7 +92,7 @@ no descuidos de esta ronda.
 | **E-12** | Icono "⋯" con semántica engañosa (en realidad sólo "desactivar") | ✅ **RESUELTO** — [EN VIVO] (addendum) | En `/admin/employees`, el árbol de accesibilidad expone el control como `button "Deactivate"` (nombre accesible honesto, no "more options"); clic abre un `AlertDialog` real titulado "Are you sure?" con texto "The employee will become inactive...". Cancelado sin confirmar. |
 | **E-13** | Badge de PIN desactualizado tras guardar | ✅ **RESUELTO** — [EN VIVO] (addendum) | Empleado "Segundo Mesero" sin PIN → se configuró un PIN nuevo (toast "Quick-login PIN saved.") → se cerró el modal y se reabrió fresco (`Profile` de nuevo) → badge ya mostraba **"PIN set"** de inmediato, no "No PIN". PIN removido después para dejar el estado como se encontró. |
 | **E-17** | Dos overlays simultáneos (alerta de caja vencida + tour) | ✅ **RESUELTO** — [EN VIVO] (addendum) | El turno de caja de "Demo" seguía vencido (desde antes de esta sesión) → al entrar a `/waiter/tables` apareció **sólo** la alerta "The 2026-09-01 register was never closed"; tras "Not now" (descartarla), **entonces y sólo entonces** apareció el tooltip del tour "Your tables" — secuenciados, no simultáneos. |
-| **E-18** | Diálogos Radix sin `Description`/`aria-describedby` (warning de accesibilidad) | 🟡 **PARCIALMENTE RESUELTO** — [EN VIVO] (addendum) confirma y **amplía** el hallazgo | Consola real confirma el warning `Missing Description or aria-describedby={undefined} for {DialogContent}` en: el modal de PIN de `QuickLoginModal` (2 veces), el `AlertDialog` "Are you sure?" de desactivar empleado (2 veces), y `EditStaffModal` "Edit employee" (2 veces) — **3 diálogos con el warning en vivo**, no 2. `CloseShiftDialog` (la alerta de caja vencida) se abrió también en esta sesión y **no** generó el warning — confirma en vivo que ese caso sí quedó arreglado. |
+| **E-18** | Diálogos Radix sin `Description`/`aria-describedby` (warning de accesibilidad) | ✅ **RESUELTO** — [EN VIVO], adenda 2026-09-04, report 363 | Los 3 diálogos que la sesión anterior confirmó en vivo con el warning (`QuickLoginModal`, `AlertDialog` "Are you sure?" de desactivar/eliminar en `GlobalDeleteModal`, y `EditStaffModal`) ahora renderizan un `<DialogDescription>` real (Radix wire automático de `aria-describedby`) en vez de nada o un `<p>` suelto. Re-verificado en vivo: los 3 diálogos abiertos de nuevo con `claude-in-chrome` — texto de descripción visible en pantalla, **cero** warnings de consola en los 3 (antes: 2 cada uno). `pnpm run build`/`lint`/`test:run` sin regresión (73/73, mismo conteo). `CloseShiftDialog` seguía limpio, sin cambios. |
 | **E-19** | Lista de categorías sin `key` estable | ✅ **RESUELTO** — [EN VIVO] (addendum) | `/admin/inventory/categories` cargada con la consola limpia desde antes de la navegación — cero warnings de React (ni de `key` ni de ningún otro tipo) tras el render de la lista. |
 | **E-20** | Input de horario con `value` y `defaultValue` simultáneos | ✅ **RESUELTO** — [EN VIVO] (addendum) | `/admin/settings` (pestaña Branding, default) cargada con la consola limpia — sólo mensajes de Vite/React DevTools, cero warning de `value`/`defaultValue` pese a que los inputs de horario (`12:00`/`23:00`) están poblados y visibles. |
 | **E-21** | Login de acceso rápido exponía email de personal sin autenticar | ✅ **RESUELTO** — [EN VIVO] (addendum) | Pantalla de login real (chips de acceso rápido persistidos de sesiones anteriores en este mismo perfil de Chrome): cada chip muestra sólo nombre + rol ("admin · ADMIN", "John Doe · WAITER", etc.), ningún email visible antes de autenticar. **Nota sin cambio:** el email sigue en `localStorage` vía `quickAccessStore` (ver F-17) — sólo se dejó de mostrar en pantalla. |
@@ -105,10 +105,9 @@ Orden por urgencia técnica:
 
 1. ~~**F-13 — 500 sin manejar al presentar un token QR como token de usuario.**~~ **FIXED**
    (adenda 2026-09-04, report 362, commit `68f67daa`) — ver fila F-13 arriba. Ya no requiere acción.
-2. **E-18 (parcial, ampliado por la adenda con navegador) — extender `DialogDescription`/
-   `aria-describedby` a `QuickLoginModal`, `EditStaffModal`, **y el `AlertDialog` de "desactivar
-   empleado"`** (los 3 confirmados con el warning en consola real esta sesión) — `FIX-QA` sólo tocó
-   `CloseShiftDialog`.
+2. ~~**E-18 — `DialogDescription` faltante en `QuickLoginModal`, `EditStaffModal` y el confirm de
+   "desactivar empleado".**~~ **FIXED** (adenda 2026-09-04, report 363) — ver fila E-18 arriba. Ya
+   no requiere acción.
 3. **F-23 — `ProtectedRoute` no redirige cuando `role` es `undefined`.** Aún no confirmado en vivo
    (requiere forzar un estado de store con token presente pero `role` ausente, no ejercitado por un
    flujo normal de clics); el código no cambió, sigue siendo el mismo defecto de UX-only (el backend
@@ -139,6 +138,12 @@ un posible defecto de UX propio pero fuera del alcance de esta verificación) an
 a generar un código de mesa para un comensal nuevo. También se aprovechó la conexión al navegador
 para fijar el bug de token QR (F-13, ver arriba) — el fix backend no requería navegador, sólo
 `./mvnw test`, pero se hizo en la misma sesión.
+
+**Seguimiento (mismo día, report 363):** se corrigió E-18 en los 3 diálogos que esta adenda
+identificó con el warning en vivo (`QuickLoginModal`, el confirm de "desactivar empleado" en
+`GlobalDeleteModal`, y `EditStaffModal`) — cada uno gana un `<DialogDescription>` real. Re-abiertos
+los 3 con `claude-in-chrome` tras el fix: descripción visible en pantalla, cero warnings de
+consola en los 3. Ver fila E-18 y backlog ítem 2 arriba.
 
 ---
 

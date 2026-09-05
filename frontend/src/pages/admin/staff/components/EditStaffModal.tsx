@@ -8,6 +8,7 @@ import toast from 'react-hot-toast'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -229,6 +230,7 @@ export const EditStaffModal = () => {
           <DialogTitle className="text-2xl font-bold text-zinc-800">
             {t('editEmployeeTitle')}
           </DialogTitle>
+          <DialogDescription>{t('editEmployeeDescription')}</DialogDescription>
         </DialogHeader>
 
         <Form {...form}>

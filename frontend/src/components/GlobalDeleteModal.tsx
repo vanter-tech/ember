@@ -1,4 +1,4 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import { categoryService, SessionTableService, staffService, type StaffMemberResponse } from '@/lib/api'
@@ -66,11 +66,9 @@ export const GlobalDeleteModal = () => {
           <DialogTitle className="m-auto text-2xl font-bold text-zinc-800">
             {t('confirmDeleteQuestion')}
           </DialogTitle>
-          {activeModal === 'DELETE_STAFF' && (
-            <p className="text-center text-sm text-zinc-500">
-              {t('deactivateStaffWarning')}
-            </p>
-          )}
+          <DialogDescription className="text-center">
+            {activeModal === 'DELETE_STAFF' ? t('deactivateStaffWarning') : t('confirmDeleteWarning')}
+          </DialogDescription>
           <div className="flex gap-4 mt-6 flex-col">
             <Button onClick={closeModal} variant="outline" className="w-full">
               {t('cancelButton')}
