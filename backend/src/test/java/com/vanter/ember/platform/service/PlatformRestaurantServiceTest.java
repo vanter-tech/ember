@@ -62,7 +62,8 @@ class PlatformRestaurantServiceTest {
     void getAll_mapsRestaurantsToSummaries() {
         Restaurant restaurant = restaurant();
         Pageable pageable = PageRequest.of(0, 20);
-        when(restaurantRepository.findAll(pageable)).thenReturn(new PageImpl<>(List.of(restaurant)));
+        when(restaurantRepository.findByStatusNot(RestaurantStatus.DELETED, pageable))
+                .thenReturn(new PageImpl<>(List.of(restaurant)));
 
         var result = platformRestaurantService.getAll(pageable);
 
@@ -158,6 +159,128 @@ class PlatformRestaurantServiceTest {
         assertThatThrownBy(() -> platformRestaurantService.updateStatus(
                 restaurantId, RestaurantStatus.SUSPENDED, "ghost@ember.local"))
                 .isInstanceOf(BadCredentialsException.class);
+    }
+
+    private com.vanter.ember.platform.model.PlatformOperator operator() {
+        return com.vanter.ember.platform.model.PlatformOperator.builder()
+                .id(UUID.randomUUID()).email("operator@ember.local").build();
+    }
+
+    @Test
+    void delete_softDeletesSuspendedRestaurantAndAudits() {
+        Restaurant r = restaurant();
+        r.setStatus(RestaurantStatus.SUSPENDED);
+        var op = operator();
+        when(platformOperatorRepository.findByEmail("operator@ember.local")).thenReturn(Optional.of(op));
+        when(restaurantRepository.findById(r.getId())).thenReturn(Optional.of(r));
+
+        platformRestaurantService.delete(r.getId(), "operator@ember.local");
+
+        ArgumentCaptor<Restaurant> saved = ArgumentCaptor.forClass(Restaurant.class);
+        org.mockito.Mockito.verify(restaurantRepository).save(saved.capture());
+        assertThat(saved.getValue().getStatus()).isEqualTo(RestaurantStatus.DELETED);
+        assertThat(saved.getValue().getDeletedAt()).isNotNull();
+        assertThat(saved.getValue().getDeletedBy()).isEqualTo(op.getId());
+
+        ArgumentCaptor<com.vanter.ember.platform.model.PlatformAuditLog> log =
+                ArgumentCaptor.forClass(com.vanter.ember.platform.model.PlatformAuditLog.class);
+        org.mockito.Mockito.verify(platformAuditLogRepository).save(log.capture());
+        assertThat(log.getValue().getAction()).isEqualTo("RESTAURANT_DELETED");
+        assertThat(log.getValue().getOldValue()).isEqualTo("SUSPENDED");
+        assertThat(log.getValue().getNewValue()).isEqualTo("DELETED");
+    }
+
+    @Test
+    void delete_rejectedWhenNotSuspended() {
+        Restaurant r = restaurant(); // ACTIVE
+        when(platformOperatorRepository.findByEmail("operator@ember.local")).thenReturn(Optional.of(operator()));
+        when(restaurantRepository.findById(r.getId())).thenReturn(Optional.of(r));
+
+        assertThatThrownBy(() -> platformRestaurantService.delete(r.getId(), "operator@ember.local"))
+                .isInstanceOf(IllegalStateException.class);
+        org.mockito.Mockito.verify(restaurantRepository, org.mockito.Mockito.never()).save(org.mockito.ArgumentMatchers.any());
+        org.mockito.Mockito.verify(platformAuditLogRepository, org.mockito.Mockito.never()).save(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void restore_movesDeletedBackToSuspendedAndAudits() {
+        Restaurant r = restaurant();
+        r.setStatus(RestaurantStatus.DELETED);
+        r.setDeletedAt(Instant.now());
+        r.setDeletedBy(UUID.randomUUID());
+        var op = operator();
+        when(platformOperatorRepository.findByEmail("operator@ember.local")).thenReturn(Optional.of(op));
+        when(restaurantRepository.findById(r.getId())).thenReturn(Optional.of(r));
+        when(restaurantRepository.save(org.mockito.ArgumentMatchers.any(Restaurant.class)))
+                .thenAnswer(inv -> inv.getArgument(0));
+
+        var result = platformRestaurantService.restore(r.getId(), "operator@ember.local");
+
+        assertThat(result.getStatus()).isEqualTo(RestaurantStatus.SUSPENDED);
+        ArgumentCaptor<Restaurant> saved = ArgumentCaptor.forClass(Restaurant.class);
+        org.mockito.Mockito.verify(restaurantRepository).save(saved.capture());
+        assertThat(saved.getValue().getDeletedAt()).isNull();
+        assertThat(saved.getValue().getDeletedBy()).isNull();
+        ArgumentCaptor<com.vanter.ember.platform.model.PlatformAuditLog> log =
+                ArgumentCaptor.forClass(com.vanter.ember.platform.model.PlatformAuditLog.class);
+        org.mockito.Mockito.verify(platformAuditLogRepository).save(log.capture());
+        assertThat(log.getValue().getAction()).isEqualTo("RESTAURANT_RESTORED");
+    }
+
+    @Test
+    void restore_rejectedWhenNotDeleted() {
+        Restaurant r = restaurant();
+        r.setStatus(RestaurantStatus.SUSPENDED);
+        when(platformOperatorRepository.findByEmail("operator@ember.local")).thenReturn(Optional.of(operator()));
+        when(restaurantRepository.findById(r.getId())).thenReturn(Optional.of(r));
+
+        assertThatThrownBy(() -> platformRestaurantService.restore(r.getId(), "operator@ember.local"))
+                .isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    void getAll_excludesDeletedByDefault() {
+        Pageable pageable = PageRequest.of(0, 20);
+        when(restaurantRepository.findByStatusNot(RestaurantStatus.DELETED, pageable))
+                .thenReturn(new PageImpl<>(List.of(restaurant())));
+
+        platformRestaurantService.getAll(pageable, false);
+
+        org.mockito.Mockito.verify(restaurantRepository).findByStatusNot(RestaurantStatus.DELETED, pageable);
+        org.mockito.Mockito.verify(restaurantRepository, org.mockito.Mockito.never()).findAll(pageable);
+    }
+
+    @Test
+    void getAll_includesDeletedWhenRequested() {
+        Pageable pageable = PageRequest.of(0, 20);
+        when(restaurantRepository.findAll(pageable)).thenReturn(new PageImpl<>(List.of(restaurant())));
+
+        platformRestaurantService.getAll(pageable, true);
+
+        org.mockito.Mockito.verify(restaurantRepository).findAll(pageable);
+    }
+
+    @Test
+    void updateStatus_rejectsDeletedTarget() {
+        Restaurant r = restaurant();
+        when(platformOperatorRepository.findByEmail("operator@ember.local")).thenReturn(Optional.of(operator()));
+        when(restaurantRepository.findById(r.getId())).thenReturn(Optional.of(r));
+
+        assertThatThrownBy(() -> platformRestaurantService.updateStatus(
+                r.getId(), RestaurantStatus.DELETED, "operator@ember.local"))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void updateStatus_rejectedWhenCurrentlyDeleted() {
+        Restaurant r = restaurant();
+        r.setStatus(RestaurantStatus.DELETED);
+        when(platformOperatorRepository.findByEmail("operator@ember.local")).thenReturn(Optional.of(operator()));
+        when(restaurantRepository.findById(r.getId())).thenReturn(Optional.of(r));
+
+        assertThatThrownBy(() -> platformRestaurantService.updateStatus(
+                r.getId(), RestaurantStatus.ACTIVE, "operator@ember.local"))
+                .isInstanceOf(IllegalStateException.class);
     }
 
     private PlatformRestaurantCreateRequest createRequest() {

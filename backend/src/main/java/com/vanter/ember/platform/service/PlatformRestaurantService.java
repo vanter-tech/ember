@@ -16,6 +16,7 @@ import com.vanter.ember.restaurant.model.Restaurant;
 import com.vanter.ember.restaurant.model.RestaurantStatus;
 import com.vanter.ember.restaurant.repository.RestaurantRepository;
 import com.vanter.ember.restaurant.service.RestaurantService;
+import java.time.Instant;
 import java.util.UUID;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
@@ -68,7 +69,14 @@ public class PlatformRestaurantService {
     }
 
     public Page<PlatformRestaurantSummaryResponse> getAll(Pageable pageable) {
-        return restaurantRepository.findAll(pageable).map(PlatformRestaurantSummaryResponse::from);
+        return getAll(pageable, false);
+    }
+
+    public Page<PlatformRestaurantSummaryResponse> getAll(Pageable pageable, boolean includeDeleted) {
+        Page<Restaurant> page = includeDeleted
+                ? restaurantRepository.findAll(pageable)
+                : restaurantRepository.findByStatusNot(RestaurantStatus.DELETED, pageable);
+        return page.map(PlatformRestaurantSummaryResponse::from);
     }
 
     public PlatformRestaurantDetailResponse getById(UUID id) {
@@ -95,6 +103,16 @@ public class PlatformRestaurantService {
 
         Restaurant restaurant = restaurantRepository.findById(restaurantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Restaurant not found: " + restaurantId));
+
+        if (newStatus == RestaurantStatus.DELETED) {
+            throw new IllegalArgumentException(
+                    "Usa DELETE /platform/restaurants/{id} para eliminar un restaurante.");
+        }
+        if (restaurant.getStatus() == RestaurantStatus.DELETED) {
+            throw new IllegalStateException(
+                    "Restaura el restaurante antes de cambiar su estado.");
+        }
+
         RestaurantStatus oldStatus = restaurant.getStatus();
 
         Restaurant updated = restaurantService.updateStatus(restaurantId, newStatus);
@@ -109,6 +127,65 @@ public class PlatformRestaurantService {
                 .build());
 
         return PlatformRestaurantSummaryResponse.from(updated);
+    }
+
+    /**
+     * Soft-delete a churned tenant. Only a SUSPENDED restaurant may be deleted — the operator has
+     * to suspend it first, a deliberate two-step gate. Reversible via {@link #restore}. Nothing is
+     * physically removed; DELETED is just another "not ACTIVE" status, so every access gate
+     * (SecurityConfig, SessionService, HubHeartbeatService) already blocks it.
+     */
+    @Transactional
+    public void delete(UUID restaurantId, String operatorEmail) {
+        PlatformOperator operator = platformOperatorRepository.findByEmail(operatorEmail)
+                .orElseThrow(() -> new BadCredentialsException("Invalid credentials"));
+        Restaurant restaurant = restaurantRepository.findById(restaurantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Restaurant not found: " + restaurantId));
+        if (restaurant.getStatus() != RestaurantStatus.SUSPENDED) {
+            throw new IllegalStateException(
+                    "El restaurante debe estar suspendido antes de eliminarlo.");
+        }
+        String oldStatus = restaurant.getStatus().name();
+        restaurant.setStatus(RestaurantStatus.DELETED);
+        restaurant.setDeletedAt(Instant.now());
+        restaurant.setDeletedBy(operator.getId());
+        restaurantRepository.save(restaurant);
+
+        platformAuditLogRepository.save(PlatformAuditLog.builder()
+                .operatorId(operator.getId())
+                .operatorEmail(operator.getEmail())
+                .restaurantId(restaurantId)
+                .action("RESTAURANT_DELETED")
+                .oldValue(oldStatus)
+                .newValue(RestaurantStatus.DELETED.name())
+                .build());
+    }
+
+    /** Reverse a {@link #delete}: DELETED -> SUSPENDED (never straight to ACTIVE). */
+    @Transactional
+    public PlatformRestaurantSummaryResponse restore(UUID restaurantId, String operatorEmail) {
+        PlatformOperator operator = platformOperatorRepository.findByEmail(operatorEmail)
+                .orElseThrow(() -> new BadCredentialsException("Invalid credentials"));
+        Restaurant restaurant = restaurantRepository.findById(restaurantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Restaurant not found: " + restaurantId));
+        if (restaurant.getStatus() != RestaurantStatus.DELETED) {
+            throw new IllegalStateException("El restaurante no está eliminado.");
+        }
+        restaurant.setStatus(RestaurantStatus.SUSPENDED);
+        restaurant.setDeletedAt(null);
+        restaurant.setDeletedBy(null);
+        Restaurant saved = restaurantRepository.save(restaurant);
+
+        platformAuditLogRepository.save(PlatformAuditLog.builder()
+                .operatorId(operator.getId())
+                .operatorEmail(operator.getEmail())
+                .restaurantId(restaurantId)
+                .action("RESTAURANT_RESTORED")
+                .oldValue(RestaurantStatus.DELETED.name())
+                .newValue(RestaurantStatus.SUSPENDED.name())
+                .build());
+
+        return PlatformRestaurantSummaryResponse.from(saved);
     }
 
     /**

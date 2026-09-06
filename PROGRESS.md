@@ -58,7 +58,7 @@
     - [x] Task 1 — `V8` migration + `Restaurant.deletedAt/deletedBy` + `HubActivation.lastHeartbeatAt/Ip` + `RestaurantStatus.DELETED` + `RestaurantRepository.findByStatusNot`. `@DataJpaTest` 2/2; full suite 1058/1058. (Plan fix: `@DataJpaTest` needs `@Import(TenantIdentifierResolver.class)`.)
     - [x] Task 2 — `HubStatus` enum + `from(lastHeartbeatAt, now)` → NEVER/ONLINE(<15m)/STALE(<24h)/OFFLINE. `HubStatusTest` 4/4.
     - [x] Task 3 — `HubActivationRepository.recordHeartbeat` (`@Modifying(clearAutomatically)`) + `findByRestaurantIdIn` + `HubHeartbeatService.heartbeat(request, callerIp)` best-effort (swallows `DataAccessException`) + `HubHeartbeatController` IP (CF-Connecting-IP → XFF → remoteAddr). 16 targeted tests; full suite 1069/1069.
-    - [ ] Task 4 — `PlatformRestaurantService.delete`/`restore` (SUSPENDED↔DELETED, audit) + `updateStatus` DELETED-transition guards + `getAll(Pageable, includeDeleted)`
+    - [x] Task 4 — `PlatformRestaurantService.delete`/`restore` (SUSPENDED↔DELETED + audit rows) + `updateStatus` DELETED-transition guards + `getAll(Pageable, includeDeleted)` (1-arg overload kept, delegates to `false`). `PlatformRestaurantServiceTest` 20/20; full suite 1077/1077.
     - [ ] Task 5 — `hubStatus`/`hubActivatedAt`/`lastHeartbeatAt`/`lastHeartbeatIp` on the summary+detail DTOs, populated in `getAll`/`getById`
     - [ ] Task 6 — `DELETE /platform/restaurants/{id}` (204) + `POST /{id}/restore` (200) + `?includeDeleted` on `GET`
     - [ ] Task 7 — `platformApi.ts`: `DELETED` unions, hub-status types, `deleteRestaurant`/`restoreRestaurant`/`getAll(page,size,includeDeleted)`
