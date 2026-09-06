@@ -1,10 +1,10 @@
 # PROGRESS.md — Active Execution State
 
 ## Current Execution State
-- **Last Completed Task:** report 369 — replaced the report-368 mobile pill strip on the three admin section sidebars with a trigger button + shadcn `Popover` (closes on select). `SettingsBar` refactored to one source of truth: `LEAF` map + `SETTINGS_NAV` (leaf/group nodes) + `renderNavList()` shared by the desktop expanded sidebar and the mobile popover; desktop collapsed state maps the same data. New i18n key `sectionsMenuLabel`. Committed to `main` (not pushed).
-- **Predecessor Task:** report 368 (admin sidebar mobile pill strip — superseded by 369).
+- **Last Completed Task:** report 370 — TopNav overflowed on mobile and clipped the trailing action button; `<header>` now `flex-wrap` with `px-3 sm:px-6`, title `truncate` + `text-xl sm:text-2xl md:text-3xl`, search `w-full order-last md:flex-1` (wraps to its own row `<md`), action button + waiter clock pill `shrink-0 whitespace-nowrap`. Class-only, desktop unchanged. Committed to `main` (not pushed).
+- **Predecessor Task:** report 369 (admin sidebar mobile popover menu).
 - **Current Active Task:** none.
-- **System Health:** backend `./mvnw test` last verified 1044/1044 (FIX-QA pass, report 364). Frontend `pnpm run build` + `lint` clean and `pnpm run test:run` 78/78 pass (report 369).
+- **System Health:** backend `./mvnw test` last verified 1044/1044 (FIX-QA pass, report 364). Frontend `pnpm run build` + `lint` clean and `pnpm run test:run` 78/78 pass (report 370).
 
 ## Active Context & Recent Decisions
 - Monolith at `ember/`: Java 17 + Spring Boot 3.5.14 / React 19 + TS + pnpm. Every module (`identity`/`catalog`/`billing`/`settings`/`restaurant`/`session`/`kitchen`) is on Postgres/JPA; event bus is Spring `ApplicationEventPublisher`/`@EventListener` only — do not reintroduce Kafka (dependency is vestigial, see root `CLAUDE.md`).
