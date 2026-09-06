@@ -15,6 +15,8 @@ const statusBadgeClass = (status: string) => {
       return 'bg-green-100 text-green-700'
     case 'SUSPENDED':
       return 'bg-red-100 text-red-700'
+    case 'DELETED':
+      return 'bg-zinc-200 text-zinc-500'
     default:
       return 'bg-zinc-100 text-zinc-600'
   }
@@ -28,6 +30,8 @@ export default function ConsoleRestaurantDetail() {
   const { id } = useParams<{ id: string }>()
   const queryClient = useQueryClient()
   const [auditPage, setAuditPage] = useState(0)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [slugInput, setSlugInput] = useState('')
 
   const {
     data: restaurant,
@@ -46,14 +50,30 @@ export default function ConsoleRestaurantDetail() {
   })
   const auditLog = auditLogPage?.content ?? []
 
+  const invalidateAll = () => {
+    queryClient.invalidateQueries({ queryKey: ['platformRestaurant', id] })
+    queryClient.invalidateQueries({ queryKey: ['platformAuditLog', id] })
+    queryClient.invalidateQueries({ queryKey: ['platformRestaurants'] })
+  }
+
   const toggleStatus = useMutation({
     mutationFn: (status: PlatformRestaurantDetail['status']) =>
       platformRestaurantService.updateStatus(id!, status),
+    onSuccess: invalidateAll,
+  })
+
+  const deleteRestaurant = useMutation({
+    mutationFn: () => platformRestaurantService.deleteRestaurant(id!),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['platformRestaurant', id] })
-      queryClient.invalidateQueries({ queryKey: ['platformAuditLog', id] })
-      queryClient.invalidateQueries({ queryKey: ['platformRestaurants'] })
+      setShowDeleteConfirm(false)
+      setSlugInput('')
+      invalidateAll()
     },
+  })
+
+  const restoreRestaurant = useMutation({
+    mutationFn: () => platformRestaurantService.restoreRestaurant(id!),
+    onSuccess: invalidateAll,
   })
 
   const issueHubLicense = useMutation({
@@ -89,21 +109,43 @@ export default function ConsoleRestaurantDetail() {
           <h1 className="text-2xl font-semibold">{restaurant.name}</h1>
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            disabled={issueHubLicense.isPending}
-            onClick={() => issueHubLicense.mutate()}
-          >
-            {issueHubLicense.isPending ? 'Emitiendo...' : 'Emitir licencia Hub'}
-          </Button>
-          <Button
-            type="button"
-            disabled={toggleStatus.isPending}
-            onClick={() => toggleStatus.mutate(nextStatus(restaurant.status))}
-          >
-            {restaurant.status === 'SUSPENDED' ? 'Reactivar' : 'Suspender'}
-          </Button>
+          {restaurant.status === 'DELETED' ? (
+            <Button
+              type="button"
+              disabled={restoreRestaurant.isPending}
+              onClick={() => restoreRestaurant.mutate()}
+            >
+              {restoreRestaurant.isPending ? 'Restaurando...' : 'Restaurar restaurante'}
+            </Button>
+          ) : (
+            <>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={issueHubLicense.isPending}
+                onClick={() => issueHubLicense.mutate()}
+              >
+                {issueHubLicense.isPending ? 'Emitiendo...' : 'Emitir licencia Hub'}
+              </Button>
+              <Button
+                type="button"
+                disabled={toggleStatus.isPending}
+                onClick={() => toggleStatus.mutate(nextStatus(restaurant.status))}
+              >
+                {restaurant.status === 'SUSPENDED' ? 'Reactivar' : 'Suspender'}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="border-red-300 text-red-700 hover:bg-red-50"
+                disabled={restaurant.status !== 'SUSPENDED'}
+                title={restaurant.status !== 'SUSPENDED' ? 'Suspende el restaurante primero' : undefined}
+                onClick={() => setShowDeleteConfirm(true)}
+              >
+                Eliminar restaurante
+              </Button>
+            </>
+          )}
         </div>
       </div>
 
@@ -129,6 +171,33 @@ export default function ConsoleRestaurantDetail() {
           <div className="font-medium text-zinc-800">
             {new Date(restaurant.createdAt).toLocaleDateString()}
           </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4 rounded-lg border border-zinc-200 p-4 text-sm">
+        <div>
+          <div className="text-zinc-500">Estado del Hub</div>
+          <div className="font-medium text-zinc-800">{restaurant.hubStatus}</div>
+        </div>
+        <div>
+          <div className="text-zinc-500">Activado</div>
+          <div className="font-medium text-zinc-800">
+            {restaurant.hubActivatedAt
+              ? new Date(restaurant.hubActivatedAt).toLocaleString()
+              : '—'}
+          </div>
+        </div>
+        <div>
+          <div className="text-zinc-500">Último latido</div>
+          <div className="font-medium text-zinc-800">
+            {restaurant.lastHeartbeatAt
+              ? new Date(restaurant.lastHeartbeatAt).toLocaleString()
+              : '—'}
+          </div>
+        </div>
+        <div>
+          <div className="text-zinc-500">IP</div>
+          <div className="font-medium text-zinc-800">{restaurant.lastHeartbeatIp ?? '—'}</div>
         </div>
       </div>
 
@@ -207,6 +276,47 @@ export default function ConsoleRestaurantDetail() {
         totalPages={auditLogPage?.totalPages ?? 0}
         onPageChange={setAuditPage}
       />
+
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="flex w-full max-w-md flex-col gap-3 rounded-lg bg-white p-5">
+            <h3 className="text-lg font-semibold">Eliminar restaurante</h3>
+            <p className="text-sm text-zinc-600">
+              Esto marca <span className="font-medium">{restaurant.name}</span> como eliminado. Se
+              puede restaurar después. Escribe <code>{restaurant.slug}</code> para confirmar.
+            </p>
+            <label className="text-sm text-zinc-600" htmlFor="delete-slug">
+              Escribe el slug para confirmar
+            </label>
+            <input
+              id="delete-slug"
+              className="rounded-md border border-zinc-300 px-2 py-1 text-sm"
+              value={slugInput}
+              onChange={(e) => setSlugInput(e.target.value)}
+            />
+            <div className="flex justify-end gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setShowDeleteConfirm(false)
+                  setSlugInput('')
+                }}
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="button"
+                className="bg-red-600 hover:bg-red-700"
+                disabled={slugInput !== restaurant.slug || deleteRestaurant.isPending}
+                onClick={() => deleteRestaurant.mutate()}
+              >
+                Confirmar eliminación
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

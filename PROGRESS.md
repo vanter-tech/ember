@@ -63,7 +63,7 @@
     - [x] Task 6 — `DELETE /platform/restaurants/{id}` (204) + `POST /{id}/restore` (200) + `?includeDeleted` on `GET`. `PlatformRestaurantControllerTest` 20/20; full suite 1085/1085. **Backend for B+C complete.**
     - [x] Task 7 — `platformApi.ts`: `HubStatus`/`PlatformRestaurantStatus` types (`DELETED` added), hub fields on both interfaces, `deleteRestaurant`/`restoreRestaurant`/`getAll(page,size,includeDeleted)`. `pnpm run build` + `lint` clean.
     - [x] Task 8 — `ConsoleRestaurants`: Hub column (dot+label), "Ver eliminados" checkbox, muted DELETED rows + `ELIMINADO` badge. Vitest 2/2; build + lint clean.
-    - [ ] Task 9 — `ConsoleRestaurantDetail`: Hub panel + Eliminar/Restaurar buttons + type-the-slug confirm (+ Vitest)
+    - [x] Task 9 — `ConsoleRestaurantDetail`: Hub panel (estado/activado/último latido/IP) + Eliminar (type-the-slug confirm, only when SUSPENDED) / Restaurar (when DELETED, hides status+license controls). Vitest 3/3; build + lint clean; full frontend `test:run` 83/83.
     - [ ] Task 10 — report 384 + PROGRESS + full verification + PR
   - [ ] **Piece D** — visual redesign of `/console` to match the tenant SaaS app. Own spec, not started.
 - [ ] **Security/hardening debt — surfaced 2026-09-04, none yet has a spec/plan:**
