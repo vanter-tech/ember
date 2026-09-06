@@ -34,7 +34,7 @@
     - [x] T4 — `ember-hub/jlink-modules.txt` + `build-installer.ps1` runtime stage → `dist/runtime` (verified: 30 modules / 47.6 MB, `java.exe --version` OK on Adoptium JDK 17.0.17)
     - [x] T5 — `fetch-vendor-binaries.ps1`: Postgres 16.6-1 (`6a1bfb64…`) + MinIO `RELEASE.2025-04-22` (`2ceb3b3d…`), SHA256-pinned; staged & verified (`initdb 16.6`, `minio RELEASE.2025-04-22`)
     - [x] T6 — `installer/Iniciar Ember Hub.cmd` shim + `installer/hub.env.example`; parser stub verified (`eol=#`, `delims==`, spaces/backslashes in values, `SPRING_PROFILES_ACTIVE=hub`)
-    - [ ] T7 — `build-installer.ps1` app-image stage: `jpackage` + assemble binaries + `make-icon.ps1`
+    - [x] T7 — `make-icon.ps1` (→ `ember-hub.ico`) + `build-installer.ps1` app-image stage. Ran: `build-frontend` → `mvn package` → `jpackage` → assembled pgsql/minio/shim/key. **app-image 377 MB** (fetch script now prunes pgAdmin 4 etc. → pgsql 120 MB). Jar manifest: `JarLauncher` + `Start-Class EmberApplication`, bundled `static/index.html`. Throwaway `hub-public-key.der` in gitignored `ember-hub/keys/`.
     - [ ] T8 — `EmberHub.iss` (firewall private/domain, `%ProgramData%\EmberHub`, `hub.env`, common-Startup `.lnk`, uninstaller data prompt) + installer stage → `dist/EmberHubSetup-<v>.exe`
     - [ ] T9 — `ember-hub/README.md` (build + manual-verification checklist) + PROGRESS update
     - [ ] T10 — manual Windows verification (clean install, LAN 2nd PC, license picker, upgrade-in-place, uninstall-keep, 5 boot errors) → `reports/381-…`

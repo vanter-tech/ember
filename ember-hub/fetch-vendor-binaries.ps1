@@ -42,8 +42,15 @@ $pgTmp = Join-Path $cacheDir "pg-extract"
 if (Test-Path $pgTmp) { Remove-Item -Recurse -Force $pgTmp }
 Expand-Archive -Path $pgZip -DestinationPath $pgTmp
 # the zip contains a top-level "pgsql/" folder
-Copy-Item -Recurse (Join-Path $pgTmp "pgsql") (Join-Path $stageDir "pgsql")
+$pgStaged = Join-Path $stageDir "pgsql"
+Copy-Item -Recurse (Join-Path $pgTmp "pgsql") $pgStaged
 Remove-Item -Recurse -Force $pgTmp
+# The EDB "binaries" package ships pgAdmin 4 (~630 MB), StackBuilder, docs, headers and
+# debug symbols — the Hub only needs bin/ + lib/ + share/. Drop the rest.
+foreach ($drop in @("pgAdmin 4", "StackBuilder", "doc", "include", "symbols", "pgAdmin4.exe")) {
+    $p = Join-Path $pgStaged $drop
+    if (Test-Path $p) { Remove-Item -Recurse -Force $p }
+}
 & (Join-Path $stageDir "pgsql\bin\initdb.exe") --version
 if ($LASTEXITCODE -ne 0) { throw "staged initdb.exe is not runnable" }
 
