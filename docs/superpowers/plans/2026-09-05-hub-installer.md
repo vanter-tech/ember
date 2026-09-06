@@ -455,7 +455,7 @@ function Get-Verified([string]$url, [string]$expected, [string]$outFile) {
     }
     $actual = (Get-FileHash $outFile -Algorithm SHA256).Hash.ToLower()
     if ($expected -eq "REPLACE_ME") {
-        throw "SHA256 for $(Split-Path $outFile -Leaf) is $actual — paste it into fetch-vendor-binaries.ps1 and re-run."
+        throw "SHA256 for $(Split-Path $outFile -Leaf) is $actual - paste it into fetch-vendor-binaries.ps1 and re-run."
     }
     if ($actual -ne $expected.ToLower()) {
         throw "SHA256 mismatch for $outFile`n  expected $expected`n  actual   $actual"
