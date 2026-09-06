@@ -1,10 +1,10 @@
 # PROGRESS.md — Active Execution State
 
 ## Current Execution State
-- **Last Completed Task:** report 384 — feat(platform): retire suspended tenants (soft-delete via `RestaurantStatus.DELETED`, reversible) + Hub liveness (`hub_activations.last_heartbeat_at/ip` persisted per verified heartbeat, `HubStatus` NEVER/ONLINE/STALE/OFFLINE on console list + detail). Branch `spec/platform-console-retire-liveness`, 10 tasks done (`ffcbb5eb`…`fc636b9a`). Migration `V8`. Ready for PR.
-- **Predecessor Task:** report 383 — fix(identity): tenant-scope + last-admin guard on `updateRole` (piece A, PR #80, merged).
-- **Current Active Task:** none — piece **D** (visual redesign of `/console` to match the tenant SaaS app) is the remaining platform-console work; own spec, not started.
-- **System Health:** backend `./mvnw test` full suite green (1085 after Task 6; Tasks 7–9 frontend-only). Frontend `pnpm run build` clean, `lint` 0 errors, `test:run` 83/83.
+- **Last Completed Task:** report 385 — feat(console): platform console redesign (piece D). Sidebar shell (`ConsoleSidebar` + `PlatformLayout` + mobile drawer), real dashboard (`ConsoleDashboard` KPIs + platform-wide activity feed, backed by new `GET /platform/stats`), and every console screen re-skinned onto shadcn `<Table>`/`<Badge>`/`<Switch>`/`<Card>`/`<Dialog>`. Brand `#920703` → `#8c1717`, all strings Spanish (no i18n). No behaviour change to pieces B/C. Branch `spec/platform-console-redesign` (cut from B/C branch), 9 tasks done (`6b526161`…`cfe08af7`).
+- **Predecessor Task:** report 384 — retire suspended tenants + Hub liveness (pieces B+C, PR #81).
+- **Current Active Task:** none — platform-console effort A–D complete. Open PRs: #80 (A), #81 (B+C), and the redesign branch (D, needs PR + rebase onto whatever #81 merges into).
+- **System Health:** backend `./mvnw test` **1090/1090**; frontend `pnpm run build` clean, `lint` 0 errors (16 pre-existing warnings), `test:run` **90/90** (30 files).
 - **⚠ Flyway caveat (`V7`, and now `V8`):** the local dev DB's `flyway_schema_history` is a single BASELINE row at `version 15`, so Flyway skips every migration ≤ 15. `V7__user_banner_key.sql` never ran there (added `users.banner_key VARCHAR(20)` by hand). The new **`V8__restaurant_soft_delete_and_hub_heartbeat.sql`** has the same risk — before deploying to a baselined env (prod likely), run `ALTER TABLE restaurants ADD COLUMN deleted_at timestamptz, ADD COLUMN deleted_by uuid;` and `ALTER TABLE hub_activations ADD COLUMN last_heartbeat_at timestamptz, ADD COLUMN last_heartbeat_ip varchar(45);` (or `flyway repair` + history insert). `V7`/`V8` are correct as-is for a genuinely fresh DB. `@DataJpaTest`s run on a fresh schema and are unaffected.
 
 ## Active Context & Recent Decisions
@@ -65,7 +65,7 @@
     - [x] Task 8 — `ConsoleRestaurants`: Hub column (dot+label), "Ver eliminados" checkbox, muted DELETED rows + `ELIMINADO` badge. Vitest 2/2; build + lint clean.
     - [x] Task 9 — `ConsoleRestaurantDetail`: Hub panel (estado/activado/último latido/IP) + Eliminar (type-the-slug confirm, only when SUSPENDED) / Restaurar (when DELETED, hides status+license controls). Vitest 3/3; build + lint clean; full frontend `test:run` 83/83.
     - [x] Task 10 — report 384 + PROGRESS + full verification + PR
-  - [~] **Piece D — `/console` redesign** — branch `spec/platform-console-redesign` (cut from B/C branch). Spec `docs/superpowers/specs/2026-09-06-platform-console-redesign-design.md`, plan `docs/superpowers/plans/2026-09-06-platform-console-redesign.md`. Executing one task at a time:
+  - [x] **Piece D — `/console` redesign** (report 385, PR pending) — branch `spec/platform-console-redesign` (cut from B/C branch). Spec `docs/superpowers/specs/2026-09-06-platform-console-redesign-design.md`, plan `docs/superpowers/plans/2026-09-06-platform-console-redesign.md`. Executing one task at a time:
     - [x] Task 1 — backend `GET /platform/stats` (`PlatformStatsResponse{tenants,hubs}` + `RestaurantRepository.countByStatus` + `PlatformStatsService` bucketing hubs via `HubStatus.from`). 5 tests; full suite 1090/1090.
     - [x] Task 2 — `platformApi.ts`: `PlatformStats` type + `platformStatsService.get` + `platformAuditLogService.getRecent`. build + lint clean.
     - [x] Task 3 — `frontend/src/components/console/`: `HubBadge` (2 tests) + `ConsolePageHeader`. build + lint clean.
@@ -74,7 +74,7 @@
     - [x] Task 6 — `ConsoleRestaurants` on shadcn `<Table>`/`<Badge>`/`<Switch>`/`<Label>` + `ConsolePageHeader` + skeleton rows; `hubDot` removed (uses `HubBadge`). Test switched to `role="switch"`; 2/2; build + lint clean.
     - [x] Task 7 — `ConsoleRestaurantDetail` on `<Card>`/`<Table>`/`<Badge>`/`<HubBadge>` + `ConsolePageHeader`; delete-confirm modal → shadcn `<Dialog>`. B/C behaviour unchanged; `ConsoleRestaurantDetail.test.tsx` 3/3 unchanged; build + lint clean.
     - [x] Task 8 — `ConsoleLogin`/`Create`/`PasswordChange`: `#920703` → `#8c1717`, all strings + zod + toasts to Spanish, `ConsolePageHeader` on create/password, Ember wordmark on login. `ConsoleLogin.test.tsx` 1/1; full frontend `test:run` 90/90; build + lint clean.
-    - [ ] Task 9 — report 385 + PROGRESS + full verification + PR
+    - [x] Task 9 — report 385 + PROGRESS + full verification + PR. backend 1090/1090, frontend 90/90.
 - [ ] **Security/hardening debt — surfaced 2026-09-04, none yet has a spec/plan:**
   - [ ] F-15: Ember Hub activation endpoint returns `adminPasswordHash` in the response — redesign the activation contract + a migration path for already-installed Hub instances.
   - [ ] F-21: hardcoded credentials literal in `PortableDatabaseBootstrap`/`PortableMinioBootstrap`'s process-launch code — needs the same installed-instance migration path as F-15; do together, same bootstrap code.
