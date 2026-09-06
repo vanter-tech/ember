@@ -15,12 +15,15 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -104,5 +107,33 @@ class BillingEventListenerTest {
         assertThat(msg.billId()).isEqualTo(1L);
         assertThat(msg.total()).isEqualByComparingTo("22.50");
         assertThat(msg.splits()).hasSize(2);
+    }
+
+    @Test
+    void handleBillingRequested_whenSplitFails_doesNotBroadcast() {
+        Bill bill = sampleBill();
+        when(billingService.calculateBill("sess-1", SplitMethod.EQUAL_PARTS)).thenReturn(bill);
+        when(billingService.splitEqually(1L, 5))
+                .thenThrow(new IllegalArgumentException("participantCount 5 exceeds actual participant count 2"));
+
+        assertThatThrownBy(() -> billingEventListener.handleBillingRequested(
+                new BillingRequested("sess-1", SplitMethod.EQUAL_PARTS, 5)))
+                .isInstanceOf(IllegalArgumentException.class);
+
+        // The exception must propagate out of the handler so the surrounding transaction rolls the
+        // calculateBill-committed Bill back instead of leaving an orphan; no BILL_READY is sent.
+        verify(messagingTemplate, never()).convertAndSend(
+                org.mockito.ArgumentMatchers.anyString(),
+                org.mockito.ArgumentMatchers.any(Object.class));
+    }
+
+    @Test
+    void handleBillingRequested_isTransactional() throws NoSuchMethodException {
+        // Locks in the atomic boundary: calculateBill and the split step each commit in their own
+        // @Transactional, so only a transaction spanning the whole handler makes a split failure
+        // roll the Bill back too.
+        assertThat(BillingEventListener.class
+                .getDeclaredMethod("handleBillingRequested", BillingRequested.class)
+                .isAnnotationPresent(Transactional.class)).isTrue();
     }
 }
