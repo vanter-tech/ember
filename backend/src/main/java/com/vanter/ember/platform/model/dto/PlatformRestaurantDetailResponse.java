@@ -1,5 +1,6 @@
 package com.vanter.ember.platform.model.dto;
 
+import com.vanter.ember.licensing.model.HubActivation;
 import com.vanter.ember.restaurant.model.Restaurant;
 import com.vanter.ember.restaurant.model.RestaurantPlan;
 import com.vanter.ember.restaurant.model.RestaurantStatus;
@@ -19,8 +20,19 @@ public class PlatformRestaurantDetailResponse {
     private RestaurantStatus status;
     private Instant createdAt;
     private List<PlatformRestaurantAdminResponse> admins;
+    private HubStatus hubStatus;
+    private Instant hubActivatedAt;
+    private Instant lastHeartbeatAt;
+    private String lastHeartbeatIp;
 
-    public static PlatformRestaurantDetailResponse from(Restaurant restaurant, List<PlatformRestaurantAdminResponse> admins) {
+    public static PlatformRestaurantDetailResponse from(
+            Restaurant restaurant, List<PlatformRestaurantAdminResponse> admins) {
+        return from(restaurant, admins, null);
+    }
+
+    public static PlatformRestaurantDetailResponse from(
+            Restaurant restaurant, List<PlatformRestaurantAdminResponse> admins, HubActivation activation) {
+        Instant lastBeat = activation == null ? null : activation.getLastHeartbeatAt();
         return PlatformRestaurantDetailResponse.builder()
                 .id(restaurant.getId())
                 .name(restaurant.getName())
@@ -29,6 +41,10 @@ public class PlatformRestaurantDetailResponse {
                 .status(restaurant.getStatus())
                 .createdAt(restaurant.getCreatedAt())
                 .admins(admins)
+                .hubStatus(HubStatus.from(lastBeat, Instant.now()))
+                .hubActivatedAt(activation == null ? null : activation.getActivatedAt())
+                .lastHeartbeatAt(lastBeat)
+                .lastHeartbeatIp(activation == null ? null : activation.getLastHeartbeatIp())
                 .build();
     }
 }

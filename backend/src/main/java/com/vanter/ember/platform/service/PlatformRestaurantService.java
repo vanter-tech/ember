@@ -4,6 +4,8 @@ import com.vanter.ember.config.ResourceNotFoundException;
 import com.vanter.ember.identity.model.Role;
 import com.vanter.ember.identity.model.User;
 import com.vanter.ember.identity.repository.UserRepository;
+import com.vanter.ember.licensing.model.HubActivation;
+import com.vanter.ember.licensing.repository.HubActivationRepository;
 import com.vanter.ember.platform.model.PlatformAuditLog;
 import com.vanter.ember.platform.model.PlatformOperator;
 import com.vanter.ember.platform.model.dto.PlatformRestaurantAdminResponse;
@@ -17,7 +19,10 @@ import com.vanter.ember.restaurant.model.RestaurantStatus;
 import com.vanter.ember.restaurant.repository.RestaurantRepository;
 import com.vanter.ember.restaurant.service.RestaurantService;
 import java.time.Instant;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -42,6 +47,7 @@ public class PlatformRestaurantService {
     private final PlatformAuditLogRepository platformAuditLogRepository;
     private final PasswordEncoder passwordEncoder;
     private final com.vanter.ember.licensing.service.LicenseIssuingService licenseIssuingService;
+    private final HubActivationRepository hubActivationRepository;
 
     /**
      * Manual constructor (not Lombok's {@code @RequiredArgsConstructor}): {@code @Lazy} on a
@@ -58,7 +64,8 @@ public class PlatformRestaurantService {
             PlatformOperatorRepository platformOperatorRepository,
             PlatformAuditLogRepository platformAuditLogRepository,
             PasswordEncoder passwordEncoder,
-            @Lazy com.vanter.ember.licensing.service.LicenseIssuingService licenseIssuingService) {
+            @Lazy com.vanter.ember.licensing.service.LicenseIssuingService licenseIssuingService,
+            HubActivationRepository hubActivationRepository) {
         this.restaurantRepository = restaurantRepository;
         this.userRepository = userRepository;
         this.restaurantService = restaurantService;
@@ -66,6 +73,7 @@ public class PlatformRestaurantService {
         this.platformAuditLogRepository = platformAuditLogRepository;
         this.passwordEncoder = passwordEncoder;
         this.licenseIssuingService = licenseIssuingService;
+        this.hubActivationRepository = hubActivationRepository;
     }
 
     public Page<PlatformRestaurantSummaryResponse> getAll(Pageable pageable) {
@@ -76,7 +84,12 @@ public class PlatformRestaurantService {
         Page<Restaurant> page = includeDeleted
                 ? restaurantRepository.findAll(pageable)
                 : restaurantRepository.findByStatusNot(RestaurantStatus.DELETED, pageable);
-        return page.map(PlatformRestaurantSummaryResponse::from);
+        List<UUID> ids = page.getContent().stream().map(Restaurant::getId).toList();
+        Map<UUID, HubActivation> byRestaurant = ids.isEmpty()
+                ? Map.of()
+                : hubActivationRepository.findByRestaurantIdIn(ids).stream()
+                        .collect(Collectors.toMap(HubActivation::getRestaurantId, a -> a));
+        return page.map(r -> PlatformRestaurantSummaryResponse.from(r, byRestaurant.get(r.getId())));
     }
 
     public PlatformRestaurantDetailResponse getById(UUID id) {
@@ -87,7 +100,8 @@ public class PlatformRestaurantService {
                 .map(PlatformRestaurantAdminResponse::from)
                 .toList();
 
-        return PlatformRestaurantDetailResponse.from(restaurant, admins);
+        HubActivation activation = hubActivationRepository.findByRestaurantId(id).orElse(null);
+        return PlatformRestaurantDetailResponse.from(restaurant, admins, activation);
     }
 
     /**

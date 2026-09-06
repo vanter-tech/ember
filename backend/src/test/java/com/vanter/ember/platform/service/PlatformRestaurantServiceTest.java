@@ -45,6 +45,7 @@ class PlatformRestaurantServiceTest {
     @Mock PlatformAuditLogRepository platformAuditLogRepository;
     @Mock PasswordEncoder passwordEncoder;
     @Mock com.vanter.ember.licensing.service.LicenseIssuingService licenseIssuingService;
+    @Mock com.vanter.ember.licensing.repository.HubActivationRepository hubActivationRepository;
     @InjectMocks PlatformRestaurantService platformRestaurantService;
 
     private Restaurant restaurant() {
@@ -281,6 +282,54 @@ class PlatformRestaurantServiceTest {
         assertThatThrownBy(() -> platformRestaurantService.updateStatus(
                 r.getId(), RestaurantStatus.ACTIVE, "operator@ember.local"))
                 .isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    void getById_populatesHubStatusFromActivation() {
+        Restaurant r = restaurant();
+        when(restaurantRepository.findById(r.getId())).thenReturn(Optional.of(r));
+        when(userRepository.findByRestaurantId_IdAndRole(r.getId(), Role.ADMIN)).thenReturn(List.of());
+        when(hubActivationRepository.findByRestaurantId(r.getId())).thenReturn(Optional.of(
+                com.vanter.ember.licensing.model.HubActivation.builder()
+                        .restaurantId(r.getId()).hardwareFingerprint("fp")
+                        .activatedAt(Instant.now())
+                        .lastHeartbeatAt(Instant.now().minusSeconds(60))
+                        .lastHeartbeatIp("203.0.113.7")
+                        .build()));
+
+        var result = platformRestaurantService.getById(r.getId());
+
+        assertThat(result.getHubStatus())
+                .isEqualTo(com.vanter.ember.platform.model.dto.HubStatus.ONLINE);
+        assertThat(result.getLastHeartbeatIp()).isEqualTo("203.0.113.7");
+    }
+
+    @Test
+    void getById_hubStatusIsNeverWhenNoActivation() {
+        Restaurant r = restaurant();
+        when(restaurantRepository.findById(r.getId())).thenReturn(Optional.of(r));
+        when(userRepository.findByRestaurantId_IdAndRole(r.getId(), Role.ADMIN)).thenReturn(List.of());
+        when(hubActivationRepository.findByRestaurantId(r.getId())).thenReturn(Optional.empty());
+
+        assertThat(platformRestaurantService.getById(r.getId()).getHubStatus())
+                .isEqualTo(com.vanter.ember.platform.model.dto.HubStatus.NEVER);
+    }
+
+    @Test
+    void getAll_populatesHubStatusPerRow() {
+        Restaurant r = restaurant();
+        Pageable pageable = PageRequest.of(0, 20);
+        when(restaurantRepository.findByStatusNot(RestaurantStatus.DELETED, pageable))
+                .thenReturn(new PageImpl<>(List.of(r)));
+        when(hubActivationRepository.findByRestaurantIdIn(List.of(r.getId()))).thenReturn(List.of(
+                com.vanter.ember.licensing.model.HubActivation.builder()
+                        .restaurantId(r.getId()).hardwareFingerprint("fp").activatedAt(Instant.now())
+                        .lastHeartbeatAt(Instant.now().minusSeconds(3600)).build()));
+
+        var page = platformRestaurantService.getAll(pageable, false);
+
+        assertThat(page.getContent().get(0).getHubStatus())
+                .isEqualTo(com.vanter.ember.platform.model.dto.HubStatus.STALE);
     }
 
     private PlatformRestaurantCreateRequest createRequest() {
