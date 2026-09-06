@@ -61,7 +61,7 @@
     - [x] Task 4 — `PlatformRestaurantService.delete`/`restore` (SUSPENDED↔DELETED + audit rows) + `updateStatus` DELETED-transition guards + `getAll(Pageable, includeDeleted)` (1-arg overload kept, delegates to `false`). `PlatformRestaurantServiceTest` 20/20; full suite 1077/1077.
     - [x] Task 5 — `hubStatus` on summary + `hubStatus`/`hubActivatedAt`/`lastHeartbeatAt`/`lastHeartbeatIp` on detail DTOs, populated in `getAll` (batch `findByRestaurantIdIn`) / `getById`. `PlatformRestaurantService` gains a `HubActivationRepository` ctor param. Service test 23/23; full suite 1080/1080.
     - [x] Task 6 — `DELETE /platform/restaurants/{id}` (204) + `POST /{id}/restore` (200) + `?includeDeleted` on `GET`. `PlatformRestaurantControllerTest` 20/20; full suite 1085/1085. **Backend for B+C complete.**
-    - [ ] Task 7 — `platformApi.ts`: `DELETED` unions, hub-status types, `deleteRestaurant`/`restoreRestaurant`/`getAll(page,size,includeDeleted)`
+    - [x] Task 7 — `platformApi.ts`: `HubStatus`/`PlatformRestaurantStatus` types (`DELETED` added), hub fields on both interfaces, `deleteRestaurant`/`restoreRestaurant`/`getAll(page,size,includeDeleted)`. `pnpm run build` + `lint` clean.
     - [ ] Task 8 — `ConsoleRestaurants`: Hub column (dot+label) + "Ver eliminados" checkbox + muted DELETED rows (+ Vitest)
     - [ ] Task 9 — `ConsoleRestaurantDetail`: Hub panel + Eliminar/Restaurar buttons + type-the-slug confirm (+ Vitest)
     - [ ] Task 10 — report 384 + PROGRESS + full verification + PR
