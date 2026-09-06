@@ -58,6 +58,7 @@ export const admin = {
   cashRegisterSubtitle: 'Historial de turnos y corte diario de caja.',
   collapseSidebarLabel: 'Contraer',
   expandSidebarLabel: 'Expandir',
+  sectionsMenuLabel: 'Secciones',
   cashRegisterTab: 'Caja',
   shiftHistoryTab: 'Historial de turnos',
   dailyReportTab: 'Corte diario (Z)',

@@ -93,7 +93,7 @@ export const Settings = () => {
         : [];
 
     return(
-        <div className="p-6 flex flex-col md:flex-row gap-8">
+        <div className="p-6 flex flex-col md:flex-row gap-4 md:gap-8">
             <div className={`w-full shrink-0 ${sidebarCollapsed ? 'md:w-fit' : 'md:w-64'}`}>
                 <SettingsBar
                     collapsed={sidebarCollapsed}

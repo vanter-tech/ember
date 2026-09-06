@@ -80,13 +80,13 @@ export const TopNav = () => {
 
   return (
     <header
-      className="w-full bg-white rounded-2xl shadows-sm border border-zinc-100 px-6
-        py-3 flex items-center justify-between mb-6"
+      className="w-full bg-white rounded-2xl shadows-sm border border-zinc-100 px-3 sm:px-6
+        py-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 mb-6"
     >
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 min-w-0">
         <h1
-          className="text-3xl font-bold
-                text-[#8c1717] tracking-tight"
+          className="text-xl sm:text-2xl md:text-3xl font-bold
+                text-[#8c1717] tracking-tight truncate min-w-0"
         >
           {settings?.branding?.businessName || 'Ember'}
         </h1>
@@ -104,7 +104,7 @@ export const TopNav = () => {
           </button>
         )}
       </div>
-      <div className="flex-1 max-w-md mx-8">
+      <div className="w-full order-last md:order-none md:flex-1 md:max-w-md mx-0 md:mx-8">
         <Popover open={role === 'ADMIN' && isGlobalSearchOpen} onOpenChange={setGlobalSearchOpen}>
           <PopoverAnchor asChild>
             <div
@@ -140,7 +140,7 @@ export const TopNav = () => {
 
       {isWaiterRoute ? (
         <div
-          className="flex items-center gap-2 rounded-full bg-zinc-100
+          className="flex items-center gap-2 rounded-full bg-zinc-100 shrink-0 whitespace-nowrap
             px-5 py-2.5 text-sm font-medium text-zinc-700"
         >
           <Clock size={18} strokeWidth={2} />
@@ -149,9 +149,11 @@ export const TopNav = () => {
       ) : isAnalyticsRoute || isSettingsRoute ? null : (
         <button
           id="topnav-create-button"
-          className="flex items-center gap-2
+          aria-label={buttonText}
+          title={buttonText}
+          className="flex items-center gap-2 shrink-0 whitespace-nowrap
               bg-[#8c1717] hover:bg-[#7a1414] text-white
-              px-5 py-2.5 rounded-full text-sm font-medium
+              px-3 sm:px-5 py-2.5 rounded-full text-sm font-medium
               transition-colors shadows-sm cursor-pointer"
           onClick={(e) => {
             e.preventDefault()
@@ -160,7 +162,7 @@ export const TopNav = () => {
           }}
         >
           <Plus size={18} strokeWidth={2} />
-          {buttonText}
+          <span className="hidden sm:inline">{buttonText}</span>
         </button>
       )}
     </header>

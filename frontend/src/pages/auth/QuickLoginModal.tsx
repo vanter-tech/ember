@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { cn } from '@/lib/utils'
 import { authService } from '@/lib/api'
 import { useAuthStore } from '@/store/authStore'
 import {
@@ -31,13 +32,21 @@ export const QuickLoginModal = ({
   const navigate = useNavigate()
   const { setAuth } = useAuthStore()
   const { remember } = useQuickAccessStore()
-  const [mode, setMode] = useState<'pin' | 'password'>('pin')
+  const [mode, setMode] = useState<'pin' | 'password' | null>(null)
   const [value, setValue] = useState('')
   const [hint, setHint] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
+  const pickMode = (next: 'pin' | 'password') => {
+    setMode(next)
+    setValue('')
+    setError(null)
+    setHint(null)
+  }
+
   const submit = async () => {
+    if (!mode) return
     setBusy(true)
     setError(null)
     try {
@@ -103,6 +112,26 @@ export const QuickLoginModal = ({
           <DialogDescription>{tAuth('quickLoginDialogDescription')}</DialogDescription>
         </DialogHeader>
         {hint && <p className="text-sm text-amber-600">{hint}</p>}
+        <div className="grid grid-cols-2 gap-2">
+          {(['password', 'pin'] as const).map((m) => (
+            <button
+              key={m}
+              type="button"
+              aria-pressed={mode === m}
+              onClick={() => pickMode(m)}
+              className={cn(
+                'rounded-xl border px-3 py-2 text-sm font-medium transition-colors',
+                mode === m
+                  ? 'border-[#920703] bg-[#920703]/5 text-[#920703]'
+                  : 'border-input text-zinc-600 hover:bg-zinc-50'
+              )}
+            >
+              {m === 'pin'
+                ? tAuth('quickLoginPinLabel')
+                : tAuth('quickLoginPasswordLabel')}
+            </button>
+          ))}
+        </div>
         <form
           onSubmit={(e) => {
             e.preventDefault()
@@ -110,48 +139,38 @@ export const QuickLoginModal = ({
           }}
           className="flex flex-col gap-3"
         >
-          <label htmlFor="quicklogin-field" className="text-sm font-medium">
-            {fieldLabel}
-          </label>
-          <Input
-            id="quicklogin-field"
-            aria-label={fieldLabel}
-            type={mode === 'pin' ? 'text' : 'password'}
-            inputMode={mode === 'pin' ? 'numeric' : undefined}
-            maxLength={mode === 'pin' ? 6 : undefined}
-            autoFocus
-            value={value}
-            onChange={(e) =>
-              setValue(
-                mode === 'pin'
-                  ? e.target.value.replace(/\D/g, '')
-                  : e.target.value
-              )
-            }
-            placeholder={
-              mode === 'pin'
-                ? tAuth('quickLoginPinPlaceholder')
-                : tAuth('passwordPlaceholder')
-            }
-          />
-          {error && <p className="text-sm text-red-600">{error}</p>}
-          <Button type="submit" disabled={busy || value.length < 4}>
+          {mode && (
+            <>
+              <label htmlFor="quicklogin-field" className="text-sm font-medium">
+                {fieldLabel}
+              </label>
+              <Input
+                id="quicklogin-field"
+                aria-label={fieldLabel}
+                type={mode === 'pin' ? 'text' : 'password'}
+                inputMode={mode === 'pin' ? 'numeric' : undefined}
+                maxLength={mode === 'pin' ? 6 : undefined}
+                autoFocus
+                value={value}
+                onChange={(e) =>
+                  setValue(
+                    mode === 'pin'
+                      ? e.target.value.replace(/\D/g, '')
+                      : e.target.value
+                  )
+                }
+                placeholder={
+                  mode === 'pin'
+                    ? tAuth('quickLoginPinPlaceholder')
+                    : tAuth('passwordPlaceholder')
+                }
+              />
+              {error && <p className="text-sm text-red-600">{error}</p>}
+            </>
+          )}
+          <Button type="submit" disabled={busy || !mode || value.length < 4}>
             {tAuth('quickLoginSubmit')}
           </Button>
-          {mode === 'pin' && (
-            <button
-              type="button"
-              className="text-xs text-zinc-500 hover:underline"
-              onClick={() => {
-                setMode('password')
-                setValue('')
-                setHint(null)
-                setError(null)
-              }}
-            >
-              {tAuth('quickLoginPreferPassword')}
-            </button>
-          )}
         </form>
       </DialogContent>
     </Dialog>

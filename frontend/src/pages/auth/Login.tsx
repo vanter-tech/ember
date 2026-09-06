@@ -100,7 +100,7 @@ export const Login = () => {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-slate-50">
+    <div className="flex items-center justify-center min-h-screen bg-slate-50 p-4">
       <Card className="w-full max-w-md shadow-lg relative">
         <div className="absolute top-4 right-4">
           <LanguageSwitcher />
@@ -130,7 +130,7 @@ export const Login = () => {
                   {editing ? tAuth('doneEditingChips') : tAuth('editChips')}
                 </button>
               </div>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {profiles.map((p) => (
                   <div key={p.email} className="relative">
                     <button

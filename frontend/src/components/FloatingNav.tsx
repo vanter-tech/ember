@@ -8,7 +8,6 @@ import {
   BarChart3,
   Settings,
   LogOut,
-  User,
   Home,
   Menu,
   ChefHat,
@@ -78,20 +77,35 @@ export const FloatingNav = () => {
 
   const isActive = (path: string) => location.pathname.includes(path)
   const navItemClass = (path: string) => `
-    flex items-center justify-center w-12 h-12 rounded-full transition-all duration-300
+    flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 shrink-0 rounded-full transition-all duration-300
+    [&_svg]:size-5 sm:[&_svg]:size-6
     ${
       isActive(path)
-        ? 'bg-[#920703] text-red-100 shadow-md scale-110'
+        ? 'bg-[#920703] text-red-100 shadow-md sm:scale-110'
         : 'text-zinc-500 hover:bg-zinc-100 hover:text-zinc-800'
     }`
 
   return (
     <>
     <nav
-      className="fixed bottom-4 sm:bottom-8 inset-x-0 mx-auto w-max max-w-[92vw] bg-white dark:bg-zinc-900 shadow-2xl rounded-full
-        px-2 sm:px-4 py-2 flex items-center gap-1 sm:gap-2 border border-zinc-200 dark:border-zinc-800 z-50
-        overflow-x-auto no-scrollbar"
+      className={`fixed bottom-[calc(1rem_+_env(safe-area-inset-bottom))] sm:bottom-8 inset-x-0 mx-auto ${
+        role === 'ADMIN'
+          ? 'w-full max-w-[calc(100vw-1.5rem)]'
+          : 'w-max max-w-[92vw]'
+      } sm:w-max sm:max-w-[92vw] bg-white dark:bg-zinc-900 shadow-2xl rounded-full
+        px-2 sm:px-4 py-2 flex items-center gap-1 sm:gap-2 border border-zinc-200 dark:border-zinc-800 z-50`}
     >
+      {/* Below sm, ADMIN only: a full-width scrollable strip (logout stays pinned outside
+          it), with -my-2/py-2 so the active item's shadow isn't clipped by overflow-x.
+          Other roles have few items — the wrapper is a plain flex row (no overflow, so the
+          active highlight never gets clipped) and the nav stays a centred pill. At sm+
+          `display:contents` dissolves the wrapper so the links are direct <nav> children,
+          i.e. the original centred-pill layout. */}
+      <div
+        className={`flex min-w-0 items-center gap-1 sm:contents ${
+          role === 'ADMIN' ? 'flex-1 -my-2 py-2 overflow-x-auto no-scrollbar' : ''
+        }`}
+      >
       {(role === 'WAITER' || role === 'ADMIN') && (
         <Link
           to="/waiter/tables"
@@ -152,7 +166,7 @@ export const FloatingNav = () => {
           >
             <BookOpen strokeWidth={1.5} size={24} />
           </Link>
-          <div className="w-px h-8 bg-zinc-200 dark:bg-zinc-700 mx-2"></div>
+          <div className="w-px h-6 sm:h-8 shrink-0 bg-zinc-200 dark:bg-zinc-700 mx-1 sm:mx-2"></div>
           <Link
             to="/admin/settings"
             className={navItemClass('/admin/settings')}
@@ -188,27 +202,21 @@ export const FloatingNav = () => {
       {role === 'CUSTOMER' && amiIn && (
         <button
           onClick={() => setConfirmLeave(true)}
-          className="flex items-center justify-center w-12 h-12 rounded-full text-zinc-500
+          className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 shrink-0 rounded-full text-zinc-500
+            [&_svg]:size-5 sm:[&_svg]:size-6
             hover:bg-red-50 hover:text-[#920703] transition-all duration-300 cursor-pointer"
           title={t('leaveTableCta')}
         >
           <DoorOpen strokeWidth={1.5} size={24} />
         </button>
       )}
+      </div>
 
-      <div
-        className="flex items-center gap-4 pl-2 border-l
-            border-zinc-200 dark:border-zinc-700"
-      >
-        <div
-          className="w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800
-                flex items-center justify-center border border-zinc-200 dark:border-zinc-700"
-        >
-          <User strokeWidth={1.5} size={18} className="text-zinc-500" />
-        </div>
+      <div className="flex shrink-0 items-center pl-2 border-l border-zinc-200 dark:border-zinc-700">
         <button
           onClick={handleLogout}
-          className="text-[#920703]
+          className="flex items-center justify-center h-10 sm:h-12 px-2 text-[#920703]
+                [&_svg]:size-5 sm:[&_svg]:size-6
                 hover:text-red-600 transition-colors cursor-pointer"
           title={t('navLogout')}
         >

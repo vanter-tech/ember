@@ -85,7 +85,12 @@ public class UserAdminService {
             }
             user.setEmail(request.email());
         }
-        if (request.active() != null) user.setActive(request.active());
+        if (request.active() != null) {
+            if (Boolean.FALSE.equals(request.active())) {
+                assertNotLastActiveAdmin(user, tenantId);
+            }
+            user.setActive(request.active());
+        }
         if (request.jobTitle() != null) user.setJobTitle(request.jobTitle());
         if (request.shift() != null) user.setShift(request.shift());
         if (request.contractType() != null) user.setContractType(request.contractType());
@@ -116,6 +121,27 @@ public class UserAdminService {
         user.setPinHash(null);
         user.setPinUpdatedAt(null);
         userRepository.save(user);
+    }
+
+    /**
+     * Blocks deactivating the tenant's last active ADMIN — including an admin deactivating their
+     * own account. A restaurant with zero active admins has no one who can manage staff, roles,
+     * or catalog, and (since {@code SecurityConfig} only authenticates {@code isEnabled()} users)
+     * no way to undo it from inside the app: the tenant is bricked. Deactivating an admin while
+     * another active admin remains is allowed and reversible.
+     */
+    private void assertNotLastActiveAdmin(User target, UUID tenantId) {
+        if (target.getRole() != Role.ADMIN || !Boolean.TRUE.equals(target.getActive())) {
+            return;
+        }
+        List<User> activeAdmins =
+                userRepository.findByRestaurantId_IdAndRoleAndActiveTrue(tenantId, Role.ADMIN);
+        boolean anotherActiveAdminExists = activeAdmins.stream()
+                .anyMatch(admin -> !admin.getId().equals(target.getId()));
+        if (!anotherActiveAdminExists) {
+            throw new IllegalArgumentException(
+                    "Cannot deactivate the last active administrator of this restaurant.");
+        }
     }
 
     private User requireTenantUser(String userId, UUID tenantId) {

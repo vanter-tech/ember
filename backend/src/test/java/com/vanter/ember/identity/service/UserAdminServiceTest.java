@@ -56,6 +56,18 @@ class UserAdminServiceTest {
         return Restaurant.builder().id(tenantId).name("Test").slug("test-" + tenantId).build();
     }
 
+    private User adminFor(UUID tenantId, String id) {
+        return User.builder()
+                .id(id)
+                .name("Admin " + id)
+                .email(id + "@test.com")
+                .role(Role.ADMIN)
+                .active(true)
+                .passwordHash("hash")
+                .restaurantId(Restaurant.builder().id(tenantId).name("Test").slug("test-" + tenantId).build())
+                .build();
+    }
+
     @Test
     void create_savesEncodedPasswordAndTenantBoundUser() {
         Restaurant restaurant = restaurantFor(TENANT_A);
@@ -227,6 +239,37 @@ class UserAdminServiceTest {
                 "missing", TENANT_A,
                 new UpdateStaffProfileRequest(false, null, null, null, null, null, null, null, null)))
                 .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void updateProfile_blocksDeactivatingTheSoleActiveAdmin() {
+        User admin = adminFor(TENANT_A, "a-1");
+        when(userRepository.findById("a-1")).thenReturn(Optional.of(admin));
+        when(userRepository.findByRestaurantId_IdAndRoleAndActiveTrue(TENANT_A, Role.ADMIN))
+                .thenReturn(List.of(admin));
+
+        assertThatThrownBy(() -> userAdminService.updateProfile(
+                "a-1", TENANT_A,
+                new UpdateStaffProfileRequest(false, null, null, null, null, null, null, null, null)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("last active administrator");
+
+        verify(userRepository, org.mockito.Mockito.never()).save(any());
+    }
+
+    @Test
+    void updateProfile_allowsDeactivatingAnAdminWhenAnotherActiveAdminRemains() {
+        User admin = adminFor(TENANT_A, "a-1");
+        when(userRepository.findById("a-1")).thenReturn(Optional.of(admin));
+        when(userRepository.findByRestaurantId_IdAndRoleAndActiveTrue(TENANT_A, Role.ADMIN))
+                .thenReturn(List.of(admin, adminFor(TENANT_A, "a-2")));
+        when(userRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        var result = userAdminService.updateProfile(
+                "a-1", TENANT_A,
+                new UpdateStaffProfileRequest(false, null, null, null, null, null, null, null, null));
+
+        assertThat(result.active()).isFalse();
     }
 
     @Test
