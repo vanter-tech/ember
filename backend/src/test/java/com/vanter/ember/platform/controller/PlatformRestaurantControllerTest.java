@@ -3,6 +3,7 @@ package com.vanter.ember.platform.controller;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -135,11 +136,68 @@ class PlatformRestaurantControllerTest {
                 .status(RestaurantStatus.ACTIVE)
                 .createdAt(Instant.now())
                 .build();
-        when(platformRestaurantService.getAll(any())).thenReturn(new PageImpl<>(List.of(summary)));
+        when(platformRestaurantService.getAll(any(), eq(false))).thenReturn(new PageImpl<>(List.of(summary)));
 
         mockMvc.perform(get("/platform/restaurants").header("Authorization", "Bearer " + TOKEN))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].slug").value("tenant-grill"));
+    }
+
+    @Test
+    void deleteRestaurant_returns401WithoutAuthHeader() throws Exception {
+        mockMvc.perform(delete("/platform/restaurants/" + UUID.randomUUID()))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void deleteRestaurant_returns204OnSuccess() throws Exception {
+        authenticate();
+        UUID id = UUID.randomUUID();
+
+        mockMvc.perform(delete("/platform/restaurants/" + id).header("Authorization", "Bearer " + TOKEN))
+                .andExpect(status().isNoContent());
+
+        org.mockito.Mockito.verify(platformRestaurantService).delete(id, OPERATOR_EMAIL);
+    }
+
+    @Test
+    void deleteRestaurant_returns409WhenNotSuspended() throws Exception {
+        authenticate();
+        UUID id = UUID.randomUUID();
+        org.mockito.Mockito.doThrow(new IllegalStateException("must be suspended"))
+                .when(platformRestaurantService).delete(id, OPERATOR_EMAIL);
+
+        mockMvc.perform(delete("/platform/restaurants/" + id).header("Authorization", "Bearer " + TOKEN))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    void restoreRestaurant_returns200WithSummary() throws Exception {
+        authenticate();
+        UUID id = UUID.randomUUID();
+        when(platformRestaurantService.restore(id, OPERATOR_EMAIL)).thenReturn(
+                PlatformRestaurantSummaryResponse.builder()
+                        .id(id).name("Tenant Grill").slug("tenant-grill")
+                        .plan(RestaurantPlan.PRO).status(RestaurantStatus.SUSPENDED)
+                        .createdAt(Instant.now()).build());
+
+        mockMvc.perform(post("/platform/restaurants/" + id + "/restore")
+                        .header("Authorization", "Bearer " + TOKEN))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("SUSPENDED"));
+    }
+
+    @Test
+    void getAll_forwardsIncludeDeleted() throws Exception {
+        authenticate();
+        when(platformRestaurantService.getAll(any(), eq(true))).thenReturn(new PageImpl<>(List.of()));
+
+        mockMvc.perform(get("/platform/restaurants")
+                        .param("includeDeleted", "true")
+                        .header("Authorization", "Bearer " + TOKEN))
+                .andExpect(status().isOk());
+
+        org.mockito.Mockito.verify(platformRestaurantService).getAll(any(), eq(true));
     }
 
     @Test

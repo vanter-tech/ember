@@ -60,7 +60,7 @@
     - [x] Task 3 — `HubActivationRepository.recordHeartbeat` (`@Modifying(clearAutomatically)`) + `findByRestaurantIdIn` + `HubHeartbeatService.heartbeat(request, callerIp)` best-effort (swallows `DataAccessException`) + `HubHeartbeatController` IP (CF-Connecting-IP → XFF → remoteAddr). 16 targeted tests; full suite 1069/1069.
     - [x] Task 4 — `PlatformRestaurantService.delete`/`restore` (SUSPENDED↔DELETED + audit rows) + `updateStatus` DELETED-transition guards + `getAll(Pageable, includeDeleted)` (1-arg overload kept, delegates to `false`). `PlatformRestaurantServiceTest` 20/20; full suite 1077/1077.
     - [x] Task 5 — `hubStatus` on summary + `hubStatus`/`hubActivatedAt`/`lastHeartbeatAt`/`lastHeartbeatIp` on detail DTOs, populated in `getAll` (batch `findByRestaurantIdIn`) / `getById`. `PlatformRestaurantService` gains a `HubActivationRepository` ctor param. Service test 23/23; full suite 1080/1080.
-    - [ ] Task 6 — `DELETE /platform/restaurants/{id}` (204) + `POST /{id}/restore` (200) + `?includeDeleted` on `GET`
+    - [x] Task 6 — `DELETE /platform/restaurants/{id}` (204) + `POST /{id}/restore` (200) + `?includeDeleted` on `GET`. `PlatformRestaurantControllerTest` 20/20; full suite 1085/1085. **Backend for B+C complete.**
     - [ ] Task 7 — `platformApi.ts`: `DELETED` unions, hub-status types, `deleteRestaurant`/`restoreRestaurant`/`getAll(page,size,includeDeleted)`
     - [ ] Task 8 — `ConsoleRestaurants`: Hub column (dot+label) + "Ver eliminados" checkbox + muted DELETED rows (+ Vitest)
     - [ ] Task 9 — `ConsoleRestaurantDetail`: Hub panel + Eliminar/Restaurar buttons + type-the-slug confirm (+ Vitest)
