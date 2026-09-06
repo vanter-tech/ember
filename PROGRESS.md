@@ -26,8 +26,18 @@
 - [x] **Restaurant onboarding** (admin wizard + waiter tour) — complete. Reports 202-213.
 - [x] **Ember Hub HUB-01** (portable Postgres/MinIO bootstrap, RSA license, hardware fingerprint, grace period, dashboard launcher, bundled frontend, license-activation) — complete. Reports 223-258.
   - [ ] Hub v2: Tauri/webview shell reusing `frontend/`'s design — not started, needs its own spec/plan.
-  - [ ] Hub: Windows service auto-start (`sc.exe`/SCM recovery) — not started, depends on the installer below.
-  - [ ] Hub: `jpackage`/`jlink` embedded-JRE `.exe` installer — not started. **Until this + the service exist, Hub isn't installable by a non-technical customer.**
+  - [ ] Hub: Windows service auto-start (`sc.exe`/SCM recovery) — **deferred**: HUB-03 v1 uses a common-Startup shortcut so the Swing dashboard stays as the operator surface (spec `2026-09-05-hub-installer-design.md` §1).
+  - [ ] **HUB-03 — `jpackage`/Inno Setup `.exe` installer.** Spec `docs/superpowers/specs/2026-09-05-hub-installer-design.md`; plan `docs/superpowers/plans/2026-09-05-hub-installer.md`. Doing tasks one at a time on branch `spec/hub-installer`:
+    - [ ] T1 — repo hygiene: `ember-hub/build.env.example` tracked, gitignore `build.env` / `.vendor-cache/` / `dist/`
+    - [ ] T2 — `LicenseFileInstaller` helper (TDD, `backend` hub.dashboard)
+    - [ ] T3 — `HubDashboard`: "Seleccionar license.key…" button + `--autostart` flag
+    - [ ] T4 — `ember-hub/jlink-modules.txt` + `build-installer.ps1` runtime stage → `dist/runtime`
+    - [ ] T5 — `fetch-vendor-binaries.ps1`: Postgres 16.6-1 + MinIO, SHA256-pinned
+    - [ ] T6 — `Iniciar Ember Hub.cmd` shim + `hub.env.example`
+    - [ ] T7 — `build-installer.ps1` app-image stage: `jpackage` + assemble binaries + `make-icon.ps1`
+    - [ ] T8 — `EmberHub.iss` (firewall private/domain, `%ProgramData%\EmberHub`, `hub.env`, common-Startup `.lnk`, uninstaller data prompt) + installer stage → `dist/EmberHubSetup-<v>.exe`
+    - [ ] T9 — `ember-hub/README.md` (build + manual-verification checklist) + PROGRESS update
+    - [ ] T10 — manual Windows verification (clean install, LAN 2nd PC, license picker, upgrade-in-place, uninstall-keep, 5 boot errors) → `reports/381-…`
 - [x] **Ember Hub license heartbeat** (HEARTBEAT-01..07, cloud + Hub-side, suspended-grace enforcement) — merged to `main` via PR #60. Reports 265-271.
 - [x] **EMBER-FIX** (cash-shift expiry, forced daily close, sentinel modals) — complete, merged to `main` (`78f5fe9`). Report 259.
 - [x] **Hosted Production Deployment** HPD-01..20 (GCP VM, Cloudflare DNS/WAF/Worker, GCS media+backups, monitoring, uptime check) — complete. Reports 272-286, 322-329, PR #76.
