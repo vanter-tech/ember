@@ -193,6 +193,24 @@ export const authService = {
   },
 }
 
+export interface UserProfileResponse {
+  name: string
+  email: string
+  /** One of bannerPresets' BANNER_KEYS, or null when the user hasn't picked one. */
+  bannerKey: string | null
+}
+
+export const userProfileService = {
+  me: async (): Promise<UserProfileResponse> => {
+    const { data } = await api.get<UserProfileResponse>('/users/me')
+    return data
+  },
+  updateBanner: async (bannerKey: string): Promise<UserProfileResponse> => {
+    const { data } = await api.patch<UserProfileResponse>('/users/me', { bannerKey })
+    return data
+  },
+}
+
 export const categoryService = {
   getAll: async (page = 0, size = 6): Promise<Page<CategoryResponse>> => {
     const { data } = await api.get<Page<CategoryResponse>>(

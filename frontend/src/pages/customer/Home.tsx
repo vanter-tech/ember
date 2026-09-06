@@ -1,14 +1,24 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Utensils, QrCode, Users, Wallet, History, LifeBuoy } from 'lucide-react'
+import {
+  Utensils,
+  QrCode,
+  Users,
+  Wallet,
+  History,
+  LifeBuoy,
+  ImageIcon,
+} from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/store/authStore'
 import { JoinTableModal } from './components/JoinTableModal'
+import { BannerPickerModal } from './components/BannerPickerModal'
 import { useUIStore } from '@/store/uiStore'
-import { loyaltyAccountService } from '@/lib/api'
+import { loyaltyAccountService, userProfileService } from '@/lib/api'
+import { BANNER_PRESETS, resolveBannerKey } from '@/lib/bannerPresets'
 import { formatCurrency } from '@/lib/format'
 import { useTranslation } from '@/lib/i18n'
-import type { MouseEvent } from 'react'
+import { useState, type MouseEvent } from 'react'
 import emberLogo from '@/assets/ember.png'
 
 const formatVisitDate = (isoDateTime: string) =>
@@ -22,12 +32,20 @@ export const Home = () => {
   const { name } = useAuthStore()
   const { openModal } = useUIStore()
   const { t } = useTranslation('customer')
+  const [bannerPickerOpen, setBannerPickerOpen] = useState(false)
 
   const openJoinModal = (e: MouseEvent) => {
     openModal('JOIN_TABLE')
     e.preventDefault()
     e.stopPropagation()
   }
+
+  const { data: profile } = useQuery({
+    queryKey: ['me'],
+    queryFn: userProfileService.me,
+    retry: false,
+  })
+  const bannerKey = resolveBannerKey(profile?.bannerKey)
 
   // A successful fetch means this customer is already bound to a restaurant; a failure
   // (no tenant yet) is expected and just hides the visits card.
@@ -49,7 +67,7 @@ export const Home = () => {
         {/* Banner — ~40% of the viewport. The gradient/pattern here is what the future
             placeholder-image picker will swap out. */}
         <Card className="relative min-h-[40vh] overflow-hidden rounded-3xl border-none shadow-md">
-          <div className="absolute inset-0 bg-gradient-to-br from-[#8c1717] via-[#7a1414] to-[#3b0a0a]" />
+          <div className={`absolute inset-0 ${BANNER_PRESETS[bannerKey].gradient}`} />
           <div
             className="absolute inset-0 opacity-[0.15]"
             style={{
@@ -58,6 +76,14 @@ export const Home = () => {
               backgroundSize: '22px 22px',
             }}
           />
+          <button
+            type="button"
+            aria-label={t('bannerPickerAria')}
+            onClick={() => setBannerPickerOpen(true)}
+            className="absolute right-3 top-3 z-10 grid h-9 w-9 place-items-center rounded-full bg-white/15 text-white backdrop-blur-sm transition-colors hover:bg-white/25"
+          >
+            <ImageIcon className="h-4 w-4" />
+          </button>
           <CardContent className="relative flex min-h-[40vh] flex-col items-center justify-center gap-5 p-8 text-center text-white">
             <img
               src={emberLogo}
@@ -163,6 +189,11 @@ export const Home = () => {
         </div>
       </div>
       <JoinTableModal />
+      <BannerPickerModal
+        open={bannerPickerOpen}
+        onClose={() => setBannerPickerOpen(false)}
+        current={bannerKey}
+      />
     </>
   )
 }

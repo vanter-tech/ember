@@ -1,10 +1,10 @@
 # PROGRESS.md — Active Execution State
 
 ## Current Execution State
-- **Last Completed Task:** report 379 — customer home (`pages/customer/Home.tsx`) redesigned: `min-h-[40vh]` brand-gradient banner (bundled `@/assets/ember.png` centred, "Entrar a una mesa" button below), then a 1-col/md:2-col grid — "¿Cómo funciona?" (3 steps, always), "Tus visitas" (only when `hasTenant`), "¿Necesitas ayuda?" (always). Dropped the loyalty points/tier card + `i.pravatar.cc` avatars. New `customer` i18n keys `homeGuestName`/`homeHowItWorks*`/`homeStep1..3*`/`homeHelp*`. Committed to `main` (not pushed).
-- **Predecessor Task:** report 378 (FloatingNav active highlight horizontal clip).
-- **Current Active Task:** none. **Follow-up queued:** banner placeholder-image picker modal — generated gradient/pattern options, choice persisted on the account (new backend field + endpoint).
-- **System Health:** backend `./mvnw test` last verified 1044/1044 (FIX-QA pass, report 364). Frontend `pnpm run build` + `lint` clean and `pnpm run test:run` 78/78 pass (report 379).
+- **Last Completed Task:** report 380 — customer banner preset picker. Backend (`identity`): `V7__user_banner_key.sql` adds nullable `users.banner_key`; `BannerKey` enum (EMBER/SUNSET/FOREST/OCEAN/MIDNIGHT/MONO, JSON lowercase); `GET`/`PATCH /users/me` (`UserProfileController`/`Service`, any authenticated caller) + 6-case slice test. Frontend: `lib/bannerPresets.ts` (keys + Tailwind gradients), `userProfileService`, `BannerPickerModal` (swatch grid, PATCHes + updates `['me']` cache), Home fetches `['me']` and renders the gradient + an icon button that opens the modal. New `customer` i18n `bannerPicker*`/`banner<Preset>`. Committed to `main` (not pushed).
+- **Predecessor Task:** report 379 (customer home banner redesign).
+- **Current Active Task:** none.
+- **System Health:** backend `./mvnw test` 1050/1050 (report 380, +6). Frontend `pnpm run build` + `lint` clean and `pnpm run test:run` 78/78 pass (report 380).
 
 ## Active Context & Recent Decisions
 - Monolith at `ember/`: Java 17 + Spring Boot 3.5.14 / React 19 + TS + pnpm. Every module (`identity`/`catalog`/`billing`/`settings`/`restaurant`/`session`/`kitchen`) is on Postgres/JPA; event bus is Spring `ApplicationEventPublisher`/`@EventListener` only — do not reintroduce Kafka (dependency is vestigial, see root `CLAUDE.md`).
