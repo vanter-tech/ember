@@ -69,7 +69,7 @@
     - [x] Task 1 — backend `GET /platform/stats` (`PlatformStatsResponse{tenants,hubs}` + `RestaurantRepository.countByStatus` + `PlatformStatsService` bucketing hubs via `HubStatus.from`). 5 tests; full suite 1090/1090.
     - [x] Task 2 — `platformApi.ts`: `PlatformStats` type + `platformStatsService.get` + `platformAuditLogService.getRecent`. build + lint clean.
     - [x] Task 3 — `frontend/src/components/console/`: `HubBadge` (2 tests) + `ConsolePageHeader`. build + lint clean.
-    - [ ] Task 4 — shell: `PlatformLayout` sidebar + `ConsoleSidebar` + mobile drawer (+ layout test)
+    - [x] Task 4 — `PlatformLayout` → sidebar shell (`ConsoleSidebar`, `NavLink` active state, `#8c1717`) + mobile drawer + "Cerrar sesión". `PlatformLayout.test.tsx` 2/2; build + lint clean.
     - [ ] Task 5 — `ConsoleDashboard` real: KPI cards + activity feed + skeleton/error (+ test)
     - [ ] Task 6 — re-skin `ConsoleRestaurants` → shadcn `<Table>`/`<Badge>`/`<Switch>`, drop `hubDot` (+ test update)
     - [ ] Task 7 — re-skin `ConsoleRestaurantDetail` → `<Card>`/`<Table>`/`<Dialog>` confirm (+ test update)
