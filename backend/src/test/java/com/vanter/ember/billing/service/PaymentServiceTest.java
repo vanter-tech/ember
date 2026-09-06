@@ -690,6 +690,33 @@ class PaymentServiceTest {
     }
 
     @Test
+    void refundPayment_publishesPaymentRefundedEvent() {
+        Bill bill = sampleBill();
+        Payment payment = Payment.builder().id(30L).bill(bill).participantName("Alice")
+                .amount(new BigDecimal("12.50")).method(PaymentMethod.DIGITAL)
+                .status(PaymentStatus.CONFIRMED).createdAt(LocalDateTime.now()).build();
+        BillSplit split = paidSplit(bill, "Alice", "12.50");
+        when(paymentRepository.findByIdForUpdate(30L)).thenReturn(Optional.of(payment));
+        when(refundRepository.sumByPaymentId(30L)).thenReturn(BigDecimal.ZERO, new BigDecimal("5.00"));
+        when(userRepository.findByEmail("alice@ember.local")).thenReturn(Optional.of(waiterUser()));
+        when(refundRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(billSplitRepository.findByBillIdAndParticipantName(1L, "Alice")).thenReturn(Optional.of(split));
+        when(paymentRepository.findByBillId(1L)).thenReturn(List.of(payment));
+        when(billSplitRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        paymentService.refundPayment(30L, new BigDecimal("5.00"), "comped an item", "alice@ember.local");
+
+        ArgumentCaptor<com.vanter.ember.billing.event.PaymentRefunded> captor =
+                ArgumentCaptor.forClass(com.vanter.ember.billing.event.PaymentRefunded.class);
+        verify(eventPublisher).publishEvent(captor.capture());
+        com.vanter.ember.billing.event.PaymentRefunded evt = captor.getValue();
+        assertThat(evt.sessionId()).isEqualTo("sess-1");
+        assertThat(evt.billId()).isEqualTo(1L);
+        assertThat(evt.participantName()).isEqualTo("Alice");
+        assertThat(evt.refundAmount()).isEqualByComparingTo("5.00");
+    }
+
+    @Test
     void refundPayment_physical_recordsCashOutMovementOnTheCurrentOpenShift() {
         Bill bill = sampleBill();
         Payment payment = confirmedPhysicalPayment(bill, "12.50");
