@@ -65,7 +65,16 @@
     - [x] Task 8 — `ConsoleRestaurants`: Hub column (dot+label), "Ver eliminados" checkbox, muted DELETED rows + `ELIMINADO` badge. Vitest 2/2; build + lint clean.
     - [x] Task 9 — `ConsoleRestaurantDetail`: Hub panel (estado/activado/último latido/IP) + Eliminar (type-the-slug confirm, only when SUSPENDED) / Restaurar (when DELETED, hides status+license controls). Vitest 3/3; build + lint clean; full frontend `test:run` 83/83.
     - [x] Task 10 — report 384 + PROGRESS + full verification + PR
-  - [ ] **Piece D** — visual redesign of `/console` to match the tenant SaaS app. Own spec, not started.
+  - [~] **Piece D — `/console` redesign** — branch `spec/platform-console-redesign` (cut from B/C branch). Spec `docs/superpowers/specs/2026-09-06-platform-console-redesign-design.md`, plan `docs/superpowers/plans/2026-09-06-platform-console-redesign.md`. Executing one task at a time:
+    - [ ] Task 1 — backend `GET /platform/stats` (`PlatformStatsResponse` + `RestaurantRepository.countByStatus`) + 3 tests
+    - [ ] Task 2 — `platformApi.ts`: `platformStatsService.get` + `platformAuditLogService.getRecent`
+    - [ ] Task 3 — shared primitives `HubBadge` + `ConsolePageHeader` (+ HubBadge test)
+    - [ ] Task 4 — shell: `PlatformLayout` sidebar + `ConsoleSidebar` + mobile drawer (+ layout test)
+    - [ ] Task 5 — `ConsoleDashboard` real: KPI cards + activity feed + skeleton/error (+ test)
+    - [ ] Task 6 — re-skin `ConsoleRestaurants` → shadcn `<Table>`/`<Badge>`/`<Switch>`, drop `hubDot` (+ test update)
+    - [ ] Task 7 — re-skin `ConsoleRestaurantDetail` → `<Card>`/`<Table>`/`<Dialog>` confirm (+ test update)
+    - [ ] Task 8 — Login/Create/PasswordChange: `#8c1717` + Spanish strings + `ConsolePageHeader` (+ ConsoleLogin test)
+    - [ ] Task 9 — report 385 + PROGRESS + full verification + PR
 - [ ] **Security/hardening debt — surfaced 2026-09-04, none yet has a spec/plan:**
   - [ ] F-15: Ember Hub activation endpoint returns `adminPasswordHash` in the response — redesign the activation contract + a migration path for already-installed Hub instances.
   - [ ] F-21: hardcoded credentials literal in `PortableDatabaseBootstrap`/`PortableMinioBootstrap`'s process-launch code — needs the same installed-instance migration path as F-15; do together, same bootstrap code.
