@@ -33,7 +33,7 @@
     - [x] T3 — `HubDashboard`: "Seleccionar license.key…" button (5-col grid, 520px) + `--autostart` flag; `./mvnw test` 1048/1048. Manual Swing smoke deferred to T10.
     - [x] T4 — `ember-hub/jlink-modules.txt` + `build-installer.ps1` runtime stage → `dist/runtime` (verified: 30 modules / 47.6 MB, `java.exe --version` OK on Adoptium JDK 17.0.17)
     - [x] T5 — `fetch-vendor-binaries.ps1`: Postgres 16.6-1 (`6a1bfb64…`) + MinIO `RELEASE.2025-04-22` (`2ceb3b3d…`), SHA256-pinned; staged & verified (`initdb 16.6`, `minio RELEASE.2025-04-22`)
-    - [ ] T6 — `Iniciar Ember Hub.cmd` shim + `hub.env.example`
+    - [x] T6 — `installer/Iniciar Ember Hub.cmd` shim + `installer/hub.env.example`; parser stub verified (`eol=#`, `delims==`, spaces/backslashes in values, `SPRING_PROFILES_ACTIVE=hub`)
     - [ ] T7 — `build-installer.ps1` app-image stage: `jpackage` + assemble binaries + `make-icon.ps1`
     - [ ] T8 — `EmberHub.iss` (firewall private/domain, `%ProgramData%\EmberHub`, `hub.env`, common-Startup `.lnk`, uninstaller data prompt) + installer stage → `dist/EmberHubSetup-<v>.exe`
     - [ ] T9 — `ember-hub/README.md` (build + manual-verification checklist) + PROGRESS update
