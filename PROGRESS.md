@@ -29,7 +29,7 @@
   - [ ] Hub: Windows service auto-start (`sc.exe`/SCM recovery) — **deferred**: HUB-03 v1 uses a common-Startup shortcut so the Swing dashboard stays as the operator surface (spec `2026-09-05-hub-installer-design.md` §1).
   - [ ] **HUB-03 — `jpackage`/Inno Setup `.exe` installer.** Spec `docs/superpowers/specs/2026-09-05-hub-installer-design.md`; plan `docs/superpowers/plans/2026-09-05-hub-installer.md`. Doing tasks one at a time on branch `spec/hub-installer`:
     - [x] T1 — repo hygiene: `ember-hub/build.env.example` tracked, gitignore `build.env` / `.vendor-cache/` / `dist/` (`e03abaca`)
-    - [ ] T2 — `LicenseFileInstaller` helper (TDD, `backend` hub.dashboard)
+    - [x] T2 — `LicenseFileInstaller` helper (TDD, `backend` hub.dashboard) — 4 tests; `./mvnw test` 1048/1048 on this branch
     - [ ] T3 — `HubDashboard`: "Seleccionar license.key…" button + `--autostart` flag
     - [ ] T4 — `ember-hub/jlink-modules.txt` + `build-installer.ps1` runtime stage → `dist/runtime`
     - [ ] T5 — `fetch-vendor-binaries.ps1`: Postgres 16.6-1 + MinIO, SHA256-pinned
