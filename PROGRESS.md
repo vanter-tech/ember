@@ -66,7 +66,7 @@
     - [x] Task 9 — `ConsoleRestaurantDetail`: Hub panel (estado/activado/último latido/IP) + Eliminar (type-the-slug confirm, only when SUSPENDED) / Restaurar (when DELETED, hides status+license controls). Vitest 3/3; build + lint clean; full frontend `test:run` 83/83.
     - [x] Task 10 — report 384 + PROGRESS + full verification + PR
   - [~] **Piece D — `/console` redesign** — branch `spec/platform-console-redesign` (cut from B/C branch). Spec `docs/superpowers/specs/2026-09-06-platform-console-redesign-design.md`, plan `docs/superpowers/plans/2026-09-06-platform-console-redesign.md`. Executing one task at a time:
-    - [ ] Task 1 — backend `GET /platform/stats` (`PlatformStatsResponse` + `RestaurantRepository.countByStatus`) + 3 tests
+    - [x] Task 1 — backend `GET /platform/stats` (`PlatformStatsResponse{tenants,hubs}` + `RestaurantRepository.countByStatus` + `PlatformStatsService` bucketing hubs via `HubStatus.from`). 5 tests; full suite 1090/1090.
     - [ ] Task 2 — `platformApi.ts`: `platformStatsService.get` + `platformAuditLogService.getRecent`
     - [ ] Task 3 — shared primitives `HubBadge` + `ConsolePageHeader` (+ HubBadge test)
     - [ ] Task 4 — shell: `PlatformLayout` sidebar + `ConsoleSidebar` + mobile drawer (+ layout test)
