@@ -1,10 +1,10 @@
 # PROGRESS.md — Active Execution State
 
 ## Current Execution State
-- **Last Completed Task:** PR #76 (`docs: record HPD-20 execution in RUNBOOK and monitoring README`) squash-merged to `main` (`9543c962`) — HPD-20 (GCS media round-trip + uptime check/alert) closed out.
-- **Predecessor Task:** report 364, FIX-QA 2nd-pass live re-verification (F-13/E-18/F-23/F-18/F-20 closed), merged via PR #73.
-- **Current Active Task:** none — all in-flight branches merged to `main`. Next task should come from Task Queue Status below (security debt items are the freshest, un-planned gap).
-- **System Health:** backend `./mvnw test` last verified 1044/1044 (FIX-QA pass, report 364). Frontend `build`/`lint`/`test:run` last verified 77/77 clean (same pass). HPD-20's RUNBOOK/README commit was docs-only — no re-verification needed.
+- **Last Completed Task:** report 366 — hotfix pushed to `main` (no PR): Cloudflare Pages/`ember-app` served `index.html` for `/<route>/env-config.js` on deep links, so `window.ENV` never loaded and the prod SPA fell back to `http://localhost:8080/v1` (`ERR_CONNECTION_REFUSED` on login). `gen-env-config.mjs` now rewrites the config `<script src>` to the absolute `/env-config.js` for the Pages build.
+- **Predecessor Task:** report 365 (PROGRESS.md compaction + security-debt list).
+- **Current Active Task:** none — hotfix pushed; verify on redeploy that `https://app.ember.vanter.net/login` loads `/env-config.js` (200, JS) and login reaches `api.ember.vanter.net`.
+- **System Health:** backend `./mvnw test` last verified 1044/1044 (FIX-QA pass, report 364). Frontend `pnpm run build:pages` verified clean for report 366 (`dist/index.html` → `<script src="/env-config.js">`). `lint`/`test:run` last verified 77/77 clean (report 364).
 
 ## Active Context & Recent Decisions
 - Monolith at `ember/`: Java 17 + Spring Boot 3.5.14 / React 19 + TS + pnpm. Every module (`identity`/`catalog`/`billing`/`settings`/`restaurant`/`session`/`kitchen`) is on Postgres/JPA; event bus is Spring `ApplicationEventPublisher`/`@EventListener` only — do not reintroduce Kafka (dependency is vestigial, see root `CLAUDE.md`).
