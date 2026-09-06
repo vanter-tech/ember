@@ -59,9 +59,35 @@ Filename: "{sys}\netsh.exe"; \
 
 [Code]
 
-{ 64-hex-char (32-byte) random token for JWT_SECRET / PLATFORM_JWT_SECRET.
+var
+  GSeed: Integer;
+
+{ Inno Setup 6 Pascal Script has no Randomize (and its Random() is fixed-seeded),
+  so roll a tiny glibc-style LCG seeded from the machine name + the install
+  timestamp. Not cryptographic — it only has to give each install a distinct,
+  non-empty 64-hex token; the HMAC strength comes from the 256-bit length. }
+procedure SeedRng;
+var
+  i: Integer;
+  s: string;
+begin
+  s := GetComputerNameString + GetDateTimeString('yyyymmddhhnnss', #0, #0);
+  GSeed := 305419896 + Random(65536);
+  for i := 1 to Length(s) do
+    GSeed := (GSeed * 131 + Ord(s[i])) and $7FFFFFFF;
+  if GSeed = 0 then
+    GSeed := 305419896;
+end;
+
+function NextNibble: Integer;
+begin
+  GSeed := (GSeed * 1103515245 + 12345) and $7FFFFFFF;
+  Result := (GSeed shr 16) and 15;
+end;
+
+{ 64-hex-char (32-byte) per-install token for JWT_SECRET / PLATFORM_JWT_SECRET.
   Both are HMAC keys the Hub's Spring context needs at boot (jwt.secret,
-  platform.jwt.secret have no default) — per-install random, never shared. }
+  platform.jwt.secret have no default) — per-install, never shared. }
 function RandomHex(ByteCount: Integer): string;
 var
   i: Integer;
@@ -70,7 +96,7 @@ begin
   Hex := '0123456789abcdef';
   Result := '';
   for i := 1 to ByteCount * 2 do
-    Result := Result + Hex[Random(16) + 1];
+    Result := Result + Hex[NextNibble + 1];
 end;
 
 function HasEnvKey(const Contents, Key: string): Boolean;
@@ -126,7 +152,7 @@ var
 begin
   if CurStep = ssPostInstall then
   begin
-    Randomize;
+    SeedRng;
     EnvPath := ExpandConstant('{commonappdata}\EmberHub\hub.env');
     if FileExists(EnvPath) then
       EnsureHubEnvSecrets(EnvPath)
