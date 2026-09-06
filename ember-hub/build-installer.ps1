@@ -114,8 +114,14 @@ function Build-Installer {
     Write-Host "== installer ==" -ForegroundColor Cyan
     if (-not (Test-Path (Join-Path $appImageDir "Ember Hub.exe"))) { Build-AppImage }
     $iscc = (Get-Command iscc.exe -ErrorAction SilentlyContinue).Source
-    if (-not $iscc) { $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\iscc.exe" }
-    if (-not (Test-Path $iscc)) { throw "Inno Setup (iscc.exe) not found - install Inno Setup 6." }
+    if (-not $iscc) {
+        $iscc = @(
+            "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe",
+            "${env:ProgramFiles}\Inno Setup 6\ISCC.exe",
+            "${env:LOCALAPPDATA}\Programs\Inno Setup 6\ISCC.exe"
+        ) | Where-Object { Test-Path $_ } | Select-Object -First 1
+    }
+    if (-not $iscc -or -not (Test-Path $iscc)) { throw "Inno Setup (ISCC.exe) not found - install Inno Setup 6." }
 
     $env = Read-BuildEnv
     $version = Get-HubVersion
