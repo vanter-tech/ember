@@ -73,7 +73,7 @@
     - [x] Task 5 — `ConsoleDashboard`: tenant + Hub KPI `StatCard`s (`platformStatsService`), recent-activity `<Table>` (`getRecent`), skeleton + error state, quick-action buttons. `ConsoleDashboard.test.tsx` 2/2; build + lint clean.
     - [x] Task 6 — `ConsoleRestaurants` on shadcn `<Table>`/`<Badge>`/`<Switch>`/`<Label>` + `ConsolePageHeader` + skeleton rows; `hubDot` removed (uses `HubBadge`). Test switched to `role="switch"`; 2/2; build + lint clean.
     - [x] Task 7 — `ConsoleRestaurantDetail` on `<Card>`/`<Table>`/`<Badge>`/`<HubBadge>` + `ConsolePageHeader`; delete-confirm modal → shadcn `<Dialog>`. B/C behaviour unchanged; `ConsoleRestaurantDetail.test.tsx` 3/3 unchanged; build + lint clean.
-    - [ ] Task 8 — Login/Create/PasswordChange: `#8c1717` + Spanish strings + `ConsolePageHeader` (+ ConsoleLogin test)
+    - [x] Task 8 — `ConsoleLogin`/`Create`/`PasswordChange`: `#920703` → `#8c1717`, all strings + zod + toasts to Spanish, `ConsolePageHeader` on create/password, Ember wordmark on login. `ConsoleLogin.test.tsx` 1/1; full frontend `test:run` 90/90; build + lint clean.
     - [ ] Task 9 — report 385 + PROGRESS + full verification + PR
 - [ ] **Security/hardening debt — surfaced 2026-09-04, none yet has a spec/plan:**
   - [ ] F-15: Ember Hub activation endpoint returns `adminPasswordHash` in the response — redesign the activation contract + a migration path for already-installed Hub instances.

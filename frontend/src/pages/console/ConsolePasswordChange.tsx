@@ -9,12 +9,7 @@ import { platformAuthService } from '@/lib/platformApi'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import {
   Form,
   FormControl,
@@ -23,19 +18,17 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
+import { ConsolePageHeader } from '@/components/console/ConsolePageHeader'
 
 const passwordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).+$/
 
 const passwordChangeSchema = z.object({
-  currentPassword: z.string().min(1, 'Current password is required'),
+  currentPassword: z.string().min(1, 'La contraseña actual es obligatoria'),
   newPassword: z
     .string()
-    .min(8, 'Password must be between 8 and 128 characters')
-    .max(128, 'Password must be between 8 and 128 characters')
-    .regex(
-      passwordPattern,
-      'Password must contain at least one uppercase letter, one lowercase letter, one digit, and one special character'
-    ),
+    .min(8, 'La contraseña debe tener entre 8 y 128 caracteres')
+    .max(128, 'La contraseña debe tener entre 8 y 128 caracteres')
+    .regex(passwordPattern, 'La contraseña necesita mayúscula, minúscula, número y símbolo'),
 })
 
 type PasswordChangeFormInputs = z.infer<typeof passwordChangeSchema>
@@ -52,17 +45,17 @@ export default function ConsolePasswordChange() {
   const changePassword = useMutation({
     mutationFn: (data: PasswordChangeFormInputs) => platformAuthService.changePassword(data),
     onSuccess: () => {
-      toast.success('Password updated')
+      toast.success('Contraseña actualizada')
       form.reset()
     },
     onError: (error) => {
       if (axios.isAxiosError(error) && error.response?.status === 401) {
-        toast.error('Current password is incorrect', {
+        toast.error('La contraseña actual es incorrecta', {
           id: 'console-password-error',
           duration: 3000,
         })
       } else {
-        toast.error('Failed to update password', {
+        toast.error('No se pudo actualizar la contraseña', {
           id: 'console-password-error',
           duration: 3000,
         })
@@ -74,15 +67,13 @@ export default function ConsolePasswordChange() {
 
   return (
     <div className="flex flex-col gap-4">
-      <Link to="/console" className="text-sm text-blue-600 hover:underline">
+      <ConsolePageHeader title="Cambiar contraseña" />
+      <Link to="/console" className="text-sm text-[#8c1717] hover:underline">
         &larr; Panel
       </Link>
 
       <Card className="max-w-md">
-        <CardHeader>
-          <CardTitle className="text-2xl">Cambiar contraseña</CardTitle>
-        </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <FormField

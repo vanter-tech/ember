@@ -25,8 +25,8 @@ import {
 } from '@/components/ui/form'
 
 const loginSchema = z.object({
-  email: z.string().email('Invalid email address').min(1, 'Email is required'),
-  password: z.string().min(1, 'Password is required'),
+  email: z.string().email('Email inválido').min(1, 'El email es obligatorio'),
+  password: z.string().min(1, 'La contraseña es obligatoria'),
 })
 
 type LoginFormInputs = z.infer<typeof loginSchema>
@@ -47,31 +47,32 @@ export default function ConsoleLogin() {
     try {
       const response = await platformAuthService.login(data)
       setAuth(response)
-      toast.success('Login successful!')
+      toast.success('Sesión iniciada')
       navigate('/console', { replace: true })
     } catch (error) {
       if (axios.isAxiosError(error) && error.response?.status === 401) {
-        toast.error('Unauthorized', { id: 'console-login-error', duration: 3000 })
+        toast.error('Credenciales inválidas', { id: 'console-login-error', duration: 3000 })
       } else if (axios.isAxiosError(error) && error.response?.status === 429) {
-        toast.error('Too many login attempts. Please try again later.', {
+        toast.error('Demasiados intentos. Probá de nuevo en un rato.', {
           id: 'console-login-error',
           duration: 3000,
         })
       } else {
-        toast.error('Login failed', { id: 'console-login-error', duration: 3000 })
+        toast.error('No se pudo iniciar sesión', { id: 'console-login-error', duration: 3000 })
       }
     }
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-slate-50">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-slate-50">
+      <div className="mb-6 text-center text-2xl font-bold text-[#8c1717]">Ember</div>
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader>
-          <CardTitle className="text-3xl text-center text-[#920703] font-bold">
-            Ember Platform Console
+          <CardTitle className="text-3xl text-center text-[#8c1717] font-bold">
+            Consola de operadores
           </CardTitle>
           <CardDescription className="text-center">
-            Sign in with your operator account.
+            Ingresá con tu cuenta de operador.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -84,7 +85,7 @@ export default function ConsoleLogin() {
                   <FormItem>
                     <FormControl>
                       <Input
-                        placeholder="Enter your email"
+                        placeholder="Ingresá tu email"
                         {...field}
                         autoComplete="email"
                       />
@@ -101,7 +102,7 @@ export default function ConsoleLogin() {
                   <FormItem>
                     <FormControl>
                       <Input
-                        placeholder="Enter your password"
+                        placeholder="Ingresá tu contraseña"
                         type="password"
                         autoComplete="current-password"
                         {...field}
@@ -117,7 +118,7 @@ export default function ConsoleLogin() {
                 className="w-full"
                 disabled={form.formState.isSubmitting}
               >
-                {form.formState.isSubmitting ? 'Logging in...' : 'Login'}
+                {form.formState.isSubmitting ? 'Ingresando...' : 'Iniciar sesión'}
               </Button>
             </form>
           </Form>
