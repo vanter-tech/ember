@@ -71,7 +71,7 @@
     - [x] Task 3 — `frontend/src/components/console/`: `HubBadge` (2 tests) + `ConsolePageHeader`. build + lint clean.
     - [x] Task 4 — `PlatformLayout` → sidebar shell (`ConsoleSidebar`, `NavLink` active state, `#8c1717`) + mobile drawer + "Cerrar sesión". `PlatformLayout.test.tsx` 2/2; build + lint clean.
     - [x] Task 5 — `ConsoleDashboard`: tenant + Hub KPI `StatCard`s (`platformStatsService`), recent-activity `<Table>` (`getRecent`), skeleton + error state, quick-action buttons. `ConsoleDashboard.test.tsx` 2/2; build + lint clean.
-    - [ ] Task 6 — re-skin `ConsoleRestaurants` → shadcn `<Table>`/`<Badge>`/`<Switch>`, drop `hubDot` (+ test update)
+    - [x] Task 6 — `ConsoleRestaurants` on shadcn `<Table>`/`<Badge>`/`<Switch>`/`<Label>` + `ConsolePageHeader` + skeleton rows; `hubDot` removed (uses `HubBadge`). Test switched to `role="switch"`; 2/2; build + lint clean.
     - [ ] Task 7 — re-skin `ConsoleRestaurantDetail` → `<Card>`/`<Table>`/`<Dialog>` confirm (+ test update)
     - [ ] Task 8 — Login/Create/PasswordChange: `#8c1717` + Spanish strings + `ConsolePageHeader` (+ ConsoleLogin test)
     - [ ] Task 9 — report 385 + PROGRESS + full verification + PR

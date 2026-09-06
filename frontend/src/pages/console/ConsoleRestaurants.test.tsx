@@ -56,7 +56,7 @@ describe('ConsoleRestaurants', () => {
     wrap(<ConsoleRestaurants />)
     await screen.findByText('Tenant Grill')
 
-    fireEvent.click(screen.getByLabelText('Ver eliminados'))
+    fireEvent.click(screen.getByRole('switch', { name: 'Ver eliminados' }))
 
     await waitFor(() =>
       expect(platformRestaurantService.getAll).toHaveBeenLastCalledWith(0, 10, true)
