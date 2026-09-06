@@ -13,3 +13,6 @@ backend/src/main/resources/static/
 ember-hub/build.env
 ember-hub/.vendor-cache/
 ember-hub/dist/
+
+# Hub license signing keys — never commit
+ember-hub/keys/
