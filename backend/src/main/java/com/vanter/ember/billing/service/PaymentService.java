@@ -8,6 +8,7 @@ import com.vanter.ember.billing.dto.SplitRefundedMessage;
 import com.vanter.ember.billing.dto.SplitsRedistributedMessage;
 import com.vanter.ember.billing.dto.WaiterBillStateResponse;
 import com.vanter.ember.billing.event.PaymentCompleted;
+import com.vanter.ember.billing.event.PaymentRefunded;
 import com.vanter.ember.billing.model.Bill;
 import com.vanter.ember.billing.model.BillSplit;
 import com.vanter.ember.billing.model.BillSplitStatus;
@@ -284,6 +285,9 @@ public class PaymentService {
         messagingTemplate.convertAndSend(
                 "/topic/session/" + payment.getBill().getSessionId(),
                 SplitRefundedMessage.of(billId, payment.getParticipantName(), split.getStatus().name(), refundAmount));
+
+        eventPublisher.publishEvent(new PaymentRefunded(
+                payment.getBill().getSessionId(), billId, payment.getParticipantName(), refundAmount));
 
         return refund;
     }
