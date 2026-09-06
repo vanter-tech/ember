@@ -22,13 +22,18 @@ export interface PlatformPasswordChangeRequest {
   newPassword: string
 }
 
+export type HubStatus = 'NEVER' | 'ONLINE' | 'STALE' | 'OFFLINE'
+
+export type PlatformRestaurantStatus = 'ACTIVE' | 'SUSPENDED' | 'INACTIVE' | 'DELETED'
+
 // Mirrors PlatformRestaurantSummaryResponse (platform/model/dto).
 export interface PlatformRestaurantSummary {
   id: string
   name: string
   slug: string
   plan: 'FREE' | 'STARTER' | 'PRO' | 'ENTERPRISE'
-  status: 'ACTIVE' | 'SUSPENDED' | 'INACTIVE'
+  status: PlatformRestaurantStatus
+  hubStatus: HubStatus
   createdAt: string
 }
 
@@ -53,9 +58,13 @@ export interface PlatformRestaurantDetail {
   name: string
   slug: string
   plan: 'FREE' | 'STARTER' | 'PRO' | 'ENTERPRISE'
-  status: 'ACTIVE' | 'SUSPENDED' | 'INACTIVE'
+  status: PlatformRestaurantStatus
   createdAt: string
   admins: PlatformRestaurantAdmin[]
+  hubStatus: HubStatus
+  hubActivatedAt: string | null
+  lastHeartbeatAt: string | null
+  lastHeartbeatIp: string | null
 }
 
 // Mirrors PlatformRestaurantCreateRequest (platform/model/dto).
@@ -138,10 +147,25 @@ export const platformRestaurantService = {
     return data
   },
 
-  getAll: async (page = 0, size = 10): Promise<Page<PlatformRestaurantSummary>> => {
+  getAll: async (
+    page = 0,
+    size = 10,
+    includeDeleted = false
+  ): Promise<Page<PlatformRestaurantSummary>> => {
     const { data } = await platformApi.get<Page<PlatformRestaurantSummary>>(
       '/platform/restaurants',
-      { params: { page, size } }
+      { params: { page, size, includeDeleted } }
+    )
+    return data
+  },
+
+  deleteRestaurant: async (id: string): Promise<void> => {
+    await platformApi.delete<void>(`/platform/restaurants/${id}`)
+  },
+
+  restoreRestaurant: async (id: string): Promise<PlatformRestaurantSummary> => {
+    const { data } = await platformApi.post<PlatformRestaurantSummary>(
+      `/platform/restaurants/${id}/restore`
     )
     return data
   },

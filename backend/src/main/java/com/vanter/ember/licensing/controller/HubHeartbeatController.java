@@ -4,10 +4,12 @@ import com.vanter.ember.hub.license.InvalidLicenseException;
 import com.vanter.ember.licensing.model.dto.HubHeartbeatRequest;
 import com.vanter.ember.licensing.model.dto.HubHeartbeatResponse;
 import com.vanter.ember.licensing.service.HubHeartbeatService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -27,8 +29,26 @@ public class HubHeartbeatController {
     private final HubHeartbeatService hubHeartbeatService;
 
     @PostMapping
-    public ResponseEntity<HubHeartbeatResponse> heartbeat(@Valid @RequestBody HubHeartbeatRequest request)
+    public ResponseEntity<HubHeartbeatResponse> heartbeat(
+            @Valid @RequestBody HubHeartbeatRequest request, HttpServletRequest servletRequest)
             throws InvalidLicenseException {
-        return ResponseEntity.ok(hubHeartbeatService.heartbeat(request));
+        return ResponseEntity.ok(hubHeartbeatService.heartbeat(request, callerIp(servletRequest)));
+    }
+
+    /**
+     * Best-effort client IP for liveness telemetry only (never a security decision), so no
+     * trusted-proxy validation: prefer Cloudflare's header (prod is behind CF), then the first
+     * X-Forwarded-For hop, then the socket peer.
+     */
+    private static String callerIp(HttpServletRequest request) {
+        String cf = request.getHeader("CF-Connecting-IP");
+        if (StringUtils.hasText(cf)) {
+            return cf.trim();
+        }
+        String xff = request.getHeader("X-Forwarded-For");
+        if (StringUtils.hasText(xff)) {
+            return xff.split(",")[0].trim();
+        }
+        return request.getRemoteAddr();
     }
 }

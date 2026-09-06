@@ -63,12 +63,14 @@ class HubHeartbeatServiceTest {
         return r;
     }
 
+    private static final String IP = "203.0.113.7";
+
     @Test
     void heartbeat_activeRestaurant_returnsOk() throws InvalidLicenseException {
         when(restaurantRepository.findById(restaurantId)).thenReturn(Optional.of(
                 restaurantWithStatus(RestaurantStatus.ACTIVE)));
 
-        HubHeartbeatResponse response = service.heartbeat(request(FP));
+        HubHeartbeatResponse response = service.heartbeat(request(FP), IP);
 
         assertThat(response.getStatus()).isEqualTo("OK");
         assertThat(response.getLatestVersion()).isEqualTo("1.4.0");
@@ -80,26 +82,26 @@ class HubHeartbeatServiceTest {
         when(restaurantRepository.findById(restaurantId)).thenReturn(Optional.of(
                 restaurantWithStatus(RestaurantStatus.SUSPENDED)));
 
-        assertThat(service.heartbeat(request(FP)).getStatus()).isEqualTo("SUSPENDED");
+        assertThat(service.heartbeat(request(FP), IP).getStatus()).isEqualTo("SUSPENDED");
     }
 
     @Test
     void heartbeat_fingerprintMismatch_throwsInvalidLicense() {
-        assertThatThrownBy(() -> service.heartbeat(request("a-different-fp")))
+        assertThatThrownBy(() -> service.heartbeat(request("a-different-fp"), IP))
                 .isInstanceOf(InvalidLicenseException.class);
     }
 
     @Test
     void heartbeat_noActivationRow_throwsInvalidLicense() {
         when(hubActivationRepository.findByRestaurantId(restaurantId)).thenReturn(Optional.empty());
-        assertThatThrownBy(() -> service.heartbeat(request(FP)))
+        assertThatThrownBy(() -> service.heartbeat(request(FP), IP))
                 .isInstanceOf(InvalidLicenseException.class);
     }
 
     @Test
     void heartbeat_unknownRestaurant_throwsInvalidLicense() {
         when(restaurantRepository.findById(restaurantId)).thenReturn(Optional.empty());
-        assertThatThrownBy(() -> service.heartbeat(request(FP)))
+        assertThatThrownBy(() -> service.heartbeat(request(FP), IP))
                 .isInstanceOf(InvalidLicenseException.class);
     }
 
@@ -108,7 +110,43 @@ class HubHeartbeatServiceTest {
         HubHeartbeatRequest r = new HubHeartbeatRequest();
         r.setLicenseKey("not-a-real-license");
         r.setHardwareFingerprint(FP);
-        assertThatThrownBy(() -> service.heartbeat(r)).isInstanceOf(InvalidLicenseException.class);
+        assertThatThrownBy(() -> service.heartbeat(r, IP)).isInstanceOf(InvalidLicenseException.class);
+    }
+
+    @Test
+    void heartbeat_activeRestaurant_recordsHeartbeat() throws InvalidLicenseException {
+        when(restaurantRepository.findById(restaurantId)).thenReturn(Optional.of(
+                restaurantWithStatus(RestaurantStatus.ACTIVE)));
+
+        service.heartbeat(request(FP), IP);
+
+        org.mockito.Mockito.verify(hubActivationRepository)
+                .recordHeartbeat(org.mockito.ArgumentMatchers.eq(restaurantId),
+                        org.mockito.ArgumentMatchers.any(java.time.Instant.class),
+                        org.mockito.ArgumentMatchers.eq(IP));
+    }
+
+    @Test
+    void heartbeat_fingerprintMismatch_doesNotRecord() {
+        assertThatThrownBy(() -> service.heartbeat(request("a-different-fp"), IP))
+                .isInstanceOf(InvalidLicenseException.class);
+        org.mockito.Mockito.verify(hubActivationRepository, org.mockito.Mockito.never())
+                .recordHeartbeat(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
+                        org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void heartbeat_recordFailureIsSwallowed() throws InvalidLicenseException {
+        when(restaurantRepository.findById(restaurantId)).thenReturn(Optional.of(
+                restaurantWithStatus(RestaurantStatus.ACTIVE)));
+        org.mockito.Mockito.doThrow(new org.springframework.dao.DataAccessResourceFailureException("db down"))
+                .when(hubActivationRepository).recordHeartbeat(
+                        org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
+                        org.mockito.ArgumentMatchers.any());
+
+        HubHeartbeatResponse response = service.heartbeat(request(FP), IP);
+
+        assertThat(response.getStatus()).isEqualTo("OK");
     }
 
     private Restaurant restaurantWithStatus(RestaurantStatus status) {

@@ -12,8 +12,11 @@ import com.vanter.ember.restaurant.model.RestaurantStatus;
 import com.vanter.ember.restaurant.repository.RestaurantRepository;
 import java.time.Instant;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 
 /**
@@ -24,6 +27,8 @@ import org.springframework.stereotype.Service;
  */
 @Service
 public class HubHeartbeatService {
+
+    private static final Logger log = LoggerFactory.getLogger(HubHeartbeatService.class);
 
     private final LicenseIssuingService licenseIssuingService;
     private final HubActivationRepository hubActivationRepository;
@@ -45,7 +50,8 @@ public class HubHeartbeatService {
         this.latestVersion = latestVersion;
     }
 
-    public HubHeartbeatResponse heartbeat(HubHeartbeatRequest request) throws InvalidLicenseException {
+    public HubHeartbeatResponse heartbeat(HubHeartbeatRequest request, String callerIp)
+            throws InvalidLicenseException {
         LicenseKey licenseKey = new LicenseKeyParser()
                 .parseAndVerify(request.getLicenseKey(), licenseIssuingService.publicKey());
         UUID restaurantId = licenseKey.restaurantId();
@@ -62,6 +68,8 @@ public class HubHeartbeatService {
                 .orElseThrow(() -> new InvalidLicenseException(
                         "Esta licencia no corresponde a ningún restaurante."));
 
+        recordHeartbeatQuietly(restaurantId, callerIp);
+
         String status = restaurant.getStatus() == RestaurantStatus.ACTIVE ? "OK" : "SUSPENDED";
 
         return HubHeartbeatResponse.builder()
@@ -69,5 +77,14 @@ public class HubHeartbeatService {
                 .serverTime(Instant.now())
                 .latestVersion(latestVersion == null || latestVersion.isBlank() ? null : latestVersion)
                 .build();
+    }
+
+    /** Liveness telemetry: a write failure here must not turn a valid heartbeat into an error. */
+    private void recordHeartbeatQuietly(UUID restaurantId, String callerIp) {
+        try {
+            hubActivationRepository.recordHeartbeat(restaurantId, Instant.now(), callerIp);
+        } catch (DataAccessException e) {
+            log.warn("Could not record heartbeat for restaurant {}: {}", restaurantId, e.getMessage());
+        }
     }
 }
