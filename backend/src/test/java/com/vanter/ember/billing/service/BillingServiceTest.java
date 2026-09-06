@@ -425,6 +425,15 @@ class BillingServiceTest {
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
+    @Test
+    void splitEqually_throwsIllegalArgumentForNonPositiveParticipantCount() {
+        // Guards against a division by zero (ArithmeticException -> 500) if a bad count ever
+        // reaches this method through a path other than the request DTO's validation.
+        assertThatThrownBy(() -> billingService.splitEqually(1L, 0))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("at least 1");
+    }
+
     // --- voidBill tests ---
 
     private Bill openBill() {
