@@ -67,7 +67,7 @@
     - [x] Task 10 — report 384 + PROGRESS + full verification + PR
   - [~] **Piece D — `/console` redesign** — branch `spec/platform-console-redesign` (cut from B/C branch). Spec `docs/superpowers/specs/2026-09-06-platform-console-redesign-design.md`, plan `docs/superpowers/plans/2026-09-06-platform-console-redesign.md`. Executing one task at a time:
     - [x] Task 1 — backend `GET /platform/stats` (`PlatformStatsResponse{tenants,hubs}` + `RestaurantRepository.countByStatus` + `PlatformStatsService` bucketing hubs via `HubStatus.from`). 5 tests; full suite 1090/1090.
-    - [ ] Task 2 — `platformApi.ts`: `platformStatsService.get` + `platformAuditLogService.getRecent`
+    - [x] Task 2 — `platformApi.ts`: `PlatformStats` type + `platformStatsService.get` + `platformAuditLogService.getRecent`. build + lint clean.
     - [ ] Task 3 — shared primitives `HubBadge` + `ConsolePageHeader` (+ HubBadge test)
     - [ ] Task 4 — shell: `PlatformLayout` sidebar + `ConsoleSidebar` + mobile drawer (+ layout test)
     - [ ] Task 5 — `ConsoleDashboard` real: KPI cards + activity feed + skeleton/error (+ test)
