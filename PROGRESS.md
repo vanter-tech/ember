@@ -3,8 +3,8 @@
 ## Current Execution State
 - **Last Completed Task:** report 366 — hotfix pushed to `main` (no PR): Cloudflare Pages/`ember-app` served `index.html` for `/<route>/env-config.js` on deep links, so `window.ENV` never loaded and the prod SPA fell back to `http://localhost:8080/v1` (`ERR_CONNECTION_REFUSED` on login). `gen-env-config.mjs` now rewrites the config `<script src>` to the absolute `/env-config.js` for the Pages build.
 - **Predecessor Task:** report 365 (PROGRESS.md compaction + security-debt list).
-- **Current Active Task:** none — hotfix pushed; verify on redeploy that `https://app.ember.vanter.net/login` loads `/env-config.js` (200, JS) and login reaches `api.ember.vanter.net`.
-- **System Health:** backend `./mvnw test` last verified 1044/1044 (FIX-QA pass, report 364). Frontend `pnpm run build:pages` verified clean for report 366 (`dist/index.html` → `<script src="/env-config.js">`). `lint`/`test:run` last verified 77/77 clean (report 364).
+- **Current Active Task:** HUB-03 installer (branch `spec/hub-installer`, off `main`@`6d007fa7`). T1–T7 + T9 done; **T8 blocked** — needs Inno Setup 6 (`iscc`) installed to compile `EmberHubSetup-<v>.exe`; **T10** = manual Windows verification (clean install + 2nd LAN PC). NOTE: this branch predates PR #77 (reports 367–380), so its baselines differ.
+- **System Health:** backend `./mvnw test` **1048/1048** on this branch (1044 baseline + 4 from HUB-03 T2). Frontend untouched here. HUB-03 build verified through the `appimage` stage: `dist/app-image` 377 MB, jar manifest OK, frontend bundled.
 
 ## Active Context & Recent Decisions
 - Monolith at `ember/`: Java 17 + Spring Boot 3.5.14 / React 19 + TS + pnpm. Every module (`identity`/`catalog`/`billing`/`settings`/`restaurant`/`session`/`kitchen`) is on Postgres/JPA; event bus is Spring `ApplicationEventPublisher`/`@EventListener` only — do not reintroduce Kafka (dependency is vestigial, see root `CLAUDE.md`).
@@ -36,7 +36,7 @@
     - [x] T6 — `installer/Iniciar Ember Hub.cmd` shim + `installer/hub.env.example`; parser stub verified (`eol=#`, `delims==`, spaces/backslashes in values, `SPRING_PROFILES_ACTIVE=hub`)
     - [x] T7 — `make-icon.ps1` (→ `ember-hub.ico`) + `build-installer.ps1` app-image stage. Ran: `build-frontend` → `mvn package` → `jpackage` → assembled pgsql/minio/shim/key. **app-image 377 MB** (fetch script now prunes pgAdmin 4 etc. → pgsql 120 MB). Jar manifest: `JarLauncher` + `Start-Class EmberApplication`, bundled `static/index.html`. Throwaway `hub-public-key.der` in gitignored `ember-hub/keys/`.
     - [~] T8 — `installer/EmberHub.iss` + `build-installer.ps1` `installer` stage written (firewall delete-then-add private/domain, `%ProgramData%\EmberHub` dirs, `[Code]` writes `hub.env` if absent, common-Startup/desktop/group `.lnk` → shim, uninstaller YES/NO data-delete prompt, `x64`, `CloseApplications`). **`iscc` compile pending — Inno Setup 6 not installed here; run `build-installer.ps1 -Stage installer`.**
-    - [ ] T9 — `ember-hub/README.md` (build + manual-verification checklist) + PROGRESS update
+    - [x] T9 — `ember-hub/README.md` (prereqs, one-time setup, 3 build stages, install layout, 6-item verification checklist) + PROGRESS update
     - [ ] T10 — manual Windows verification (clean install, LAN 2nd PC, license picker, upgrade-in-place, uninstall-keep, 5 boot errors) → `reports/381-…`
 - [x] **Ember Hub license heartbeat** (HEARTBEAT-01..07, cloud + Hub-side, suspended-grace enforcement) — merged to `main` via PR #60. Reports 265-271.
 - [x] **EMBER-FIX** (cash-shift expiry, forced daily close, sentinel modals) — complete, merged to `main` (`78f5fe9`). Report 259.
