@@ -149,9 +149,11 @@ export const TopNav = () => {
       ) : isAnalyticsRoute || isSettingsRoute ? null : (
         <button
           id="topnav-create-button"
+          aria-label={buttonText}
+          title={buttonText}
           className="flex items-center gap-2 shrink-0 whitespace-nowrap
               bg-[#8c1717] hover:bg-[#7a1414] text-white
-              px-5 py-2.5 rounded-full text-sm font-medium
+              px-3 sm:px-5 py-2.5 rounded-full text-sm font-medium
               transition-colors shadows-sm cursor-pointer"
           onClick={(e) => {
             e.preventDefault()
@@ -160,7 +162,7 @@ export const TopNav = () => {
           }}
         >
           <Plus size={18} strokeWidth={2} />
-          {buttonText}
+          <span className="hidden sm:inline">{buttonText}</span>
         </button>
       )}
     </header>

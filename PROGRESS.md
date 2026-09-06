@@ -1,10 +1,10 @@
 # PROGRESS.md — Active Execution State
 
 ## Current Execution State
-- **Last Completed Task:** report 370 — TopNav overflowed on mobile and clipped the trailing action button; `<header>` now `flex-wrap` with `px-3 sm:px-6`, title `truncate` + `text-xl sm:text-2xl md:text-3xl`, search `w-full order-last md:flex-1` (wraps to its own row `<md`), action button + waiter clock pill `shrink-0 whitespace-nowrap`. Class-only, desktop unchanged. Committed to `main` (not pushed).
-- **Predecessor Task:** report 369 (admin sidebar mobile popover menu).
+- **Last Completed Task:** report 371 — TopNav action button had route-dependent width so long labels (`/admin/inventory`) wrapped it below the title while short ones stayed inline; label is now `hidden sm:inline` (icon-only `<sm`), with `aria-label`/`title` = buttonText and `px-3 sm:px-5`. Class/markup-only, desktop unchanged. Committed to `main` (not pushed).
+- **Predecessor Task:** report 370 (TopNav mobile wrap).
 - **Current Active Task:** none.
-- **System Health:** backend `./mvnw test` last verified 1044/1044 (FIX-QA pass, report 364). Frontend `pnpm run build` + `lint` clean and `pnpm run test:run` 78/78 pass (report 370).
+- **System Health:** backend `./mvnw test` last verified 1044/1044 (FIX-QA pass, report 364). Frontend `pnpm run build` + `lint` clean and `pnpm run test:run` 78/78 pass (report 371).
 
 ## Active Context & Recent Decisions
 - Monolith at `ember/`: Java 17 + Spring Boot 3.5.14 / React 19 + TS + pnpm. Every module (`identity`/`catalog`/`billing`/`settings`/`restaurant`/`session`/`kitchen`) is on Postgres/JPA; event bus is Spring `ApplicationEventPublisher`/`@EventListener` only — do not reintroduce Kafka (dependency is vestigial, see root `CLAUDE.md`).
