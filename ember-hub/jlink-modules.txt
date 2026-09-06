@@ -1,0 +1,15 @@
+# Modules baked into the Hub's embedded JRE (see build-installer.ps1 -Stage runtime).
+# The Spring Boot fat jar is not modular, so this is a conservative superset:
+# java.se covers Swing/JDBC/JNDI; the jdk.* entries below are what Spring Boot + the
+# outbound HTTPS heartbeat + OSHI need and that java.se does not pull in.
+# Trimming further is a size optimisation, not v1.
+java.se
+jdk.crypto.ec
+jdk.crypto.cryptoki
+jdk.unsupported
+jdk.management
+jdk.management.agent
+jdk.zipfs
+jdk.localedata
+jdk.jdwp.agent
+jdk.charsets

@@ -31,7 +31,7 @@
     - [x] T1 — repo hygiene: `ember-hub/build.env.example` tracked, gitignore `build.env` / `.vendor-cache/` / `dist/` (`e03abaca`)
     - [x] T2 — `LicenseFileInstaller` helper (TDD, `backend` hub.dashboard) — 4 tests; `./mvnw test` 1048/1048 on this branch
     - [x] T3 — `HubDashboard`: "Seleccionar license.key…" button (5-col grid, 520px) + `--autostart` flag; `./mvnw test` 1048/1048. Manual Swing smoke deferred to T10.
-    - [ ] T4 — `ember-hub/jlink-modules.txt` + `build-installer.ps1` runtime stage → `dist/runtime`
+    - [x] T4 — `ember-hub/jlink-modules.txt` + `build-installer.ps1` runtime stage → `dist/runtime` (verified: 30 modules / 47.6 MB, `java.exe --version` OK on Adoptium JDK 17.0.17)
     - [ ] T5 — `fetch-vendor-binaries.ps1`: Postgres 16.6-1 + MinIO, SHA256-pinned
     - [ ] T6 — `Iniciar Ember Hub.cmd` shim + `hub.env.example`
     - [ ] T7 — `build-installer.ps1` app-image stage: `jpackage` + assemble binaries + `make-icon.ps1`
