@@ -100,8 +100,43 @@ function Build-AppImage {
     Write-Host "app-image at $appImageDir" -ForegroundColor Green
 }
 
+function Read-BuildEnv {
+    $path = Join-Path $hubDir "build.env"
+    if (-not (Test-Path $path)) { throw "ember-hub/build.env missing - copy build.env.example and fill it." }
+    $map = @{}
+    Get-Content $path | Where-Object { $_ -and -not $_.StartsWith("#") -and $_.Contains("=") } | ForEach-Object {
+        $k, $v = $_.Split("=", 2); $map[$k.Trim()] = $v.Trim()
+    }
+    return $map
+}
+
+function Build-Installer {
+    Write-Host "== installer ==" -ForegroundColor Cyan
+    if (-not (Test-Path (Join-Path $appImageDir "Ember Hub.exe"))) { Build-AppImage }
+    $iscc = (Get-Command iscc.exe -ErrorAction SilentlyContinue).Source
+    if (-not $iscc) { $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\iscc.exe" }
+    if (-not (Test-Path $iscc)) { throw "Inno Setup (iscc.exe) not found - install Inno Setup 6." }
+
+    $env = Read-BuildEnv
+    $version = Get-HubVersion
+    Push-Location $installerDir
+    try {
+        & $iscc `
+            "/DAppVersion=$version" `
+            "/DServerPort=$($env['EMBER_HUB_SERVER_PORT'])" `
+            "/DEmberHubActivationUrl=$($env['EMBER_HUB_ACTIVATION_URL'])" `
+            "/DEmberHubHeartbeatUrl=$($env['EMBER_HUB_HEARTBEAT_URL'])" `
+            "EmberHub.iss"
+        if ($LASTEXITCODE -ne 0) { throw "iscc failed ($LASTEXITCODE)" }
+    } finally { Pop-Location }
+
+    $out = Join-Path $distDir "EmberHubSetup-$version.exe"
+    if (-not (Test-Path $out)) { throw "installer not produced at $out" }
+    Write-Host "installer: $out" -ForegroundColor Green
+}
+
 New-Item -ItemType Directory -Force -Path $distDir | Out-Null
 if ($Stage -in @("all","runtime"))   { Build-Runtime }
 if ($Stage -in @("all","appimage"))  { Build-AppImage }
-# installer stage added in Task 8
+if ($Stage -in @("all","installer")) { Build-Installer }
 Write-Host "Done ($Stage)." -ForegroundColor Green

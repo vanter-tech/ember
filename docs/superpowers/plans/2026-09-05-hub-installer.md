@@ -784,12 +784,18 @@ git commit -m "feat(hub): jpackage app-image stage + binary assembly"
 
 ```iss
 ; Ember Hub installer. Compiled by build-installer.ps1 via:
-;   iscc /DAppVersion=<v> /DServerPort=<p> EmberHub.iss
+;   iscc /DAppVersion=<v> /DServerPort=<p> /DEmberHubActivationUrl=<u> /DEmberHubHeartbeatUrl=<u> EmberHub.iss
 #ifndef AppVersion
   #define AppVersion "0.0.0"
 #endif
 #ifndef ServerPort
   #define ServerPort "8080"
+#endif
+#ifndef EmberHubActivationUrl
+  #define EmberHubActivationUrl "https://api.vanter.com/hub-activations"
+#endif
+#ifndef EmberHubHeartbeatUrl
+  #define EmberHubHeartbeatUrl "https://api.vanter.com/hub-heartbeat"
 #endif
 
 [Setup]
@@ -804,7 +810,7 @@ OutputDir=..\dist
 OutputBaseFilename=EmberHubSetup-{#AppVersion}
 SetupIconFile=ember-hub.ico
 PrivilegesRequired=admin
-ArchitecturesInstallIn64BitMode=x64compatible
+ArchitecturesInstallIn64BitMode=x64
 WizardStyle=modern
 CloseApplications=yes
 CloseApplicationsFilter=Ember Hub.exe,*.cmd
@@ -825,9 +831,10 @@ Name: "{commondesktop}\Ember Hub"; Filename: "{app}\Iniciar Ember Hub.cmd"; Icon
 Name: "{commonstartup}\Ember Hub"; Filename: "{app}\Iniciar Ember Hub.cmd"; IconFilename: "{app}\Ember Hub.exe"; WorkingDir: "{app}"
 
 [Run]
-; Inbound firewall rule for LAN terminals — private + domain only, never public.
-Filename: "{sys}\netsh.exe"; \
-  Parameters: "advfirewall firewall add rule name=""Ember Hub {#ServerPort}"" dir=in action=allow protocol=TCP localport={#ServerPort} profile=private,domain"; \
+; Inbound firewall rule for LAN terminals - private + domain only, never public.
+; delete-then-add so a re-install does not stack duplicate rules; cmd's exit code is the add's.
+Filename: "{sys}\cmd.exe"; \
+  Parameters: "/c netsh advfirewall firewall delete rule name=""Ember Hub {#ServerPort}"" >nul 2>&1 & netsh advfirewall firewall add rule name=""Ember Hub {#ServerPort}"" dir=in action=allow protocol=TCP localport={#ServerPort} profile=private,domain"; \
   Flags: runhidden
 
 [UninstallRun]
@@ -867,7 +874,7 @@ end;
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
 begin
   if CurUninstallStep = usPostUninstall then
-    if MsgBox('¿Eliminar también los datos de Ember Hub (base de datos, licencia, respaldos) en ' +
+    if MsgBox('Eliminar tambien los datos de Ember Hub (base de datos, licencia, respaldos) en ' +
               ExpandConstant('{commonappdata}\EmberHub') + '?  Elige "No" para conservarlos.',
               mbConfirmation, MB_YESNO or MB_DEFBUTTON2) = IDYES then
       DelTree(ExpandConstant('{commonappdata}\EmberHub'), True, True, True);
