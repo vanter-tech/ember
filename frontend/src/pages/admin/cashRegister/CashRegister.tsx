@@ -31,7 +31,7 @@ export const CashRegister = () => {
         <p className="text-sm text-muted-foreground">{t('cashRegisterSubtitle')}</p>
       </div>
 
-      <div className="flex flex-col md:flex-row gap-8">
+      <div className="flex flex-col md:flex-row gap-4 md:gap-8">
         <div id="cashregister-tour-sidebar" className={`w-full shrink-0 ${sidebarCollapsed ? 'md:w-fit' : 'md:w-64'}`}>
           <CashRegisterBar
             section={section}

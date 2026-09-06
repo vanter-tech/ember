@@ -16,7 +16,43 @@ export const InventoryHubBar = ({
   const { t } = useTranslation('admin')
 
   return (
-    <nav id="inventory-hub-sidebar" className={`flex flex-col gap-2 ${collapsed ? 'w-fit' : 'w-64'}`}>
+    <>
+    <nav className="flex md:hidden gap-2 overflow-x-auto no-scrollbar -mx-1 px-1 pb-1">
+      <Button
+        asChild
+        variant={activeSection === 'categories' ? 'destructive' : 'ghost'}
+        size="sm"
+        className="shrink-0"
+      >
+        <NavLink to="/admin/inventory/categories">
+          <Package className="mr-2 h-4 w-4" />
+          {t('categoriesTitle')}
+        </NavLink>
+      </Button>
+      <Button
+        asChild
+        variant={activeSection === 'modifiers' ? 'destructive' : 'ghost'}
+        size="sm"
+        className="shrink-0"
+      >
+        <NavLink to="/admin/inventory/modifiers">
+          <SlidersHorizontal className="mr-2 h-4 w-4" />
+          {t('modifierGroupsTitle')}
+        </NavLink>
+      </Button>
+      <Button
+        asChild
+        variant={activeSection === 'stock' ? 'destructive' : 'ghost'}
+        size="sm"
+        className="shrink-0"
+      >
+        <NavLink to="/admin/inventory">
+          <Warehouse className="mr-2 h-4 w-4" />
+          {t('inventoryTitle')}
+        </NavLink>
+      </Button>
+    </nav>
+    <nav id="inventory-hub-sidebar" className={`hidden md:flex flex-col gap-2 ${collapsed ? 'w-fit' : 'w-64'}`}>
       <Button
         variant="default"
         className={collapsed ? 'justify-center px-2' : 'justify-start'}
@@ -75,5 +111,6 @@ export const InventoryHubBar = ({
         {!collapsed && t('collapseSidebarLabel')}
       </Button>
     </nav>
+    </>
   )
 }

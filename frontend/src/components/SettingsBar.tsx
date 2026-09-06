@@ -15,16 +15,39 @@ import {
   Award,
   PanelLeftClose,
   PanelLeftOpen,
+  type LucideIcon,
 } from 'lucide-react';
+import { dictionaries } from '@/locales'
 import { useTranslation } from '@/lib/i18n'
 
 type SettingsGroup = 'BILLING' | 'HARDWARE' | 'FIDELIZACION'
+type AdminKey = keyof (typeof dictionaries)['es']['admin']
 
 const GROUP_MEMBERS: Record<SettingsGroup, SettingsType[]> = {
   BILLING: ['BILLING', 'PAYMENT_GATEWAY', 'TICKET'],
   HARDWARE: ['HARDWARE', 'PRINTING'],
   FIDELIZACION: ['FIDELIZACION', 'LOYALTY_REWARDS'],
 }
+
+// Flat list of every leaf section, used only for the mobile pill strip (<md); the md+
+// sidebar keeps the hand-written grouped layout below.
+const SETTINGS_SECTIONS: {
+  type: Exclude<SettingsType, null>
+  labelKey: AdminKey
+  Icon: LucideIcon
+}[] = [
+  { type: 'BRANDING', labelKey: 'brandingAndBusinessLabel', Icon: Store },
+  { type: 'MENU', labelKey: 'menuLabel', Icon: Utensils },
+  { type: 'BILLING', labelKey: 'billingLabel', Icon: Receipt },
+  { type: 'PAYMENT_GATEWAY', labelKey: 'paymentGatewayCardTitle', Icon: CreditCard },
+  { type: 'TICKET', labelKey: 'ticketLabel', Icon: FileText },
+  { type: 'HARDWARE', labelKey: 'hardwareGeneralLabel', Icon: Printer },
+  { type: 'PRINTING', labelKey: 'printingLabel', Icon: Server },
+  { type: 'SPACE', labelKey: 'spaceLabel', Icon: ConciergeBell },
+  { type: 'HORARIO', labelKey: 'scheduleLabel', Icon: Clock },
+  { type: 'FIDELIZACION', labelKey: 'loyaltyLabel', Icon: Gift },
+  { type: 'LOYALTY_REWARDS', labelKey: 'rewardCatalogTitle', Icon: Award },
+]
 
 export const SettingsBar = ({
   collapsed,
@@ -58,7 +81,22 @@ export const SettingsBar = ({
     const loyaltyGroupActive = GROUP_MEMBERS.FIDELIZACION.includes(activeSettings)
 
     return (
-        <nav id="settings-tour-sidebar" className={`flex flex-col gap-2 ${collapsed ? 'w-fit' : 'w-64'}`}>
+      <>
+        <nav className="flex md:hidden gap-2 overflow-x-auto no-scrollbar -mx-1 px-1 pb-1">
+            {SETTINGS_SECTIONS.map(({ type, labelKey, Icon }) => (
+                <Button
+                    key={type}
+                    variant={activeSettings === type ? 'destructive' : 'ghost'}
+                    size="sm"
+                    onClick={() => handleFlatClick(type)}
+                    className="shrink-0"
+                >
+                    <Icon className="mr-2 h-4 w-4" />
+                    {t(labelKey)}
+                </Button>
+            ))}
+        </nav>
+        <nav id="settings-tour-sidebar" className={`hidden md:flex flex-col gap-2 ${collapsed ? 'w-fit' : 'w-64'}`}>
             <Button
                 variant={activeSettings === 'BRANDING' ?
                     'default' : 'ghost'}
@@ -216,5 +254,6 @@ export const SettingsBar = ({
                 {!collapsed && t('collapseSidebarLabel')}
             </Button>
         </nav>
+      </>
     )
 }

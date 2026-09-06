@@ -1,10 +1,10 @@
 # PROGRESS.md — Active Execution State
 
 ## Current Execution State
-- **Last Completed Task:** report 367 — SaaS login UI polish: page gutter (`p-4`) so the card no longer touches phone edges; Quick Start chips `grid-cols-1 sm:grid-cols-2` (full-width on mobile); Quick Login modal now opens with an always-visible `Contraseña | PIN` segmented toggle and no method preselected (was PIN-first), server fallback unchanged. Committed to `main` (not pushed).
-- **Predecessor Task:** report 366 (Cloudflare Pages `env-config.js` absolute-path hotfix, pushed to `main` — verified working in prod).
+- **Last Completed Task:** report 368 — admin section sidebars (Settings / Inventory / Cash Register) were a full-width vertical stack above the content on `<md`; each `*Bar` now renders a horizontal `overflow-x-auto` pill strip on mobile (`flex md:hidden`) and keeps the existing `w-64` vertical nav on `hidden md:flex`. SettingsBar mobile strip is driven by a new flat `SETTINGS_SECTIONS` array. Container gap `gap-8` → `gap-4 md:gap-8`. Committed to `main` (not pushed).
+- **Predecessor Task:** report 367 (SaaS login mobile gutter + Quick Login PIN/password toggle, committed to `main`).
 - **Current Active Task:** none.
-- **System Health:** backend `./mvnw test` last verified 1044/1044 (FIX-QA pass, report 364). Frontend `pnpm run build` + `lint` clean and `pnpm run test:run` 78/78 pass (report 367).
+- **System Health:** backend `./mvnw test` last verified 1044/1044 (FIX-QA pass, report 364). Frontend `pnpm run build` + `lint` clean and `pnpm run test:run` 78/78 pass (report 368).
 
 ## Active Context & Recent Decisions
 - Monolith at `ember/`: Java 17 + Spring Boot 3.5.14 / React 19 + TS + pnpm. Every module (`identity`/`catalog`/`billing`/`settings`/`restaurant`/`session`/`kitchen`) is on Postgres/JPA; event bus is Spring `ApplicationEventPublisher`/`@EventListener` only — do not reintroduce Kafka (dependency is vestigial, see root `CLAUDE.md`).

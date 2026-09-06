@@ -18,7 +18,28 @@ export const CashRegisterBar = ({
   const { t } = useTranslation('admin')
 
   return (
-    <nav className={`flex flex-col gap-2 ${collapsed ? 'w-fit' : 'w-64'}`}>
+    <>
+    <nav className="flex md:hidden gap-2 overflow-x-auto no-scrollbar -mx-1 px-1 pb-1">
+      <Button
+        variant={section === 'history' ? 'destructive' : 'ghost'}
+        size="sm"
+        onClick={() => onSectionChange('history')}
+        className="shrink-0"
+      >
+        <History className="mr-2 h-4 w-4" />
+        {t('shiftHistoryTab')}
+      </Button>
+      <Button
+        variant={section === 'daily-report' ? 'destructive' : 'ghost'}
+        size="sm"
+        onClick={() => onSectionChange('daily-report')}
+        className="shrink-0"
+      >
+        <FileBarChart className="mr-2 h-4 w-4" />
+        {t('dailyReportTab')}
+      </Button>
+    </nav>
+    <nav className={`hidden md:flex flex-col gap-2 ${collapsed ? 'w-fit' : 'w-64'}`}>
       <Button
         variant="default"
         className={collapsed ? 'justify-center px-2' : 'justify-start'}
@@ -62,5 +83,6 @@ export const CashRegisterBar = ({
         {!collapsed && t('collapseSidebarLabel')}
       </Button>
     </nav>
+    </>
   )
 }
