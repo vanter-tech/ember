@@ -88,6 +88,12 @@ export interface PlatformAuditLogEntry {
   createdAt: string
 }
 
+// Mirrors PlatformStatsResponse (platform/model/dto).
+export interface PlatformStats {
+  tenants: { active: number; suspended: number; deleted: number }
+  hubs: { online: number; stale: number; offline: number; never: number }
+}
+
 export const platformApi = axios.create({
   baseURL:
     window.ENV?.EMBW_API_URL ||
@@ -204,6 +210,24 @@ export const platformAuditLogService = {
       '/platform/audit-log',
       { params: { restaurantId, page, size } }
     )
+    return data
+  },
+
+  getRecent: async (
+    page = 0,
+    size = 10
+  ): Promise<Page<PlatformAuditLogEntry>> => {
+    const { data } = await platformApi.get<Page<PlatformAuditLogEntry>>(
+      '/platform/audit-log',
+      { params: { page, size } }
+    )
+    return data
+  },
+}
+
+export const platformStatsService = {
+  get: async (): Promise<PlatformStats> => {
+    const { data } = await platformApi.get<PlatformStats>('/platform/stats')
     return data
   },
 }

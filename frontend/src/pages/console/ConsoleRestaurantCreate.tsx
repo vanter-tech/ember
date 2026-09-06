@@ -9,12 +9,7 @@ import { platformRestaurantService } from '@/lib/platformApi'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import {
   Form,
   FormControl,
@@ -23,25 +18,29 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
+import { ConsolePageHeader } from '@/components/console/ConsolePageHeader'
 
 const passwordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).+$/
 
 const createSchema = z.object({
-  name: z.string().min(1, 'Restaurant name is required'),
+  name: z.string().min(1, 'El nombre es obligatorio'),
   slug: z
     .string()
-    .min(1, 'Slug is required')
-    .regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, 'Slug must be lowercase alphanumeric with single hyphens'),
-  adminName: z.string().min(1, 'Admin name is required'),
-  adminEmail: z.string().email('Admin email must be valid').min(1, 'Admin email is required'),
+    .min(1, 'El slug es obligatorio')
+    .regex(
+      /^[a-z0-9]+(-[a-z0-9]+)*$/,
+      'El slug debe ser minúsculas y números separados por guiones'
+    ),
+  adminName: z.string().min(1, 'El nombre del admin es obligatorio'),
+  adminEmail: z
+    .string()
+    .email('El email del admin no es válido')
+    .min(1, 'El email del admin es obligatorio'),
   adminPassword: z
     .string()
-    .min(8, 'Password must be between 8 and 128 characters')
-    .max(128, 'Password must be between 8 and 128 characters')
-    .regex(
-      passwordPattern,
-      'Password must contain at least one uppercase letter, one lowercase letter, one digit, and one special character'
-    ),
+    .min(8, 'La contraseña debe tener entre 8 y 128 caracteres')
+    .max(128, 'La contraseña debe tener entre 8 y 128 caracteres')
+    .regex(passwordPattern, 'La contraseña necesita mayúscula, minúscula, número y símbolo'),
 })
 
 type CreateFormInputs = z.infer<typeof createSchema>
@@ -65,17 +64,17 @@ export default function ConsoleRestaurantCreate() {
     mutationFn: (data: CreateFormInputs) => platformRestaurantService.create(data),
     onSuccess: (restaurant) => {
       queryClient.invalidateQueries({ queryKey: ['platformRestaurants'] })
-      toast.success('Restaurant created')
+      toast.success('Restaurante creado')
       navigate(`/console/restaurants/${restaurant.id}`, { replace: true })
     },
     onError: (error) => {
       if (axios.isAxiosError(error) && error.response?.status === 409) {
-        toast.error('Slug or admin email already in use', {
+        toast.error('El slug o el email del admin ya están en uso', {
           id: 'console-create-error',
           duration: 3000,
         })
       } else {
-        toast.error('Failed to create restaurant', {
+        toast.error('No se pudo crear el restaurante', {
           id: 'console-create-error',
           duration: 3000,
         })
@@ -87,15 +86,13 @@ export default function ConsoleRestaurantCreate() {
 
   return (
     <div className="flex flex-col gap-4">
-      <Link to="/console/restaurants" className="text-sm text-blue-600 hover:underline">
+      <ConsolePageHeader title="Nuevo restaurante" />
+      <Link to="/console/restaurants" className="text-sm text-[#8c1717] hover:underline">
         &larr; Restaurantes
       </Link>
 
       <Card className="max-w-xl">
-        <CardHeader>
-          <CardTitle className="text-2xl">Nuevo restaurante</CardTitle>
-        </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <FormField

@@ -18,6 +18,9 @@ public interface RestaurantRepository extends JpaRepository<Restaurant, UUID> {
     /** Console directory default view: every restaurant except soft-deleted ones. */
     Page<Restaurant> findByStatusNot(RestaurantStatus status, Pageable pageable);
 
+    /** Console dashboard KPI: tenant count for one lifecycle status. */
+    long countByStatus(RestaurantStatus status);
+
     /**
      * Inserts a Restaurant with an explicit, caller-chosen id, bypassing Hibernate's
      * GenerationType.UUID generator — used ONLY by HubProvisioningRunner, which must reuse the
