@@ -1,10 +1,10 @@
 # PROGRESS.md — Active Execution State
 
 ## Current Execution State
-- **Last Completed Task:** report 376 — fixed two report-375 FloatingNav regressions: iPad disappearance (the links wrapper `<div>` changed the `sm+` flex model) and the active item's red `scale-110`/`shadow-md` highlight clipped top/bottom by the mobile `overflow-x-auto`. Wrapper is now `... -my-2 py-2 overflow-x-auto no-scrollbar sm:contents` — `sm:contents` dissolves it at `sm+` so the `sm+` layout is exactly the pre-375 centred pill; `-my-2 py-2` gives the scaled/shadowed active item clip room below `sm`. Committed to `main` (not pushed).
-- **Predecessor Task:** report 375 (FloatingNav viewport-fit=cover + full-width mobile bar).
+- **Last Completed Task:** report 377 — FloatingNav's report-375 full-width mobile bar was applied to all roles, so the CUSTOMER nav (1-3 items) stretched full width with a lone left-aligned icon. `<nav>` width and the wrapper's `flex-1` are now gated on `role === 'ADMIN'`; other roles keep `w-max max-w-[92vw]` (centred shrink-to-content pill) on mobile and `sm+`. Committed to `main` (not pushed).
+- **Predecessor Task:** report 376 (FloatingNav iPad regression + clipped active highlight).
 - **Current Active Task:** none.
-- **System Health:** backend `./mvnw test` last verified 1044/1044 (FIX-QA pass, report 364). Frontend `pnpm run build` + `lint` clean and `pnpm run test:run` 78/78 pass (report 376).
+- **System Health:** backend `./mvnw test` last verified 1044/1044 (FIX-QA pass, report 364). Frontend `pnpm run build` + `lint` clean and `pnpm run test:run` 78/78 pass (report 377).
 
 ## Active Context & Recent Decisions
 - Monolith at `ember/`: Java 17 + Spring Boot 3.5.14 / React 19 + TS + pnpm. Every module (`identity`/`catalog`/`billing`/`settings`/`restaurant`/`session`/`kitchen`) is on Postgres/JPA; event bus is Spring `ApplicationEventPublisher`/`@EventListener` only — do not reintroduce Kafka (dependency is vestigial, see root `CLAUDE.md`).
