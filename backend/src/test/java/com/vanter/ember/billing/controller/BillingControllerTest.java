@@ -99,6 +99,27 @@ class BillingControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = "WAITER")
+    void requestBilling_rejectsEqualPartsWithoutParticipantCount() throws Exception {
+        // A null participantCount used to be coerced to 0 in the controller and reach
+        // splitEqually, which divided the bill total by zero -> 500 after the bill row was
+        // already committed, leaving an unrecoverable orphan bill. Reject it up front instead.
+        mockMvc.perform(post("/billing/sessions/sess-1/request")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"splitMethod\":\"EQUAL_PARTS\"}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser(roles = "WAITER")
+    void requestBilling_allowsByConsumptionWithoutParticipantCount() throws Exception {
+        mockMvc.perform(post("/billing/sessions/sess-1/request")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"splitMethod\":\"BY_CONSUMPTION\"}"))
+                .andExpect(status().isAccepted());
+    }
+
+    @Test
     @WithMockUser(roles = "CUSTOMER")
     void requestBilling_forbiddenForCustomer() throws Exception {
         RequestBillingRequest req = new RequestBillingRequest(SplitMethod.BY_CONSUMPTION, null);

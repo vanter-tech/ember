@@ -152,6 +152,11 @@ public class BillingService {
 
     @Transactional
     public List<BillSplit> splitEqually(Long billId, int participantCount) {
+        if (participantCount < 1) {
+            throw new IllegalArgumentException(
+                    "participantCount must be at least 1, got " + participantCount);
+        }
+
         Bill bill = billRepository.findById(billId)
                 .orElseThrow(() -> new ResourceNotFoundException("Bill not found: " + billId));
 
