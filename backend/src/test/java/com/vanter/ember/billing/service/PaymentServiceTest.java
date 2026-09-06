@@ -597,6 +597,27 @@ class PaymentServiceTest {
                 .hasMessageContaining("voided");
     }
 
+    @Test
+    void confirmDigitalPayment_rejectsWhenSplitAmountChangedSinceIntent() {
+        // Intent created for 12.50; a diner then left and their share was redistributed onto this
+        // split, bumping it to 20.00. Confirming the stale intent would settle the split for 12.50
+        // and leave the Payment permanently below it — capping any later refund at 12.50.
+        Bill bill = sampleBill();
+        Payment payment = pendingDigitalPayment(bill, "Alice");
+        BillSplit inflatedSplit = unpaidSplit(bill, "Alice", "20.00");
+        when(paymentRepository.findById(20L)).thenReturn(Optional.of(payment));
+        when(billRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(bill));
+        when(billSplitRepository.findByBillIdAndParticipantName(1L, "Alice"))
+                .thenReturn(Optional.of(inflatedSplit));
+
+        assertThatThrownBy(() -> paymentService.confirmDigitalPayment(20L))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("stale");
+
+        verify(billSplitRepository, never()).save(any());
+        verify(paymentRepository, never()).save(any());
+    }
+
     // --- refundPayment tests ---
 
     private Payment confirmedPhysicalPayment(Bill bill, String amount) {
@@ -784,6 +805,34 @@ class PaymentServiceTest {
         assertThat(savedAlice.getAmount()).isEqualByComparingTo("15.00");
         assertThat(savedBob.getAmount()).isEqualByComparingTo("9.00");
         verify(billSplitRepository).delete(carol);
+    }
+
+    @Test
+    void redistributeSplit_deletesStalePendingDigitalIntentsOnTheBill() {
+        // A PENDING digital intent was created against a split amount that this redistribution
+        // changes — confirming it later would settle the split for the wrong figure. Drop it;
+        // CONFIRMED payments and other methods are left untouched.
+        Bill bill = sampleBill();
+        BillSplit carol = unpaidSplit(bill, "Carol", "6.00");
+        BillSplit alice = unpaidSplit(bill, "Alice", "12.00");
+        Payment alicePending = Payment.builder().id(40L).bill(bill).participantName("Alice")
+                .amount(new BigDecimal("12.00")).method(PaymentMethod.DIGITAL)
+                .status(PaymentStatus.PENDING).gatewayRef("STUB-x").createdAt(LocalDateTime.now()).build();
+        Payment bobConfirmed = Payment.builder().id(41L).bill(bill).participantName("Bob")
+                .amount(new BigDecimal("4.50")).method(PaymentMethod.DIGITAL)
+                .status(PaymentStatus.CONFIRMED).gatewayRef("STUB-y").createdAt(LocalDateTime.now()).build();
+        when(billRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(bill));
+        when(billSplitRepository.findByBillIdAndParticipantName(1L, "Carol")).thenReturn(Optional.of(carol));
+        when(billSplitRepository.findByBillId(1L)).thenReturn(new ArrayList<>(List.of(carol, alice)));
+        when(billSplitRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(paymentRepository.findByBillId(1L)).thenReturn(List.of(alicePending, bobConfirmed));
+
+        paymentService.redistributeSplit(1L, "Carol");
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<Payment>> captor = ArgumentCaptor.forClass(List.class);
+        verify(paymentRepository).deleteAll(captor.capture());
+        assertThat(captor.getValue()).containsExactly(alicePending);
     }
 
     @Test

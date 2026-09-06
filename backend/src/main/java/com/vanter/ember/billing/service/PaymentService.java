@@ -195,6 +195,19 @@ public class PaymentService {
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Split not found for participant: " + payment.getParticipantName()));
 
+        // A digital intent is created for the split amount as it stood at "pay my share" time. If a
+        // diner left and their share was redistributed onto this split between the intent and this
+        // confirm, honoring the intent would settle the split for less than it now owes and leave
+        // the Payment permanently below the split — capping any later refund at the stale figure.
+        // Force a fresh intent at the current amount instead.
+        if (payment.getAmount().compareTo(split.getAmount()) != 0) {
+            throw new IllegalStateException(
+                    "Digital payment intent for '" + payment.getParticipantName()
+                            + "' is stale: created for " + payment.getAmount()
+                            + " but the split is now " + split.getAmount()
+                            + " — re-initiate the payment");
+        }
+
         split.setStatus(BillSplitStatus.PAID);
         billSplitRepository.save(split);
         messagingTemplate.convertAndSend(
@@ -346,6 +359,18 @@ public class PaymentService {
         }
         billSplitRepository.saveAll(recipients);
         billSplitRepository.delete(departing);
+
+        // Every DIGITAL intent still PENDING on this bill was created against a split amount that
+        // just changed — confirming one now would settle a split for the wrong figure (see the
+        // staleness guard in confirmDigitalPayment). Drop them; a diner who still wants to pay
+        // re-taps "pay my share" and a fresh intent is created at the new amount.
+        List<Payment> stalePendingDigital = paymentRepository.findByBillId(billId).stream()
+                .filter(p -> p.getMethod() == PaymentMethod.DIGITAL
+                        && p.getStatus() == PaymentStatus.PENDING)
+                .toList();
+        if (!stalePendingDigital.isEmpty()) {
+            paymentRepository.deleteAll(stalePendingDigital);
+        }
 
         List<BillSplit> remaining = billSplitRepository.findByBillId(billId);
         messagingTemplate.convertAndSend(
