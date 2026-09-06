@@ -7,8 +7,12 @@ const CONFIG: Record<HubStatus, { dot: string; label: string }> = {
   NEVER: { dot: 'bg-transparent', label: '—' },
 }
 
-export function HubBadge({ status }: { status: HubStatus }) {
-  const { dot, label } = CONFIG[status]
+const UNKNOWN = { dot: 'bg-transparent', label: '—' }
+
+// `status` can be undefined/unexpected when the backend is a version behind the console
+// (the DTO field didn't exist yet) — degrade to "—" instead of crashing the whole page.
+export function HubBadge({ status }: { status: HubStatus | null | undefined }) {
+  const { dot, label } = (status && CONFIG[status]) || UNKNOWN
   return (
     <span className="inline-flex items-center gap-1.5 text-xs text-zinc-600">
       <span className={`h-2 w-2 rounded-full ${dot}`} />

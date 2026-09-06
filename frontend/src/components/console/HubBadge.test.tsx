@@ -12,4 +12,9 @@ describe('HubBadge', () => {
     render(<HubBadge status="NEVER" />)
     expect(screen.getByText('—')).toBeVisible()
   })
+
+  test('renders a dash (no crash) for a missing/unknown status', () => {
+    render(<HubBadge status={undefined} />)
+    expect(screen.getByText('—')).toBeVisible()
+  })
 })
