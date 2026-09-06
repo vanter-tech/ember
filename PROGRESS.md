@@ -1,10 +1,10 @@
 # PROGRESS.md — Active Execution State
 
 ## Current Execution State
-- **Last Completed Task:** report 374 — FloatingNav: `<nav>` bottom offset now `calc(1.25rem + env(safe-area-inset-bottom))` (`sm:bottom-8`) so it clears the iPhone home indicator; `navItemClass` `w-10 h-10 sm:w-12 sm:h-12` + `[&_svg]:size-5 sm:[&_svg]:size-6` + `shrink-0`, divider `h-6 sm:h-8 mx-1 sm:mx-2`, leave button matched; dead `User` avatar chip removed. Single `overflow-x-auto` row kept (no fade/split — that stayed reverted). Committed to `main` (not pushed).
-- **Predecessor Task:** report 373 (revert of FloatingNav report 372).
+- **Last Completed Task:** report 375 — FloatingNav: `frontend/index.html` viewport meta gained `viewport-fit=cover` (so `env(safe-area-inset-bottom)` is non-zero on iOS — that's why report 374's calc did nothing); `<nav>` is near full-width on mobile (`w-full max-w-[calc(100vw-1.5rem)]`, `sm:w-max sm:max-w-[92vw]`), links in a `flex-1 overflow-x-auto` region that goes `sm:flex-initial sm:overflow-visible`, logout pinned OUTSIDE that region behind `border-l` (`shrink-0`) so it's always visible. No gradient (rejected in 372). Committed to `main` (not pushed).
+- **Predecessor Task:** report 374 (FloatingNav safe-area attempt + smaller icons).
 - **Current Active Task:** none.
-- **System Health:** backend `./mvnw test` last verified 1044/1044 (FIX-QA pass, report 364). Frontend `pnpm run build` + `lint` clean and `pnpm run test:run` 78/78 pass (report 374).
+- **System Health:** backend `./mvnw test` last verified 1044/1044 (FIX-QA pass, report 364). Frontend `pnpm run build` + `lint` clean and `pnpm run test:run` 78/78 pass (report 375).
 
 ## Active Context & Recent Decisions
 - Monolith at `ember/`: Java 17 + Spring Boot 3.5.14 / React 19 + TS + pnpm. Every module (`identity`/`catalog`/`billing`/`settings`/`restaurant`/`session`/`kitchen`) is on Postgres/JPA; event bus is Spring `ApplicationEventPublisher`/`@EventListener` only — do not reintroduce Kafka (dependency is vestigial, see root `CLAUDE.md`).
