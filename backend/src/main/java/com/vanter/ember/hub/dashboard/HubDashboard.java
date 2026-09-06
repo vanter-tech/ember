@@ -10,15 +10,19 @@ import java.awt.Desktop;
 import java.awt.GridLayout;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.io.File;
 import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Arrays;
 import javax.swing.JButton;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
@@ -51,6 +55,7 @@ public final class HubDashboard extends JFrame {
     private final JLabel licenseStatusLabel = new JLabel("Licencia: sin estado local");
     private final JButton startButton = new JButton("Iniciar");
     private final JButton stopButton = new JButton("Detener");
+    private final JButton selectLicenseButton = new JButton("Seleccionar license.key…");
     private final JButton openButton = new JButton("Abrir en navegador");
     private final JButton exitButton = new JButton("Salir");
 
@@ -65,9 +70,10 @@ public final class HubDashboard extends JFrame {
         statusPanel.add(licenseStatusLabel);
         refreshLicenseStatus();
 
-        JPanel buttonPanel = new JPanel(new GridLayout(1, 4, 8, 0));
+        JPanel buttonPanel = new JPanel(new GridLayout(1, 5, 8, 0));
         buttonPanel.add(startButton);
         buttonPanel.add(stopButton);
+        buttonPanel.add(selectLicenseButton);
         buttonPanel.add(openButton);
         buttonPanel.add(exitButton);
 
@@ -80,6 +86,7 @@ public final class HubDashboard extends JFrame {
 
         startButton.addActionListener(e -> onStart());
         stopButton.addActionListener(e -> onStop());
+        selectLicenseButton.addActionListener(e -> onSelectLicense());
         openButton.addActionListener(e -> onOpenBrowser());
         exitButton.addActionListener(e -> onExit());
 
@@ -91,12 +98,19 @@ public final class HubDashboard extends JFrame {
             }
         });
 
-        setSize(360, 215);
+        setSize(520, 215);
         setLocationRelativeTo(null);
     }
 
     public static void launch(String[] args) {
-        SwingUtilities.invokeLater(() -> new HubDashboard(args).setVisible(true));
+        boolean autostart = Arrays.asList(args).contains("--autostart");
+        SwingUtilities.invokeLater(() -> {
+            HubDashboard dashboard = new HubDashboard(args);
+            dashboard.setVisible(true);
+            if (autostart) {
+                dashboard.onStart();
+            }
+        });
     }
 
     private void onStart() {
@@ -201,5 +215,35 @@ public final class HubDashboard extends JFrame {
             bootstrapRunner.stopServices();
             System.exit(0);
         }, "hub-dashboard-exit").start();
+    }
+
+    private void onSelectLicense() {
+        JFileChooser chooser = new JFileChooser();
+        chooser.setDialogTitle("Selecciona el archivo license.key");
+        chooser.setFileFilter(new FileNameExtensionFilter("Licencia Ember (license.key, *.key)", "key"));
+        if (chooser.showOpenDialog(this) != JFileChooser.APPROVE_OPTION) {
+            return;
+        }
+        File chosen = chooser.getSelectedFile();
+        try {
+            LicenseFileInstaller.install(chosen.toPath(), properties.licenseFile());
+        } catch (Exception ex) {
+            log.error("No se pudo instalar el license.key", ex);
+            JOptionPane.showMessageDialog(
+                    this,
+                    "No se pudo copiar la licencia:\n" + ex.getMessage(),
+                    "Licencia",
+                    JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        refreshLicenseStatus();
+        JOptionPane.showMessageDialog(
+                this,
+                "Licencia instalada. Se intentará iniciar Ember Hub.",
+                "Licencia",
+                JOptionPane.INFORMATION_MESSAGE);
+        if (startButton.isEnabled()) {
+            onStart();
+        }
     }
 }

@@ -1,10 +1,10 @@
 # PROGRESS.md — Active Execution State
 
 ## Current Execution State
-- **Last Completed Task:** report 382 — fix(identity): `UserAdminService.updateProfile` blocked from deactivating the tenant's last active ADMIN (self included). Zero-active-admins bricked a restaurant permanently — `SecurityConfig` only authenticates `isEnabled()` users, so no one could undo it in-app. New `assertNotLastActiveAdmin` guard (reuses `findByRestaurantId_IdAndRoleAndActiveTrue`), `IllegalArgumentException` → 400. +2 tests (`UserAdminServiceTest` 18/18). Branch `fix/admin-self-deactivation` off `main`@`ceab79c2`. Follow-up noted: `updateRole` has no tenant-scope guard at all.
-- **Predecessor Task:** report 380 (customer banner preset picker).
-- **Current Active Task:** none.
-- **System Health:** backend `./mvnw test` full suite green (exit 0) with the report-382 change. Frontend untouched. (Report 380's `pnpm` checks still stand.)
+- **Last Completed Task:** report 381 — fix(hub): 3 installer defects found on the first real customer install (branch `spec/hub-installer`, PR #78): (1) `ember-hub/keys/hub-public-key.der` was a dev key, not prod's — now committed with the real prod key (SHA256 `6ce631e5…`) and un-ignored; (2) `JWT_SECRET`/`PLATFORM_JWT_SECRET` had no source → context couldn't boot — `EmberHub.iss` now generates them into `hub.env` (and appends them in-place on re-install over a pre-secrets install); (3) baked activation/heartbeat URL was `api.vanter.com` → corrected to `https://api.ember.vanter.net/v1/...`. Also `GET /` → `/app/` redirect so the bare host isn't a raw 401. `origin/main` merged into this branch to clear PR #78 conflicts.
+- **Predecessor Task:** report 382 — fix(identity): `updateProfile` blocked from deactivating a tenant's last active ADMIN (merged to `main` via PR #79). Follow-up still open: `UserAdminService.updateRole` has no tenant-scope guard at all.
+- **Current Active Task:** HUB-03 installer (branch `spec/hub-installer`). T1–T9 done + report 381 fixes; **T10** = manual Windows verification (clean install + 2nd LAN PC).
+- **System Health:** backend `./mvnw test` **green** (exit 0, full suite) on this branch after the report-381 changes to `SecurityConfig` + `HubSpaRootController`, and again post-merge with `origin/main`. Frontend untouched here. HUB-03 build verified through the `installer` stage (`EmberHubSetup-0.0.1.exe`, 172 MB). One real customer install now boots after the equivalent manual `hub.env` fix.
 - **⚠ Flyway/`V7` caveat:** the local dev DB's `flyway_schema_history` is a single BASELINE row at `version 15` ("rebuilt-from-entities-2026-08-24"), so Flyway skips every migration ≤ 15 — `V7__user_banner_key.sql` never ran there. Added `users.banner_key VARCHAR(20)` by hand (`docker exec ember-postgres-1 psql`) to unblock `ddl-auto=validate`. **Prod likely has the same baseline** — before deploying report 380, check prod `flyway_schema_history`; if baselined ≥ 7, run the same `ALTER TABLE users ADD COLUMN banner_key VARCHAR(20)` (or a `flyway repair` + history insert). `V7` is still correct for a genuinely fresh (Hub) DB.
 
 ## Active Context & Recent Decisions
@@ -27,8 +27,19 @@
 - [x] **Restaurant onboarding** (admin wizard + waiter tour) — complete. Reports 202-213.
 - [x] **Ember Hub HUB-01** (portable Postgres/MinIO bootstrap, RSA license, hardware fingerprint, grace period, dashboard launcher, bundled frontend, license-activation) — complete. Reports 223-258.
   - [ ] Hub v2: Tauri/webview shell reusing `frontend/`'s design — not started, needs its own spec/plan.
-  - [ ] Hub: Windows service auto-start (`sc.exe`/SCM recovery) — not started, depends on the installer below.
-  - [ ] Hub: `jpackage`/`jlink` embedded-JRE `.exe` installer — not started. **Until this + the service exist, Hub isn't installable by a non-technical customer.**
+  - [ ] Hub: Windows service auto-start (`sc.exe`/SCM recovery) — **deferred**: HUB-03 v1 uses a common-Startup shortcut so the Swing dashboard stays as the operator surface (spec `2026-09-05-hub-installer-design.md` §1).
+  - [ ] **HUB-03 — `jpackage`/Inno Setup `.exe` installer.** Spec `docs/superpowers/specs/2026-09-05-hub-installer-design.md`; plan `docs/superpowers/plans/2026-09-05-hub-installer.md`. Doing tasks one at a time on branch `spec/hub-installer`:
+    - [x] T1 — repo hygiene: `ember-hub/build.env.example` tracked, gitignore `build.env` / `.vendor-cache/` / `dist/` (`e03abaca`)
+    - [x] T2 — `LicenseFileInstaller` helper (TDD, `backend` hub.dashboard) — 4 tests; `./mvnw test` 1048/1048 on this branch
+    - [x] T3 — `HubDashboard`: "Seleccionar license.key…" button (5-col grid, 520px) + `--autostart` flag; `./mvnw test` 1048/1048. Manual Swing smoke deferred to T10.
+    - [x] T4 — `ember-hub/jlink-modules.txt` + `build-installer.ps1` runtime stage → `dist/runtime` (verified: 30 modules / 47.6 MB, `java.exe --version` OK on Adoptium JDK 17.0.17)
+    - [x] T5 — `fetch-vendor-binaries.ps1`: Postgres 16.6-1 (`6a1bfb64…`) + MinIO `RELEASE.2025-04-22` (`2ceb3b3d…`), SHA256-pinned; staged & verified (`initdb 16.6`, `minio RELEASE.2025-04-22`)
+    - [x] T6 — `installer/Iniciar Ember Hub.cmd` shim + `installer/hub.env.example`; parser stub verified (`eol=#`, `delims==`, spaces/backslashes in values, `SPRING_PROFILES_ACTIVE=hub`)
+    - [x] T7 — `make-icon.ps1` (→ `ember-hub.ico`) + `build-installer.ps1` app-image stage. Ran: `build-frontend` → `mvn package` → `jpackage` → assembled pgsql/minio/shim/key. **app-image 377 MB** (fetch script now prunes pgAdmin 4 etc. → pgsql 120 MB). Jar manifest: `JarLauncher` + `Start-Class EmberApplication`, bundled `static/index.html`. Throwaway `hub-public-key.der` in gitignored `ember-hub/keys/`.
+    - [x] T8 — `installer/EmberHub.iss` + `build-installer.ps1` `installer` stage. **Compiled with Inno Setup 6 (per-user install at `%LOCALAPPDATA%\Programs`, added to the iscc search) → `dist/EmberHubSetup-0.0.1.exe` (172 MB)**, clean (`x64compatible`). Firewall delete-then-add private/domain, `%ProgramData%\EmberHub` dirs, `[Code]` writes `hub.env` if absent, common-Startup/desktop/group `.lnk` → shim, uninstaller YES/NO data-delete prompt.
+    - [x] T9 — `ember-hub/README.md` (prereqs, one-time setup, 3 build stages, install layout, 6-item verification checklist) + PROGRESS update
+    - [x] Report 381 — 3 install-blocking defects fixed (bundled prod public key + committed, `JWT_SECRET`/`PLATFORM_JWT_SECRET` generated by `EmberHub.iss`, activation/heartbeat URL → `api.ember.vanter.net/v1`), plus `GET /` → `/app/` redirect. Found on the first real customer install.
+    - [ ] T10 — manual Windows verification (clean install, LAN 2nd PC, license picker, upgrade-in-place, uninstall-keep, 5 boot errors) → `reports/382-…`
 - [x] **Ember Hub license heartbeat** (HEARTBEAT-01..07, cloud + Hub-side, suspended-grace enforcement) — merged to `main` via PR #60. Reports 265-271.
 - [x] **EMBER-FIX** (cash-shift expiry, forced daily close, sentinel modals) — complete, merged to `main` (`78f5fe9`). Report 259.
 - [x] **Hosted Production Deployment** HPD-01..20 (GCP VM, Cloudflare DNS/WAF/Worker, GCS media+backups, monitoring, uptime check) — complete. Reports 272-286, 322-329, PR #76.
