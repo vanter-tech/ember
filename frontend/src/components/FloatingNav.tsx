@@ -81,7 +81,7 @@ export const FloatingNav = () => {
     [&_svg]:size-5 sm:[&_svg]:size-6
     ${
       isActive(path)
-        ? 'bg-[#920703] text-red-100 shadow-md scale-110'
+        ? 'bg-[#920703] text-red-100 shadow-md sm:scale-110'
         : 'text-zinc-500 hover:bg-zinc-100 hover:text-zinc-800'
     }`
 
@@ -96,13 +96,14 @@ export const FloatingNav = () => {
         px-2 sm:px-4 py-2 flex items-center gap-1 sm:gap-2 border border-zinc-200 dark:border-zinc-800 z-50`}
     >
       {/* Below sm, ADMIN only: a full-width scrollable strip (logout stays pinned outside
-          it). Other roles have few items, so the wrapper just shrinks to content and the
-          nav stays a centred pill. At sm+ `display:contents` dissolves this wrapper so the
-          links are direct <nav> children — the original centred-pill layout. The -my-2/py-2
-          gives the active item's scale-110 + shadow room before overflow-x clips it. */}
+          it), with -my-2/py-2 so the active item's shadow isn't clipped by overflow-x.
+          Other roles have few items — the wrapper is a plain flex row (no overflow, so the
+          active highlight never gets clipped) and the nav stays a centred pill. At sm+
+          `display:contents` dissolves the wrapper so the links are direct <nav> children,
+          i.e. the original centred-pill layout. */}
       <div
-        className={`flex min-w-0 items-center gap-1 -my-2 py-2 overflow-x-auto no-scrollbar sm:contents ${
-          role === 'ADMIN' ? 'flex-1' : ''
+        className={`flex min-w-0 items-center gap-1 sm:contents ${
+          role === 'ADMIN' ? 'flex-1 -my-2 py-2 overflow-x-auto no-scrollbar' : ''
         }`}
       >
       {(role === 'WAITER' || role === 'ADMIN') && (
