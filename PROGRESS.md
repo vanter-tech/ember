@@ -1,11 +1,11 @@
 # PROGRESS.md — Active Execution State
 
 ## Current Execution State
-- **Last Completed Task:** report 381 — fix(hub): 3 installer defects found on the first real customer install (branch `spec/hub-installer`, PR #78): (1) `ember-hub/keys/hub-public-key.der` was a dev key, not prod's — now committed with the real prod key (SHA256 `6ce631e5…`) and un-ignored; (2) `JWT_SECRET`/`PLATFORM_JWT_SECRET` had no source → context couldn't boot — `EmberHub.iss` now generates them into `hub.env` (and appends them in-place on re-install over a pre-secrets install); (3) baked activation/heartbeat URL was `api.vanter.com` → corrected to `https://api.ember.vanter.net/v1/...`. Also `GET /` → `/app/` redirect so the bare host isn't a raw 401. `origin/main` merged into this branch to clear PR #78 conflicts.
-- **Predecessor Task:** report 382 — fix(identity): `updateProfile` blocked from deactivating a tenant's last active ADMIN (merged to `main` via PR #79). Follow-up still open: `UserAdminService.updateRole` has no tenant-scope guard at all.
-- **Current Active Task:** HUB-03 installer (branch `spec/hub-installer`). T1–T9 done + report 381 fixes; **T10** = manual Windows verification (clean install + 2nd LAN PC).
-- **System Health:** backend `./mvnw test` **green** (exit 0, full suite) on this branch after the report-381 changes to `SecurityConfig` + `HubSpaRootController`, and again post-merge with `origin/main`. Frontend untouched here. HUB-03 build verified through the `installer` stage (`EmberHubSetup-0.0.1.exe`, 172 MB). One real customer install now boots after the equivalent manual `hub.env` fix.
-- **⚠ Flyway/`V7` caveat:** the local dev DB's `flyway_schema_history` is a single BASELINE row at `version 15` ("rebuilt-from-entities-2026-08-24"), so Flyway skips every migration ≤ 15 — `V7__user_banner_key.sql` never ran there. Added `users.banner_key VARCHAR(20)` by hand (`docker exec ember-postgres-1 psql`) to unblock `ddl-auto=validate`. **Prod likely has the same baseline** — before deploying report 380, check prod `flyway_schema_history`; if baselined ≥ 7, run the same `ALTER TABLE users ADD COLUMN banner_key VARCHAR(20)` (or a `flyway repair` + history insert). `V7` is still correct for a genuinely fresh (Hub) DB.
+- **Last Completed Task:** platform-console spec + plan committed on branch `spec/platform-console-retire-liveness` (off `main`@`9404e5e3`). Spec `docs/superpowers/specs/2026-09-06-platform-console-retire-and-liveness-design.md`, plan `docs/superpowers/plans/2026-09-06-platform-console-retire-and-liveness.md`. Pieces A (`updateRole` tenant-scope, report 383, PR #80) and the hub installer (PR #78) + admin-deactivation guard (report 382, PR #79) already merged to `main`.
+- **Predecessor Task:** report 383 — fix(identity): tenant-scope + last-admin guard on `updateRole`.
+- **Current Active Task:** executing the platform-console plan **one task at a time** — see the checklist under Task Queue Status → "Platform console: retire tenants + Hub liveness (B+C)". **Task 1** next.
+- **System Health:** backend `./mvnw test` green on `main` (1061/1061 after PR #80). This branch adds only the spec + plan docs so far.
+- **⚠ Flyway caveat (`V7`, and now `V8`):** the local dev DB's `flyway_schema_history` is a single BASELINE row at `version 15`, so Flyway skips every migration ≤ 15. `V7__user_banner_key.sql` never ran there (added `users.banner_key VARCHAR(20)` by hand). The new **`V8__restaurant_soft_delete_and_hub_heartbeat.sql`** has the same risk — before deploying to a baselined env (prod likely), run `ALTER TABLE restaurants ADD COLUMN deleted_at timestamptz, ADD COLUMN deleted_by uuid;` and `ALTER TABLE hub_activations ADD COLUMN last_heartbeat_at timestamptz, ADD COLUMN last_heartbeat_ip varchar(45);` (or `flyway repair` + history insert). `V7`/`V8` are correct as-is for a genuinely fresh DB. `@DataJpaTest`s run on a fresh schema and are unaffected.
 
 ## Active Context & Recent Decisions
 - Monolith at `ember/`: Java 17 + Spring Boot 3.5.14 / React 19 + TS + pnpm. Every module (`identity`/`catalog`/`billing`/`settings`/`restaurant`/`session`/`kitchen`) is on Postgres/JPA; event bus is Spring `ApplicationEventPublisher`/`@EventListener` only — do not reintroduce Kafka (dependency is vestigial, see root `CLAUDE.md`).
@@ -53,6 +53,19 @@
   - [ ] LSEO-18: minor JSON-LD tweaks (`BreadcrumbList`, real `AggregateOffer`, `VideoObject`, `sameAs`) — do on request.
 - [x] **Payment-flow bug cluster** (bill fetch endpoint, block removing sent items, settle-partial-and-close, leave-table/reject-2nd-session) — complete. Reports 317-320.
 - [x] **FIX-QA** (22 of 23 live QA findings across all 4 roles) — complete except E-23 (PIN-login enumeration oracle, deliberately deferred — needs a product decision, fighting it breaks the "no PIN set" UX). Reports 361-364.
+- [~] **Platform console improvements** — piece **A** done (report 383 / PR #80: `updateRole` tenant-scope + last-admin guard).
+  - [ ] **Retire tenants + Hub liveness (B+C)** — branch `spec/platform-console-retire-liveness`. Spec `docs/superpowers/specs/2026-09-06-platform-console-retire-and-liveness-design.md`, plan `docs/superpowers/plans/2026-09-06-platform-console-retire-and-liveness.md`. Executing one task at a time:
+    - [ ] Task 1 — `V8` migration + `Restaurant.deletedAt/deletedBy` + `HubActivation.lastHeartbeatAt/Ip` + `RestaurantStatus.DELETED` + `RestaurantRepository.findByStatusNot` (`@DataJpaTest`)
+    - [ ] Task 2 — `HubStatus` enum + `from(lastHeartbeatAt, now)` → NEVER/ONLINE(<15m)/STALE(<24h)/OFFLINE
+    - [ ] Task 3 — `HubActivationRepository.recordHeartbeat` (`@Modifying`) + `HubHeartbeatService.heartbeat(request, callerIp)` best-effort + `HubHeartbeatController` IP (CF-Connecting-IP → XFF → remoteAddr)
+    - [ ] Task 4 — `PlatformRestaurantService.delete`/`restore` (SUSPENDED↔DELETED, audit) + `updateStatus` DELETED-transition guards + `getAll(Pageable, includeDeleted)`
+    - [ ] Task 5 — `hubStatus`/`hubActivatedAt`/`lastHeartbeatAt`/`lastHeartbeatIp` on the summary+detail DTOs, populated in `getAll`/`getById`
+    - [ ] Task 6 — `DELETE /platform/restaurants/{id}` (204) + `POST /{id}/restore` (200) + `?includeDeleted` on `GET`
+    - [ ] Task 7 — `platformApi.ts`: `DELETED` unions, hub-status types, `deleteRestaurant`/`restoreRestaurant`/`getAll(page,size,includeDeleted)`
+    - [ ] Task 8 — `ConsoleRestaurants`: Hub column (dot+label) + "Ver eliminados" checkbox + muted DELETED rows (+ Vitest)
+    - [ ] Task 9 — `ConsoleRestaurantDetail`: Hub panel + Eliminar/Restaurar buttons + type-the-slug confirm (+ Vitest)
+    - [ ] Task 10 — report 384 + PROGRESS + full verification + PR
+  - [ ] **Piece D** — visual redesign of `/console` to match the tenant SaaS app. Own spec, not started.
 - [ ] **Security/hardening debt — surfaced 2026-09-04, none yet has a spec/plan:**
   - [ ] F-15: Ember Hub activation endpoint returns `adminPasswordHash` in the response — redesign the activation contract + a migration path for already-installed Hub instances.
   - [ ] F-21: hardcoded credentials literal in `PortableDatabaseBootstrap`/`PortableMinioBootstrap`'s process-launch code — needs the same installed-instance migration path as F-15; do together, same bootstrap code.
