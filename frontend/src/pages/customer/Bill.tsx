@@ -3,6 +3,7 @@ import { useEffect } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useSessionStore } from '@/store/sessionStore'
 import { useAuthStore } from '@/store/authStore'
+import { useSettingStore } from '@/store/settingStore'
 import { billingService, loyaltyAccountService } from '@/lib/api'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -38,6 +39,16 @@ export const Bill = () => {
 
   const myName = participants?.find((p) => p.userId === currentId)?.name
   const mySplit = billSplits?.find((split) => split.participantName === myName)
+
+  // The bill only ever carries the tax-inclusive `total` (BillReadyMessage / getBillState), so
+  // rebuild the breakdown from the tenant's configured rate — the same rate the backend applied
+  // in BillingService.calculateBill (`total = subtotal * (1 + rate/100)`). Shown only when a rate
+  // is set; with no tax configured the bill just shows its total as before.
+  const { settings } = useSettingStore()
+  const taxRatePercent = settings?.billing?.taxRate ?? 0
+  const billTotal = bill?.total ?? 0
+  const subtotal = taxRatePercent > 0 ? billTotal / (1 + taxRatePercent / 100) : billTotal
+  const taxAmount = billTotal - subtotal
   const { data: loyaltyAccount } = useQuery({
     queryKey: ['loyaltyAccount', 'me'],
     queryFn: loyaltyAccountService.me,
@@ -88,6 +99,18 @@ export const Bill = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="flex flex-col gap-3">
+                {taxRatePercent > 0 && (
+                  <div className="flex flex-col gap-1 border-b pb-3 text-sm text-gray-500">
+                    <div className="flex justify-between">
+                      <span>{t('billSubtotalLabel')}</span>
+                      <span>${subtotal.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>{t('billTaxLabel', { rate: taxRatePercent })}</span>
+                      <span>${taxAmount.toFixed(2)}</span>
+                    </div>
+                  </div>
+                )}
                 {billSplits?.map((split) => (
                   <div
                     key={split.participantName}
