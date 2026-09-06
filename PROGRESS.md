@@ -56,7 +56,7 @@
 - [~] **Platform console improvements** — piece **A** done (report 383 / PR #80: `updateRole` tenant-scope + last-admin guard).
   - [ ] **Retire tenants + Hub liveness (B+C)** — branch `spec/platform-console-retire-liveness`. Spec `docs/superpowers/specs/2026-09-06-platform-console-retire-and-liveness-design.md`, plan `docs/superpowers/plans/2026-09-06-platform-console-retire-and-liveness.md`. Executing one task at a time:
     - [x] Task 1 — `V8` migration + `Restaurant.deletedAt/deletedBy` + `HubActivation.lastHeartbeatAt/Ip` + `RestaurantStatus.DELETED` + `RestaurantRepository.findByStatusNot`. `@DataJpaTest` 2/2; full suite 1058/1058. (Plan fix: `@DataJpaTest` needs `@Import(TenantIdentifierResolver.class)`.)
-    - [ ] Task 2 — `HubStatus` enum + `from(lastHeartbeatAt, now)` → NEVER/ONLINE(<15m)/STALE(<24h)/OFFLINE
+    - [x] Task 2 — `HubStatus` enum + `from(lastHeartbeatAt, now)` → NEVER/ONLINE(<15m)/STALE(<24h)/OFFLINE. `HubStatusTest` 4/4.
     - [ ] Task 3 — `HubActivationRepository.recordHeartbeat` (`@Modifying`) + `HubHeartbeatService.heartbeat(request, callerIp)` best-effort + `HubHeartbeatController` IP (CF-Connecting-IP → XFF → remoteAddr)
     - [ ] Task 4 — `PlatformRestaurantService.delete`/`restore` (SUSPENDED↔DELETED, audit) + `updateStatus` DELETED-transition guards + `getAll(Pageable, includeDeleted)`
     - [ ] Task 5 — `hubStatus`/`hubActivatedAt`/`lastHeartbeatAt`/`lastHeartbeatIp` on the summary+detail DTOs, populated in `getAll`/`getById`
