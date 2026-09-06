@@ -39,7 +39,7 @@ class HubHeartbeatControllerTest {
 
     @Test
     void heartbeat_noAuthHeader_reaches200() throws Exception {
-        when(hubHeartbeatService.heartbeat(any())).thenReturn(HubHeartbeatResponse.builder()
+        when(hubHeartbeatService.heartbeat(any(), any())).thenReturn(HubHeartbeatResponse.builder()
                 .status("OK").serverTime(Instant.now()).latestVersion(null).build());
 
         mockMvc.perform(post("/hub-heartbeat")
@@ -59,12 +59,29 @@ class HubHeartbeatControllerTest {
 
     @Test
     void heartbeat_invalidLicense_returns400() throws Exception {
-        when(hubHeartbeatService.heartbeat(any()))
+        when(hubHeartbeatService.heartbeat(any(), any()))
                 .thenThrow(new InvalidLicenseException("nope"));
 
         mockMvc.perform(post("/hub-heartbeat")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(VALID_BODY))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void heartbeat_passesCfConnectingIpToService() throws Exception {
+        when(hubHeartbeatService.heartbeat(any(), any())).thenReturn(HubHeartbeatResponse.builder()
+                .status("OK").serverTime(Instant.now()).latestVersion(null).build());
+
+        mockMvc.perform(post("/hub-heartbeat")
+                        .header("CF-Connecting-IP", "198.51.100.9")
+                        .header("X-Forwarded-For", "10.0.0.1, 172.16.0.1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(VALID_BODY))
+                .andExpect(status().isOk());
+
+        org.mockito.Mockito.verify(hubHeartbeatService).heartbeat(
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.eq("198.51.100.9"));
     }
 }
