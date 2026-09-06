@@ -72,6 +72,11 @@ public class User {
     @Column(name = "pin_updated_at")
     private Instant pinUpdatedAt;
 
+    /** Chosen customer-home banner preset. Null → client uses the default preset. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "banner_key", length = 20)
+    private BannerKey bannerKey;
+
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 

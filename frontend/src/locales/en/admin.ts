@@ -60,6 +60,7 @@ export const admin = {
   cashRegisterSubtitle: 'Shift history and daily cash-register close-out.',
   collapseSidebarLabel: 'Collapse',
   expandSidebarLabel: 'Expand',
+  sectionsMenuLabel: 'Sections',
   cashRegisterTab: 'Cash register',
   shiftHistoryTab: 'Shift history',
   dailyReportTab: 'Daily close-out (Z)',

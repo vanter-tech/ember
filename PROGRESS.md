@@ -1,10 +1,11 @@
 # PROGRESS.md — Active Execution State
 
 ## Current Execution State
-- **Last Completed Task:** report 366 — hotfix pushed to `main` (no PR): Cloudflare Pages/`ember-app` served `index.html` for `/<route>/env-config.js` on deep links, so `window.ENV` never loaded and the prod SPA fell back to `http://localhost:8080/v1` (`ERR_CONNECTION_REFUSED` on login). `gen-env-config.mjs` now rewrites the config `<script src>` to the absolute `/env-config.js` for the Pages build.
-- **Predecessor Task:** report 365 (PROGRESS.md compaction + security-debt list).
-- **Current Active Task:** none — hotfix pushed; verify on redeploy that `https://app.ember.vanter.net/login` loads `/env-config.js` (200, JS) and login reaches `api.ember.vanter.net`.
-- **System Health:** backend `./mvnw test` last verified 1044/1044 (FIX-QA pass, report 364). Frontend `pnpm run build:pages` verified clean for report 366 (`dist/index.html` → `<script src="/env-config.js">`). `lint`/`test:run` last verified 77/77 clean (report 364).
+- **Last Completed Task:** report 380 — customer banner preset picker. Backend (`identity`): `V7__user_banner_key.sql` adds nullable `users.banner_key`; `BannerKey` enum (EMBER/SUNSET/FOREST/OCEAN/MIDNIGHT/MONO, JSON lowercase); `GET`/`PATCH /users/me` (`UserProfileController`/`Service`, any authenticated caller) + 6-case slice test. Frontend: `lib/bannerPresets.ts` (keys + Tailwind gradients), `userProfileService`, `BannerPickerModal` (swatch grid, PATCHes + updates `['me']` cache), Home fetches `['me']` and renders the gradient + an icon button that opens the modal. New `customer` i18n `bannerPicker*`/`banner<Preset>`. Committed to `main` (not pushed).
+- **Predecessor Task:** report 379 (customer home banner redesign).
+- **Current Active Task:** none.
+- **System Health:** backend `./mvnw test` 1050/1050 (report 380, +6). Frontend `pnpm run build` + `lint` clean and `pnpm run test:run` 78/78 pass (report 380). Local backend running (bg, `spring-boot:run`, `/v1` on :8080).
+- **⚠ Flyway/`V7` caveat:** the local dev DB's `flyway_schema_history` is a single BASELINE row at `version 15` ("rebuilt-from-entities-2026-08-24"), so Flyway skips every migration ≤ 15 — `V7__user_banner_key.sql` never ran there. Added `users.banner_key VARCHAR(20)` by hand (`docker exec ember-postgres-1 psql`) to unblock `ddl-auto=validate`. **Prod likely has the same baseline** — before deploying report 380, check prod `flyway_schema_history`; if baselined ≥ 7, run the same `ALTER TABLE users ADD COLUMN banner_key VARCHAR(20)` (or a `flyway repair` + history insert). `V7` is still correct for a genuinely fresh (Hub) DB.
 
 ## Active Context & Recent Decisions
 - Monolith at `ember/`: Java 17 + Spring Boot 3.5.14 / React 19 + TS + pnpm. Every module (`identity`/`catalog`/`billing`/`settings`/`restaurant`/`session`/`kitchen`) is on Postgres/JPA; event bus is Spring `ApplicationEventPublisher`/`@EventListener` only — do not reintroduce Kafka (dependency is vestigial, see root `CLAUDE.md`).
