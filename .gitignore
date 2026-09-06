@@ -8,3 +8,8 @@
 
 # Hub distributable's bundled frontend build output — regenerate via ember-hub/build-frontend.ps1
 backend/src/main/resources/static/
+
+# Hub installer build — real baked config, downloaded vendor binaries, and build output
+ember-hub/build.env
+ember-hub/.vendor-cache/
+ember-hub/dist/
