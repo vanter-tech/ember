@@ -1,8 +1,11 @@
 package com.vanter.ember.restaurant.repository;
 
 import com.vanter.ember.restaurant.model.Restaurant;
+import com.vanter.ember.restaurant.model.RestaurantStatus;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -11,6 +14,9 @@ import org.springframework.data.repository.query.Param;
 public interface RestaurantRepository extends JpaRepository<Restaurant, UUID> {
     Optional<Restaurant> findBySlug(String slug);
     boolean existsBySlug(String slug);
+
+    /** Console directory default view: every restaurant except soft-deleted ones. */
+    Page<Restaurant> findByStatusNot(RestaurantStatus status, Pageable pageable);
 
     /**
      * Inserts a Restaurant with an explicit, caller-chosen id, bypassing Hibernate's

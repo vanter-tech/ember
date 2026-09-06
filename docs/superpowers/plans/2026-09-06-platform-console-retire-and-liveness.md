@@ -21,6 +21,7 @@
 - The console frontend (`frontend/src/pages/console/**`, `platformApi.ts`) has **no i18n layer** — all strings are inline Spanish. Match that; do not add i18n (that is piece D).
 - `GlobalExceptionHandler` maps **both** `IllegalArgumentException` and `IllegalStateException` to **HTTP 409**. Use `IllegalStateException` for wrong-state transition guards; `ResourceNotFoundException` → 404.
 - Flyway baseline caveat: an environment whose `flyway_schema_history` is a single BASELINE row at `version 15` (local dev, likely prod) **skips `V8`**. This plan's `@DataJpaTest`s run against a fresh schema so they are unaffected; the deployment note in the spec §4.1 / §6 covers the manual `ALTER TABLE`.
+- **`@DataJpaTest` tenancy gotcha:** `@DataJpaTest` scans every `@Entity` project-wide, and a `@TenantId` entity elsewhere makes Hibernate's multi-tenant filter fail to build unless `TenantIdentifierResolver` is in the context. Every `@DataJpaTest` in this plan (Task 1, Task 3) MUST be annotated `@Import(com.vanter.ember.config.TenantIdentifierResolver.class)` — see `RestaurantRepositoryInsertWithIdTest` / `HubActivationRepositoryTest` for the pattern.
 
 ---
 

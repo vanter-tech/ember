@@ -39,4 +39,10 @@ public class HubActivation {
 
     @Column(name = "activated_at", nullable = false)
     private Instant activatedAt;
+
+    @Column(name = "last_heartbeat_at")
+    private Instant lastHeartbeatAt;
+
+    @Column(name = "last_heartbeat_ip")
+    private String lastHeartbeatIp;
 }

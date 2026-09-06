@@ -48,6 +48,12 @@ public class Restaurant {
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
+    @Column(name = "deleted_at")
+    private Instant deletedAt;
+
+    @Column(name = "deleted_by")
+    private UUID deletedBy;
+
     @PrePersist
     void prePersist() {
         this.createdAt = Instant.now();
