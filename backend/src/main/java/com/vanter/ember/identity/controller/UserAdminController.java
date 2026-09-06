@@ -34,12 +34,13 @@ public class UserAdminController {
 
     private final UserAdminService userAdminService;
 
-    @Operation(summary = "Assign a role to a user (ADMIN)")
+    @Operation(summary = "Assign a role to a staff member of the caller's own tenant (ADMIN)")
     @PatchMapping("/users/{userId}/role")
     @PreAuthorize("hasRole('ADMIN')")
     public User updateRole(@PathVariable String userId,
                            @Valid @RequestBody UpdateUserRoleRequest request) {
-        return userAdminService.updateRole(userId, request.role());
+        return userAdminService.updateRole(
+                userId, TenantContextHolder.requireTenantId(), request.role());
     }
 
     @Operation(summary = "Create a new staff member for the current tenant (ADMIN)")

@@ -24,9 +24,22 @@ public class UserAdminService {
     private final RestaurantRepository restaurantRepository;
     private final PasswordEncoder passwordEncoder;
 
-    public User updateRole(String userId, Role newRole) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + userId));
+    /**
+     * Tenant-scoped: the target must belong to the caller's own restaurant (a bare id from
+     * another tenant 404s, same as {@link #updateProfile}). CUSTOMER is rejected — that role is
+     * only self-assigned via {@code POST /auth/register}. Demoting the tenant's last active ADMIN
+     * is blocked for the same reason {@link #isLastActiveAdmin} guards deactivation: a restaurant
+     * with zero active admins cannot be managed and cannot recover from inside the app.
+     */
+    public User updateRole(String userId, UUID tenantId, Role newRole) {
+        User user = requireTenantUser(userId, tenantId);
+        if (newRole == Role.CUSTOMER) {
+            throw new IllegalArgumentException("Cannot assign the CUSTOMER role to a staff member");
+        }
+        if (newRole != Role.ADMIN && isLastActiveAdmin(user, tenantId)) {
+            throw new IllegalArgumentException(
+                    "Cannot change the role of the last active administrator of this restaurant.");
+        }
         user.setRole(newRole);
         return userRepository.save(user);
     }
@@ -86,8 +99,9 @@ public class UserAdminService {
             user.setEmail(request.email());
         }
         if (request.active() != null) {
-            if (Boolean.FALSE.equals(request.active())) {
-                assertNotLastActiveAdmin(user, tenantId);
+            if (Boolean.FALSE.equals(request.active()) && isLastActiveAdmin(user, tenantId)) {
+                throw new IllegalArgumentException(
+                        "Cannot deactivate the last active administrator of this restaurant.");
             }
             user.setActive(request.active());
         }
@@ -124,24 +138,18 @@ public class UserAdminService {
     }
 
     /**
-     * Blocks deactivating the tenant's last active ADMIN — including an admin deactivating their
-     * own account. A restaurant with zero active admins has no one who can manage staff, roles,
-     * or catalog, and (since {@code SecurityConfig} only authenticates {@code isEnabled()} users)
-     * no way to undo it from inside the app: the tenant is bricked. Deactivating an admin while
-     * another active admin remains is allowed and reversible.
+     * True when {@code target} is a currently-active ADMIN and no other active ADMIN remains in
+     * the tenant. Guards both deactivation and role demotion: a restaurant with zero active
+     * admins has no one who can manage staff, roles, or catalog, and (since {@code SecurityConfig}
+     * only authenticates {@code isEnabled()} users) no way to undo it from inside the app — the
+     * tenant is bricked. An inactive admin can't hold the fort, so it doesn't count as "another".
      */
-    private void assertNotLastActiveAdmin(User target, UUID tenantId) {
+    private boolean isLastActiveAdmin(User target, UUID tenantId) {
         if (target.getRole() != Role.ADMIN || !Boolean.TRUE.equals(target.getActive())) {
-            return;
+            return false;
         }
-        List<User> activeAdmins =
-                userRepository.findByRestaurantId_IdAndRoleAndActiveTrue(tenantId, Role.ADMIN);
-        boolean anotherActiveAdminExists = activeAdmins.stream()
-                .anyMatch(admin -> !admin.getId().equals(target.getId()));
-        if (!anotherActiveAdminExists) {
-            throw new IllegalArgumentException(
-                    "Cannot deactivate the last active administrator of this restaurant.");
-        }
+        return userRepository.findByRestaurantId_IdAndRoleAndActiveTrue(tenantId, Role.ADMIN).stream()
+                .noneMatch(admin -> !admin.getId().equals(target.getId()));
     }
 
     private User requireTenantUser(String userId, UUID tenantId) {

@@ -66,7 +66,8 @@ class UserAdminControllerTest {
     @Test
     @WithMockUser(roles = "ADMIN")
     void updateRole_responseDoesNotExposePasswordHash() throws Exception {
-        when(userAdminService.updateRole(eq("u-1"), any())).thenReturn(waiterUser());
+        TenantContextHolder.setTenantId(TENANT_ID);
+        when(userAdminService.updateRole(eq("u-1"), eq(TENANT_ID), any())).thenReturn(waiterUser());
 
         mockMvc.perform(patch("/admin/users/u-1/role")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -78,7 +79,8 @@ class UserAdminControllerTest {
     @Test
     @WithMockUser(roles = "ADMIN")
     void updateRole_adminCanAssignWaiterRole() throws Exception {
-        when(userAdminService.updateRole(eq("u-1"), any())).thenReturn(waiterUser());
+        TenantContextHolder.setTenantId(TENANT_ID);
+        when(userAdminService.updateRole(eq("u-1"), eq(TENANT_ID), any())).thenReturn(waiterUser());
 
         mockMvc.perform(patch("/admin/users/u-1/role")
                         .contentType(MediaType.APPLICATION_JSON)
