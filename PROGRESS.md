@@ -1,10 +1,10 @@
 # PROGRESS.md — Active Execution State
 
 ## Current Execution State
-- **Last Completed Task:** report 368 — admin section sidebars (Settings / Inventory / Cash Register) were a full-width vertical stack above the content on `<md`; each `*Bar` now renders a horizontal `overflow-x-auto` pill strip on mobile (`flex md:hidden`) and keeps the existing `w-64` vertical nav on `hidden md:flex`. SettingsBar mobile strip is driven by a new flat `SETTINGS_SECTIONS` array. Container gap `gap-8` → `gap-4 md:gap-8`. Committed to `main` (not pushed).
-- **Predecessor Task:** report 367 (SaaS login mobile gutter + Quick Login PIN/password toggle, committed to `main`).
+- **Last Completed Task:** report 369 — replaced the report-368 mobile pill strip on the three admin section sidebars with a trigger button + shadcn `Popover` (closes on select). `SettingsBar` refactored to one source of truth: `LEAF` map + `SETTINGS_NAV` (leaf/group nodes) + `renderNavList()` shared by the desktop expanded sidebar and the mobile popover; desktop collapsed state maps the same data. New i18n key `sectionsMenuLabel`. Committed to `main` (not pushed).
+- **Predecessor Task:** report 368 (admin sidebar mobile pill strip — superseded by 369).
 - **Current Active Task:** none.
-- **System Health:** backend `./mvnw test` last verified 1044/1044 (FIX-QA pass, report 364). Frontend `pnpm run build` + `lint` clean and `pnpm run test:run` 78/78 pass (report 368).
+- **System Health:** backend `./mvnw test` last verified 1044/1044 (FIX-QA pass, report 364). Frontend `pnpm run build` + `lint` clean and `pnpm run test:run` 78/78 pass (report 369).
 
 ## Active Context & Recent Decisions
 - Monolith at `ember/`: Java 17 + Spring Boot 3.5.14 / React 19 + TS + pnpm. Every module (`identity`/`catalog`/`billing`/`settings`/`restaurant`/`session`/`kitchen`) is on Postgres/JPA; event bus is Spring `ApplicationEventPublisher`/`@EventListener` only — do not reintroduce Kafka (dependency is vestigial, see root `CLAUDE.md`).
