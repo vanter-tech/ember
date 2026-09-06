@@ -145,6 +145,61 @@ class UserAdminServiceTest {
     }
 
     @Test
+    void updateRole_appliesRoleOnHappyPath() {
+        User existing = waiterFor(TENANT_A);
+        when(userRepository.findById("u-1")).thenReturn(Optional.of(existing));
+        when(userRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        User result = userAdminService.updateRole("u-1", TENANT_A, Role.KITCHEN);
+
+        assertThat(result.getRole()).isEqualTo(Role.KITCHEN);
+    }
+
+    @Test
+    void updateRole_throwsWhenTargetBelongsToAnotherTenant() {
+        when(userRepository.findById("u-1")).thenReturn(Optional.of(waiterFor(UUID.randomUUID())));
+
+        assertThatThrownBy(() -> userAdminService.updateRole("u-1", TENANT_A, Role.KITCHEN))
+                .isInstanceOf(ResourceNotFoundException.class);
+        verify(userRepository, org.mockito.Mockito.never()).save(any());
+    }
+
+    @Test
+    void updateRole_rejectsAssigningTheCustomerRole() {
+        when(userRepository.findById("u-1")).thenReturn(Optional.of(waiterFor(TENANT_A)));
+
+        assertThatThrownBy(() -> userAdminService.updateRole("u-1", TENANT_A, Role.CUSTOMER))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("CUSTOMER");
+    }
+
+    @Test
+    void updateRole_blocksDemotingTheSoleActiveAdmin() {
+        User admin = adminFor(TENANT_A, "a-1");
+        when(userRepository.findById("a-1")).thenReturn(Optional.of(admin));
+        when(userRepository.findByRestaurantId_IdAndRoleAndActiveTrue(TENANT_A, Role.ADMIN))
+                .thenReturn(List.of(admin));
+
+        assertThatThrownBy(() -> userAdminService.updateRole("a-1", TENANT_A, Role.WAITER))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("last active administrator");
+        verify(userRepository, org.mockito.Mockito.never()).save(any());
+    }
+
+    @Test
+    void updateRole_allowsDemotingAnAdminWhenAnotherActiveAdminRemains() {
+        User admin = adminFor(TENANT_A, "a-1");
+        when(userRepository.findById("a-1")).thenReturn(Optional.of(admin));
+        when(userRepository.findByRestaurantId_IdAndRoleAndActiveTrue(TENANT_A, Role.ADMIN))
+                .thenReturn(List.of(admin, adminFor(TENANT_A, "a-2")));
+        when(userRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        User result = userAdminService.updateRole("a-1", TENANT_A, Role.WAITER);
+
+        assertThat(result.getRole()).isEqualTo(Role.WAITER);
+    }
+
+    @Test
     void updateProfile_appliesOnlyNonNullFields() {
         User existing = waiterFor(TENANT_A);
         existing.setShift("Mañana");
