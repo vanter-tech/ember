@@ -1,10 +1,10 @@
 # PROGRESS.md — Active Execution State
 
 ## Current Execution State
-- **Last Completed Task:** report 366 — hotfix pushed to `main` (no PR): Cloudflare Pages/`ember-app` served `index.html` for `/<route>/env-config.js` on deep links, so `window.ENV` never loaded and the prod SPA fell back to `http://localhost:8080/v1` (`ERR_CONNECTION_REFUSED` on login). `gen-env-config.mjs` now rewrites the config `<script src>` to the absolute `/env-config.js` for the Pages build.
-- **Predecessor Task:** report 365 (PROGRESS.md compaction + security-debt list).
-- **Current Active Task:** none — hotfix pushed; verify on redeploy that `https://app.ember.vanter.net/login` loads `/env-config.js` (200, JS) and login reaches `api.ember.vanter.net`.
-- **System Health:** backend `./mvnw test` last verified 1044/1044 (FIX-QA pass, report 364). Frontend `pnpm run build:pages` verified clean for report 366 (`dist/index.html` → `<script src="/env-config.js">`). `lint`/`test:run` last verified 77/77 clean (report 364).
+- **Last Completed Task:** report 367 — SaaS login UI polish: page gutter (`p-4`) so the card no longer touches phone edges; Quick Start chips `grid-cols-1 sm:grid-cols-2` (full-width on mobile); Quick Login modal now opens with an always-visible `Contraseña | PIN` segmented toggle and no method preselected (was PIN-first), server fallback unchanged. Committed to `main` (not pushed).
+- **Predecessor Task:** report 366 (Cloudflare Pages `env-config.js` absolute-path hotfix, pushed to `main` — verified working in prod).
+- **Current Active Task:** none.
+- **System Health:** backend `./mvnw test` last verified 1044/1044 (FIX-QA pass, report 364). Frontend `pnpm run build` + `lint` clean and `pnpm run test:run` 78/78 pass (report 367).
 
 ## Active Context & Recent Decisions
 - Monolith at `ember/`: Java 17 + Spring Boot 3.5.14 / React 19 + TS + pnpm. Every module (`identity`/`catalog`/`billing`/`settings`/`restaurant`/`session`/`kitchen`) is on Postgres/JPA; event bus is Spring `ApplicationEventPublisher`/`@EventListener` only — do not reintroduce Kafka (dependency is vestigial, see root `CLAUDE.md`).

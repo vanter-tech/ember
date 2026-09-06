@@ -28,6 +28,15 @@ const renderModal = () =>
 describe('QuickLoginModal', () => {
   beforeEach(() => vi.clearAllMocks())
 
+  test('shows neither field until a mode is chosen', () => {
+    renderModal()
+    expect(screen.queryByLabelText('PIN')).not.toBeInTheDocument()
+    expect(
+      screen.queryByLabelText('Ingresa tu contraseña')
+    ).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Entrar' })).toBeDisabled()
+  })
+
   test('submits the PIN to loginPin', async () => {
     vi.mocked(authService.loginPin).mockResolvedValue({
       token: 't',
@@ -35,8 +44,9 @@ describe('QuickLoginModal', () => {
       name: 'Juan Perez',
     })
     renderModal()
+    fireEvent.click(screen.getByRole('button', { name: 'PIN' }))
     fireEvent.change(screen.getByLabelText('PIN'), { target: { value: '1234' } })
-    fireEvent.click(screen.getByText('Entrar'))
+    fireEvent.click(screen.getByRole('button', { name: 'Entrar' }))
     await waitFor(() =>
       expect(authService.loginPin).toHaveBeenCalledWith({
         email: 'juan@x.com',
@@ -51,8 +61,9 @@ describe('QuickLoginModal', () => {
       response: { status: 409, data: { code: 'PIN_NOT_SET' } },
     })
     renderModal()
+    fireEvent.click(screen.getByRole('button', { name: 'PIN' }))
     fireEvent.change(screen.getByLabelText('PIN'), { target: { value: '1234' } })
-    fireEvent.click(screen.getByText('Entrar'))
+    fireEvent.click(screen.getByRole('button', { name: 'Entrar' }))
     await waitFor(() =>
       expect(
         screen.getByText('No tienes un PIN configurado. Ingresa tu contraseña.')
@@ -61,9 +72,9 @@ describe('QuickLoginModal', () => {
     expect(screen.getByLabelText('Ingresa tu contraseña')).toBeVisible()
   })
 
-  test('"prefer password" link swaps input to password', () => {
+  test('"Contraseña" toggle reveals the password field', () => {
     renderModal()
-    fireEvent.click(screen.getByText('Prefiero mi contraseña'))
+    fireEvent.click(screen.getByRole('button', { name: 'Contraseña' }))
     expect(screen.getByLabelText('Ingresa tu contraseña')).toBeVisible()
   })
 
