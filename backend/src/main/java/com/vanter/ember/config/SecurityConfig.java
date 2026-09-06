@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -72,6 +73,10 @@ public class SecurityConfig {
                         // endpoint AND a frontend route, which is exactly why the frontend is
                         // served from its own prefix instead of path-matched at the root).
                         .requestMatchers("/app/**").permitAll()
+                        // Hub only: the bare host redirects to the SPA at "/app/"
+                        // (HubSpaRootController, @Profile("hub")). On the cloud profile no
+                        // controller maps "/", so this just turns a would-be 401 into a 404.
+                        .requestMatchers(HttpMethod.GET, "/").permitAll()
                         // The Hub's one-time activation call — authenticates via the license
                         // signature itself (HubActivationService), not a bearer token.
                         .requestMatchers("/hub-activations").permitAll()

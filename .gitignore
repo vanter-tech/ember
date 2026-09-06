@@ -14,5 +14,8 @@ ember-hub/build.env
 ember-hub/.vendor-cache/
 ember-hub/dist/
 
-# Hub license signing keys — never commit
-ember-hub/keys/
+# Hub license signing keys — never commit the PRIVATE key. The public key is
+# committed (ember-hub/keys/hub-public-key.der) so every build verifies licenses
+# against the same prod key with no manual per-machine step.
+ember-hub/keys/*
+!ember-hub/keys/hub-public-key.der

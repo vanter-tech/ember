@@ -7,10 +7,10 @@
   #define ServerPort "8080"
 #endif
 #ifndef EmberHubActivationUrl
-  #define EmberHubActivationUrl "https://api.vanter.com/hub-activations"
+  #define EmberHubActivationUrl "https://api.ember.vanter.net/v1/hub-activations"
 #endif
 #ifndef EmberHubHeartbeatUrl
-  #define EmberHubHeartbeatUrl "https://api.vanter.com/hub-heartbeat"
+  #define EmberHubHeartbeatUrl "https://api.ember.vanter.net/v1/hub-heartbeat"
 #endif
 
 [Setup]
@@ -58,31 +58,80 @@ Filename: "{sys}\netsh.exe"; \
   Flags: runhidden; RunOnceId: "DelFwRule"
 
 [Code]
+
+{ 64-hex-char (32-byte) random token for JWT_SECRET / PLATFORM_JWT_SECRET.
+  Both are HMAC keys the Hub's Spring context needs at boot (jwt.secret,
+  platform.jwt.secret have no default) — per-install random, never shared. }
+function RandomHex(ByteCount: Integer): string;
+var
+  i: Integer;
+  Hex: string;
+begin
+  Hex := '0123456789abcdef';
+  Result := '';
+  for i := 1 to ByteCount * 2 do
+    Result := Result + Hex[Random(16) + 1];
+end;
+
+function HasEnvKey(const Contents, Key: string): Boolean;
+begin
+  Result := Pos(#13#10 + Key, #13#10 + Contents) > 0;
+end;
+
+procedure WriteFreshHubEnv(const EnvPath: string);
+var
+  Lines: string;
+begin
+  Lines :=
+    '# Generado por el instalador de Ember Hub. No editar salvo el puerto.' + #13#10 +
+    'EMBER_HUB_DATA_DIR=' + ExpandConstant('{commonappdata}\EmberHub\data\postgres') + #13#10 +
+    'EMBER_HUB_MINIO_DATA_DIR=' + ExpandConstant('{commonappdata}\EmberHub\data\minio') + #13#10 +
+    'EMBER_HUB_POSTGRES_BIN_DIR=' + ExpandConstant('{app}\pgsql\bin') + #13#10 +
+    'EMBER_HUB_MINIO_BIN_DIR=' + ExpandConstant('{app}\minio') + #13#10 +
+    'EMBER_HUB_LICENSE_FILE=' + ExpandConstant('{commonappdata}\EmberHub\license.key') + #13#10 +
+    'EMBER_HUB_PUBLIC_KEY_FILE=' + ExpandConstant('{app}\hub-public-key.der') + #13#10 +
+    'EMBER_HUB_STATE_FILE=' + ExpandConstant('{commonappdata}\EmberHub\hub-state.json') + #13#10 +
+    'EMBER_HUB_POSTGRES_PORT=5432' + #13#10 +
+    'EMBER_HUB_MINIO_PORT=9000' + #13#10 +
+    'EMBER_HUB_SERVER_PORT={#ServerPort}' + #13#10 +
+    'EMBER_HUB_ACTIVATION_URL={#EmberHubActivationUrl}' + #13#10 +
+    'EMBER_HUB_HEARTBEAT_URL={#EmberHubHeartbeatUrl}' + #13#10 +
+    'JWT_SECRET=' + RandomHex(32) + #13#10 +
+    'PLATFORM_JWT_SECRET=' + RandomHex(32) + #13#10;
+  SaveStringToFile(EnvPath, Lines, False);
+end;
+
+{ An install from before these secrets were added leaves a hub.env that can't
+  boot; re-installing over it repairs it in place (the file is otherwise kept
+  across updates, so it is never rewritten wholesale). }
+procedure EnsureHubEnvSecrets(const EnvPath: string);
+var
+  Existing: AnsiString;
+  Extra: string;
+begin
+  if not LoadStringFromFile(EnvPath, Existing) then
+    Exit;
+  Extra := '';
+  if not HasEnvKey(Existing, 'JWT_SECRET=') then
+    Extra := Extra + 'JWT_SECRET=' + RandomHex(32) + #13#10;
+  if not HasEnvKey(Existing, 'PLATFORM_JWT_SECRET=') then
+    Extra := Extra + 'PLATFORM_JWT_SECRET=' + RandomHex(32) + #13#10;
+  if Extra <> '' then
+    SaveStringToFile(EnvPath, Extra, True);
+end;
+
 procedure CurStepChanged(CurStep: TSetupStep);
 var
-  EnvPath, Lines: string;
+  EnvPath: string;
 begin
   if CurStep = ssPostInstall then
   begin
+    Randomize;
     EnvPath := ExpandConstant('{commonappdata}\EmberHub\hub.env');
-    if not FileExists(EnvPath) then
-    begin
-      Lines :=
-        '# Generado por el instalador de Ember Hub. No editar salvo el puerto.' + #13#10 +
-        'EMBER_HUB_DATA_DIR=' + ExpandConstant('{commonappdata}\EmberHub\data\postgres') + #13#10 +
-        'EMBER_HUB_MINIO_DATA_DIR=' + ExpandConstant('{commonappdata}\EmberHub\data\minio') + #13#10 +
-        'EMBER_HUB_POSTGRES_BIN_DIR=' + ExpandConstant('{app}\pgsql\bin') + #13#10 +
-        'EMBER_HUB_MINIO_BIN_DIR=' + ExpandConstant('{app}\minio') + #13#10 +
-        'EMBER_HUB_LICENSE_FILE=' + ExpandConstant('{commonappdata}\EmberHub\license.key') + #13#10 +
-        'EMBER_HUB_PUBLIC_KEY_FILE=' + ExpandConstant('{app}\hub-public-key.der') + #13#10 +
-        'EMBER_HUB_STATE_FILE=' + ExpandConstant('{commonappdata}\EmberHub\hub-state.json') + #13#10 +
-        'EMBER_HUB_POSTGRES_PORT=5432' + #13#10 +
-        'EMBER_HUB_MINIO_PORT=9000' + #13#10 +
-        'EMBER_HUB_SERVER_PORT={#ServerPort}' + #13#10 +
-        'EMBER_HUB_ACTIVATION_URL={#EmberHubActivationUrl}' + #13#10 +
-        'EMBER_HUB_HEARTBEAT_URL={#EmberHubHeartbeatUrl}' + #13#10;
-      SaveStringToFile(EnvPath, Lines, False);
-    end;
+    if FileExists(EnvPath) then
+      EnsureHubEnvSecrets(EnvPath)
+    else
+      WriteFreshHubEnv(EnvPath);
   end;
 end;
 
