@@ -1030,7 +1030,7 @@ git commit -m "docs(hub): installer build README + progress update"
 ### Task 10: Manual verification on real Windows + report
 
 **Files:**
-- Create: `reports/381-hub-installer-manual-verification.md` (bump if `reports/` already has a ≥381) (next sequential number — check `reports/` for the highest)
+- Create: `reports/381-hub-installer-manual-verification.md` (bump the number if `reports/` already has one ≥ 381)
 
 **Interfaces:** none (verification only; no code commit).
 
