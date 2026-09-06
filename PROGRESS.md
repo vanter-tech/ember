@@ -1,10 +1,10 @@
 # PROGRESS.md — Active Execution State
 
 ## Current Execution State
-- **Last Completed Task:** platform-console spec + plan committed on branch `spec/platform-console-retire-liveness` (off `main`@`9404e5e3`). Spec `docs/superpowers/specs/2026-09-06-platform-console-retire-and-liveness-design.md`, plan `docs/superpowers/plans/2026-09-06-platform-console-retire-and-liveness.md`. Pieces A (`updateRole` tenant-scope, report 383, PR #80) and the hub installer (PR #78) + admin-deactivation guard (report 382, PR #79) already merged to `main`.
-- **Predecessor Task:** report 383 — fix(identity): tenant-scope + last-admin guard on `updateRole`.
-- **Current Active Task:** executing the platform-console plan **one task at a time** — see the checklist under Task Queue Status → "Platform console: retire tenants + Hub liveness (B+C)". **Task 1** next.
-- **System Health:** backend `./mvnw test` green on `main` (1061/1061 after PR #80). This branch adds only the spec + plan docs so far.
+- **Last Completed Task:** report 384 — feat(platform): retire suspended tenants (soft-delete via `RestaurantStatus.DELETED`, reversible) + Hub liveness (`hub_activations.last_heartbeat_at/ip` persisted per verified heartbeat, `HubStatus` NEVER/ONLINE/STALE/OFFLINE on console list + detail). Branch `spec/platform-console-retire-liveness`, 10 tasks done (`ffcbb5eb`…`fc636b9a`). Migration `V8`. Ready for PR.
+- **Predecessor Task:** report 383 — fix(identity): tenant-scope + last-admin guard on `updateRole` (piece A, PR #80, merged).
+- **Current Active Task:** none — piece **D** (visual redesign of `/console` to match the tenant SaaS app) is the remaining platform-console work; own spec, not started.
+- **System Health:** backend `./mvnw test` full suite green (1085 after Task 6; Tasks 7–9 frontend-only). Frontend `pnpm run build` clean, `lint` 0 errors, `test:run` 83/83.
 - **⚠ Flyway caveat (`V7`, and now `V8`):** the local dev DB's `flyway_schema_history` is a single BASELINE row at `version 15`, so Flyway skips every migration ≤ 15. `V7__user_banner_key.sql` never ran there (added `users.banner_key VARCHAR(20)` by hand). The new **`V8__restaurant_soft_delete_and_hub_heartbeat.sql`** has the same risk — before deploying to a baselined env (prod likely), run `ALTER TABLE restaurants ADD COLUMN deleted_at timestamptz, ADD COLUMN deleted_by uuid;` and `ALTER TABLE hub_activations ADD COLUMN last_heartbeat_at timestamptz, ADD COLUMN last_heartbeat_ip varchar(45);` (or `flyway repair` + history insert). `V7`/`V8` are correct as-is for a genuinely fresh DB. `@DataJpaTest`s run on a fresh schema and are unaffected.
 
 ## Active Context & Recent Decisions
@@ -54,7 +54,7 @@
 - [x] **Payment-flow bug cluster** (bill fetch endpoint, block removing sent items, settle-partial-and-close, leave-table/reject-2nd-session) — complete. Reports 317-320.
 - [x] **FIX-QA** (22 of 23 live QA findings across all 4 roles) — complete except E-23 (PIN-login enumeration oracle, deliberately deferred — needs a product decision, fighting it breaks the "no PIN set" UX). Reports 361-364.
 - [~] **Platform console improvements** — piece **A** done (report 383 / PR #80: `updateRole` tenant-scope + last-admin guard).
-  - [ ] **Retire tenants + Hub liveness (B+C)** — branch `spec/platform-console-retire-liveness`. Spec `docs/superpowers/specs/2026-09-06-platform-console-retire-and-liveness-design.md`, plan `docs/superpowers/plans/2026-09-06-platform-console-retire-and-liveness.md`. Executing one task at a time:
+  - [x] **Retire tenants + Hub liveness (B+C)** — branch `spec/platform-console-retire-liveness`, report 384, all 10 tasks done, ready for PR. Spec `docs/superpowers/specs/2026-09-06-platform-console-retire-and-liveness-design.md`, plan `docs/superpowers/plans/2026-09-06-platform-console-retire-and-liveness.md`.
     - [x] Task 1 — `V8` migration + `Restaurant.deletedAt/deletedBy` + `HubActivation.lastHeartbeatAt/Ip` + `RestaurantStatus.DELETED` + `RestaurantRepository.findByStatusNot`. `@DataJpaTest` 2/2; full suite 1058/1058. (Plan fix: `@DataJpaTest` needs `@Import(TenantIdentifierResolver.class)`.)
     - [x] Task 2 — `HubStatus` enum + `from(lastHeartbeatAt, now)` → NEVER/ONLINE(<15m)/STALE(<24h)/OFFLINE. `HubStatusTest` 4/4.
     - [x] Task 3 — `HubActivationRepository.recordHeartbeat` (`@Modifying(clearAutomatically)`) + `findByRestaurantIdIn` + `HubHeartbeatService.heartbeat(request, callerIp)` best-effort (swallows `DataAccessException`) + `HubHeartbeatController` IP (CF-Connecting-IP → XFF → remoteAddr). 16 targeted tests; full suite 1069/1069.
@@ -64,7 +64,7 @@
     - [x] Task 7 — `platformApi.ts`: `HubStatus`/`PlatformRestaurantStatus` types (`DELETED` added), hub fields on both interfaces, `deleteRestaurant`/`restoreRestaurant`/`getAll(page,size,includeDeleted)`. `pnpm run build` + `lint` clean.
     - [x] Task 8 — `ConsoleRestaurants`: Hub column (dot+label), "Ver eliminados" checkbox, muted DELETED rows + `ELIMINADO` badge. Vitest 2/2; build + lint clean.
     - [x] Task 9 — `ConsoleRestaurantDetail`: Hub panel (estado/activado/último latido/IP) + Eliminar (type-the-slug confirm, only when SUSPENDED) / Restaurar (when DELETED, hides status+license controls). Vitest 3/3; build + lint clean; full frontend `test:run` 83/83.
-    - [ ] Task 10 — report 384 + PROGRESS + full verification + PR
+    - [x] Task 10 — report 384 + PROGRESS + full verification + PR
   - [ ] **Piece D** — visual redesign of `/console` to match the tenant SaaS app. Own spec, not started.
 - [ ] **Security/hardening debt — surfaced 2026-09-04, none yet has a spec/plan:**
   - [ ] F-15: Ember Hub activation endpoint returns `adminPasswordHash` in the response — redesign the activation contract + a migration path for already-installed Hub instances.
