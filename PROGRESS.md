@@ -1,10 +1,10 @@
 # PROGRESS.md — Active Execution State
 
 ## Current Execution State
-- **Last Completed Task:** report 380 — customer banner preset picker. Backend (`identity`): `V7__user_banner_key.sql` adds nullable `users.banner_key`; `BannerKey` enum (EMBER/SUNSET/FOREST/OCEAN/MIDNIGHT/MONO, JSON lowercase); `GET`/`PATCH /users/me` (`UserProfileController`/`Service`, any authenticated caller) + 6-case slice test. Frontend: `lib/bannerPresets.ts` (keys + Tailwind gradients), `userProfileService`, `BannerPickerModal` (swatch grid, PATCHes + updates `['me']` cache), Home fetches `['me']` and renders the gradient + an icon button that opens the modal. New `customer` i18n `bannerPicker*`/`banner<Preset>`. Committed to `main` (not pushed).
-- **Predecessor Task:** report 379 (customer home banner redesign).
+- **Last Completed Task:** report 382 — fix(identity): `UserAdminService.updateProfile` blocked from deactivating the tenant's last active ADMIN (self included). Zero-active-admins bricked a restaurant permanently — `SecurityConfig` only authenticates `isEnabled()` users, so no one could undo it in-app. New `assertNotLastActiveAdmin` guard (reuses `findByRestaurantId_IdAndRoleAndActiveTrue`), `IllegalArgumentException` → 400. +2 tests (`UserAdminServiceTest` 18/18). Branch `fix/admin-self-deactivation` off `main`@`ceab79c2`. Follow-up noted: `updateRole` has no tenant-scope guard at all.
+- **Predecessor Task:** report 380 (customer banner preset picker).
 - **Current Active Task:** none.
-- **System Health:** backend `./mvnw test` 1050/1050 (report 380, +6). Frontend `pnpm run build` + `lint` clean and `pnpm run test:run` 78/78 pass (report 380). Local backend running (bg, `spring-boot:run`, `/v1` on :8080).
+- **System Health:** backend `./mvnw test` full suite green (exit 0) with the report-382 change. Frontend untouched. (Report 380's `pnpm` checks still stand.)
 - **⚠ Flyway/`V7` caveat:** the local dev DB's `flyway_schema_history` is a single BASELINE row at `version 15` ("rebuilt-from-entities-2026-08-24"), so Flyway skips every migration ≤ 15 — `V7__user_banner_key.sql` never ran there. Added `users.banner_key VARCHAR(20)` by hand (`docker exec ember-postgres-1 psql`) to unblock `ddl-auto=validate`. **Prod likely has the same baseline** — before deploying report 380, check prod `flyway_schema_history`; if baselined ≥ 7, run the same `ALTER TABLE users ADD COLUMN banner_key VARCHAR(20)` (or a `flyway repair` + history insert). `V7` is still correct for a genuinely fresh (Hub) DB.
 
 ## Active Context & Recent Decisions
