@@ -30,7 +30,7 @@
   - [ ] **HUB-03 — `jpackage`/Inno Setup `.exe` installer.** Spec `docs/superpowers/specs/2026-09-05-hub-installer-design.md`; plan `docs/superpowers/plans/2026-09-05-hub-installer.md`. Doing tasks one at a time on branch `spec/hub-installer`:
     - [x] T1 — repo hygiene: `ember-hub/build.env.example` tracked, gitignore `build.env` / `.vendor-cache/` / `dist/` (`e03abaca`)
     - [x] T2 — `LicenseFileInstaller` helper (TDD, `backend` hub.dashboard) — 4 tests; `./mvnw test` 1048/1048 on this branch
-    - [ ] T3 — `HubDashboard`: "Seleccionar license.key…" button + `--autostart` flag
+    - [x] T3 — `HubDashboard`: "Seleccionar license.key…" button (5-col grid, 520px) + `--autostart` flag; `./mvnw test` 1048/1048. Manual Swing smoke deferred to T10.
     - [ ] T4 — `ember-hub/jlink-modules.txt` + `build-installer.ps1` runtime stage → `dist/runtime`
     - [ ] T5 — `fetch-vendor-binaries.ps1`: Postgres 16.6-1 + MinIO, SHA256-pinned
     - [ ] T6 — `Iniciar Ember Hub.cmd` shim + `hub.env.example`
