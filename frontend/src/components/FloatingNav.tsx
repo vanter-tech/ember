@@ -91,7 +91,11 @@ export const FloatingNav = () => {
       className="fixed bottom-[calc(1rem_+_env(safe-area-inset-bottom))] sm:bottom-8 inset-x-0 mx-auto w-full max-w-[calc(100vw-1.5rem)] sm:w-max sm:max-w-[92vw] bg-white dark:bg-zinc-900 shadow-2xl rounded-full
         px-2 sm:px-4 py-2 flex items-center gap-1 sm:gap-2 border border-zinc-200 dark:border-zinc-800 z-50"
     >
-      <div className="flex min-w-0 flex-1 items-center gap-1 sm:gap-2 overflow-x-auto no-scrollbar sm:flex-initial sm:overflow-visible">
+      {/* Below sm: a full-width scrollable strip (logout stays pinned outside it). At sm+
+          `display:contents` dissolves this wrapper so the links are direct <nav> children,
+          i.e. the original centred-pill layout. The -my-2/py-2 gives the active item's
+          scale-110 + shadow room before overflow-x clips it vertically. */}
+      <div className="flex min-w-0 flex-1 items-center gap-1 -my-2 py-2 overflow-x-auto no-scrollbar sm:contents">
       {(role === 'WAITER' || role === 'ADMIN') && (
         <Link
           to="/waiter/tables"

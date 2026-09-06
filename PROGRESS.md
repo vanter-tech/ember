@@ -1,10 +1,10 @@
 # PROGRESS.md — Active Execution State
 
 ## Current Execution State
-- **Last Completed Task:** report 375 — FloatingNav: `frontend/index.html` viewport meta gained `viewport-fit=cover` (so `env(safe-area-inset-bottom)` is non-zero on iOS — that's why report 374's calc did nothing); `<nav>` is near full-width on mobile (`w-full max-w-[calc(100vw-1.5rem)]`, `sm:w-max sm:max-w-[92vw]`), links in a `flex-1 overflow-x-auto` region that goes `sm:flex-initial sm:overflow-visible`, logout pinned OUTSIDE that region behind `border-l` (`shrink-0`) so it's always visible. No gradient (rejected in 372). Committed to `main` (not pushed).
-- **Predecessor Task:** report 374 (FloatingNav safe-area attempt + smaller icons).
+- **Last Completed Task:** report 376 — fixed two report-375 FloatingNav regressions: iPad disappearance (the links wrapper `<div>` changed the `sm+` flex model) and the active item's red `scale-110`/`shadow-md` highlight clipped top/bottom by the mobile `overflow-x-auto`. Wrapper is now `... -my-2 py-2 overflow-x-auto no-scrollbar sm:contents` — `sm:contents` dissolves it at `sm+` so the `sm+` layout is exactly the pre-375 centred pill; `-my-2 py-2` gives the scaled/shadowed active item clip room below `sm`. Committed to `main` (not pushed).
+- **Predecessor Task:** report 375 (FloatingNav viewport-fit=cover + full-width mobile bar).
 - **Current Active Task:** none.
-- **System Health:** backend `./mvnw test` last verified 1044/1044 (FIX-QA pass, report 364). Frontend `pnpm run build` + `lint` clean and `pnpm run test:run` 78/78 pass (report 375).
+- **System Health:** backend `./mvnw test` last verified 1044/1044 (FIX-QA pass, report 364). Frontend `pnpm run build` + `lint` clean and `pnpm run test:run` 78/78 pass (report 376).
 
 ## Active Context & Recent Decisions
 - Monolith at `ember/`: Java 17 + Spring Boot 3.5.14 / React 19 + TS + pnpm. Every module (`identity`/`catalog`/`billing`/`settings`/`restaurant`/`session`/`kitchen`) is on Postgres/JPA; event bus is Spring `ApplicationEventPublisher`/`@EventListener` only — do not reintroduce Kafka (dependency is vestigial, see root `CLAUDE.md`).
