@@ -28,7 +28,7 @@
   - [ ] Hub v2: Tauri/webview shell reusing `frontend/`'s design — not started, needs its own spec/plan.
   - [ ] Hub: Windows service auto-start (`sc.exe`/SCM recovery) — **deferred**: HUB-03 v1 uses a common-Startup shortcut so the Swing dashboard stays as the operator surface (spec `2026-09-05-hub-installer-design.md` §1).
   - [ ] **HUB-03 — `jpackage`/Inno Setup `.exe` installer.** Spec `docs/superpowers/specs/2026-09-05-hub-installer-design.md`; plan `docs/superpowers/plans/2026-09-05-hub-installer.md`. Doing tasks one at a time on branch `spec/hub-installer`:
-    - [ ] T1 — repo hygiene: `ember-hub/build.env.example` tracked, gitignore `build.env` / `.vendor-cache/` / `dist/`
+    - [x] T1 — repo hygiene: `ember-hub/build.env.example` tracked, gitignore `build.env` / `.vendor-cache/` / `dist/` (`e03abaca`)
     - [ ] T2 — `LicenseFileInstaller` helper (TDD, `backend` hub.dashboard)
     - [ ] T3 — `HubDashboard`: "Seleccionar license.key…" button + `--autostart` flag
     - [ ] T4 — `ember-hub/jlink-modules.txt` + `build-installer.ps1` runtime stage → `dist/runtime`
