@@ -1,10 +1,10 @@
 # PROGRESS.md — Active Execution State
 
 ## Current Execution State
-- **Last Completed Task:** report 371 — TopNav action button had route-dependent width so long labels (`/admin/inventory`) wrapped it below the title while short ones stayed inline; label is now `hidden sm:inline` (icon-only `<sm`), with `aria-label`/`title` = buttonText and `px-3 sm:px-5`. Class/markup-only, desktop unchanged. Committed to `main` (not pushed).
-- **Predecessor Task:** report 370 (TopNav mobile wrap).
+- **Last Completed Task:** report 372 — FloatingNav (ADMIN) crowded on mobile: `navItemClass` had `w-12` but no `shrink-0` so icons squashed instead of scrolling. Now `[scrollable links region] + [fixed logout]`: inner `overflow-x-auto` div, logout pinned outside it (`shrink-0`, `w-12 h-12`), `shrink-0` on items/divider/leave-button, a right-edge `#8c1717/70` gradient shown only while more scroll remains (scrollRef + scroll/resize listener), and the dead `User` avatar chip removed. Committed to `main` (not pushed).
+- **Predecessor Task:** report 371 (TopNav action button icon-only on mobile).
 - **Current Active Task:** none.
-- **System Health:** backend `./mvnw test` last verified 1044/1044 (FIX-QA pass, report 364). Frontend `pnpm run build` + `lint` clean and `pnpm run test:run` 78/78 pass (report 371).
+- **System Health:** backend `./mvnw test` last verified 1044/1044 (FIX-QA pass, report 364). Frontend `pnpm run build` + `lint` clean and `pnpm run test:run` 78/78 pass (report 372).
 
 ## Active Context & Recent Decisions
 - Monolith at `ember/`: Java 17 + Spring Boot 3.5.14 / React 19 + TS + pnpm. Every module (`identity`/`catalog`/`billing`/`settings`/`restaurant`/`session`/`kitchen`) is on Postgres/JPA; event bus is Spring `ApplicationEventPublisher`/`@EventListener` only — do not reintroduce Kafka (dependency is vestigial, see root `CLAUDE.md`).

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '../store/authStore'
@@ -8,7 +8,6 @@ import {
   BarChart3,
   Settings,
   LogOut,
-  User,
   Home,
   Menu,
   ChefHat,
@@ -45,6 +44,31 @@ export const FloatingNav = () => {
   const [confirmLogout, setConfirmLogout] = useState(false)
   const [confirmLeave, setConfirmLeave] = useState(false)
 
+  // Right-edge fade hint: shown only while the links row can still scroll right.
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const [showEndFade, setShowEndFade] = useState(false)
+
+  const updateFade = useCallback(() => {
+    const el = scrollRef.current
+    if (!el) {
+      setShowEndFade(false)
+      return
+    }
+    setShowEndFade(el.scrollLeft + el.clientWidth < el.scrollWidth - 1)
+  }, [])
+
+  useEffect(() => {
+    updateFade()
+    const el = scrollRef.current
+    if (!el) return
+    el.addEventListener('scroll', updateFade, { passive: true })
+    window.addEventListener('resize', updateFade)
+    return () => {
+      el.removeEventListener('scroll', updateFade)
+      window.removeEventListener('resize', updateFade)
+    }
+  }, [updateFade, role])
+
   const amiIn = participants?.find((data) => data.userId === userId)
 
   const leaveMutation = useMutation({
@@ -78,7 +102,7 @@ export const FloatingNav = () => {
 
   const isActive = (path: string) => location.pathname.includes(path)
   const navItemClass = (path: string) => `
-    flex items-center justify-center w-12 h-12 rounded-full transition-all duration-300
+    flex items-center justify-center w-12 h-12 shrink-0 rounded-full transition-all duration-300
     ${
       isActive(path)
         ? 'bg-[#920703] text-red-100 shadow-md scale-110'
@@ -89,9 +113,13 @@ export const FloatingNav = () => {
     <>
     <nav
       className="fixed bottom-4 sm:bottom-8 inset-x-0 mx-auto w-max max-w-[92vw] bg-white dark:bg-zinc-900 shadow-2xl rounded-full
-        px-2 sm:px-4 py-2 flex items-center gap-1 sm:gap-2 border border-zinc-200 dark:border-zinc-800 z-50
-        overflow-x-auto no-scrollbar"
+        px-2 sm:px-4 py-2 flex items-center gap-1 sm:gap-2 border border-zinc-200 dark:border-zinc-800 z-50"
     >
+      <div className="relative flex-1 min-w-0">
+        <div
+          ref={scrollRef}
+          className="flex items-center gap-1 sm:gap-2 overflow-x-auto no-scrollbar"
+        >
       {(role === 'WAITER' || role === 'ADMIN') && (
         <Link
           to="/waiter/tables"
@@ -152,7 +180,7 @@ export const FloatingNav = () => {
           >
             <BookOpen strokeWidth={1.5} size={24} />
           </Link>
-          <div className="w-px h-8 bg-zinc-200 dark:bg-zinc-700 mx-2"></div>
+          <div className="w-px h-8 shrink-0 bg-zinc-200 dark:bg-zinc-700 mx-2"></div>
           <Link
             to="/admin/settings"
             className={navItemClass('/admin/settings')}
@@ -188,28 +216,27 @@ export const FloatingNav = () => {
       {role === 'CUSTOMER' && amiIn && (
         <button
           onClick={() => setConfirmLeave(true)}
-          className="flex items-center justify-center w-12 h-12 rounded-full text-zinc-500
+          className="flex items-center justify-center w-12 h-12 shrink-0 rounded-full text-zinc-500
             hover:bg-red-50 hover:text-[#920703] transition-all duration-300 cursor-pointer"
           title={t('leaveTableCta')}
         >
           <DoorOpen strokeWidth={1.5} size={24} />
         </button>
       )}
-
-      <div
-        className="flex items-center gap-4 pl-2 border-l
-            border-zinc-200 dark:border-zinc-700"
-      >
-        <div
-          className="w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800
-                flex items-center justify-center border border-zinc-200 dark:border-zinc-700"
-        >
-          <User strokeWidth={1.5} size={18} className="text-zinc-500" />
         </div>
+        {showEndFade && (
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-[#8c1717]/70 to-transparent"
+          />
+        )}
+      </div>
+
+      <div className="flex shrink-0 items-center pl-2 border-l border-zinc-200 dark:border-zinc-700">
         <button
           onClick={handleLogout}
-          className="text-[#920703]
-                hover:text-red-600 transition-colors cursor-pointer"
+          className="flex items-center justify-center w-12 h-12 rounded-full text-[#920703]
+                hover:bg-zinc-100 hover:text-red-600 transition-colors cursor-pointer"
           title={t('navLogout')}
         >
           <LogOut strokeWidth={1.5} size={24} />
