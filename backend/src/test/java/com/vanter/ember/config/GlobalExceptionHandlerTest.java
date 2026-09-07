@@ -5,6 +5,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.AccessDeniedException;
@@ -101,6 +102,15 @@ class GlobalExceptionHandlerTest {
                 .andExpect(jsonPath("$.detail").value("Table is full"));
     }
 
+    @Test
+    void optimisticLockFailure_returns409WithFixedDetailAndCode() throws Exception {
+        mockMvc.perform(get("/boom/optimistic-lock"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.detail")
+                        .value("This record was changed by another request. Reload and try again."))
+                .andExpect(jsonPath("$.code").value("CONCURRENT_MODIFICATION"));
+    }
+
     // --- the catch-all must not shadow the standard Spring MVC exceptions ---
 
     @Test
@@ -168,6 +178,12 @@ class GlobalExceptionHandlerTest {
         @GetMapping("/boom/too-many")
         void tooMany() {
             throw new TooManyParticipantsException("Table is full");
+        }
+
+        @GetMapping("/boom/optimistic-lock")
+        void optimisticLock() {
+            throw new OptimisticLockingFailureException(
+                    "Row was updated or deleted by another transaction for [users#42]");
         }
 
         @GetMapping("/boom/response-status")

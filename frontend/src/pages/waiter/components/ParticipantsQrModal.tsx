@@ -46,7 +46,7 @@ export const ParticipantQrModal = () => {
       tableId: string
       maxParticipants: number
     }) => {
-      if (isHubBuild) {
+      if (isHubBuild()) {
         const session = await SessionTableService.createSession(
           tableId,
           maxParticipants,
@@ -72,7 +72,7 @@ export const ParticipantQrModal = () => {
       queryClient.invalidateQueries({ queryKey: ['dashboardData'] })
       toast.success(t('tableOpenedToast'))
 
-      if (isHubBuild) {
+      if (isHubBuild()) {
         const { sessionId } = data as { sessionId: string }
         handleClose()
         navigate(`/waiter/tables/${sessionId}`)
@@ -134,7 +134,7 @@ export const ParticipantQrModal = () => {
           </button>
         </div>
 
-        {isHubBuild ? (
+        {isHubBuild() ? (
           <div className="flex flex-col gap-2 my-4">
             <p className="text-zinc-500 text-sm">{t('seatNamesLabel')}</p>
             {seatNames.map((value, i) => (
@@ -200,7 +200,7 @@ export const ParticipantQrModal = () => {
           >
             {mutation.isPending
               ? t('qrSavingLabel')
-              : isHubBuild
+              : isHubBuild()
                 ? t('openTableButton')
                 : t('openTableGenerateQrButton')}
           </Button>

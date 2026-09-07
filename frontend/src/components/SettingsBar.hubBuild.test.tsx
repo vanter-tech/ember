@@ -1,35 +1,32 @@
 import { describe, test, expect, vi, afterEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
+import { SettingsBar } from '@/components/SettingsBar'
 
-// SettingsBar builds SETTINGS_NAV at module scope, so the isHubBuild value is baked in at import
-// time — each case sets the flag, resets the module graph, and re-imports.
+// SettingsBar builds its section tree per render (buildSettingsNav), so the Hub-build check is a
+// live call — flip the hoisted flag between cases, no module-graph reset or dynamic re-import.
 const { hubFlag } = vi.hoisted(() => ({ hubFlag: { current: true } }))
 vi.mock('@/lib/isHubBuild', () => ({
-  get isHubBuild() {
-    return hubFlag.current
-  },
+  isHubBuild: () => hubFlag.current,
 }))
 
 const noop = () => {}
+const renderBar = () => render(<SettingsBar collapsed={false} onToggleCollapsed={noop} />)
 
-const renderBar = async () => {
-  const { SettingsBar } = await import('@/components/SettingsBar')
-  render(<SettingsBar collapsed={false} onToggleCollapsed={noop} />)
-}
-
-afterEach(() => vi.resetModules())
+afterEach(() => {
+  hubFlag.current = true
+})
 
 describe('SettingsBar loyalty visibility by build', () => {
-  test('Hub build hides the loyalty settings group', async () => {
+  test('Hub build hides the loyalty settings group', () => {
     hubFlag.current = true
-    await renderBar()
+    renderBar()
 
     expect(screen.queryByText(/fidelizaci|loyalty/i)).not.toBeInTheDocument()
   })
 
-  test('cloud build shows the loyalty settings group', async () => {
+  test('cloud build shows the loyalty settings group', () => {
     hubFlag.current = false
-    await renderBar()
+    renderBar()
 
     expect(screen.getByText(/fidelizaci|loyalty/i)).toBeInTheDocument()
   })

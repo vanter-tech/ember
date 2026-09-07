@@ -209,13 +209,21 @@ public class SessionService {
 
     /**
      * Appends one account-less seat to a Hub table. A blank name takes the lowest free "Asiento N";
-     * a provided name must not collide with an existing seat. Capacity is bumped to fit. WAITER-only,
-     * assigned-waiter-only, OPEN-only. Publishes {@link ParticipantJoined} with a null {@code userId}.
+     * a provided name must not collide with an existing seat. Rejected once the table is at capacity
+     * — the waiter raises it explicitly through {@link #expandCapacity} first, so "add seat" never
+     * silently grows the table. WAITER-only, assigned-waiter-only, OPEN-only. Publishes
+     * {@link ParticipantJoined} with a null {@code userId}.
      */
     public Session addSeat(String sessionId, String requestingWaiter, String name) {
         Session session = findById(sessionId);
         requireAssignedWaiter(session, requestingWaiter);
         requireOpen(session);
+
+        if (session.getParticipants().size() >= session.getMaxParticipants()) {
+            throw new IllegalStateException(
+                    "Table is at capacity (" + session.getMaxParticipants()
+                            + "); expand capacity before adding another seat");
+        }
 
         Set<String> taken = session.getParticipants().stream()
                 .map(Participant::getName)
@@ -228,9 +236,6 @@ public class SessionService {
         }
 
         session.getParticipants().add(Participant.builder().userId(null).name(seatName).build());
-        if (session.getParticipants().size() > session.getMaxParticipants()) {
-            session.setMaxParticipants(session.getParticipants().size());
-        }
         Session saved = sessionRepository.save(session);
         eventPublisher.publishEvent(
                 new ParticipantJoined(saved.getTenantId(), saved.getId(), null, seatName, false));

@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -65,6 +66,21 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(IllegalStateException.class)
     public ProblemDetail handleIllegalState(IllegalStateException ex, HttpServletRequest request) {
         return problem(HttpStatus.CONFLICT, ex.getMessage(), request.getRequestURI());
+    }
+
+    /**
+     * A concurrent write lost the {@code @Version} check (two waiters editing the same table's
+     * seats, a WebSocket-driven action racing a REST call). Surface it as a retryable 409 instead
+     * of the catch-all 500; the message is fixed because the original leaks entity/table names.
+     */
+    @ExceptionHandler(OptimisticLockingFailureException.class)
+    public ProblemDetail handleOptimisticLock(
+            OptimisticLockingFailureException ex, HttpServletRequest request) {
+        ProblemDetail problem = problem(HttpStatus.CONFLICT,
+                "This record was changed by another request. Reload and try again.",
+                request.getRequestURI());
+        problem.setProperty("code", "CONCURRENT_MODIFICATION");
+        return problem;
     }
 
     @ExceptionHandler(com.vanter.ember.printing.exception.BillNotPaidException.class)

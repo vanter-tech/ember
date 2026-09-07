@@ -66,9 +66,9 @@ export const Settings = () => {
             case 'HORARIO':
                 return <BusinessHoursSettings />;
             case 'FIDELIZACION':
-                return isHubBuild ? null : <LoyaltySettings />;
+                return isHubBuild() ? null : <LoyaltySettings />;
             case 'LOYALTY_REWARDS':
-                return isHubBuild ? null : <LoyaltyRewardsSettings />;
+                return isHubBuild() ? null : <LoyaltyRewardsSettings />;
         }
     };
 

@@ -58,16 +58,16 @@ type NavNode =
   | { kind: 'group'; group: SettingsGroup; labelKey: AdminKey; Icon: LucideIcon; members: LeafType[] }
 
 // Single source of truth for the section tree — rendered both by the md+ sidebar and the
-// mobile popover panel.
-const SETTINGS_NAV: NavNode[] = [
+// mobile popover panel. Built per render so the Hub-build check (loyalty is cloud-only — the
+// Hub ships no customer app to accrue points from) is not frozen at module load.
+const buildSettingsNav = (): NavNode[] => [
   { kind: 'leaf', type: 'BRANDING' },
   { kind: 'leaf', type: 'MENU' },
   { kind: 'group', group: 'BILLING', labelKey: 'billingLabel', Icon: Receipt, members: ['BILLING', 'PAYMENT_GATEWAY', 'TICKET'] },
   { kind: 'group', group: 'HARDWARE', labelKey: 'hardwareLabel', Icon: Printer, members: ['HARDWARE', 'PRINTING'] },
   { kind: 'leaf', type: 'SPACE' },
   { kind: 'leaf', type: 'HORARIO' },
-  // Loyalty is a cloud-only feature — the Hub build ships no customer app to accrue points from.
-  ...(isHubBuild
+  ...(isHubBuild()
     ? []
     : [{ kind: 'group', group: 'FIDELIZACION', labelKey: 'loyaltyLabel', Icon: Gift, members: ['FIDELIZACION', 'LOYALTY_REWARDS'] } as NavNode]),
 ]
@@ -83,6 +83,7 @@ export const SettingsBar = ({
   const { t } = useTranslation('admin')
   const [expandedGroup, setExpandedGroup] = useState<SettingsGroup | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
+  const settingsNav = buildSettingsNav()
 
   const handleGroupClick = (group: SettingsGroup) => {
     if (expandedGroup === group) {
@@ -103,7 +104,7 @@ export const SettingsBar = ({
   // Full (non-collapsed) section tree, shared by the desktop sidebar and the mobile panel.
   // `onNavigate` lets the mobile popover close itself once a section is picked.
   const renderNavList = (onNavigate?: () => void) =>
-    SETTINGS_NAV.map((node) => {
+    settingsNav.map((node) => {
       if (node.kind === 'leaf') {
         const { labelKey, Icon } = LEAF[node.type]
         return (
@@ -190,7 +191,7 @@ export const SettingsBar = ({
         className={`hidden md:flex flex-col gap-2 ${collapsed ? 'w-fit' : 'w-64'}`}
       >
         {collapsed
-          ? SETTINGS_NAV.map((node) => {
+          ? settingsNav.map((node) => {
               const { labelKey, Icon } =
                 node.kind === 'leaf'
                   ? LEAF[node.type]

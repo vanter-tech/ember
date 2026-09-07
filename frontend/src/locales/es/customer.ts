@@ -109,6 +109,11 @@ export const customer = {
   qrJoinGuestCta: 'Entrar como invitado',
   qrJoinGuestNameLabel: 'Tu nombre (opcional)',
   qrJoinGuestSubmit: 'Entrar',
+
+  // JoinByCode (/join — 5-char code, no account, no QR)
+  codeJoinTitle: 'Entrar a la mesa',
+  codeJoinSubtitle: 'Escribe el código de 5 caracteres de tu mesa.',
+  codeJoinCodePlaceholder: 'Código',
   qrScannerRequesting: 'Pedimos permiso para usar la cámara...',
   qrScannerHint: 'Apunta la cámara al código QR de la mesa.',
   qrScannerDenied:

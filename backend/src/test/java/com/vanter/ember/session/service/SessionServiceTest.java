@@ -251,15 +251,17 @@ class SessionServiceTest {
     }
 
     @Test
-    void addSeat_overCapacity_bumpsMaxParticipants() {
+    void addSeat_atCapacity_throwsAndDoesNotGrowTheTable() {
         Session session = seatSession("A", "B", "C", "D");
         when(sessionRepository.findByIdAndTenantId("sess-1", RESTAURANT_ID)).thenReturn(Optional.of(session));
-        when(sessionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        Session out = sessionService.addSeat("sess-1", "waiter@test.com", "E");
+        assertThatThrownBy(() -> sessionService.addSeat("sess-1", "waiter@test.com", "E"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("capacity");
 
-        assertThat(out.getParticipants()).hasSize(5);
-        assertThat(out.getMaxParticipants()).isEqualTo(5);
+        assertThat(session.getParticipants()).hasSize(4);
+        assertThat(session.getMaxParticipants()).isEqualTo(4);
+        verify(sessionRepository, never()).save(any());
     }
 
     @Test
