@@ -16,6 +16,7 @@ import {
   Ban,
   RotateCcw,
   UserMinus,
+  Pencil,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import toast from 'react-hot-toast'
@@ -33,10 +34,12 @@ import { useSettingStore } from '@/store/settingStore'
 import { GlobalDeleteModal } from '../../components/GlobalDeleteModal'
 import { AddItemModal } from './components/AddItemModal'
 import { TransferTableModal } from './components/TransferTableModal'
+import { SeatFormModal } from './components/SeatFormModal'
 import { ChargeTableModal } from './components/ChargeTableModal'
 import { VoidBillModal } from './components/VoidBillModal'
 import { RefundPaymentModal } from './components/RefundPaymentModal'
 import { useWebsocketStore } from '@/store/websocket'
+import { isHubBuild } from '@/lib/isHubBuild'
 import { useTranslation } from '@/lib/i18n'
 import { SectionTour } from '@/components/tours/SectionTour'
 import type { Step } from 'react-joyride'
@@ -335,17 +338,27 @@ export const TableInformation = () => {
 
           <Card id="table-tour-participants" className="rounded-3xl border-none shadow-sm relative overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-transparent via-[#8B0000] to-transparent opacity-20"></div>
-            <CardHeader className="p-7 border-b border">
+            <CardHeader className="p-7 border-b border flex flex-row items-center justify-between">
               <CardTitle className="text-2xl text-gray-800 font-bold">
                 {t('participantsTitle')}
               </CardTitle>
+              {isHubBuild && (
+                <Button
+                  variant="ghost"
+                  className="text-sm"
+                  disabled={actionsDisabled}
+                  onClick={() => openModal('SEAT_FORM', { sessionId: id, mode: 'add' })}
+                >
+                  <Plus className="w-4 h-4 mr-1" /> {t('addSeatLabel')}
+                </Button>
+              )}
             </CardHeader>
             <CardContent className="grid grid-cols-2 gap-4">
               {sessionData?.participants &&
               sessionData.participants.length > 0 ? (
                 sessionData.participants.map((participant) => (
                   <div
-                    key={participant.userId}
+                    key={participant.name}
                     className="mb-3 shadow-sm rounded-3xl"
                   >
                     <div className="bg-gray-100 rounded-3xl p-3 flex items-center gap-3">
@@ -357,6 +370,36 @@ export const TableInformation = () => {
                           {participant.name}
                         </span>
                       </div>
+                      {isHubBuild && (
+                        <div className="ml-auto flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            title={t('renameSeatTitle')}
+                            disabled={actionsDisabled}
+                            onClick={() =>
+                              openModal('SEAT_FORM', {
+                                sessionId: id,
+                                mode: 'rename',
+                                from: participant.name,
+                              })
+                            }
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            title={t('removeSeatTitle')}
+                            disabled={actionsDisabled}
+                            onClick={() =>
+                              openModal('DELETE_SEAT', { sessionId: id, name: participant.name })
+                            }
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))
@@ -594,6 +637,7 @@ export const TableInformation = () => {
         <GlobalDeleteModal/>
         <AddItemModal/>
         <TransferTableModal/>
+        <SeatFormModal/>
         <ChargeTableModal/>
         <VoidBillModal />
         <RefundPaymentModal />

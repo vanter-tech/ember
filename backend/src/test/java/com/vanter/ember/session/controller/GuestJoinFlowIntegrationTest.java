@@ -89,7 +89,7 @@ class GuestJoinFlowIntegrationTest {
         MvcResult result = mockMvc.perform(post("/sessions")
                         .header("Authorization", "Bearer " + waiterToken)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new CreateSessionRequest(tableId, 4))))
+                        .content(objectMapper.writeValueAsString(new CreateSessionRequest(tableId, 4, null))))
                 .andExpect(status().isCreated())
                 .andReturn();
         return objectMapper.readTree(result.getResponse().getContentAsString()).get("joinCode").asText();

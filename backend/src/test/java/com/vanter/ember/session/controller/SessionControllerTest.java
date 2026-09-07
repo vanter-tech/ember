@@ -40,7 +40,10 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -82,14 +85,29 @@ class SessionControllerTest {
     @Test
     @WithMockUser(username = "waiter@test.com", roles = "WAITER")
     void createSession_returnsCreatedSession() throws Exception {
-        when(sessionService.createSession(TABLE_ID, "waiter@test.com", 4))
+        when(sessionService.createSession(eq(TABLE_ID), eq("waiter@test.com"), eq(4), isNull()))
                 .thenReturn(sampleSession());
 
         mockMvc.perform(post("/sessions")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new CreateSessionRequest(TABLE_ID, 4))))
+                        .content(objectMapper.writeValueAsString(new CreateSessionRequest(TABLE_ID, 4, null))))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.sessionId").value("sess-1"));
+    }
+
+    @Test
+    @WithMockUser(username = "waiter@test.com", roles = "WAITER")
+    void createSession_passesSeatNamesThrough() throws Exception {
+        when(sessionService.createSession(any(), any(), anyInt(), any()))
+                .thenReturn(sampleSession());
+
+        mockMvc.perform(post("/sessions")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                new CreateSessionRequest(TABLE_ID, 3, List.of("Ana", "Beto")))))
+                .andExpect(status().isCreated());
+
+        verify(sessionService).createSession(eq(TABLE_ID), eq("waiter@test.com"), eq(3), eq(List.of("Ana", "Beto")));
     }
 
     @Test
@@ -97,7 +115,7 @@ class SessionControllerTest {
     void createSession_forbiddenForCustomer() throws Exception {
         mockMvc.perform(post("/sessions")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new CreateSessionRequest(TABLE_ID, 4))))
+                        .content(objectMapper.writeValueAsString(new CreateSessionRequest(TABLE_ID, 4, null))))
                 .andExpect(status().isForbidden());
     }
 
@@ -105,7 +123,7 @@ class SessionControllerTest {
     void createSession_unauthenticatedReturns401() throws Exception {
         mockMvc.perform(post("/sessions")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new CreateSessionRequest(TABLE_ID, 4))))
+                        .content(objectMapper.writeValueAsString(new CreateSessionRequest(TABLE_ID, 4, null))))
                 .andExpect(status().isUnauthorized());
     }
 
@@ -348,6 +366,96 @@ class SessionControllerTest {
     void getSession_unauthenticatedReturns401() throws Exception {
         mockMvc.perform(get("/sessions/sess-1"))
                 .andExpect(status().isUnauthorized());
+    }
+
+    // --- POST /sessions/{id}/participants (add seat, EMB-FEAT-HUB T4) ---
+
+    @Test
+    @WithMockUser(username = "customer@test.com", roles = "CUSTOMER")
+    void addSeat_forbiddenForCustomer() throws Exception {
+        mockMvc.perform(post("/sessions/sess-1/participants")
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"name\":\"Ana\"}"))
+                .andExpect(status().isForbidden());
+
+        verify(sessionService, never()).addSeat(any(), any(), any());
+    }
+
+    @Test
+    @WithMockUser(username = "waiter@test.com", roles = "WAITER")
+    void addSeat_ok_returnsDetail() throws Exception {
+        when(sessionService.getSessionDetails("sess-1")).thenReturn(sampleSessionDetail(List.of()));
+
+        mockMvc.perform(post("/sessions/sess-1/participants")
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"name\":\"Ana\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value("sess-1"));
+
+        verify(sessionService).addSeat("sess-1", "waiter@test.com", "Ana");
+    }
+
+    // --- PATCH/DELETE /sessions/{id}/participants (rename/remove seat, EMB-FEAT-HUB T5) ---
+
+    @Test
+    @WithMockUser(roles = "CUSTOMER")
+    void renameSeat_forbiddenForCustomer() throws Exception {
+        mockMvc.perform(patch("/sessions/sess-1/participants")
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"from\":\"Ana\",\"to\":\"Beto\"}"))
+                .andExpect(status().isForbidden());
+
+        verify(sessionService, never()).renameSeat(any(), any(), any(), any());
+    }
+
+    @Test
+    @WithMockUser(username = "waiter@test.com", roles = "WAITER")
+    void renameSeat_blankTo_returns400() throws Exception {
+        mockMvc.perform(patch("/sessions/sess-1/participants")
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"from\":\"Ana\",\"to\":\"   \"}"))
+                .andExpect(status().isBadRequest());
+
+        verify(sessionService, never()).renameSeat(any(), any(), any(), any());
+    }
+
+    @Test
+    @WithMockUser(username = "waiter@test.com", roles = "WAITER")
+    void renameSeat_billExists_returns409() throws Exception {
+        doThrow(new IllegalStateException("Recalculate the bill before renaming seats"))
+                .when(sessionService).renameSeat("sess-1", "waiter@test.com", "Ana", "Beto");
+
+        mockMvc.perform(patch("/sessions/sess-1/participants")
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"from\":\"Ana\",\"to\":\"Beto\"}"))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    @WithMockUser(username = "waiter@test.com", roles = "WAITER")
+    void renameSeat_ok_returnsDetail() throws Exception {
+        when(sessionService.getSessionDetails("sess-1")).thenReturn(sampleSessionDetail(List.of()));
+
+        mockMvc.perform(patch("/sessions/sess-1/participants")
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"from\":\"Ana\",\"to\":\"Beto\"}"))
+                .andExpect(status().isOk());
+
+        verify(sessionService).renameSeat("sess-1", "waiter@test.com", "Ana", "Beto");
+    }
+
+    @Test
+    @WithMockUser(roles = "CUSTOMER")
+    void removeSeat_forbiddenForCustomer() throws Exception {
+        mockMvc.perform(delete("/sessions/sess-1/participants/Ana"))
+                .andExpect(status().isForbidden());
+
+        verify(sessionService, never()).removeSeat(any(), any(), any());
+    }
+
+    @Test
+    @WithMockUser(username = "waiter@test.com", roles = "WAITER")
+    void removeSeat_ok_returnsDetail() throws Exception {
+        when(sessionService.getSessionDetails("sess-1")).thenReturn(sampleSessionDetail(List.of()));
+
+        mockMvc.perform(delete("/sessions/sess-1/participants/Ana"))
+                .andExpect(status().isOk());
+
+        verify(sessionService).removeSeat("sess-1", "waiter@test.com", "Ana");
     }
 
     // --- POST /sessions/{id}/items ---

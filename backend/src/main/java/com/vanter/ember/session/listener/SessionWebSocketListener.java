@@ -23,6 +23,11 @@ public class SessionWebSocketListener {
     }
 
     @EventListener
+    public void onParticipantRenamed(ParticipantRenamed event) {
+        messagingTemplate.convertAndSend("/topic/session/" + event.sessionId(), event);
+    }
+
+    @EventListener
     public void onItemAdded(ItemAdded event) {
         messagingTemplate.convertAndSend("/topic/session/" + event.sessionId(), event);
     }

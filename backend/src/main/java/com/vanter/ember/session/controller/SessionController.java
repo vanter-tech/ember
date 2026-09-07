@@ -50,9 +50,39 @@ public class SessionController {
     public SessionCreatedResponse createSession(@Valid @RequestBody CreateSessionRequest request,
                                  Authentication authentication) {
         Session savedSession =  sessionService.createSession(
-                request.tableId(), authentication.getName(), request.maxParticipants());
+                request.tableId(), authentication.getName(), request.maxParticipants(), request.seatNames());
 
         return new SessionCreatedResponse(savedSession.getId(), savedSession.getJoinCode());
+    }
+
+    @Operation(summary = "Add a name-only seat to the table (WAITER)")
+    @PostMapping("/{id}/participants")
+    @PreAuthorize("hasRole('WAITER')")
+    public SessionDetailResponseDto addSeat(@PathVariable String id,
+                                            @Valid @RequestBody AddSeatRequest request,
+                                            Authentication authentication) {
+        sessionService.addSeat(id, authentication.getName(), request.name());
+        return sessionService.getSessionDetails(id);
+    }
+
+    @Operation(summary = "Rename a seat (WAITER) — blocked once a bill exists")
+    @PatchMapping("/{id}/participants")
+    @PreAuthorize("hasRole('WAITER')")
+    public SessionDetailResponseDto renameSeat(@PathVariable String id,
+                                               @Valid @RequestBody RenameSeatRequest request,
+                                               Authentication authentication) {
+        sessionService.renameSeat(id, authentication.getName(), request.from(), request.to());
+        return sessionService.getSessionDetails(id);
+    }
+
+    @Operation(summary = "Remove a name-only seat (WAITER)")
+    @DeleteMapping("/{id}/participants/{name}")
+    @PreAuthorize("hasRole('WAITER')")
+    public SessionDetailResponseDto removeSeat(@PathVariable String id,
+                                              @PathVariable String name,
+                                              Authentication authentication) {
+        sessionService.removeSeat(id, authentication.getName(), name);
+        return sessionService.getSessionDetails(id);
     }
 
     @Operation(summary = "Get session by ID")
@@ -66,7 +96,7 @@ public class SessionController {
                     .map(u -> u.getId())
                     .orElse(null);
             boolean isParticipant = session.participants().stream()
-                    .anyMatch(p -> p.userId().equals(requesterId));
+                    .anyMatch(p -> java.util.Objects.equals(p.userId(), requesterId));
             if (!isParticipant) {
                 throw new AccessDeniedException("Not authorized to view this session");
             }

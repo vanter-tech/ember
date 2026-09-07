@@ -15,6 +15,7 @@ import { navigateForRole } from './navigateForRole'
 import { QuickLoginModal } from './QuickLoginModal'
 import { LanguageSwitcher } from '@/components/LanguageSwitcher'
 import { useTranslation } from '@/lib/i18n'
+import { isHubBuild } from '@/lib/isHubBuild'
 
 import { Button } from '../../components/ui/button'
 import { Input } from '../../components/ui/input'
@@ -32,12 +33,6 @@ import {
   FormItem,
   FormMessage,
 } from '../../components/ui/form'
-
-// Same signal App.tsx already uses for the router basename: only the Hub build (vite build
-// --base=/app/, see ember-hub/build-frontend.ps1) has a non-"/" BASE_URL. The Hub's admin is
-// always pre-provisioned (HubProvisioningRunner) — self-registration is a customer-only flow
-// there (join-table/collaborative cart), never the entry point for the restaurant's own admin.
-const isHubBuild = import.meta.env.BASE_URL !== '/'
 
 const createLoginSchema = (t: ReturnType<typeof useTranslation<'auth'>>['t']) =>
   z.object({

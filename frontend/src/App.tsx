@@ -22,16 +22,20 @@ import { Analytics } from './pages/admin/analytics/Analytics'
 import { Staff } from './pages/admin/staff/Staff'
 import { CashRegister as AdminCashRegister } from '@/pages/admin/cashRegister/CashRegister'
 import { TableInformation } from './pages/waiter/TableInformation'
-import { CustomerLayout } from './layouts/CustomerLayout'
-import { Home } from './pages/customer/Home'
-import { MenuJoin } from './pages/customer/MenuJoin'
-import { Menu } from './pages/customer/Menu'
-import { ComandaView } from './pages/customer/ComandaView'
-import { Bill } from './pages/customer/Bill'
 import { OrdersDisplays } from './pages/kitchen/OrdersDisplay'
 import { KitchenLayout } from './layouts/KitchenLayout'
 import { TenantLanding } from './pages/public/TenantLanding'
 import { TenantSuspendedModal } from './components/TenantSuspendedModal'
+import { isHubBuild } from '@/lib/isHubBuild'
+
+// The whole customer-facing subsystem (collaborative cart, join-table) is dead weight in the
+// Hub build — the waiter drives the table there. Lazy so it is never in the Hub bundle's graph.
+const CustomerLayout = lazy(() => import('./layouts/CustomerLayout').then(m => ({ default: m.CustomerLayout })))
+const Home = lazy(() => import('./pages/customer/Home').then(m => ({ default: m.Home })))
+const MenuJoin = lazy(() => import('./pages/customer/MenuJoin').then(m => ({ default: m.MenuJoin })))
+const Menu = lazy(() => import('./pages/customer/Menu').then(m => ({ default: m.Menu })))
+const ComandaView = lazy(() => import('./pages/customer/ComandaView').then(m => ({ default: m.ComandaView })))
+const Bill = lazy(() => import('./pages/customer/Bill').then(m => ({ default: m.Bill })))
 
 // Code-split: the platform console is a separate audience (operators, not tenant users) and
 // must never land in the tenant app's main bundle.
@@ -41,6 +45,8 @@ const RoleRedirect = () => {
   const { role } = useAuthStore()
 
   if (!role) return <Navigate to="/login" replace />
+  // The Hub build has no customer surface — a stale CUSTOMER token lands back on /login.
+  if (isHubBuild && role === 'CUSTOMER') return <Navigate to="/login" replace />
   if (role === 'ADMIN') return <Navigate to="/admin" replace />
   if (role === 'CUSTOMER') return <Navigate to="/customer" replace />
   if (role === 'WAITER') return <Navigate to="/waiter" replace />
@@ -99,8 +105,11 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         {/* Public: the table QR is scanned with the phone camera, so the visitor may not be
-            logged in yet. MenuJoin parks the token and routes through /login if needed. */}
-        <Route path="/menu/join" element={<MenuJoin />} />
+            logged in yet. MenuJoin parks the token and routes through /login if needed.
+            Absent from the Hub build — there is no customer join flow there. */}
+        {!isHubBuild && (
+          <Route path="/menu/join" element={<Suspense fallback={null}><MenuJoin /></Suspense>} />
+        )}
         <Route path="/t/:slug" element={<TenantLanding />} />
 
         <Route
@@ -112,15 +121,17 @@ export default function App() {
           }
         />
 
-        <Route element={<ProtectedRoute allowedRoles={['CUSTOMER']} />}>
-          <Route path='/customer' element={<CustomerLayout/>}>
-            <Route index element={<Navigate to="home" replace />} />
-            <Route path='home' element={<Home/>}/>
-            <Route path='menu' element={<Menu/>}/>
-            <Route path="menu/:id/comanda" element={<ComandaView/>} />
-            <Route path="menu/:id/bill" element={<Bill/>} />
+        {!isHubBuild && (
+          <Route element={<ProtectedRoute allowedRoles={['CUSTOMER']} />}>
+            <Route path='/customer' element={<Suspense fallback={null}><CustomerLayout/></Suspense>}>
+              <Route index element={<Navigate to="home" replace />} />
+              <Route path='home' element={<Suspense fallback={null}><Home/></Suspense>}/>
+              <Route path='menu' element={<Suspense fallback={null}><Menu/></Suspense>}/>
+              <Route path="menu/:id/comanda" element={<Suspense fallback={null}><ComandaView/></Suspense>} />
+              <Route path="menu/:id/bill" element={<Suspense fallback={null}><Bill/></Suspense>} />
+            </Route>
           </Route>
-        </Route>
+        )}
 
         <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
           <Route path="/admin" element={<AdminLayout />}>

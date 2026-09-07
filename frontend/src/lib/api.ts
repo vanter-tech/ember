@@ -385,11 +385,13 @@ export const DashboardService = {
 export const SessionTableService = {
   createSession: async (
     tableId: string,
-    maxParticipants: number
+    maxParticipants: number,
+    seatNames?: string[]
   ): Promise<CreateSession> => {
     const { data } = await api.post<CreateSession>('/sessions', {
       tableId: tableId,
       maxParticipants: maxParticipants,
+      ...(seatNames ? { seatNames } : {}),
     })
     return data
   },
@@ -403,6 +405,34 @@ export const SessionTableService = {
 
   sessionInformation: async (sessionId: string): Promise<infoSession> => {
     const { data } = await api.get<infoSession>(`/sessions/${sessionId}`)
+    return data
+  },
+
+  // Hub-only: waiter manages the table's name-only seats (Participant.userId == null).
+  addSeat: async (sessionId: string, name?: string): Promise<infoSession> => {
+    const { data } = await api.post<infoSession>(
+      `/sessions/${sessionId}/participants`,
+      { name }
+    )
+    return data
+  },
+
+  renameSeat: async (
+    sessionId: string,
+    from: string,
+    to: string
+  ): Promise<infoSession> => {
+    const { data } = await api.patch<infoSession>(
+      `/sessions/${sessionId}/participants`,
+      { from, to }
+    )
+    return data
+  },
+
+  removeSeat: async (sessionId: string, name: string): Promise<infoSession> => {
+    const { data } = await api.delete<infoSession>(
+      `/sessions/${sessionId}/participants/${encodeURIComponent(name)}`
+    )
     return data
   },
 

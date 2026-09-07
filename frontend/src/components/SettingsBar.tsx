@@ -1,5 +1,6 @@
 import { Fragment, useState } from 'react'
 import { useSettingsStore, type SettingsType } from '@/store/uiStore'
+import { isHubBuild } from '@/lib/isHubBuild'
 import { Button } from './ui/button'
 import {
   Popover,
@@ -65,7 +66,10 @@ const SETTINGS_NAV: NavNode[] = [
   { kind: 'group', group: 'HARDWARE', labelKey: 'hardwareLabel', Icon: Printer, members: ['HARDWARE', 'PRINTING'] },
   { kind: 'leaf', type: 'SPACE' },
   { kind: 'leaf', type: 'HORARIO' },
-  { kind: 'group', group: 'FIDELIZACION', labelKey: 'loyaltyLabel', Icon: Gift, members: ['FIDELIZACION', 'LOYALTY_REWARDS'] },
+  // Loyalty is a cloud-only feature — the Hub build ships no customer app to accrue points from.
+  ...(isHubBuild
+    ? []
+    : [{ kind: 'group', group: 'FIDELIZACION', labelKey: 'loyaltyLabel', Icon: Gift, members: ['FIDELIZACION', 'LOYALTY_REWARDS'] } as NavNode]),
 ]
 
 export const SettingsBar = ({

@@ -23,6 +23,10 @@ public class LoyaltyAccountJoinListener {
         if (event.guest()) {
             return;
         }
+        // Hub name-only seats (EMB-FEAT-HUB) join with no account — nothing to link to a loyalty program.
+        if (event.userId() == null) {
+            return;
+        }
         loyaltyAccountService.findOrCreate(event.tenantId(), event.userId());
     }
 }

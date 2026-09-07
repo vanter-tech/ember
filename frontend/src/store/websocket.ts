@@ -189,7 +189,9 @@ export const useWebsocketStore = create<WebSocketState>((set, get) => ({
                 eventData.type === 'ITEM_ADDED' ||
                 eventData.type === 'ITEMS_CONFIRMED' ||
                 eventData.type === 'ITEM_DELETED' ||
+                eventData.type === 'PARTICIPANT_JOINED' ||
                 eventData.type === 'PARTICIPANT_LEFT' ||
+                eventData.type === 'PARTICIPANT_RENAMED' ||
                 eventData.type === 'TABLE_TRANSFERRED' ||
                 eventData.type === 'SESSION_CLOSED'
             ){

@@ -38,4 +38,12 @@ class LoyaltyAccountJoinListenerTest {
 
         verifyNoInteractions(loyaltyAccountService);
     }
+
+    @Test
+    void handleParticipantJoined_nameOnlySeat_doesNotCreateAccount() {
+        listener.handleParticipantJoined(new ParticipantJoined(
+                UUID.randomUUID(), "sess-1", null, "Asiento 1", false));
+
+        verifyNoInteractions(loyaltyAccountService);
+    }
 }

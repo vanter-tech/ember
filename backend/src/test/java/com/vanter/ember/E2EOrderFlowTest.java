@@ -159,7 +159,7 @@ class E2EOrderFlowTest {
         MvcResult sessionResult = mockMvc.perform(post("/sessions")
                         .header("Authorization", bearer(waiterToken))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new CreateSessionRequest(tableId, 4))))
+                        .content(objectMapper.writeValueAsString(new CreateSessionRequest(tableId, 4, null))))
                 .andExpect(status().isCreated())
                 .andReturn();
         String sessionId = objectMapper.readTree(

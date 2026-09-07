@@ -9,7 +9,8 @@ export type ModalType = 'CREATE_CATEGORY' | 'EDIT_CATEGORY' | 'DELETE_CATEGORY' 
                          'CREATE_PRINT_AGENT' | 'ADD_PRINTER' | 'DELETE_PRINT_AGENT' | 'DELETE_PRINTER' |
                          'CREATE_MODIFIER_GROUP' | 'EDIT_MODIFIER_GROUP' |
                          'CREATE_INVENTORY_ITEM' | 'EDIT_INVENTORY_ITEM' |
-                         'ADD_ITEM' | 'TRANSFER_TABLE' | null;
+                         'ADD_ITEM' | 'TRANSFER_TABLE' |
+                         'SEAT_FORM' | 'DELETE_SEAT' | null;
 
 export type SettingsType = 'BRANDING' | 'MENU' | 'BILLING' | 'PAYMENT_GATEWAY' | 'TICKET' | 'PRINTING' | 'HARDWARE'|
                             'SPACE'| 'HORARIO'| 'FIDELIZACION' | 'LOYALTY_REWARDS'| null;
