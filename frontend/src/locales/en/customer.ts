@@ -94,6 +94,19 @@ export const customer = {
   joinModalSubmitting: 'Joining',
   joinModalConfirm: 'Confirm',
 
+  // MenuJoin (QR landing)
+  qrJoinTitle: 'Join the table',
+  qrJoinSubtitle: 'What name should the rest of the table see?',
+  qrJoinNameLabel: 'Your name',
+  qrJoinNamePlaceholder: 'e.g. Ana',
+  qrJoinSubmit: 'Join',
+  qrJoinSubmitting: 'Joining...',
+  qrJoinInvalidLink:
+    'This table link is invalid or has expired. Ask the waiter to generate the QR again.',
+  qrJoinBackHome: 'Go home',
+  qrJoinExpiredToast: 'The table QR has expired. Ask the waiter for a new one.',
+  qrJoinGenericErrorToast: 'Could not join the table. Try again.',
+
   // ParticipantsList
   participantsListTitle: 'At the table',
   participantsGuestFallback: 'Guest',
