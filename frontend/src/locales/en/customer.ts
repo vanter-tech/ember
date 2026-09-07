@@ -106,6 +106,11 @@ export const customer = {
   qrJoinBackHome: 'Go home',
   qrJoinExpiredToast: 'The table QR has expired. Ask the waiter for a new one.',
   qrJoinGenericErrorToast: 'Could not join the table. Try again.',
+  qrScannerRequesting: 'Asking for camera permission...',
+  qrScannerHint: 'Point the camera at the table QR code.',
+  qrScannerDenied:
+    "We couldn't access the camera. Allow the permission or use the 5-digit code.",
+  qrScannerUnsupported: "This device or browser can't scan. Use the 5-digit code.",
 
   // ParticipantsList
   participantsListTitle: 'At the table',
