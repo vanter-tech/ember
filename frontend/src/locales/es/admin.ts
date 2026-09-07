@@ -359,6 +359,10 @@ export const admin = {
   printingAgentNamePlaceholder: 'Ej. Agente Caja',
   printingApiKeyTitle: 'Clave del agente',
   printingApiKeyWarning: 'Copia esta clave ahora — no se volverá a mostrar.',
+  printingApiKeySetupHint:
+    'Pégala en el archivo agent.properties (campo agent.api-key), junto a backend.base-url, en la PC conectada a la impresora, y ejecuta el agente. Instrucciones completas: printing-agent/README.md.',
+  printingQueueNameHint:
+    'Debe coincidir EXACTO con el nombre que muestra Get-Printer en esa PC. Las impresoras de inyección de tinta (EcoTank) necesitan el modo "Por driver de Windows".',
   printingConnectedStatus: 'Conectado',
   printingDisconnectedStatus: 'Desconectado',
   printingAddPrinterButton: 'Agregar impresora',

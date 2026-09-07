@@ -94,6 +94,9 @@ export const CreateAgentModal = () => {
             </DialogHeader>
             <p className="text-sm text-zinc-500">{t('printingApiKeyWarning')}</p>
             <code className="block break-all rounded-xl bg-zinc-100 p-3 text-sm">{apiKey}</code>
+            <p className="rounded-xl bg-amber-50 p-3 text-xs text-amber-800">
+              {t('printingApiKeySetupHint')}
+            </p>
             <DialogFooter>
               <Button type="button" onClick={handleClose}>
                 {t('printingCloseButton')}

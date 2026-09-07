@@ -361,6 +361,10 @@ export const admin = {
   printingAgentNamePlaceholder: 'E.g. Register Agent',
   printingApiKeyTitle: 'Agent key',
   printingApiKeyWarning: 'Copy this key now — it won\'t be shown again.',
+  printingApiKeySetupHint:
+    'Paste it into agent.properties (the agent.api-key field), next to backend.base-url, on the PC wired to the printer, then run the agent. Full setup: printing-agent/README.md.',
+  printingQueueNameHint:
+    'Must match EXACTLY the name shown by Get-Printer on that PC. Inkjet printers (EcoTank) need the "Via Windows driver" mode.',
   printingConnectedStatus: 'Connected',
   printingDisconnectedStatus: 'Disconnected',
   printingAddPrinterButton: 'Add printer',
