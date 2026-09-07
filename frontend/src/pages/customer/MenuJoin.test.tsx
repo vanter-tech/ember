@@ -35,10 +35,29 @@ describe('MenuJoin (QR landing)', () => {
     expect(screen.getByText(/no es válido o ya expiró/i)).toBeInTheDocument()
   })
 
-  test('parks the token and redirects to login when not authenticated', () => {
+  test('unauthenticated: parks the token and offers sign-in or guest entry', async () => {
     renderAt(`/menu/join?token=${QR_TOKEN}`)
-    expect(screen.getByText('LOGIN PAGE')).toBeInTheDocument()
     expect(sessionStorage.getItem(PENDING_QR_TOKEN_KEY)).toBe(QR_TOKEN)
+    expect(screen.getByRole('button', { name: /invitado/i })).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: /iniciar sesión/i }))
+    expect(screen.getByText('LOGIN PAGE')).toBeInTheDocument()
+  })
+
+  test('unauthenticated: guest entry joins via joinAsGuest', async () => {
+    const spy = vi
+      .spyOn(SessionTableService, 'joinAsGuest')
+      .mockResolvedValue({ session: { id: 'sess-42' }, token: 'scoped' } as never)
+
+    renderAt(`/menu/join?token=${QR_TOKEN}`)
+    await userEvent.click(screen.getByRole('button', { name: /invitado/i }))
+    await userEvent.click(screen.getByRole('button', { name: /^Entrar$/ }))
+
+    await waitFor(() =>
+      expect(spy).toHaveBeenCalledWith({ qrToken: QR_TOKEN, name: undefined }),
+    )
+    expect(screen.getByText('MENU PAGE')).toBeInTheDocument()
+    expect(sessionStorage.getItem(PENDING_QR_TOKEN_KEY)).toBeNull()
   })
 
   test('authenticated: submitting the name joins via the QR token', async () => {

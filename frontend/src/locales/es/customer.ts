@@ -104,6 +104,11 @@ export const customer = {
   qrJoinBackHome: 'Ir al inicio',
   qrJoinExpiredToast: 'El QR de la mesa expiró. Pide uno nuevo al mesero.',
   qrJoinGenericErrorToast: 'No se pudo entrar a la mesa. Intenta de nuevo.',
+  qrJoinChoiceSubtitle: '¿Cómo querés entrar a la mesa?',
+  qrJoinSignInCta: 'Iniciar sesión',
+  qrJoinGuestCta: 'Entrar como invitado',
+  qrJoinGuestNameLabel: 'Tu nombre (opcional)',
+  qrJoinGuestSubmit: 'Entrar',
   qrScannerRequesting: 'Pedimos permiso para usar la cámara...',
   qrScannerHint: 'Apunta la cámara al código QR de la mesa.',
   qrScannerDenied:

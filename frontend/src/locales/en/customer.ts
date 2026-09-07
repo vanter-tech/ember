@@ -106,6 +106,11 @@ export const customer = {
   qrJoinBackHome: 'Go home',
   qrJoinExpiredToast: 'The table QR has expired. Ask the waiter for a new one.',
   qrJoinGenericErrorToast: 'Could not join the table. Try again.',
+  qrJoinChoiceSubtitle: 'How do you want to join the table?',
+  qrJoinSignInCta: 'Sign in',
+  qrJoinGuestCta: 'Continue as guest',
+  qrJoinGuestNameLabel: 'Your name (optional)',
+  qrJoinGuestSubmit: 'Enter',
   qrScannerRequesting: 'Asking for camera permission...',
   qrScannerHint: 'Point the camera at the table QR code.',
   qrScannerDenied:
