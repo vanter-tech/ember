@@ -36,8 +36,11 @@ import java.math.BigDecimal;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -124,7 +127,7 @@ public class SessionService {
         );
     }
 
-    public Session createSession(UUID tableId, String waiterId, int maxParticipants) {
+    public Session createSession(UUID tableId, String waiterId, int maxParticipants, List<String> seatNames) {
         UUID tenantId = TenantContextHolder.requireTenantId();
 
         var table = diningTableRepository.findById(tableId)
@@ -138,12 +141,15 @@ public class SessionService {
                     "Table " + table.getTableNumber() + " is already occupied");
         }
 
+        List<Participant> seats = buildSeats(maxParticipants, seatNames);
+
         Session session = sessionRepository.save(Session.builder()
                 .tenantId(tenantId)
                 .tableId(tableId)
                 .waiterId(waiterId)
                 .status(SessionStatus.OPEN)
                 .maxParticipants(maxParticipants)
+                .participants(new ArrayList<>(seats))
                 .createdAt(LocalDateTime.now())
                 .joinCode(generateJoinCode())
                 .build());
@@ -152,6 +158,179 @@ public class SessionService {
                 new SessionOpened(tenantId, session.getId(), tableId, table.getTableNumber()));
 
         return session;
+    }
+
+    /**
+     * Hub tables open with a fixed roster of account-less "seats" ({@link Participant#getUserId()}
+     * {@code == null}). Slots without a provided name are auto-named "Asiento N" by 1-based seat
+     * position (bumped past any collision with a provided name). Cloud passes {@code seatNames == null}
+     * and no seats are seeded — customers add themselves on join.
+     */
+    private List<Participant> buildSeats(int capacity, List<String> seatNames) {
+        if (seatNames == null || seatNames.isEmpty()) {
+            return List.of();
+        }
+        if (seatNames.size() > capacity) {
+            throw new IllegalArgumentException(
+                    "More seat names (" + seatNames.size() + ") than seats (" + capacity + ")");
+        }
+        List<String> provided = seatNames.stream()
+                .map(n -> n == null ? "" : n.trim())
+                .toList();
+        List<String> nonBlank = provided.stream().filter(n -> !n.isBlank()).toList();
+        if (nonBlank.size() != nonBlank.stream().distinct().count()) {
+            throw new IllegalArgumentException("Duplicate seat names");
+        }
+        Set<String> taken = new HashSet<>(nonBlank);
+        List<Participant> seats = new ArrayList<>(capacity);
+        for (int i = 0; i < capacity; i++) {
+            String name = i < provided.size() && !provided.get(i).isBlank()
+                    ? provided.get(i)
+                    : nextAutoSeatName(taken, i + 1);
+            taken.add(name);
+            seats.add(Participant.builder().userId(null).name(name).build());
+        }
+        return seats;
+    }
+
+    /** Lowest free "Asiento N" at or after {@code start}. */
+    private String nextAutoSeatName(Set<String> taken, int start) {
+        int n = Math.max(start, 1);
+        while (taken.contains("Asiento " + n)) {
+            n++;
+        }
+        return "Asiento " + n;
+    }
+
+    /** Lowest free "Asiento N" (from 1). */
+    private String nextAutoSeatName(Set<String> taken) {
+        return nextAutoSeatName(taken, 1);
+    }
+
+    /**
+     * Appends one account-less seat to a Hub table. A blank name takes the lowest free "Asiento N";
+     * a provided name must not collide with an existing seat. Capacity is bumped to fit. WAITER-only,
+     * assigned-waiter-only, OPEN-only. Publishes {@link ParticipantJoined} with a null {@code userId}.
+     */
+    public Session addSeat(String sessionId, String requestingWaiter, String name) {
+        Session session = findById(sessionId);
+        requireAssignedWaiter(session, requestingWaiter);
+        requireOpen(session);
+
+        Set<String> taken = session.getParticipants().stream()
+                .map(Participant::getName)
+                .collect(Collectors.toCollection(HashSet::new));
+        String seatName = name == null || name.isBlank()
+                ? nextAutoSeatName(taken)
+                : name.trim();
+        if (taken.contains(seatName)) {
+            throw new IllegalArgumentException("Seat name already in use: " + seatName);
+        }
+
+        session.getParticipants().add(Participant.builder().userId(null).name(seatName).build());
+        if (session.getParticipants().size() > session.getMaxParticipants()) {
+            session.setMaxParticipants(session.getParticipants().size());
+        }
+        Session saved = sessionRepository.save(session);
+        eventPublisher.publishEvent(
+                new ParticipantJoined(saved.getTenantId(), saved.getId(), null, seatName, false));
+        return saved;
+    }
+
+    private void requireAssignedWaiter(Session session, String waiterEmail) {
+        if (!session.getWaiterId().equals(waiterEmail)) {
+            throw new AccessDeniedException("Only the assigned waiter can manage this table's seats");
+        }
+    }
+
+    private void requireOpen(Session session) {
+        if (session.getStatus() != SessionStatus.OPEN) {
+            throw new IllegalStateException("Session is not open: " + session.getId());
+        }
+    }
+
+    /**
+     * Renames a seat, rewriting the {@code participantName} on every {@link OrderItem} and
+     * {@link SessionActivity} row that referenced the old name (name is the only key a name-only
+     * seat has). Blocked once a non-voided {@link com.vanter.ember.billing.model.Bill} exists — the
+     * splits are keyed by name and would go stale. Publishes {@link ParticipantRenamed}.
+     */
+    public Session renameSeat(String sessionId, String requestingWaiter, String from, String to) {
+        Session session = findById(sessionId);
+        requireAssignedWaiter(session, requestingWaiter);
+        requireOpen(session);
+
+        String target = to == null ? "" : to.trim();
+        if (target.isBlank()) {
+            throw new IllegalArgumentException("New seat name is blank");
+        }
+        Participant seat = session.getParticipants().stream()
+                .filter(p -> p.getName().equals(from)).findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException("Seat not found: " + from));
+        boolean clashes = session.getParticipants().stream()
+                .anyMatch(p -> p != seat && p.getName().equals(target));
+        if (clashes) {
+            throw new IllegalArgumentException("Seat name already in use: " + target);
+        }
+        if (billRepository.findBySessionIdAndStatusNot(sessionId, BillStatus.VOIDED).isPresent()) {
+            throw new IllegalStateException("Recalculate the bill before renaming seats");
+        }
+
+        seat.setName(target);
+        session.getItems().stream()
+                .filter(i -> from.equals(i.getParticipantName()))
+                .forEach(i -> i.setParticipantName(target));
+        session.getActivityLog().stream()
+                .filter(a -> from.equals(a.getParticipantName()))
+                .forEach(a -> a.setParticipantName(target));
+
+        Session saved = sessionRepository.save(session);
+        eventPublisher.publishEvent(
+                new ParticipantRenamed(saved.getTenantId(), saved.getId(), from, target));
+        return saved;
+    }
+
+    /**
+     * Removes a name-only seat (an account-backed one is rejected — that customer leaves via
+     * {@link #leaveSession}). Its DRAFT items are discarded; anything already sent to the kitchen
+     * stays on the bill. Reuses the leave semantics: an empty table with no billable items is
+     * CLOSED, otherwise {@link ParticipantLeft} lets billing redistribute an unpaid split.
+     */
+    public Session removeSeat(String sessionId, String requestingWaiter, String name) {
+        Session session = findById(sessionId);
+        requireAssignedWaiter(session, requestingWaiter);
+        requireOpen(session);
+
+        Participant seat = session.getParticipants().stream()
+                .filter(p -> p.getName().equals(name)).findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException("Seat not found: " + name));
+        if (seat.getUserId() != null) {
+            throw new AccessDeniedException(
+                    "This seat is bound to a real account and cannot be removed here");
+        }
+
+        List<OrderItem> discardedDrafts = session.getItems().stream()
+                .filter(i -> name.equals(i.getParticipantName())
+                        && i.getStatus() == OrderItemStatus.DRAFT)
+                .toList();
+        session.getItems().removeAll(discardedDrafts);
+        session.getParticipants().removeIf(p -> p.getName().equals(name));
+
+        boolean hasBillableItems = session.getItems().stream()
+                .anyMatch(i -> i.getStatus() != OrderItemStatus.DRAFT);
+        if (session.getParticipants().isEmpty() && !hasBillableItems) {
+            session.setStatus(SessionStatus.CLOSED);
+            Session closed = sessionRepository.save(session);
+            eventPublisher.publishEvent(new SessionClosed(
+                    closed.getTenantId(), closed.getId(), closed.getTableId(), closed.getStatus()));
+            return closed;
+        }
+
+        Session saved = sessionRepository.save(session);
+        discardedDrafts.forEach(d -> eventPublisher.publishEvent(new DeleteItem(saved.getId(), d.getId())));
+        eventPublisher.publishEvent(
+                new ParticipantLeft(saved.getTenantId(), saved.getId(), null, name));
+        return saved;
     }
 
     public Session joinSession(String qrToken, String requesterEmail, String userName) {
@@ -170,7 +349,7 @@ public class SessionService {
         }
 
         boolean alreadyJoined = session.getParticipants().stream()
-                .anyMatch(p -> p.getUserId().equals(user.getId()));
+                .anyMatch(p -> Objects.equals(p.getUserId(), user.getId()));
         if (alreadyJoined) {
             throw new IllegalStateException(
                     "User " + user.getId() + " has already joined this session");
@@ -208,7 +387,7 @@ public class SessionService {
         Session session = matches.get(0);
         bindResolvedTenant(session.getTenantId());
 
-        boolean alreadyJoin = session.getParticipants().stream().anyMatch(p -> p.getUserId().equals(user.getId()));
+        boolean alreadyJoin = session.getParticipants().stream().anyMatch(p -> Objects.equals(p.getUserId(), user.getId()));
         if (alreadyJoin) {
             return session;
         }
@@ -282,7 +461,7 @@ public class SessionService {
                 .orElseThrow(() -> new ResourceNotFoundException("User not found: " + participantId));
 
         Participant participant = session.getParticipants().stream()
-                .filter(p -> p.getUserId().equals(user.getId()))
+                .filter(p -> Objects.equals(p.getUserId(), user.getId()))
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException(
                         participantId + " is not a participant of session " + sessionId));
@@ -608,7 +787,7 @@ public class SessionService {
             return false;
         }
         return findById(sessionId).getParticipants().stream()
-                .anyMatch(p -> p.getUserId().equals(userId));
+                .anyMatch(p -> Objects.equals(p.getUserId(), userId));
     }
 
     /**
@@ -642,7 +821,7 @@ public class SessionService {
                 .orElseThrow(() -> new ResourceNotFoundException("User not found: " + requesterEmail));
 
         Participant leaver = session.getParticipants().stream()
-                .filter(p -> p.getUserId().equals(user.getId()))
+                .filter(p -> Objects.equals(p.getUserId(), user.getId()))
                 .findFirst()
                 .orElseThrow(() -> new AccessDeniedException("Not a participant of this session"));
 
@@ -651,7 +830,7 @@ public class SessionService {
                         && i.getStatus() == OrderItemStatus.DRAFT)
                 .toList();
         session.getItems().removeAll(discardedDrafts);
-        session.getParticipants().removeIf(p -> p.getUserId().equals(user.getId()));
+        session.getParticipants().removeIf(p -> Objects.equals(p.getUserId(), user.getId()));
 
         boolean hasBillableItems = session.getItems().stream()
                 .anyMatch(i -> i.getStatus() != OrderItemStatus.DRAFT);
@@ -689,7 +868,7 @@ public class SessionService {
         }
 
         boolean isParticipant = session.getParticipants().stream()
-                .anyMatch(p -> p.getUserId().equals(user.getId()));
+                .anyMatch(p -> Objects.equals(p.getUserId(), user.getId()));
         if (!isParticipant) {
             throw new AccessDeniedException("Not a participant of this session");
         }

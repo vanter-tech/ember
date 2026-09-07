@@ -9,6 +9,7 @@ import {
 } from '@/lib/api'
 import { useUIStore, useSettingsStore, type SettingsType } from '@/store/uiStore'
 import { useTranslation } from '@/lib/i18n'
+import { isHubBuild } from '@/lib/isHubBuild'
 import { dictionaries } from '@/locales'
 
 type AdminTranslationKey = keyof (typeof dictionaries)['es']['admin']
@@ -132,6 +133,8 @@ export const GlobalSearchResults = ({ query, enabled }: GlobalSearchResultsProps
     sectionResults.push({ id: 'section-cash', label: t('navCash'), onSelect: () => goTo('/admin/cash-register') })
   }
   ;(Object.keys(SETTINGS_TAB_LABEL_KEYS) as Exclude<SettingsType, null>[]).forEach((tab) => {
+    // The Hub build has no loyalty settings pages (see SettingsBar / Settings.renderContent).
+    if (isHubBuild && (tab === 'FIDELIZACION' || tab === 'LOYALTY_REWARDS')) return
     const label = tAdmin(SETTINGS_TAB_LABEL_KEYS[tab])
     if (label.toLowerCase().includes(trimmed)) {
       sectionResults.push({

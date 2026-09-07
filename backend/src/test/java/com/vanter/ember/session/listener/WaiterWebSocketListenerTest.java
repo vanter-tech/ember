@@ -1,6 +1,7 @@
 package com.vanter.ember.session.listener;
 
 import com.vanter.ember.session.event.ParticipantJoined;
+import com.vanter.ember.session.event.ParticipantRenamed;
 import com.vanter.ember.session.event.SessionClosed;
 import com.vanter.ember.session.event.SessionOpened;
 import com.vanter.ember.session.event.TableTransferred;
@@ -48,6 +49,15 @@ class WaiterWebSocketListenerTest {
                 new SessionClosed(TENANT_ID, "sess-1", UUID.randomUUID(), SessionStatus.CLOSED);
 
         listener.onSessionClosed(event);
+
+        verify(messagingTemplate).convertAndSend("/topic/waiter/" + TENANT_ID, event);
+    }
+
+    @Test
+    void onParticipantRenamed_sendsToTenantWaiterTopic() {
+        ParticipantRenamed event = new ParticipantRenamed(TENANT_ID, "sess-1", "Asiento 1", "Ana");
+
+        listener.onParticipantRenamed(event);
 
         verify(messagingTemplate).convertAndSend("/topic/waiter/" + TENANT_ID, event);
     }

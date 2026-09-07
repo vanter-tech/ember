@@ -3,6 +3,7 @@ import {useSettingsStore, type SettingsType} from "@/store/uiStore";
 import {SettingsBar} from "@/components/SettingsBar";
 import { SectionTour } from "@/components/tours/SectionTour";
 import { useTranslation } from "@/lib/i18n";
+import { isHubBuild } from "@/lib/isHubBuild";
 import { dictionaries } from "@/locales";
 import { BrandingSettings } from "./components/settings/BrandingSettings";
 import { SpacesSettings } from "./components/settings/SpaceSettings";
@@ -65,9 +66,9 @@ export const Settings = () => {
             case 'HORARIO':
                 return <BusinessHoursSettings />;
             case 'FIDELIZACION':
-                return <LoyaltySettings />;
+                return isHubBuild ? null : <LoyaltySettings />;
             case 'LOYALTY_REWARDS':
-                return <LoyaltyRewardsSettings />;
+                return isHubBuild ? null : <LoyaltyRewardsSettings />;
         }
     };
 
