@@ -111,6 +111,11 @@ export const customer = {
   qrJoinGuestCta: 'Continue as guest',
   qrJoinGuestNameLabel: 'Your name (optional)',
   qrJoinGuestSubmit: 'Enter',
+
+  // JoinByCode (/join — 5-char code, no account, no QR)
+  codeJoinTitle: 'Join the table',
+  codeJoinSubtitle: "Enter your table's 5-character code.",
+  codeJoinCodePlaceholder: 'Code',
   qrScannerRequesting: 'Asking for camera permission...',
   qrScannerHint: 'Point the camera at the table QR code.',
   qrScannerDenied:

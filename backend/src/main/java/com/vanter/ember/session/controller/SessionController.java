@@ -58,6 +58,7 @@ public class SessionController {
     @Operation(summary = "Add a name-only seat to the table (WAITER)")
     @PostMapping("/{id}/participants")
     @PreAuthorize("hasRole('WAITER')")
+    @Transactional
     public SessionDetailResponseDto addSeat(@PathVariable String id,
                                             @Valid @RequestBody AddSeatRequest request,
                                             Authentication authentication) {
@@ -68,6 +69,7 @@ public class SessionController {
     @Operation(summary = "Rename a seat (WAITER) — blocked once a bill exists")
     @PatchMapping("/{id}/participants")
     @PreAuthorize("hasRole('WAITER')")
+    @Transactional
     public SessionDetailResponseDto renameSeat(@PathVariable String id,
                                                @Valid @RequestBody RenameSeatRequest request,
                                                Authentication authentication) {
@@ -78,6 +80,7 @@ public class SessionController {
     @Operation(summary = "Remove a name-only seat (WAITER)")
     @DeleteMapping("/{id}/participants/{name}")
     @PreAuthorize("hasRole('WAITER')")
+    @Transactional
     public SessionDetailResponseDto removeSeat(@PathVariable String id,
                                               @PathVariable String name,
                                               Authentication authentication) {

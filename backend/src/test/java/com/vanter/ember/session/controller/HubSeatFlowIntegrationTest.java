@@ -140,7 +140,18 @@ class HubSeatFlowIntegrationTest {
                 .containsExactly("Ana", "Beto", "Asiento 3");
         s1.get("participants").forEach(p -> assertThat(p.get("userId").isNull()).isTrue());
 
-        // 2 — add a blank seat -> lowest free "Asiento N" (1 and 2 are still free here)
+        // 2 — the table is full (3/3): adding a seat is refused until capacity is raised explicitly
+        mockMvc.perform(post("/sessions/" + sessionId + "/participants")
+                        .header("Authorization", "Bearer " + waiterToken)
+                        .contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isConflict());
+
+        mockMvc.perform(patch("/sessions/" + sessionId + "/capacity")
+                        .header("Authorization", "Bearer " + waiterToken)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"additional\":2}"))
+                .andExpect(status().isOk());
+
+        // now a blank seat lands on the lowest free "Asiento N" (1 and 2 are still free here)
         mockMvc.perform(post("/sessions/" + sessionId + "/participants")
                         .header("Authorization", "Bearer " + waiterToken)
                         .contentType(MediaType.APPLICATION_JSON).content("{}"))

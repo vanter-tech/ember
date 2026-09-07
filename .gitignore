@@ -19,3 +19,12 @@ ember-hub/dist/
 # against the same prod key with no manual per-machine step.
 ember-hub/keys/*
 !ember-hub/keys/hub-public-key.der
+
+# Issued Hub license blobs — machine-specific, never source
+*.key
+
+# Local agent tooling (superpowers skill bundle) — not project code
+.claude/skills/
+
+# Office lock/temp files
+~$*
