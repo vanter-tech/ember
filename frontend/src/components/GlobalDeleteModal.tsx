@@ -1,7 +1,7 @@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
-import { categoryService, SessionTableService, staffService, type StaffMemberResponse } from '@/lib/api'
+import { categoryService, printingService, SessionTableService, staffService, type StaffMemberResponse } from '@/lib/api'
 import { useUIStore } from '@/store/uiStore'
 import { Button } from '@/components/ui/button'
 import { useTranslation } from '@/lib/i18n'
@@ -14,7 +14,9 @@ export const GlobalDeleteModal = () => {
   const isDeleteModal =
     activeModal === 'DELETE_CATEGORY' ||
     activeModal === 'DELETE_ITEMS' ||
-    activeModal === 'DELETE_STAFF'
+    activeModal === 'DELETE_STAFF' ||
+    activeModal === 'DELETE_PRINT_AGENT' ||
+    activeModal === 'DELETE_PRINTER'
 
   const mutation = useMutation({
     mutationFn: async () => {
@@ -27,6 +29,12 @@ export const GlobalDeleteModal = () => {
       if (activeModal === 'DELETE_STAFF') {
         const member = modalPayload as StaffMemberResponse
         return staffService.updateProfile(member.id!, { active: false })
+      }
+      if (activeModal === 'DELETE_PRINT_AGENT') {
+        return printingService.revokeAgent(modalPayload as string)
+      }
+      if (activeModal === 'DELETE_PRINTER') {
+        return printingService.updatePrinter(modalPayload as string, { active: false })
       }
     },
     onSuccess: () => {
@@ -41,6 +49,14 @@ export const GlobalDeleteModal = () => {
       if (activeModal === 'DELETE_STAFF') {
         queryClient.invalidateQueries({ queryKey: ['staff'] })
         toast.success(t('staffDeactivatedToast'))
+      }
+      if (activeModal === 'DELETE_PRINT_AGENT') {
+        queryClient.invalidateQueries({ queryKey: ['printAgents'] })
+        toast.success(t('printingAgentDeletedToast'))
+      }
+      if (activeModal === 'DELETE_PRINTER') {
+        queryClient.invalidateQueries({ queryKey: ['printerConfigs'] })
+        toast.success(t('printingPrinterRemovedToast'))
       }
       closeModal()
     },

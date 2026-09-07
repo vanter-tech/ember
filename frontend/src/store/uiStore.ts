@@ -6,7 +6,7 @@ export type ModalType = 'CREATE_CATEGORY' | 'EDIT_CATEGORY' | 'DELETE_CATEGORY' 
                          'OPEN_SHIFT' | 'CASH_MOVEMENT' | 'CLOSE_SHIFT' |
                          'CHARGE_TABLE' | 'CREATE_STAFF' | 'EDIT_STAFF' | 'DELETE_STAFF' |
                          'VOID_BILL' | 'REFUND_PAYMENT' | 'CREATE_REWARD' | 'EDIT_REWARD' |
-                         'CREATE_PRINT_AGENT' | 'ADD_PRINTER' |
+                         'CREATE_PRINT_AGENT' | 'ADD_PRINTER' | 'DELETE_PRINT_AGENT' | 'DELETE_PRINTER' |
                          'CREATE_MODIFIER_GROUP' | 'EDIT_MODIFIER_GROUP' |
                          'CREATE_INVENTORY_ITEM' | 'EDIT_INVENTORY_ITEM' |
                          'ADD_ITEM' | 'TRANSFER_TABLE' | null;

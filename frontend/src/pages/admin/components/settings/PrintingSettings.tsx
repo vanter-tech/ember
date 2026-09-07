@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { KeyRound, Printer, RotateCcw } from 'lucide-react'
+import { KeyRound, Printer, RotateCcw, Trash2 } from 'lucide-react'
 import { printingService, type PrintAgentResponse } from '@/lib/api'
 import { useUIStore } from '@/store/uiStore'
 import { useTranslation } from '@/lib/i18n'
@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { CreateAgentModal } from './printing/CreateAgentModal'
 import { AddPrinterModal } from './printing/AddPrinterModal'
+import { GlobalDeleteModal } from '@/components/GlobalDeleteModal'
 
 const printerConnectionDetail = (printer: {
   connectionType?: string
@@ -34,12 +35,15 @@ const printerConnectionDetail = (printer: {
 
 const AgentPrinterList = ({ agent }: { agent: PrintAgentResponse }) => {
   const { t } = useTranslation('admin')
+  const openModal = useUIStore((state) => state.openModal)
 
-  const { data: printers = [] } = useQuery({
+  const { data: allPrinters = [] } = useQuery({
     queryKey: ['printerConfigs', agent.id],
     queryFn: () => printingService.listPrinters(agent.id as string),
     enabled: !!agent.id,
   })
+  // A "removed" printer is deactivated (active=false), not hard-deleted, so filter it out here.
+  const printers = allPrinters.filter((printer) => printer.active)
 
   if (printers.length === 0) {
     return <p className="pl-3 text-sm text-zinc-400">{t('printingNoPrintersMessage')}</p>
@@ -48,14 +52,20 @@ const AgentPrinterList = ({ agent }: { agent: PrintAgentResponse }) => {
   return (
     <div className="space-y-1 pl-3">
       {printers.map((printer) => (
-        <div key={printer.id} className="flex items-center justify-between text-sm text-zinc-600">
+        <div key={printer.id} className="flex items-center justify-between gap-2 text-sm text-zinc-600">
           <span>
             {printer.role === 'KITCHEN' ? t('printingRoleKitchen') : t('printingRoleReceipt')} ·{' '}
             {printer.label} · {printerConnectionDetail(printer)}
           </span>
-          <span className={printer.active ? 'text-emerald-600' : 'text-zinc-400'}>
-            {printer.active ? t('printingPrinterActiveStatus') : t('printingPrinterInactiveStatus')}
-          </span>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-zinc-400 hover:text-red-600"
+            aria-label={t('printingRemovePrinterAria')}
+            onClick={() => openModal('DELETE_PRINTER', printer.id)}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
         </div>
       ))}
     </div>
@@ -106,10 +116,13 @@ export const PrintingSettings = () => {
   const openModal = useUIStore((state) => state.openModal)
   const queryClient = useQueryClient()
 
-  const { data: agents = [] } = useQuery({
+  const { data: allAgents = [] } = useQuery({
     queryKey: ['printAgents'],
     queryFn: () => printingService.listAgents(),
   })
+  // "Eliminar" revokes an agent (status REVOKED) rather than dropping the row — hide the revoked
+  // ones so the list reads as a delete.
+  const agents = allAgents.filter((agent) => agent.status !== 'REVOKED')
 
   const { data: jobs = [] } = useQuery({
     queryKey: ['printJobs'],
@@ -165,6 +178,15 @@ export const PrintingSettings = () => {
                     <Printer className="mr-2 h-4 w-4" />
                     {t('printingAddPrinterButton')}
                   </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-zinc-400 hover:text-red-600"
+                    aria-label={t('printingDeleteAgentAria')}
+                    onClick={() => openModal('DELETE_PRINT_AGENT', agent.id)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </div>
               </div>
               <AgentPrinterList agent={agent} />
@@ -208,6 +230,7 @@ export const PrintingSettings = () => {
 
       <CreateAgentModal />
       <AddPrinterModal />
+      <GlobalDeleteModal />
     </div>
   )
 }
