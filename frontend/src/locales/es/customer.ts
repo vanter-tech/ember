@@ -104,6 +104,12 @@ export const customer = {
   qrJoinBackHome: 'Ir al inicio',
   qrJoinExpiredToast: 'El QR de la mesa expiró. Pide uno nuevo al mesero.',
   qrJoinGenericErrorToast: 'No se pudo entrar a la mesa. Intenta de nuevo.',
+  qrScannerRequesting: 'Pedimos permiso para usar la cámara...',
+  qrScannerHint: 'Apunta la cámara al código QR de la mesa.',
+  qrScannerDenied:
+    'No pudimos acceder a la cámara. Habilita el permiso o usa el código de 5 dígitos.',
+  qrScannerUnsupported:
+    'Este dispositivo o navegador no permite escanear. Usa el código de 5 dígitos.',
 
   // ParticipantsList
   participantsListTitle: 'En la mesa',

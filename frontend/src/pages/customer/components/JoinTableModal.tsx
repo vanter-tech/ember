@@ -8,7 +8,7 @@ import {
 } from '@/components/ui/dialog'
 import { useUIStore } from '@/store/uiStore'
 import { Keyboard, QrCode } from 'lucide-react'
-import { useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import { OtpInput } from '@/components/ui/otpInput'
 import { useMutation } from '@tanstack/react-query'
 import { SessionTableService } from '@/lib/api'
@@ -18,6 +18,11 @@ import { isAxiosError } from 'axios'
 import { useSessionStore } from '@/store/sessionStore'
 import { useAuthStore } from '@/store/authStore'
 import { useTranslation } from '@/lib/i18n'
+
+// jsQR (~140 kB) only loads when a diner actually opens the scanner, not in the main bundle.
+const QrScanner = lazy(() =>
+  import('./QrScanner').then((m) => ({ default: m.QrScanner })),
+)
 
 export const JoinTableModal = () => {
   const { activeModal, closeModal } = useUIStore()
@@ -123,6 +128,39 @@ export const JoinTableModal = () => {
                     </p>
                   </div>
                 </div>
+              </div>
+            </>
+          )}
+          {opciones == 'QR' && (
+            <>
+              <DialogHeader>
+                <DialogTitle>{t('joinModalScanQrTitle')}</DialogTitle>
+                <DialogDescription className="text-zinc-500 text-sm mt-1">
+                  {t('joinModalScanQrDescription')}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="flex flex-col items-center justify-center w-full gap-5">
+                <Suspense
+                  fallback={
+                    <p className="py-8 text-center text-sm text-zinc-500">
+                      {t('qrScannerRequesting')}
+                    </p>
+                  }
+                >
+                  <QrScanner
+                    onDecoded={(token) => {
+                      closeModal()
+                      navigate(`/menu/join?token=${encodeURIComponent(token)}`)
+                    }}
+                  />
+                </Suspense>
+                <Button
+                  variant={'outline'}
+                  className="w-full h-12 font-bold text-lg"
+                  onClick={() => setOpciones('MENU')}
+                >
+                  {t('joinModalBackButton')}
+                </Button>
               </div>
             </>
           )}

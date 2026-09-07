@@ -5,6 +5,25 @@
 export const PENDING_QR_TOKEN_KEY = 'emberPendingQrToken'
 
 /**
+ * The table QR encodes `${origin}/menu/join?token=<jwt>`. Pull the token out of a scanned value —
+ * accepts the full URL, or a bare JWT-shaped string as a fallback. Returns null for anything
+ * else (a QR that isn't ours).
+ */
+export function tokenFromScannedValue(raw: string): string | null {
+  const value = raw.trim()
+  if (!value) return null
+  try {
+    const url = new URL(value)
+    const token = url.searchParams.get('token')
+    if (token && token.split('.').length === 3) return token
+  } catch {
+    // not a URL — fall through
+  }
+  if (value.split('.').length === 3 && sessionIdFromQrToken(value)) return value
+  return null
+}
+
+/**
  * The waiter's session QR encodes a JWT whose `sub` claim is the session id (see the backend's
  * QrTokenService.generateQrToken). `POST /sessions/{id}/join` ignores the path id and trusts the
  * token, but we still pass the real id in the path for a clean URL and clear server logs.
