@@ -48,6 +48,8 @@ export const customer = {
   billNotRequestedYet:
     'Aún no se ha solicitado la cuenta. Pide al mesero que la calcule cuando estés listo para pagar.',
   billTableTotal: 'Total de la mesa',
+  billSubtotalLabel: 'Subtotal',
+  billTaxLabel: 'Impuesto ({{rate}}%)',
   billYouSuffix: ' (Tú)',
   billStatusPaid: 'Pagado',
   billStatusPending: 'Pendiente',

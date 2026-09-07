@@ -50,6 +50,8 @@ export const customer = {
   billNotRequestedYet:
     "The bill hasn't been requested yet. Ask your waiter to calculate it when you're ready to pay.",
   billTableTotal: 'Table total',
+  billSubtotalLabel: 'Subtotal',
+  billTaxLabel: 'Tax ({{rate}}%)',
   billYouSuffix: ' (You)',
   billStatusPaid: 'Paid',
   billStatusPending: 'Pending',
