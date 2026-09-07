@@ -14,9 +14,7 @@ vi.mock('@/components/tours/SectionTour', () => ({ SectionTour: () => null }))
 
 const { hubFlag } = vi.hoisted(() => ({ hubFlag: { current: true } }))
 vi.mock('@/lib/isHubBuild', () => ({
-  get isHubBuild() {
-    return hubFlag.current
-  },
+  isHubBuild: () => hubFlag.current,
 }))
 
 vi.mock('@/lib/api', async (importOriginal) => {

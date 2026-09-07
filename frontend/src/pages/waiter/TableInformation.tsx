@@ -342,7 +342,7 @@ export const TableInformation = () => {
               <CardTitle className="text-2xl text-gray-800 font-bold">
                 {t('participantsTitle')}
               </CardTitle>
-              {isHubBuild && (
+              {isHubBuild() && (
                 <Button
                   variant="ghost"
                   className="text-sm"
@@ -370,7 +370,7 @@ export const TableInformation = () => {
                           {participant.name}
                         </span>
                       </div>
-                      {isHubBuild && (
+                      {isHubBuild() && (
                         <div className="ml-auto flex gap-1">
                           <Button
                             variant="ghost"

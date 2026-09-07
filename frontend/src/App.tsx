@@ -47,7 +47,7 @@ const RoleRedirect = () => {
 
   if (!role) return <Navigate to="/login" replace />
   // The Hub build has no customer surface — a stale CUSTOMER token lands back on /login.
-  if (isHubBuild && role === 'CUSTOMER') return <Navigate to="/login" replace />
+  if (isHubBuild() && role === 'CUSTOMER') return <Navigate to="/login" replace />
   if (role === 'ADMIN') return <Navigate to="/admin" replace />
   if (role === 'CUSTOMER') return <Navigate to="/customer" replace />
   if (role === 'WAITER') return <Navigate to="/waiter" replace />
@@ -109,10 +109,10 @@ export default function App() {
             logged in yet. MenuJoin parks the token and routes through /login if needed. /join is
             the no-QR, no-account path — the diner types the 5-character table code straight in.
             Both are absent from the Hub build — there is no customer join flow there. */}
-        {!isHubBuild && (
+        {!isHubBuild() && (
           <Route path="/menu/join" element={<Suspense fallback={null}><MenuJoin /></Suspense>} />
         )}
-        {!isHubBuild && (
+        {!isHubBuild() && (
           <Route path="/join" element={<Suspense fallback={null}><JoinByCode /></Suspense>} />
         )}
         <Route path="/t/:slug" element={<TenantLanding />} />
@@ -126,7 +126,7 @@ export default function App() {
           }
         />
 
-        {!isHubBuild && (
+        {!isHubBuild() && (
           <Route element={<ProtectedRoute allowedRoles={['CUSTOMER']} />}>
             <Route path='/customer' element={<Suspense fallback={null}><CustomerLayout/></Suspense>}>
               <Route index element={<Navigate to="home" replace />} />

@@ -1,12 +1,13 @@
 # PROGRESS.md — Active Execution State
 
 ## Current Execution State
-- **Last Completed Task:** report 399 — **post-audit hardening on `spec/hub-waiter-seats`** (5 fixes): (1) `@Transactional` on `addSeat`/`renameSeat`/`removeSeat` controller endpoints (mirror `join-as-guest`); (2) rewrote `App.hubBuild.test.tsx` to mock `@/lib/isHubBuild` with a hoisted flag instead of `vi.stubEnv`+`resetModules`+dynamic `import('./App')` — kills the timeout flake, full frontend suite 79s→43s; (3) `addSeat` now 409s at `maxParticipants` instead of silently bumping it (raise via `PATCH /capacity` first); (4) removed working-tree cruft — `to_delete/license.key` moved out of repo, `docs/~$CHITECTURE.docx` deleted, `.gitignore` += `*.key` / `.claude/skills/` / `~$*`; (5) **public guest code-join** — new `/join` page (`JoinByCode`, gated out of Hub build) hits the existing `/sessions/join-as-guest` with `{joinCode,name}`; backend already supported it. Branch `spec/hub-waiter-seats`.
+- **Last Completed Task:** report 400 — **Hub v2 prep: residual hardening** (3 items from the 399 audit): (1) `GlobalExceptionHandler` maps `OptimisticLockingFailureException` → 409 `code:"CONCURRENT_MODIFICATION"` (was 500 on a lost `@Version` race); (2) **`isHubBuild` is now a function** `() => import.meta.env.VITE_HUB_BUILD === 'true' || BASE_URL !== '/'` — env flag is canonical, `BASE_URL` a fallback until Tauri; ~10 call sites → `isHubBuild()`, `SettingsBar` `SETTINGS_NAV` → `buildSettingsNav()` per render; new `frontend/.env.hub` + `build:hub` runs `--mode hub`; new `vite-env.d.ts`; 4 mock tests → `isHubBuild: () => flag`; **new CI job `build-hub`** in `lint.yml` (build:hub + test:run); (3) `V9` → `ADD COLUMN IF NOT EXISTS` (unreleased, safe). **Not done:** real prod Flyway baseline — ops task needing a Cloud Shell inspection of `flyway_schema_history`, does NOT block Hub v2. Branch `spec/hub-waiter-seats`.
+- **Prev:** report 399 — **post-audit hardening on `spec/hub-waiter-seats`** (5 fixes): `@Transactional` on seat endpoints; `App.hubBuild.test.tsx` de-flaked; `addSeat` 409s at capacity (no silent bump); working-tree cruft removed; **public guest code-join** `/join` (`JoinByCode`).
 - **Prev:** report 398 — **EMB-FEAT-HUB: Ember Hub waiter-managed seats**. `CreateSessionRequest.seatNames` seeds name-only `Participant` rows (`userId == null`, auto-named "Asiento N"); `POST`/`PATCH`/`DELETE /sessions/{id}/participants…` add/rename/remove them (WAITER, assigned-waiter, OPEN; rename blocked once a non-voided bill exists, cascades `OrderItem`/`SessionActivity` names; remove reuses leave semantics); `ParticipantRenamed` event on both WS topics; null-safety sweep of participant matching + `LoyaltyAccountJoinListener` null-`userId` guard. Frontend forks on `isHubBuild` (`BASE_URL !== '/'`): customer subsystem stripped from the router, assign-table modal collects seat names (no QR), seat controls on the table detail, loyalty admin UI hidden. **No DB migration.** Branch `spec/hub-waiter-seats`. Spec/plan `…/2026-09-07-hub-waiter-managed-seats*`.
-- **Current Active Task:** none. `spec/hub-waiter-seats` (EMB-FEAT-HUB + report 399 hardening) done, PR pending. Next candidates: **F-21** hardcoded creds; **HUB-03 T10** manual Windows verification.
+- **Current Active Task:** none. `spec/hub-waiter-seats` (EMB-FEAT-HUB + reports 399/400 hardening) done, PR pending. Next: **open the PR**; then **Hub v2** (Tauri shell — prep landed in 400) or **F-21** hardcoded creds.
 - **Predecessor context:** guest-join PR #97 merged (`7dba69fe`, report 397); Live QA findings **Q1–Q6** merged (PRs #88/#89/#91–#95, reports 387–395); menu-responsive fix on `main` (report 396). Bug X + Bug Y confirmed fixed; Hub confirmed working on a real PC.
-- **System Health:** backend `./mvnw test` **1195/1195**; frontend `build` + `lint` clean (16 pre-existing warnings), `test:run` **118/118** (+3 `JoinByCode`; `App.hubBuild` flake fixed).
-- **⚠ Prod Flyway is NOT baselined** — `V7`/`V8`/`V9` run automatically on the next tagged backend release. Only the *local dev* DB is baselined at v15, so migrations ≤ 15 are skipped there → add new columns by hand for local dev. Never pre-run migration DDL on prod (a ~15 min outage on 2026-09-06 came from doing exactly that on `V7`).
+- **System Health:** backend `./mvnw test` **1196/1196** (+1 optimistic-lock 409); frontend `build` **and `build:hub`** + `lint` clean (16 pre-existing warnings), `test:run` **118/118**.
+- **⚠ Prod Flyway is NOT baselined** — `V7`/`V8`/`V9` run automatically on the next tagged backend release. `V9` is now `ADD COLUMN IF NOT EXISTS` (idempotent); `V7`/`V8` are NOT (editing an applied migration breaks `validate-on-migrate`). Only the *local dev* DB is baselined at v15, so migrations ≤ 15 are skipped there → add new columns by hand for local dev. Never pre-run migration DDL on prod (a ~15 min outage on 2026-09-06 came from doing exactly that on `V7`). **TODO (ops, not code):** inspect prod `flyway_schema_history` from Cloud Shell and baseline properly.
 - **Prod deploy:** tag `v*` on `main` → `backend-image.yml` builds the image → `./deploy/deploy.sh <tag>` from Cloud Shell (pure gcloud/IAP). Frontend auto-deploys from `main` via Cloudflare Pages. Backend currently on `v0.2.1`.
 
 ## Active Context & Recent Decisions
@@ -41,6 +42,12 @@
 - [x] 4 cruft: `to_delete/` (license blob) + `docs/~$CHITECTURE.docx` removed; `.gitignore` += `*.key` / `.claude/skills/` / `~$*`
 - [x] 5 public guest code-join — new `/join` page `JoinByCode` (Hub-build-gated) → existing `/sessions/join-as-guest` `{joinCode,name}`; i18n ES/EN
 
+### Hub v2 prep: residual hardening — DONE, report 400, PR pending
+- [x] 1 `OptimisticLockingFailureException` → 409 (`code:"CONCURRENT_MODIFICATION"`) in `GlobalExceptionHandler` + slice test
+- [x] 2 `isHubBuild` → function (`VITE_HUB_BUILD` canonical, `BASE_URL` fallback); ~10 call sites; `SettingsBar` → `buildSettingsNav()`; `.env.hub` + `build:hub --mode hub`; `vite-env.d.ts`; 4 mock tests updated; CI job `build-hub` in `lint.yml`
+- [x] 3 `V9` → `ADD COLUMN IF NOT EXISTS` (unreleased; `V7`/`V8` left alone)
+- [ ] Ops (not code, not a Hub-v2 blocker): baseline prod Flyway — inspect `flyway_schema_history` from Cloud Shell first
+
 ### Guest table-join (Cloud) — DONE, report 397, PR #97 merged
 - [x] T1 `GuestNameGenerator` · [x] T2 `V9` + `User.guest` + `GuestUserService` · [x] T3 `ParticipantJoined.guest` + loyalty guards · [x] T4 `POST /sessions/join-as-guest` · [x] T5 frontend "Entrar como invitado" on `/menu/join` · [x] T6 report + squash + PR.
 - [x] Follow-up (report 399): public **code-entry-as-guest** page — `/join` (`JoinByCode`), 5-char code + optional name, no account, no QR.
@@ -51,7 +58,7 @@
 ### Open / deferred
 - [ ] **EMB-GATEWAY** — real payment gateway. Blocked on GATEWAY-01 (certified provider for Nicaragua). GATEWAY-02..06 open.
 - [ ] **HUB-03 T10** — manual Windows verification (clean install, LAN 2nd PC, license picker, upgrade-in-place, uninstall-keep, boot errors) → `reports/382-…`. Spec/plan `…/2026-09-05-hub-installer*`.
-- [ ] **Hub v2** — Tauri/webview shell reusing `frontend/`'s design. Needs its own spec/plan.
+- [ ] **Hub v2** — Tauri/webview shell reusing `frontend/`'s design. Needs its own spec/plan. Prep landed (report 400): `isHubBuild()` reads `VITE_HUB_BUILD`, CI builds the Hub variant.
 - [ ] **HPD-21** restore test (GCS dump → throwaway `pg_restore`, document in `deploy/RUNBOOK.md`); **HPD-22** E2E prod walkthrough (2 devices).
 - [ ] **Bug Y** — live retest with two diners now that `v0.2.1` cleared the deploy skew (marked fixed by the user, no formal retest logged).
 - [ ] **LSEO** — content (blog / keyword articles / case studies), conversion (contact/demo form, WhatsApp, hero video, retargeting), off-page, minor JSON-LD. LSEO-04 Google Business Profile.
@@ -67,4 +74,5 @@
 - [x] **Guest table-join (Cloud)** — report 397, PR #97.
 - [x] **EMB-FEAT-HUB — Hub waiter-managed seats** — name-only seats + 3 WAITER endpoints + `ParticipantRenamed` + null sweep + loyalty guard; frontend `isHubBuild` fork (customer subsystem stripped, seat-name assign modal, seat controls, loyalty UI hidden). Report 398, PR pending.
 - [x] **Post-audit hardening** — seat-endpoint `@Transactional`, `App.hubBuild` de-flake, `addSeat` capacity 409, cruft cleanup, public `/join` guest code page. Report 399, PR pending.
+- [x] **Hub v2 prep** — optimistic-lock 409, `isHubBuild()` on `VITE_HUB_BUILD` + CI `build-hub` job, `V9` idempotent. Report 400, PR pending.
 - [x] Prod backend deployed to `v0.2.1` (Q1–Q6 backend + platform console). Reports 387/388, deploy incident recovered.

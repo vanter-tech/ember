@@ -6,9 +6,7 @@ import { vi, describe, it, expect, afterEach } from 'vitest'
 // (that re-parse is what made this file flake past its timeout under parallel load).
 const { hubFlag } = vi.hoisted(() => ({ hubFlag: { current: true } }))
 vi.mock('@/lib/isHubBuild', () => ({
-  get isHubBuild() {
-    return hubFlag.current
-  },
+  isHubBuild: () => hubFlag.current,
 }))
 
 import App from './App'

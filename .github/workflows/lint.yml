@@ -52,3 +52,31 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: echo "sin módulo gateway; nada que lintear todavía"
+
+  # El frontend tiene dos variantes de build: la Cloud (base "/") y la del Hub on-prem
+  # (base "/app/", VITE_HUB_BUILD=true, sin subsistema de cliente). CI compilaba solo la
+  # Cloud; este job asegura que la del Hub también type-checkea, bundlea y pasa los tests.
+  build-hub:
+    name: build-hub
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./frontend
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configurar pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+          cache-dependency-path: ./frontend/pnpm-lock.yaml
+      - name: Instalar dependencias
+        run: pnpm install --frozen-lockfile
+      - name: Build del Hub (base /app/, modo hub)
+        run: pnpm run build:hub
+      - name: Tests
+        run: pnpm run test:run

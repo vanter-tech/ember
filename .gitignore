@@ -23,8 +23,12 @@ ember-hub/keys/*
 # Issued Hub license blobs — machine-specific, never source
 *.key
 
-# Local agent tooling (superpowers skill bundle) — not project code
+# Local agent tooling (skill bundles, skills-CLI lockfile) — not project code
 .claude/skills/
+skills-lock.json
+
+# Local architecture diagrams (archify output — regenerate, don't track)
+docs/diagrams/
 
 # Office lock/temp files
 ~$*
