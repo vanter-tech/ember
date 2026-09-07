@@ -92,6 +92,19 @@ export const customer = {
   joinModalSubmitting: 'Entrando',
   joinModalConfirm: 'Confirmar',
 
+  // MenuJoin (QR landing)
+  qrJoinTitle: 'Entrar a la mesa',
+  qrJoinSubtitle: '¿Con qué nombre te ven los demás en la mesa?',
+  qrJoinNameLabel: 'Tu nombre',
+  qrJoinNamePlaceholder: 'Ej. Ana',
+  qrJoinSubmit: 'Entrar',
+  qrJoinSubmitting: 'Entrando...',
+  qrJoinInvalidLink:
+    'Este enlace de mesa no es válido o ya expiró. Pide al mesero que genere el QR de nuevo.',
+  qrJoinBackHome: 'Ir al inicio',
+  qrJoinExpiredToast: 'El QR de la mesa expiró. Pide uno nuevo al mesero.',
+  qrJoinGenericErrorToast: 'No se pudo entrar a la mesa. Intenta de nuevo.',
+
   // ParticipantsList
   participantsListTitle: 'En la mesa',
   participantsGuestFallback: 'Invitado',

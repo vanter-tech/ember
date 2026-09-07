@@ -4,6 +4,7 @@ import type { LoginResponse } from '@/lib/api'
 import { SessionTableService } from '@/lib/api'
 import { useAuthStore } from '../../store/authStore'
 import { useSessionStore } from '@/store/sessionStore'
+import { PENDING_QR_TOKEN_KEY } from '@/lib/qrToken'
 import type { useTranslation } from '@/lib/i18n'
 
 type TAuth = ReturnType<typeof useTranslation<'auth'>>['t']
@@ -19,6 +20,12 @@ export async function navigateForRole(
       navigate('/admin', { replace: true })
       break
     case 'CUSTOMER': {
+      // Scanned a table QR before logging in? MenuJoin parked the token — send them back to it
+      // to finish joining, ahead of the resume-open-session path below.
+      if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem(PENDING_QR_TOKEN_KEY)) {
+        navigate('/menu/join', { replace: true })
+        break
+      }
       // A customer's login token is tenant-less. If they left a table open (the session id
       // survives logout in its own persisted store), re-attach to it and swap in a token
       // re-scoped to that restaurant instead of bouncing them to the home screen.

@@ -433,6 +433,18 @@ export const SessionTableService = {
     return data
   },
 
+  joinSessionViaQr: async (
+    sessionId: string,
+    qrToken: string,
+    userName: string,
+  ): Promise<joinSessionResponse> => {
+    const { data } = await api.post<joinSessionResponse>(`/sessions/${sessionId}/join`, {
+      qrToken,
+      userName,
+    })
+    return data
+  },
+
   // Abandon an open session. DRAFT items are discarded; anything already sent to the kitchen
   // stays on the table bill for the waiter to settle.
   leaveSession: async (sessionId: string): Promise<infoSession> => {

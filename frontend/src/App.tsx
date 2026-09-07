@@ -24,6 +24,7 @@ import { CashRegister as AdminCashRegister } from '@/pages/admin/cashRegister/Ca
 import { TableInformation } from './pages/waiter/TableInformation'
 import { CustomerLayout } from './layouts/CustomerLayout'
 import { Home } from './pages/customer/Home'
+import { MenuJoin } from './pages/customer/MenuJoin'
 import { Menu } from './pages/customer/Menu'
 import { ComandaView } from './pages/customer/ComandaView'
 import { Bill } from './pages/customer/Bill'
@@ -97,6 +98,9 @@ export default function App() {
         <Route path="/" element={<RoleRedirect />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        {/* Public: the table QR is scanned with the phone camera, so the visitor may not be
+            logged in yet. MenuJoin parks the token and routes through /login if needed. */}
+        <Route path="/menu/join" element={<MenuJoin />} />
         <Route path="/t/:slug" element={<TenantLanding />} />
 
         <Route
