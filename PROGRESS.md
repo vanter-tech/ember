@@ -1,97 +1,46 @@
 # PROGRESS.md — Active Execution State
 
 ## Current Execution State
-- **Last Completed Task:** report 396 — fix(customer): horizontal-scroll on the menu view. Minimal change (2 lines, `Menu.tsx` only): the `Carta Digital` header row stacks `flex-col … sm:flex-row` so the table-code badge + "Ver factura" button drop below the title on phones instead of overflowing; the badge/button group is `flex-wrap`. **`sm:` and up is pixel-identical to before** — desktop untouched. Branch `fix/customer-menu-responsive`, PR #96. build + lint clean.
-- **Predecessor Task:** **Live QA findings (Q1–Q6)** cluster — all six merged (PRs #88, #89, #91–#95). Reports 387–395.
-- **Current Active Task:** none. Q1–Q6 merged; Bug Y (factura) confirmed fixed by the user; Hub confirmed working. #96 pending merge — needs a live phone check. Prod backend `v0.2.1`, healthy.
-- **⚠ Deploy incident 2026-09-06:** I wrongly assumed prod Flyway was baselined like dev and had the operator pre-run the V7/V8 `ALTER TABLE`s by hand. Prod Flyway is **not** baselined — it ran V7 itself, hit `column "banner_key" already exists`, and the API crash-looped (down ~15 min). Recovered by `DROP COLUMN` on the 5 columns I had added (all empty; left `users.pin` alone — V6 owns it) and letting Flyway apply V7/V8 cleanly. `flyway_schema_history` on prod is now V1–V8, all `success`. **Never pre-run migration DDL on prod again — just tag + `deploy.sh`.**
-- **System Health:** backend `./mvnw test` **1107/1107** (as of Q1b); frontend `build` + `lint` clean (16 pre-existing warnings), `test:run` **91/91**.
-- **⚠ Flyway — dev only:** the *local dev* DB's `flyway_schema_history` is a single BASELINE row at `version 15`, so Flyway skips every migration ≤ 15; `V7`/`V8` columns were added there by hand. **Prod is NOT baselined** (see the deploy-incident note above) — it runs every migration; do not hand-patch its schema. `V7`/`V8` are correct as-is for a genuinely fresh DB. `@DataJpaTest`s run on a fresh schema and are unaffected.
+- **Last Completed Task:** report 397 — **guest table-join (Cloud)**. `POST /sessions/join-as-guest` mints a throwaway `guest` `User` (gated on a valid open table, `@Transactional` rollback) then reuses the existing join internals; loyalty/visits suppressed for guests (`ParticipantJoined.guest` + listener guards); `V9` adds `users.guest`; frontend "Entrar como invitado" on `/menu/join`. Branch `spec/guest-join`, PR pending. Spec/plan `…/2026-09-06-guest-join*`.
+- **Current Active Task:** none. Guest-join done (PR pending merge — `V9` applies automatically on the next tagged backend release). Next candidates: **Ember Hub waiter-managed seats** (own spec/plan, approved direction), **F-21** hardcoded creds. See below.
+- **Predecessor context:** Live QA findings **Q1–Q6** merged (PRs #88/#89/#91–#95, reports 387–395); menu-responsive fix pushed direct to `main` (report 396). Bug X + Bug Y confirmed fixed; Hub confirmed working on a real PC.
+- **System Health:** backend `./mvnw test` **1167/1167**; frontend `build` + `lint` clean (16 pre-existing warnings), `test:run` **104/104**.
+- **⚠ Prod Flyway is NOT baselined** — `V7`/`V8` (and the upcoming `V9`) run automatically on the next tagged backend release. Only the *local dev* DB is baselined at v15, so migrations ≤ 15 are skipped there → add new columns by hand for local dev. Never pre-run migration DDL on prod (a ~15 min outage on 2026-09-06 came from doing exactly that on `V7`).
+- **Prod deploy:** tag `v*` on `main` → `backend-image.yml` builds the image → `./deploy/deploy.sh <tag>` from Cloud Shell (pure gcloud/IAP). Frontend auto-deploys from `main` via Cloudflare Pages. Backend currently on `v0.2.1`.
 
 ## Active Context & Recent Decisions
-- Monolith at `ember/`: Java 17 + Spring Boot 3.5.14 / React 19 + TS + pnpm. Every module (`identity`/`catalog`/`billing`/`settings`/`restaurant`/`session`/`kitchen`) is on Postgres/JPA; event bus is Spring `ApplicationEventPublisher`/`@EventListener` only — do not reintroduce Kafka (dependency is vestigial, see root `CLAUDE.md`).
-- **Tenant isolation model:** `@TenantId` (Hibernate discriminator) on `Category`/`MenuItem`/`Bill`/`BillSplit`/`Payment`/`DiningTables`/`RestaurantSettings`/`KitchenOrder`. `User` and `Session` are deliberately excluded — both need untenanted lookups before a customer's JWT is tenant-bound (`findByJoinCodeAndStatus`, login/register). **Customers are not tenant-bound** until they join a table (`SessionService.bindResolvedTenant` is the one non-filter place allowed to touch `TenantContextHolder`). `@DataJpaTest` picks up every `@TenantId` entity project-wide regardless of package — always `@Import(TenantIdentifierResolver.class)`, and use `@Transactional(propagation = NOT_SUPPORTED)` whenever the test binds tenant itself (see `AbstractTenantIsolationTest`).
-- **WebSocket multi-endpoint gotcha (reports 193-194):** Spring merges ALL `WebSocketMessageBrokerConfigurer` beans onto one shared broker/channel — a second config's `enableSimpleBroker(...)` call SILENTLY REPLACES the first's registration, and its channel interceptor runs on every endpoint's frames unless handshake-tagged. Any future 2nd/3rd STOMP endpoint (like `/ws/print-agent`) needs handshake-time session tagging for interceptor scoping AND all broker prefixes registered from the ONE owning config. No unit test catches this — only a real multi-client STOMP integration test (`WebSocketEndpointIsolationTest`) does.
-- Flyway: `V1__baseline_consolidated.sql` is the schema root (V2-V15 archived, not scanned); prod runs `ddl-auto=validate`. `ddl-auto=update` in dev can silently no-op a `NOT NULL` column add on a non-empty table — check boot logs, don't trust a clean boot.
-- Analytics money semantics (don't redefine ad hoc): revenue = CONFIRMED `Payment` sums (never bill totals/PENDING); AOV = PAID-`Bill` avg; `activeSessions`/`activeTableCount` are always LIVE counts that ignore the query window.
-- Missing shadcn primitives (`checkbox.tsx`, `radio-group.tsx`) are built from the installed unified `radix-ui` package's export, `data-slot` convention — not a new dependency. Repeat this pattern for any future missing primitive.
-- Recurring lesson across MOD-02/03 and EMB-i18N-08: grep live code for every call site of a changed signature/pattern — a plan's stated file list has repeatedly missed a real caller (test mocks especially).
-- **Digital payments are a stub** (`PaymentService.initiateDigitalPayment` returns `gatewayRef = "STUB-..."`) — no real gateway is wired. This is the platform's biggest revenue gap; blocked on `GATEWAY-01` (provider decision).
-- Ember Hub license heartbeat (`feat/hub-license-heartbeat`) is merged to `main` (PR #60) — code-complete; whether the manual 2-process smoke test was actually run before merge is unconfirmed, worth a live check before relying on it.
+- Monolith at `ember/`: Java 17 + Spring Boot 3.5.14 / React 19 + TS + pnpm. Event bus is Spring `ApplicationEventPublisher`/`@EventListener` only — do **not** reintroduce Kafka (dependency vestigial).
+- **Tenant isolation:** `@TenantId` discriminator on catalog/billing/settings/restaurant/kitchen entities. `User` and `Session` are deliberately excluded (untenanted lookups before a customer JWT is tenant-bound). Customers become tenant-bound only on table-join (`SessionService.bindResolvedTenant`). Every `@DataJpaTest` must `@Import(com.vanter.ember.config.TenantIdentifierResolver.class)`.
+- **WebSocket multi-endpoint gotcha (reports 193-194):** all `WebSocketMessageBrokerConfigurer` beans merge onto one broker/channel; a 2nd `enableSimpleBroker(...)` silently replaces the 1st and its interceptor runs on every endpoint unless handshake-tagged. Only `WebSocketEndpointIsolationTest` catches it.
+- **Digital payments are a STUB** (`gatewayRef = "STUB-..."`) — no real gateway. Biggest revenue gap; blocked on GATEWAY-01 (provider decision).
+- **Commit/PR attribution:** zero Claude attribution in commit messages **or** PR descriptions (no `Co-Authored-By`, no `Claude-Session`, no "Generated with Claude Code" badge/URL). User is sole author — reaffirmed 2026-09-06 after stripping it from 16 PRs.
+- Analytics money semantics: revenue = CONFIRMED `Payment` sums (never bill totals/PENDING); AOV = PAID-`Bill` avg; live counts ignore the query window.
+- Missing shadcn primitives are built from the installed unified `radix-ui` export (`data-slot` convention), not a new dep.
 
 ## Task Queue Status
-- [x] **Core platform** (multi-tenancy, catalog, session/cart, KDS, waiter+caja, refunds/voids, physical payments, staff, admin analytics, loyalty, platform console, Astro landing, i18n ES/EN) — reports 1-181.
-- [x] **EMB-PRINT** (ESC-POS hardware bridge, tenant-isolated print-agent WS) — complete except PRINT-07 (real printer test, no hardware available). Report 180.
-- [ ] **EMB-GATEWAY** — real payment gateway. Blocked on GATEWAY-01 (confirm certified provider(s) for Nicaragua). GATEWAY-02..06 (adapter interface, implementation, webhooks, reconciliation, wire existing settings tab) all open.
-- [x] **EMB-MOD** (reusable modifier groups, cart/KDS/ticket propagation) — complete. Reports 182-187.
-- [x] **EMB-INV** (per-item stock, low-stock alerts, auto-86) — complete. Reports 188-192.
-- [x] **Restaurant onboarding** (admin wizard + waiter tour) — complete. Reports 202-213.
-- [x] **Ember Hub HUB-01** (portable Postgres/MinIO bootstrap, RSA license, hardware fingerprint, grace period, dashboard launcher, bundled frontend, license-activation) — complete. Reports 223-258.
-  - [ ] Hub v2: Tauri/webview shell reusing `frontend/`'s design — not started, needs its own spec/plan.
-  - [ ] Hub: Windows service auto-start (`sc.exe`/SCM recovery) — **deferred**: HUB-03 v1 uses a common-Startup shortcut so the Swing dashboard stays as the operator surface (spec `2026-09-05-hub-installer-design.md` §1).
-  - [ ] **HUB-03 — `jpackage`/Inno Setup `.exe` installer.** Spec `docs/superpowers/specs/2026-09-05-hub-installer-design.md`; plan `docs/superpowers/plans/2026-09-05-hub-installer.md`. Doing tasks one at a time on branch `spec/hub-installer`:
-    - [x] T1 — repo hygiene: `ember-hub/build.env.example` tracked, gitignore `build.env` / `.vendor-cache/` / `dist/` (`e03abaca`)
-    - [x] T2 — `LicenseFileInstaller` helper (TDD, `backend` hub.dashboard) — 4 tests; `./mvnw test` 1048/1048 on this branch
-    - [x] T3 — `HubDashboard`: "Seleccionar license.key…" button (5-col grid, 520px) + `--autostart` flag; `./mvnw test` 1048/1048. Manual Swing smoke deferred to T10.
-    - [x] T4 — `ember-hub/jlink-modules.txt` + `build-installer.ps1` runtime stage → `dist/runtime` (verified: 30 modules / 47.6 MB, `java.exe --version` OK on Adoptium JDK 17.0.17)
-    - [x] T5 — `fetch-vendor-binaries.ps1`: Postgres 16.6-1 (`6a1bfb64…`) + MinIO `RELEASE.2025-04-22` (`2ceb3b3d…`), SHA256-pinned; staged & verified (`initdb 16.6`, `minio RELEASE.2025-04-22`)
-    - [x] T6 — `installer/Iniciar Ember Hub.cmd` shim + `installer/hub.env.example`; parser stub verified (`eol=#`, `delims==`, spaces/backslashes in values, `SPRING_PROFILES_ACTIVE=hub`)
-    - [x] T7 — `make-icon.ps1` (→ `ember-hub.ico`) + `build-installer.ps1` app-image stage. Ran: `build-frontend` → `mvn package` → `jpackage` → assembled pgsql/minio/shim/key. **app-image 377 MB** (fetch script now prunes pgAdmin 4 etc. → pgsql 120 MB). Jar manifest: `JarLauncher` + `Start-Class EmberApplication`, bundled `static/index.html`. Throwaway `hub-public-key.der` in gitignored `ember-hub/keys/`.
-    - [x] T8 — `installer/EmberHub.iss` + `build-installer.ps1` `installer` stage. **Compiled with Inno Setup 6 (per-user install at `%LOCALAPPDATA%\Programs`, added to the iscc search) → `dist/EmberHubSetup-0.0.1.exe` (172 MB)**, clean (`x64compatible`). Firewall delete-then-add private/domain, `%ProgramData%\EmberHub` dirs, `[Code]` writes `hub.env` if absent, common-Startup/desktop/group `.lnk` → shim, uninstaller YES/NO data-delete prompt.
-    - [x] T9 — `ember-hub/README.md` (prereqs, one-time setup, 3 build stages, install layout, 6-item verification checklist) + PROGRESS update
-    - [x] Report 381 — 3 install-blocking defects fixed (bundled prod public key + committed, `JWT_SECRET`/`PLATFORM_JWT_SECRET` generated by `EmberHub.iss`, activation/heartbeat URL → `api.ember.vanter.net/v1`), plus `GET /` → `/app/` redirect. Found on the first real customer install.
-    - [ ] T10 — manual Windows verification (clean install, LAN 2nd PC, license picker, upgrade-in-place, uninstall-keep, 5 boot errors) → `reports/382-…`
-- [x] **Ember Hub license heartbeat** (HEARTBEAT-01..07, cloud + Hub-side, suspended-grace enforcement) — merged to `main` via PR #60. Reports 265-271.
-- [x] **EMBER-FIX** (cash-shift expiry, forced daily close, sentinel modals) — complete, merged to `main` (`78f5fe9`). Report 259.
-- [x] **Hosted Production Deployment** HPD-01..20 (GCP VM, Cloudflare DNS/WAF/Worker, GCS media+backups, monitoring, uptime check) — complete. Reports 272-286, 322-329, PR #76.
-  - [ ] HPD-21: restore test — latest GCS dump → throwaway `pg_restore`, document the real-disaster procedure in `deploy/RUNBOOK.md`.
-  - [ ] HPD-22: E2E product walkthrough on `app.ember.vanter.net` (2 devices, full order flow) + close-out.
-- [x] **Landing SEO — technical base** (LSEO-01/02/03/05: Search Console, Bing, prod CTAs, PageSpeed/Rich-Results/404) — done.
-  - [ ] LSEO-04: Google Business Profile for Vanter.
-  - [ ] LSEO-06..08: content (blog/recursos, 8-15 keyword articles, case studies) — the real traffic lever, not yet started.
-  - [ ] LSEO-09..13: conversion (real contact/demo form, WhatsApp button, hero screencast video, retargeting pixel, social proof near CTA).
-  - [ ] LSEO-14..17: authority/off-page (software directories, Product Hunt, social profiles, local partnerships).
-  - [ ] LSEO-18: minor JSON-LD tweaks (`BreadcrumbList`, real `AggregateOffer`, `VideoObject`, `sameAs`) — do on request.
-- [x] **Payment-flow bug cluster** (bill fetch endpoint, block removing sent items, settle-partial-and-close, leave-table/reject-2nd-session) — complete. Reports 317-320.
-- [~] **Real-time bill bug cluster** (prod, `app.ember.vanter.net`, two diners at one table — bill only shows for the requester, or for nobody):
-  - [x] Bug X — EQUAL_PARTS with a null `participantCount` → `0` → `splitEqually` divide-by-zero (500 *after* the bill committed) → orphan bill blocks the session. Fix: `@AssertTrue` on `RequestBillingRequest` + guard in `splitEqually`. Report 387, PR #85.
-  - [x] Bug X follow-up — `@Transactional` on `handleBillingRequested` so the `participantCount > actual` split failure also rolls the bill back (self-healing, no manual void). Report 388, PR #86.
-  - [ ] Bug Y — colleague never sees the bill, any method, even on refresh. The prime suspect (prod deploy skew — `GET /billing/sessions/{id}/bill` 405 killed `Bill.tsx`'s rehydration fallback) is now **cleared by the `v0.2.1` deploy** (2026-09-06). Needs a live retest with two diners. If it still repros, next suspect is the customer STOMP `SUBSCRIBE` to `/topic/session/{id}` (`JwtChannelInterceptor.isAuthorizedSessionTopic` → `isParticipant`).
-- [~] **Live QA findings — 2026-09-06 session 2** (surfaced while testing on prod; do one at a time):
-  - [x] **Q1** — refund under-pays + loyalty points not reversed after a leaver's share is redistributed.
-    - [x] Q1a — a `DIGITAL` intent created before the redistribution could be confirmed after, locking `Payment.amount` below the inflated split so `refundPayment` capped the refund at the stale figure. Guard in `confirmDigitalPayment` + `redistributeSplit` deletes the bill's `DIGITAL`+`PENDING` intents. Report 389, PR #88 (merged).
-    - [x] Q1b — points accrued at `BILL_SETTLED` off the inflated split were never clawed back on refund. `PaymentRefunded` event + `LoyaltyReversalListener` posts a proportional negative `LoyaltyTransaction`, capped at accrued. Report 390, PR #89 (merged).
-  - [x] Q2 — tax not shown as a line on the customer bill screen (waiter side was a non-bug — rate not configured in that test). `Bill.tsx` reconstructs `Subtotal` + `Impuesto (X%)` from `bill.total` + `settings.billing.taxRate`, frontend-only. Report 391, PR #91 (merged).
-  - [x] Q3 — the "asignar mesa" QR had no route. New public `/menu/join` page: parks the token, routes an unauthenticated scanner through `/login` and back, then `POST /sessions/{id}/join`. Report 392, PR #92. *(Known: `ParticipantsQrModal` builds the URL from `window.location.origin` — wrong for the `/app/`-basename Hub build; pre-existing, cloud unaffected.)*
-  - [x] Q4 — the `'QR'` branch in `JoinTableModal` rendered nothing. New `QrScanner.tsx` (`jsqr`, lazy chunk) → `getUserMedia` + `jsQR` per frame → on decode `navigate('/menu/join?token=…')`. Report 393, PR #93 (stacked on #92).
-  - [x] Q5 — no in-app print-agent setup guidance. Inline hints in `CreateAgentModal` / `AddPrinterModal` + new `printing-agent/README.md`. Report 394, PR #94.
-  - [x] Q6 — no delete buttons. Wired `revokeAgent` + `updatePrinter({active:false})` into `GlobalDeleteModal` + trash buttons + list filters in `PrintingSettings`. Frontend-only. Report 395, PR #95.
-- [x] **FIX-QA** (22 of 23 live QA findings across all 4 roles) — complete except E-23 (PIN-login enumeration oracle, deliberately deferred — needs a product decision, fighting it breaks the "no PIN set" UX). Reports 361-364.
-- [~] **Platform console improvements** — piece **A** done (report 383 / PR #80: `updateRole` tenant-scope + last-admin guard).
-  - [x] **Retire tenants + Hub liveness (B+C)** — branch `spec/platform-console-retire-liveness`, report 384, all 10 tasks done, ready for PR. Spec `docs/superpowers/specs/2026-09-06-platform-console-retire-and-liveness-design.md`, plan `docs/superpowers/plans/2026-09-06-platform-console-retire-and-liveness.md`.
-    - [x] Task 1 — `V8` migration + `Restaurant.deletedAt/deletedBy` + `HubActivation.lastHeartbeatAt/Ip` + `RestaurantStatus.DELETED` + `RestaurantRepository.findByStatusNot`. `@DataJpaTest` 2/2; full suite 1058/1058. (Plan fix: `@DataJpaTest` needs `@Import(TenantIdentifierResolver.class)`.)
-    - [x] Task 2 — `HubStatus` enum + `from(lastHeartbeatAt, now)` → NEVER/ONLINE(<15m)/STALE(<24h)/OFFLINE. `HubStatusTest` 4/4.
-    - [x] Task 3 — `HubActivationRepository.recordHeartbeat` (`@Modifying(clearAutomatically)`) + `findByRestaurantIdIn` + `HubHeartbeatService.heartbeat(request, callerIp)` best-effort (swallows `DataAccessException`) + `HubHeartbeatController` IP (CF-Connecting-IP → XFF → remoteAddr). 16 targeted tests; full suite 1069/1069.
-    - [x] Task 4 — `PlatformRestaurantService.delete`/`restore` (SUSPENDED↔DELETED + audit rows) + `updateStatus` DELETED-transition guards + `getAll(Pageable, includeDeleted)` (1-arg overload kept, delegates to `false`). `PlatformRestaurantServiceTest` 20/20; full suite 1077/1077.
-    - [x] Task 5 — `hubStatus` on summary + `hubStatus`/`hubActivatedAt`/`lastHeartbeatAt`/`lastHeartbeatIp` on detail DTOs, populated in `getAll` (batch `findByRestaurantIdIn`) / `getById`. `PlatformRestaurantService` gains a `HubActivationRepository` ctor param. Service test 23/23; full suite 1080/1080.
-    - [x] Task 6 — `DELETE /platform/restaurants/{id}` (204) + `POST /{id}/restore` (200) + `?includeDeleted` on `GET`. `PlatformRestaurantControllerTest` 20/20; full suite 1085/1085. **Backend for B+C complete.**
-    - [x] Task 7 — `platformApi.ts`: `HubStatus`/`PlatformRestaurantStatus` types (`DELETED` added), hub fields on both interfaces, `deleteRestaurant`/`restoreRestaurant`/`getAll(page,size,includeDeleted)`. `pnpm run build` + `lint` clean.
-    - [x] Task 8 — `ConsoleRestaurants`: Hub column (dot+label), "Ver eliminados" checkbox, muted DELETED rows + `ELIMINADO` badge. Vitest 2/2; build + lint clean.
-    - [x] Task 9 — `ConsoleRestaurantDetail`: Hub panel (estado/activado/último latido/IP) + Eliminar (type-the-slug confirm, only when SUSPENDED) / Restaurar (when DELETED, hides status+license controls). Vitest 3/3; build + lint clean; full frontend `test:run` 83/83.
-    - [x] Task 10 — report 384 + PROGRESS + full verification + PR
-  - [x] **Piece D — `/console` redesign** (report 385, PR pending) — branch `spec/platform-console-redesign` (cut from B/C branch). Spec `docs/superpowers/specs/2026-09-06-platform-console-redesign-design.md`, plan `docs/superpowers/plans/2026-09-06-platform-console-redesign.md`. Executing one task at a time:
-    - [x] Task 1 — backend `GET /platform/stats` (`PlatformStatsResponse{tenants,hubs}` + `RestaurantRepository.countByStatus` + `PlatformStatsService` bucketing hubs via `HubStatus.from`). 5 tests; full suite 1090/1090.
-    - [x] Task 2 — `platformApi.ts`: `PlatformStats` type + `platformStatsService.get` + `platformAuditLogService.getRecent`. build + lint clean.
-    - [x] Task 3 — `frontend/src/components/console/`: `HubBadge` (2 tests) + `ConsolePageHeader`. build + lint clean.
-    - [x] Task 4 — `PlatformLayout` → sidebar shell (`ConsoleSidebar`, `NavLink` active state, `#8c1717`) + mobile drawer + "Cerrar sesión". `PlatformLayout.test.tsx` 2/2; build + lint clean.
-    - [x] Task 5 — `ConsoleDashboard`: tenant + Hub KPI `StatCard`s (`platformStatsService`), recent-activity `<Table>` (`getRecent`), skeleton + error state, quick-action buttons. `ConsoleDashboard.test.tsx` 2/2; build + lint clean.
-    - [x] Task 6 — `ConsoleRestaurants` on shadcn `<Table>`/`<Badge>`/`<Switch>`/`<Label>` + `ConsolePageHeader` + skeleton rows; `hubDot` removed (uses `HubBadge`). Test switched to `role="switch"`; 2/2; build + lint clean.
-    - [x] Task 7 — `ConsoleRestaurantDetail` on `<Card>`/`<Table>`/`<Badge>`/`<HubBadge>` + `ConsolePageHeader`; delete-confirm modal → shadcn `<Dialog>`. B/C behaviour unchanged; `ConsoleRestaurantDetail.test.tsx` 3/3 unchanged; build + lint clean.
-    - [x] Task 8 — `ConsoleLogin`/`Create`/`PasswordChange`: `#920703` → `#8c1717`, all strings + zod + toasts to Spanish, `ConsolePageHeader` on create/password, Ember wordmark on login. `ConsoleLogin.test.tsx` 1/1; full frontend `test:run` 90/90; build + lint clean.
-    - [x] Task 9 — report 385 + PROGRESS + full verification + PR. backend 1090/1090, frontend 90/90.
-- [ ] **Security/hardening debt — surfaced 2026-09-04, none yet has a spec/plan:**
-  - [ ] F-15: Ember Hub activation endpoint returns `adminPasswordHash` in the response — redesign the activation contract + a migration path for already-installed Hub instances.
-  - [ ] F-21: hardcoded credentials literal in `PortableDatabaseBootstrap`/`PortableMinioBootstrap`'s process-launch code — needs the same installed-instance migration path as F-15; do together, same bootstrap code.
-  - [ ] F-24: print-agent API key stored in plaintext on disk — deprioritized under F-15/F-21, no plan yet.
-  - [ ] F-10/E-23: PIN-login account-enumeration oracle — accepted as-is; only revisit with an explicit product decision.
-  - [ ] F-22: a secret is present in git history — accepted as-is; rotate the value if ever revisited, do not rewrite history without explicit approval.
+
+### Guest table-join (Cloud) — DONE, report 397, PR pending
+- [x] T1 `GuestNameGenerator` · [x] T2 `V9` + `User.guest` + `GuestUserService` · [x] T3 `ParticipantJoined.guest` + loyalty guards · [x] T4 `POST /sessions/join-as-guest` · [x] T5 frontend "Entrar como invitado" on `/menu/join` · [x] T6 report + squash + PR.
+- Follow-up not done: public **code-entry-as-guest** page (5-digit code without an account). The `JoinTableModal` guest CTA the plan listed was dropped — that modal is auth-gated.
+
+### Next up (spec/plan pending)
+- [ ] **Ember Hub — waiter-managed seats.** Strip the customer flow from the Hub build; waiter assigns table + participant count, names each seat (name-only `Participant`, `userId` null), adds items per seat via the existing `addWaiterItem` (already carries `participantName`), split billing works as-is. Own spec + plan. Approved direction, not started.
+- [ ] **F-21 — hardcoded credentials** in `PortableDatabaseBootstrap`/`PortableMinioBootstrap`: generate random creds at first boot, persist in `hub.env`, read from env. Own small task.
+
+### Open / deferred
+- [ ] **EMB-GATEWAY** — real payment gateway. Blocked on GATEWAY-01 (certified provider for Nicaragua). GATEWAY-02..06 open.
+- [ ] **HUB-03 T10** — manual Windows verification (clean install, LAN 2nd PC, license picker, upgrade-in-place, uninstall-keep, boot errors) → `reports/382-…`. Spec/plan `…/2026-09-05-hub-installer*`.
+- [ ] **Hub v2** — Tauri/webview shell reusing `frontend/`'s design. Needs its own spec/plan.
+- [ ] **HPD-21** restore test (GCS dump → throwaway `pg_restore`, document in `deploy/RUNBOOK.md`); **HPD-22** E2E prod walkthrough (2 devices).
+- [ ] **Bug Y** — live retest with two diners now that `v0.2.1` cleared the deploy skew (marked fixed by the user, no formal retest logged).
+- [ ] **LSEO** — content (blog / keyword articles / case studies), conversion (contact/demo form, WhatsApp, hero video, retargeting), off-page, minor JSON-LD. LSEO-04 Google Business Profile.
+- [ ] **Security debt:** F-15 (Hub activation returns `adminPasswordHash` — redesign contract + migration path for installed Hubs); F-24 (print-agent key plaintext on disk); F-10/E-23 (PIN-login enumeration oracle — accepted, needs a product decision); F-22 (secret in git history — accepted, rotate if revisited).
+
+### Done (collapsed)
+- [x] Core platform, EMB-PRINT, EMB-MOD, EMB-INV, restaurant onboarding, Ember Hub HUB-01, license heartbeat, EMBER-FIX, HPD-01..20, Landing SEO technical base — reports 1–329.
+- [x] **FIX-QA** (22/23 live findings) — reports 361-364 (E-23 deferred).
+- [x] **Platform console improvements A–D** — `updateRole` guard, retire/soft-delete tenants, Hub liveness/heartbeats in the console, console redesign + `GET /platform/stats`. Reports 383–385, PRs #80/#81/#82.
+- [x] **Real-time bill bug cluster** — Bug X (EQUAL_PARTS divide-by-zero) + `@Transactional` handler. Reports 387-388, PRs #85/#86.
+- [x] **Live QA findings Q1–Q6** — Q1a stale digital intent, Q1b loyalty reversal on refund, Q2 customer tax breakdown, Q3 `/menu/join` page, Q4 in-app QR scanner, Q5 print-agent setup docs, Q6 delete buttons. Reports 389–395, PRs #88/#89/#91–#95.
+- [x] **Menu responsive** — report 396.
+- [x] Prod backend deployed to `v0.2.1` (Q1–Q6 backend + platform console). Reports 387/388, deploy incident recovered.

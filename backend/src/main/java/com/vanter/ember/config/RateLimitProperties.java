@@ -71,5 +71,7 @@ public class RateLimitProperties {
      */
     private List<String> paths = new ArrayList<>(
             List.of("/auth/login", "/auth/login/pin", "/auth/register", "/platform/auth/login",
-                    "/hub-activations", "/hub-heartbeat", "/sessions/join", "/printing/agents/token"));
+                    "/hub-activations", "/hub-heartbeat", "/sessions/join", "/printing/agents/token",
+                    // Mints a users row per call — same abuse surface as /sessions/join.
+                    "/sessions/join-as-guest"));
 }

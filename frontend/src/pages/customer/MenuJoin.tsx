@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Navigate, useNavigate, useSearchParams, Link } from 'react-router-dom'
+import { useNavigate, useSearchParams, Link } from 'react-router-dom'
 import { isAxiosError } from 'axios'
 import toast from 'react-hot-toast'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -37,6 +37,7 @@ export const MenuJoin = () => {
 
   const [name, setName] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [guestMode, setGuestMode] = useState(false)
 
   useEffect(() => {
     if (qrToken) sessionStorage.setItem(PENDING_QR_TOKEN_KEY, qrToken)
@@ -57,26 +58,98 @@ export const MenuJoin = () => {
     )
   }
 
+  const finishJoin = (data: { token?: string; session?: unknown }) => {
+    if (data.token) setAuth({ token: data.token })
+    if (data.session) setSession(data.session as never)
+    sessionStorage.removeItem(PENDING_QR_TOKEN_KEY)
+    toast.success(t('joinSuccessToast'))
+    navigate('/customer/menu', { replace: true })
+  }
+
+  const reportJoinError = (error: unknown) => {
+    const status = isAxiosError(error) ? error.response?.status : undefined
+    if (status === 404) toast.error(t('qrJoinExpiredToast'))
+    else if (status === 409) toast.error(t('joinBlockedOtherTableToast'))
+    else toast.error(t('qrJoinGenericErrorToast'))
+  }
+
   if (!token || role !== 'CUSTOMER') {
-    return <Navigate to="/login" replace />
+    const guestSubmit = async () => {
+      if (submitting) return
+      setSubmitting(true)
+      try {
+        finishJoin(
+          await SessionTableService.joinAsGuest({ qrToken, name: name.trim() || undefined }),
+        )
+      } catch (error) {
+        reportJoinError(error)
+      } finally {
+        setSubmitting(false)
+      }
+    }
+
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
+        <Card className="w-full max-w-sm rounded-3xl">
+          <CardHeader>
+            <CardTitle className="text-2xl font-bold text-[#8c1717]">{t('qrJoinTitle')}</CardTitle>
+            <p className="text-sm text-gray-500">
+              {guestMode ? t('qrJoinGuestNameLabel') : t('qrJoinChoiceSubtitle')}
+            </p>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-3">
+            {guestMode ? (
+              <>
+                <Input
+                  autoFocus
+                  value={name}
+                  maxLength={50}
+                  placeholder={t('qrJoinNamePlaceholder')}
+                  onChange={(e) => setName(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && guestSubmit()}
+                />
+                <Button
+                  className="h-12 w-full text-lg font-bold hover:bg-[#6a1111]"
+                  disabled={submitting}
+                  onClick={guestSubmit}
+                >
+                  {submitting ? t('qrJoinSubmitting') : t('qrJoinGuestSubmit')}
+                </Button>
+                <Button variant="ghost" className="w-full" onClick={() => setGuestMode(false)}>
+                  {t('joinModalBackButton')}
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                  className="h-12 w-full text-lg font-bold hover:bg-[#6a1111]"
+                  onClick={() => navigate('/login', { replace: true })}
+                >
+                  {t('qrJoinSignInCta')}
+                </Button>
+                <Button
+                  variant="outline"
+                  className="h-12 w-full text-lg font-bold"
+                  onClick={() => setGuestMode(true)}
+                >
+                  {t('qrJoinGuestCta')}
+                </Button>
+              </>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
   const submit = async () => {
     if (name.trim().length === 0 || submitting) return
     setSubmitting(true)
     try {
-      const data = await SessionTableService.joinSessionViaQr(sessionId, qrToken, name.trim())
-      if (data.token) setAuth({ token: data.token })
-      if (data.session) setSession(data.session)
-      sessionStorage.removeItem(PENDING_QR_TOKEN_KEY)
-      toast.success(t('joinSuccessToast'))
-      navigate('/customer/menu', { replace: true })
+      finishJoin(await SessionTableService.joinSessionViaQr(sessionId, qrToken, name.trim()))
     } catch (error) {
       sessionStorage.removeItem(PENDING_QR_TOKEN_KEY)
-      const status = isAxiosError(error) ? error.response?.status : undefined
-      if (status === 404) toast.error(t('qrJoinExpiredToast'))
-      else if (status === 409) toast.error(t('joinBlockedOtherTableToast'))
-      else toast.error(t('qrJoinGenericErrorToast'))
+      reportJoinError(error)
       navigate('/customer', { replace: true })
     } finally {
       setSubmitting(false)

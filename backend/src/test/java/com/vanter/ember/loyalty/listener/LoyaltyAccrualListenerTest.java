@@ -14,6 +14,8 @@ import com.vanter.ember.billing.model.BillSplit;
 import com.vanter.ember.billing.model.BillSplitStatus;
 import com.vanter.ember.billing.repository.BillSplitRepository;
 import com.vanter.ember.config.TenantContextHolder;
+import com.vanter.ember.identity.model.User;
+import com.vanter.ember.identity.repository.UserRepository;
 import com.vanter.ember.loyalty.model.LoyaltyAccount;
 import com.vanter.ember.loyalty.service.LoyaltyAccountService;
 import com.vanter.ember.loyalty.service.LoyaltyService;
@@ -25,6 +27,7 @@ import com.vanter.ember.settings.model.SettingsPayload;
 import com.vanter.ember.settings.service.SettingService;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,6 +45,7 @@ class LoyaltyAccrualListenerTest {
     @Mock SessionService sessionService;
     @Mock LoyaltyAccountService loyaltyAccountService;
     @Mock LoyaltyService loyaltyService;
+    @Mock UserRepository userRepository;
     @InjectMocks LoyaltyAccrualListener listener;
 
     private static final UUID TENANT_ID = UUID.randomUUID();
@@ -135,6 +139,23 @@ class LoyaltyAccrualListenerTest {
 
         BillSplit ghostSplit = splitFor("Ghost", "15.00");
         when(billSplitRepository.findByBillId(BILL_ID)).thenReturn(List.of(ghostSplit));
+
+        listener.handlePaymentCompleted(new PaymentCompleted(SESSION_ID, UUID.randomUUID(), BILL_ID));
+
+        verify(loyaltyAccountService, never()).findOrCreate(any(), any());
+        verify(loyaltyAccountService, never()).credit(any(), anyInt(), any(), any(), any());
+    }
+
+    @Test
+    void handlePaymentCompleted_guestParticipant_notCredited() {
+        SettingsPayload.LoyaltySettings settings = enabledSettings();
+        when(settingService.getSettings(TENANT_ID)).thenReturn(settingsWith(settings));
+
+        Participant guest = Participant.builder().userId("user-guest").name("Puma Veloz").build();
+        when(sessionService.findById(SESSION_ID)).thenReturn(sessionWithParticipants(guest));
+        when(billSplitRepository.findByBillId(BILL_ID)).thenReturn(List.of(splitFor("Puma Veloz", "25.00")));
+        when(userRepository.findById("user-guest"))
+                .thenReturn(Optional.of(User.builder().guest(true).build()));
 
         listener.handlePaymentCompleted(new PaymentCompleted(SESSION_ID, UUID.randomUUID(), BILL_ID));
 

@@ -1,7 +1,9 @@
 package com.vanter.ember.session.controller;
 
+import com.vanter.ember.identity.model.User;
 import com.vanter.ember.identity.repository.UserRepository;
 import com.vanter.ember.identity.service.AuthService;
+import com.vanter.ember.identity.service.GuestUserService;
 import com.vanter.ember.session.dto.*;
 import com.vanter.ember.session.model.Session;
 import com.vanter.ember.session.model.SessionStatus;
@@ -18,6 +20,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -38,6 +41,7 @@ public class SessionController {
     private final QrTokenService qrTokenService;
     private final UserRepository userRepository;
     private final AuthService authService;
+    private final GuestUserService guestUserService;
 
     @Operation(summary = "Create a session (WAITER)")
     @PostMapping
@@ -110,14 +114,29 @@ public class SessionController {
         return withRescopedToken(session, authentication);
     }
 
+    @Operation(summary = "Join a table with no account — mints a throwaway guest identity")
+    @PostMapping("/join-as-guest")
+    @Transactional
+    public JoinSessionResponse joinAsGuest(@Valid @RequestBody JoinAsGuestRequest request) {
+        User guest = guestUserService.createGuest(request.name());
+        Session session = request.hasQrToken()
+                ? sessionService.joinSession(request.qrToken(), guest.getEmail(), guest.getName())
+                : sessionService.joinSessionCode(request.joinCode(), guest.getEmail());
+        return withRescopedToken(session, guest.getEmail());
+    }
+
     /**
      * Joining a table is the moment a customer's restaurant becomes known, so it is also where
      * their token stops being tenant-less and starts carrying the {@code rid} every later
      * tenant-scoped read needs.
      */
     private JoinSessionResponse withRescopedToken(Session session, Authentication authentication) {
+        return withRescopedToken(session, authentication.getName());
+    }
+
+    private JoinSessionResponse withRescopedToken(Session session, String email) {
         String token = authService
-                .issueTenantScopedToken(authentication.getName(), session.getTenantId())
+                .issueTenantScopedToken(email, session.getTenantId())
                 .getToken();
         return new JoinSessionResponse(session, token);
     }

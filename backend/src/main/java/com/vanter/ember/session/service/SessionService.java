@@ -182,7 +182,8 @@ public class SessionService {
         Session saved = sessionRepository.save(session);
 
         eventPublisher.publishEvent(
-                new ParticipantJoined(saved.getTenantId(), saved.getId(), user.getId(), userName));
+                new ParticipantJoined(saved.getTenantId(), saved.getId(), user.getId(), userName,
+                        Boolean.TRUE.equals(user.getGuest())));
         return saved;
     }
 
@@ -217,7 +218,8 @@ public class SessionService {
         session.getParticipants().add(Participant.builder().userId(user.getId()).name(user.getName()).build());
         Session saved = sessionRepository.save(session);
         eventPublisher.publishEvent(
-                new ParticipantJoined(saved.getTenantId(), saved.getId(), user.getId(), user.getName()));
+                new ParticipantJoined(saved.getTenantId(), saved.getId(), user.getId(), user.getName(),
+                        Boolean.TRUE.equals(user.getGuest())));
         return saved;
     }
 

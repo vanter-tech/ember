@@ -64,6 +64,7 @@ class SessionControllerTest {
     @MockBean UserRepository userRepository;
     @MockBean RestaurantRepository restaurantRepository;
     @MockBean AuthService authService;
+    @MockBean com.vanter.ember.identity.service.GuestUserService guestUserService;
 
     private static final UUID TABLE_ID = UUID.randomUUID();
 

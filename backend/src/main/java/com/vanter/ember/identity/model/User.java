@@ -47,6 +47,12 @@ public class User {
     @Builder.Default
     private Boolean active = true;
 
+    /** True for a throwaway walk-in identity created by POST /sessions/join-as-guest. Guests
+     *  behave like a CUSTOMER for the session but never get a loyalty account or visits. */
+    @Column(nullable = false)
+    @Builder.Default
+    private Boolean guest = false;
+
     @Column(name = "job_title")
     private String jobTitle;
 

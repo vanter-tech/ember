@@ -1,6 +1,7 @@
 package com.vanter.ember.loyalty.listener;
 
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.vanter.ember.loyalty.service.LoyaltyAccountService;
 import com.vanter.ember.session.event.ParticipantJoined;
@@ -25,5 +26,16 @@ class LoyaltyAccountJoinListenerTest {
         listener.handleParticipantJoined(event);
 
         verify(loyaltyAccountService).findOrCreate(tenantId, "user-1");
+    }
+
+    @Test
+    void handleParticipantJoined_guest_doesNotCreateAccount() {
+        UUID tenantId = UUID.randomUUID();
+        ParticipantJoined event = new ParticipantJoined(
+                "PARTICIPANT_JOINED", tenantId, "sess-1", "user-1", "Puma Veloz", true);
+
+        listener.handleParticipantJoined(event);
+
+        verifyNoInteractions(loyaltyAccountService);
     }
 }

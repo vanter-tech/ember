@@ -20,6 +20,9 @@ public class LoyaltyAccountJoinListener {
 
     @EventListener
     public void handleParticipantJoined(ParticipantJoined event) {
+        if (event.guest()) {
+            return;
+        }
         loyaltyAccountService.findOrCreate(event.tenantId(), event.userId());
     }
 }

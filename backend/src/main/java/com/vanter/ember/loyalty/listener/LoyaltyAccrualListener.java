@@ -4,6 +4,7 @@ import com.vanter.ember.billing.event.PaymentCompleted;
 import com.vanter.ember.billing.model.BillSplit;
 import com.vanter.ember.billing.repository.BillSplitRepository;
 import com.vanter.ember.config.TenantContextHolder;
+import com.vanter.ember.identity.repository.UserRepository;
 import com.vanter.ember.loyalty.model.LoyaltyAccount;
 import com.vanter.ember.loyalty.service.LoyaltyAccountService;
 import com.vanter.ember.loyalty.service.LoyaltyService;
@@ -32,6 +33,7 @@ public class LoyaltyAccrualListener {
     private final SessionService sessionService;
     private final LoyaltyAccountService loyaltyAccountService;
     private final LoyaltyService loyaltyService;
+    private final UserRepository userRepository;
 
     @EventListener
     public void handlePaymentCompleted(PaymentCompleted event) {
@@ -47,9 +49,17 @@ public class LoyaltyAccrualListener {
             session.getParticipants().stream()
                     .filter(participant -> participant.getName().equals(split.getParticipantName()))
                     .findFirst()
+                    .filter(participant -> participant.getUserId() != null && !isGuest(participant.getUserId()))
                     .ifPresent(participant ->
                             accrue(tenantId, participant.getUserId(), split, settings, event.billId()));
         }
+    }
+
+    /** A guest / account-less participant (Hub waiter-managed seats) never earns points. */
+    private boolean isGuest(String userId) {
+        return userRepository.findById(userId)
+                .map(user -> Boolean.TRUE.equals(user.getGuest()))
+                .orElse(false);
     }
 
     private void accrue(
