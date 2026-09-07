@@ -175,6 +175,7 @@ export const AddPrinterModal = () => {
                       <FormControl>
                         <Input placeholder={t('printingQueueNamePlaceholder')} className="rounded-xl" {...field} />
                       </FormControl>
+                      <p className="text-xs text-zinc-500">{t('printingQueueNameHint')}</p>
                     </FormItem>
                   )}
                 />
