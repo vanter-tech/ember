@@ -124,14 +124,14 @@ export const Menu = () => {
           <LanguageSwitcher />
         </div>
         <div className="flex flex-col gap-4 p-4">
-          <div className="flex items-center justify-between p-4">
+          <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
             <div className=" flex flex-col">
               <h1 className="text-3xl font-bold">{t('menuTitle')}</h1>
               <p className="text-sm text-gray-500 mt-1">
                 {t('menuSubtitle')}
               </p>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <Badge className="p-6 text-md font-bold flex gap-3">
                 {' '}
                 {t('tableCodeLabel', { code: joinCode ?? '' })}
