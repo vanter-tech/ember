@@ -16,6 +16,7 @@ import { BusinessHoursSettings } from "./components/settings/BusinessHoursSettin
 import { HardwareSettings } from "./components/settings/HardwareSettings";
 import { LoyaltySettings } from "./components/settings/LoyaltySettings";
 import { LoyaltyRewardsSettings } from "./components/settings/LoyaltyRewardsSettings";
+import { InfoSettings } from "./components/settings/InfoSettings";
 
 // Every tab's tour is a single step against the shared #settings-tour-content pane (the tab
 // switch is local state, not a route, so there's no per-tab element to add stable ids to without
@@ -23,10 +24,11 @@ import { LoyaltyRewardsSettings } from "./components/settings/LoyaltyRewardsSett
 // navigation step since it's the tab a fresh admin lands on first.
 type AdminTranslationKey = keyof (typeof dictionaries)['es']['admin']
 
-const TAB_TOUR_KEYS: Record<
+// Partial: static tabs (e.g. INFO) have no tour — the guard in `tourSteps` handles the gap.
+const TAB_TOUR_KEYS: Partial<Record<
     Exclude<SettingsType, null>,
     { title: AdminTranslationKey; content: AdminTranslationKey }
-> = {
+>> = {
     BRANDING: { title: 'tourSettingsBrandingTitle', content: 'tourSettingsBrandingContent' },
     MENU: { title: 'tourSettingsMenuTitle', content: 'tourSettingsMenuContent' },
     BILLING: { title: 'tourSettingsBillingTitle', content: 'tourSettingsBillingContent' },
@@ -69,10 +71,13 @@ export const Settings = () => {
                 return isHubBuild() ? null : <LoyaltySettings />;
             case 'LOYALTY_REWARDS':
                 return isHubBuild() ? null : <LoyaltyRewardsSettings />;
+            case 'INFO':
+                return <InfoSettings />;
         }
     };
 
-    const tourSteps = activeSettings
+    const activeTabTour = activeSettings ? TAB_TOUR_KEYS[activeSettings] : undefined;
+    const tourSteps = activeSettings && activeTabTour
         ? [
               ...(activeSettings === 'BRANDING'
                   ? [
@@ -86,8 +91,8 @@ export const Settings = () => {
                   : []),
               {
                   target: '#settings-tour-content',
-                  title: t(TAB_TOUR_KEYS[activeSettings].title),
-                  content: t(TAB_TOUR_KEYS[activeSettings].content),
+                  title: t(activeTabTour.title),
+                  content: t(activeTabTour.content),
                   skipBeacon: activeSettings !== 'BRANDING',
               },
           ]
@@ -105,7 +110,7 @@ export const Settings = () => {
             shadow-sm border border-zinc-200">
                 {renderContent()}
             </div>
-            {activeSettings && (
+            {activeSettings && tourSteps.length > 0 && (
                 <SectionTour
                     key={activeSettings}
                     sectionId={`admin-settings-${activeSettings.toLowerCase()}`}

@@ -27,6 +27,7 @@ const SETTINGS_TAB_LABEL_KEYS: Record<Exclude<SettingsType, null>, AdminTranslat
   HORARIO: 'scheduleLabel',
   FIDELIZACION: 'loyaltyLabel',
   LOYALTY_REWARDS: 'rewardCatalogTitle',
+  INFO: 'infoLabel',
 }
 
 interface ResultEntry {
