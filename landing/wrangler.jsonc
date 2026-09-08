@@ -3,6 +3,9 @@
   "name": "ember",
   "compatibility_date": "2026-08-31",
   "main": "./worker/index.ts",
+  "vars": {
+    "CONTACT_TO": "tofernandoband01@outlook.com"
+  },
   "assets": {
     "directory": "./dist",
     "not_found_handling": "404-page",

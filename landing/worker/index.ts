@@ -6,10 +6,12 @@
  * message by email through Resend. Everything else falls through to the static
  * assets (and `not_found_handling: "404-page"` for unknown paths).
  *
- * Runtime variables — Workers & Pages -> ember -> Settings -> Variables and Secrets:
- *   RESEND_API_KEY        Secret  (resend.com -> API Keys)
- *   TURNSTILE_SECRET_KEY  Secret  (Cloudflare -> Turnstile -> your widget)
- *   CONTACT_TO            Text    (inbox that receives the messages)
+ * Config:
+ *   CONTACT_TO            plaintext var in wrangler.jsonc (survives `wrangler deploy`)
+ *   RESEND_API_KEY        Secret  — ember Worker -> Settings -> Variables and Secrets
+ *   TURNSTILE_SECRET_KEY  Secret  — same place
+ * Dashboard-added *plaintext* vars are wiped by each Workers Builds deploy, so
+ * CONTACT_TO lives in wrangler.jsonc; only the two secrets are set out of band.
  *
  * The Turnstile *site* key is public and lives in the client bundle
  * (PUBLIC_TURNSTILE_SITE_KEY at build time, or hard-coded in ContactForm.tsx).
@@ -85,8 +87,16 @@ async function handleContact(request: Request, env: Env): Promise<Response> {
     return json(400, 'invalid');
   }
 
-  if (!env.TURNSTILE_SECRET_KEY || !env.RESEND_API_KEY || !env.CONTACT_TO) {
-    return json(500, 'not_configured');
+  const missing = [
+    !env.TURNSTILE_SECRET_KEY && 'TURNSTILE_SECRET_KEY',
+    !env.RESEND_API_KEY && 'RESEND_API_KEY',
+    !env.CONTACT_TO && 'CONTACT_TO',
+  ].filter(Boolean);
+  if (missing.length) {
+    return new Response(JSON.stringify({ error: 'not_configured', missing }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 
   const token = (body.turnstileToken ?? '').trim();
