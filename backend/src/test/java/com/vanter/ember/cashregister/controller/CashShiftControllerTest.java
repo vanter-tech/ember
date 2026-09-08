@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -87,6 +88,32 @@ class CashShiftControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.status").value("OPEN"));
+    }
+
+    @Test
+    @WithMockUser(username = "waiter@ember.local", roles = "WAITER")
+    void current_returnsEmpty200WhenNoShiftOpen() throws Exception {
+        TenantContextHolder.setTenantId(TENANT_ID);
+        when(cashShiftService.findCurrentOpenShift(TENANT_ID)).thenReturn(Optional.empty());
+
+        mockMvc.perform(get("/cash-shifts/current"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(""));
+    }
+
+    @Test
+    @WithMockUser(username = "waiter@ember.local", roles = "WAITER")
+    void current_returnsTheOpenShiftWhenOneExists() throws Exception {
+        TenantContextHolder.setTenantId(TENANT_ID);
+        when(cashShiftService.findCurrentOpenShift(TENANT_ID)).thenReturn(Optional.of(sampleShift()));
+        when(cashShiftService.toResponse(any())).thenReturn(new CashShiftResponse(
+                1L, 1, "OPEN", new BigDecimal("100.00"), "Alice", LocalDateTime.now(),
+                null, null, null, null, null, null, null, null, null,
+                null, null, false, null, 0));
+
+        mockMvc.perform(get("/cash-shifts/current"))
+                .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("OPEN"));
     }
 

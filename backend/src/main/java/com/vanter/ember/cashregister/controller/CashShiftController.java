@@ -56,12 +56,15 @@ public class CashShiftController {
         return cashShiftService.toResponse(shift);
     }
 
-    @Operation(summary = "Get the tenant's currently open shift (WAITER/ADMIN)")
+    @Operation(summary = "Get the tenant's currently open shift, or an empty 200 if none (WAITER/ADMIN)")
     @GetMapping("/current")
     @PreAuthorize("hasAnyRole('WAITER','ADMIN')")
     public CashShiftResponse current() {
-        return cashShiftService.toResponse(
-                cashShiftService.getCurrentOpenShift(TenantContextHolder.requireTenantId()));
+        // No open shift is a normal state (register not opened yet) — return an empty 200
+        // rather than a 404 so it doesn't show up as an error in the browser console.
+        return cashShiftService.findCurrentOpenShift(TenantContextHolder.requireTenantId())
+                .map(cashShiftService::toResponse)
+                .orElse(null);
     }
 
     @Operation(summary = "List cash shift history (WAITER/ADMIN)")

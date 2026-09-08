@@ -675,9 +675,11 @@ export const cashShiftService = {
   },
   current: async (): Promise<CashShiftResponse | null> => {
     try {
+      // No open shift → the backend returns an empty 200 (axios gives '' for an empty body).
       const { data } = await api.get<CashShiftResponse>('/cash-shifts/current')
-      return data
+      return data || null
     } catch (error) {
+      // Kept for the rolling-deploy window when the old backend still 404s on "no shift".
       if (axios.isAxiosError(error) && error.response?.status === 404) return null
       throw error
     }
