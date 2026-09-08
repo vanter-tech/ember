@@ -146,7 +146,7 @@ export const TopNav = () => {
           <Clock size={18} strokeWidth={2} />
           {now.toLocaleTimeString(locale === 'en' ? 'en-US' : 'es-MX', { hour: '2-digit', minute: '2-digit' })}
         </div>
-      ) : isAnalyticsRoute || isSettingsRoute ? null : (
+      ) : isAnalyticsRoute || isSettingsRoute || !actionType ? null : (
         <button
           id="topnav-create-button"
           aria-label={buttonText}

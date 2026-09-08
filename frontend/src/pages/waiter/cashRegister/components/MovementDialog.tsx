@@ -1,0 +1,133 @@
+import { useMemo } from 'react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { z } from 'zod'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import toast from 'react-hot-toast'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import { Form, FormControl, FormField, FormItem, FormLabel } from '@/components/ui/form'
+import { useUIStore } from '@/store/uiStore'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { cashShiftService } from '@/lib/api'
+import { useTranslation } from '@/lib/i18n'
+
+const createMovementSchema = (t: ReturnType<typeof useTranslation<'waiter'>>['t']) =>
+  z.object({
+    type: z.enum(['CASH_IN', 'CASH_OUT']),
+    amount: z.coerce.number().positive(t('movementAmountPositiveError')),
+    reason: z.string().min(3, t('movementReasonRequiredError')),
+  })
+
+type MovementInputs = z.infer<ReturnType<typeof createMovementSchema>>
+
+export const MovementDialog = () => {
+  const { t } = useTranslation('waiter')
+  const { activeModal, modalPayload, closeModal } = useUIStore()
+  const queryClient = useQueryClient()
+  const shiftId = modalPayload?.shiftId as number | undefined
+  const movementSchema = useMemo(() => createMovementSchema(t), [t])
+
+  const form = useForm({
+    resolver: zodResolver(movementSchema),
+    defaultValues: { type: 'CASH_IN', amount: 0, reason: '' },
+  })
+
+  const mutation = useMutation({
+    mutationFn: (data: MovementInputs) => cashShiftService.recordMovement(shiftId!, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cashShiftDetail', shiftId] })
+      toast.success(t('movementRegisteredToast'))
+      form.reset()
+      closeModal()
+    },
+    onError: () => {
+      toast.error(t('movementErrorToast'))
+    },
+  })
+
+  return (
+    <Dialog open={activeModal === 'CASH_MOVEMENT'} onOpenChange={(isOpen) => !isOpen && closeModal()}>
+      <DialogContent className="sm:max-w-md rounded-3xl p-6">
+        <DialogHeader className="mb-4">
+          <DialogTitle className="text-2xl font-bold text-zinc-800">{t('movementDialogTitle')}</DialogTitle>
+        </DialogHeader>
+
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit((data) => mutation.mutate(data))} className="space-y-5">
+            <FormField
+              control={form.control}
+              name="type"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('typeLabel')}</FormLabel>
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <FormControl>
+                      <SelectTrigger className="w-full rounded-xl">
+                        <SelectValue />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="CASH_IN">{t('cashInLabel')}</SelectItem>
+                      <SelectItem value="CASH_OUT">{t('cashOutLabel')}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="amount"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('amountLabel')}</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0.01"
+                      className="rounded-xl"
+                      {...field}
+                      value={field.value as number}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="reason"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('reasonLabel')}</FormLabel>
+                  <FormControl>
+                    <Textarea className="resize-none h-20 rounded-xl" {...field} />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={closeModal} disabled={mutation.isPending}>
+                {t('cancelButton')}
+              </Button>
+              <Button type="submit" disabled={mutation.isPending || !shiftId}>
+                {mutation.isPending ? t('movementSavingLabel') : t('registerButton')}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  )
+}
