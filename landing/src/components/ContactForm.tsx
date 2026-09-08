@@ -4,10 +4,12 @@ import type { Lang } from '../i18n/ui';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-// Cloudflare's "always passes" test key — used when no real key is configured
-// (local dev, preview deploys without the env var).
-const TEST_SITE_KEY = '1x00000000000000000000AA';
-const SITE_KEY = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY || TEST_SITE_KEY;
+// Real key comes from the Cloudflare Pages env var PUBLIC_TURNSTILE_SITE_KEY,
+// inlined at build time. When it is absent (local dev, an unconfigured deploy)
+// no widget is shown at all — the server rejects the submit anyway until the
+// matching secret is configured, so a visible "testing only" box adds nothing.
+const SITE_KEY = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY as string | undefined;
+const HAS_CAPTCHA = Boolean(SITE_KEY);
 
 interface TurnstileApi {
   render: (
@@ -18,6 +20,7 @@ interface TurnstileApi {
       'error-callback'?: () => void;
       'expired-callback'?: () => void;
       theme?: 'auto' | 'light' | 'dark';
+      appearance?: 'always' | 'execute' | 'interaction-only';
     },
   ) => string;
   reset: (id?: string) => void;
@@ -67,13 +70,15 @@ export default function ContactForm({ lang = 'es' }: { lang?: Lang }) {
   const token = useRef('');
 
   useEffect(() => {
+    if (!HAS_CAPTCHA) return;
     let cancelled = false;
     loadTurnstile()
       .then(() => {
         if (cancelled || !widgetRef.current || !window.turnstile || widgetId.current) return;
         widgetId.current = window.turnstile.render(widgetRef.current, {
-          sitekey: SITE_KEY,
+          sitekey: SITE_KEY as string,
           theme: 'auto',
+          appearance: 'interaction-only',
           callback: (tk) => {
             token.current = tk;
           },
@@ -109,7 +114,7 @@ export default function ContactForm({ lang = 'es' }: { lang?: Lang }) {
       setErrors(validationErrors);
       return;
     }
-    if (!token.current) {
+    if (HAS_CAPTCHA && !token.current) {
       setErrors({ form: t('cform.captcha') });
       return;
     }
@@ -148,46 +153,48 @@ export default function ContactForm({ lang = 'es' }: { lang?: Lang }) {
 
   return (
     <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-5">
-      <div>
-        <label htmlFor="contact-name" className={labelClass}>
-          {t('cform.name')}
-        </label>
-        <input
-          id="contact-name"
-          type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          autoComplete="name"
-          aria-invalid={Boolean(errors.name)}
-          aria-describedby={errors.name ? 'contact-name-error' : undefined}
-          className={fieldClass(Boolean(errors.name))}
-        />
-        {errors.name && (
-          <p id="contact-name-error" role="alert" className="mt-1.5 text-sm text-destructive">
-            {errors.name}
-          </p>
-        )}
-      </div>
+      <div className="grid gap-5 sm:grid-cols-2">
+        <div>
+          <label htmlFor="contact-name" className={labelClass}>
+            {t('cform.name')}
+          </label>
+          <input
+            id="contact-name"
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            autoComplete="name"
+            aria-invalid={Boolean(errors.name)}
+            aria-describedby={errors.name ? 'contact-name-error' : undefined}
+            className={fieldClass(Boolean(errors.name))}
+          />
+          {errors.name && (
+            <p id="contact-name-error" role="alert" className="mt-1.5 text-sm text-destructive">
+              {errors.name}
+            </p>
+          )}
+        </div>
 
-      <div>
-        <label htmlFor="contact-email" className={labelClass}>
-          {t('cform.email')}
-        </label>
-        <input
-          id="contact-email"
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          autoComplete="email"
-          aria-invalid={Boolean(errors.email)}
-          aria-describedby={errors.email ? 'contact-email-error' : undefined}
-          className={fieldClass(Boolean(errors.email))}
-        />
-        {errors.email && (
-          <p id="contact-email-error" role="alert" className="mt-1.5 text-sm text-destructive">
-            {errors.email}
-          </p>
-        )}
+        <div>
+          <label htmlFor="contact-email" className={labelClass}>
+            {t('cform.email')}
+          </label>
+          <input
+            id="contact-email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            autoComplete="email"
+            aria-invalid={Boolean(errors.email)}
+            aria-describedby={errors.email ? 'contact-email-error' : undefined}
+            className={fieldClass(Boolean(errors.email))}
+          />
+          {errors.email && (
+            <p id="contact-email-error" role="alert" className="mt-1.5 text-sm text-destructive">
+              {errors.email}
+            </p>
+          )}
+        </div>
       </div>
 
       <div>
@@ -196,7 +203,7 @@ export default function ContactForm({ lang = 'es' }: { lang?: Lang }) {
         </label>
         <textarea
           id="contact-message"
-          rows={4}
+          rows={5}
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           aria-invalid={Boolean(errors.message)}
@@ -223,7 +230,7 @@ export default function ContactForm({ lang = 'es' }: { lang?: Lang }) {
         />
       </div>
 
-      <div ref={widgetRef} className="min-h-[65px]" />
+      {HAS_CAPTCHA && <div ref={widgetRef} />}
 
       {errors.form && (
         <p
