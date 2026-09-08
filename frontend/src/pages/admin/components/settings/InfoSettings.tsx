@@ -1,6 +1,3 @@
-import { Info } from 'lucide-react'
-
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useTranslation } from '@/lib/i18n'
 
 const VANTER_URL = 'https://vanter.net'
@@ -11,45 +8,58 @@ export const InfoSettings = () => {
   const year = new Date().getFullYear()
 
   return (
-    <Card className="shadow-sm border-zinc-100">
-      <CardHeader className="flex flex-row items-center gap-4 space-y-0 p-6">
-        <div className="w-12 h-12 bg-red-50 text-[#7a1315] rounded-full flex items-center justify-center">
-          <Info className="w-6 h-6" />
-        </div>
-        <div>
-          <CardTitle className="text-xl">{t('infoCardTitle')}</CardTitle>
-          <CardDescription>{t('infoCardDescription')}</CardDescription>
-        </div>
-      </CardHeader>
+    <div className="h-full flex flex-col justify-center gap-8 p-6 md:p-10">
+      {/* Vanter (builds & distributes) on the left, a hair-line divider, Ember (the product)
+          on the right. */}
+      <div className="flex items-center justify-center gap-6 sm:gap-10">
+        <a
+          href={VANTER_URL}
+          target="_blank"
+          rel="noreferrer"
+          className="shrink-0 transition-opacity hover:opacity-80"
+        >
+          <img
+            src="/vanter-tech_logo.webp"
+            alt="Vanter"
+            className="h-12 w-auto object-contain sm:h-14"
+          />
+        </a>
+        <span aria-hidden className="h-12 w-px bg-zinc-200 sm:h-14" />
+        <img
+          src="/ember_logo_info.svg"
+          alt="Ember"
+          className="h-12 w-auto object-contain sm:h-14"
+        />
+      </div>
 
-      <CardContent>
-        <div className="max-w-md space-y-4 text-sm text-zinc-700">
-          <p>
-            {t('infoMadeByPrefix')}{' '}
-            <a
-              href={VANTER_URL}
-              target="_blank"
-              rel="noreferrer"
-              className="font-medium text-[#7a1315] hover:underline"
-            >
-              vanter.net
-            </a>
-          </p>
-          <p className="text-zinc-500">{t('infoLocation')}</p>
-          <p className="text-xs text-muted-foreground">{t('infoCopyright', { year })}</p>
-          <p className="pt-2 border-t text-zinc-500">
-            {t('infoSupportPrefix')}{' '}
-            <a
-              href={SUPPORT_URL}
-              target="_blank"
-              rel="noreferrer"
-              className="font-medium text-[#7a1315] hover:underline"
-            >
-              {t('infoSupportLinkText')}
-            </a>
-          </p>
-        </div>
-      </CardContent>
-    </Card>
+      <div className="mx-auto h-px w-full max-w-xs bg-zinc-200" />
+
+      <div className="space-y-1.5 text-center text-sm text-zinc-600">
+        <p>
+          {t('infoMadeByPrefix')}{' '}
+          <a
+            href={VANTER_URL}
+            target="_blank"
+            rel="noreferrer"
+            className="font-medium text-[#7a1315] hover:underline"
+          >
+            vanter.net
+          </a>
+        </p>
+        <p className="text-zinc-500">{t('infoLocation')}</p>
+        <p className="text-xs text-muted-foreground">{t('infoCopyright', { year })}</p>
+        <p className="pt-3">
+          {t('infoSupportPrefix')}{' '}
+          <a
+            href={SUPPORT_URL}
+            target="_blank"
+            rel="noreferrer"
+            className="font-medium text-[#7a1315] hover:underline"
+          >
+            {t('infoSupportLinkText')}
+          </a>
+        </p>
+      </div>
+    </div>
   )
 }
