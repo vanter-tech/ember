@@ -287,7 +287,7 @@ export const ui: Record<Lang, Record<string, string>> = {
 			'Corre en una PC de tu restaurante. Si se cae internet, el servicio sigue sin cortarse.',
 		'local.3.title': 'Tus datos, en tu servidor',
 		'local.3.body': 'La base de datos vive en tu local, no en la nube. Vos tenés el control.',
-		'local.cta': 'Ver Ember Local en planes',
+		'local.cta': 'Conocer Ember Local',
 		'local.plan.section': 'Preferís tenerlo en tu local',
 		'local.plan.badge': 'Instalado en tu local',
 		'local.plan.name': 'Ember Local',
@@ -312,11 +312,72 @@ export const ui: Record<Lang, Record<string, string>> = {
 		'local.plan.pay.note':
 			'Precio de licencia a convenir según la cantidad de tablets y mesas. Escribinos y armamos la propuesta.',
 		'local.plan.cta': 'Hablar con el equipo',
+		'local.plan.morelink': 'Ver cómo funciona y requisitos',
 		'local.feat.eyebrow': 'Ember Local',
 		'local.feat.title': '¿Preferís el servicio 100% atendido?',
 		'local.feat.body':
 			'Instalá Ember en tu restaurante y que el personal opere todo desde tablets: sin apps para el comensal, funcionando en tu red aunque se caiga internet. Mismo motor, mismas funcionalidades.',
+		'local.feat.diff.title': 'Qué cambia respecto de esta página',
+		'local.feat.diff.1':
+			'El comensal no usa el teléfono: los meseros cargan los pedidos desde tablets en el local.',
+		'local.feat.diff.2':
+			'La analítica es de tu sucursal; los tableros multi-sucursal son una función del panel en la nube.',
 		'local.feat.cta': 'Conocer Ember Local',
+
+		// --- Page: Ember Local (/info/local) ---
+		'local.page.title': 'Ember Local (on-premise) — Ember',
+		'local.page.desc':
+			'Ember instalado en tu restaurante: operado por el personal desde tablets, funciona sin internet y tus datos quedan en tu servidor. Requisitos y cómo funciona.',
+		'local.page.eyebrow': 'Ember Local',
+		'local.page.h1': 'Ember, instalado en tu restaurante',
+		'local.page.lede':
+			'La misma plataforma que Ember en la nube —carrito colaborativo, cocina, piso, cuentas y analítica—, operada por tu equipo desde tablets y funcionando aunque se caiga internet. La base de datos vive en una PC de tu local.',
+		'local.page.how.title': 'Cómo funciona',
+		'local.page.how.1.title': 'Una PC hace de servidor',
+		'local.page.how.1.body':
+			'Normalmente la computadora de caja. Corre Ember completo y se mantiene encendida durante el servicio.',
+		'local.page.how.2.title': 'Las demás terminales entran por navegador',
+		'local.page.how.2.body':
+			'Las tablets de los meseros y la pantalla de cocina se conectan a la dirección de esa PC en tu red local. No se instala nada en ellas.',
+		'local.page.how.3.title': 'Instalador de Windows',
+		'local.page.how.3.body':
+			'Un instalador .exe que trae todo lo necesario. No hay que instalar Java ni una base de datos por separado.',
+		'local.page.how.4.title': 'Ícono en la bandeja del sistema',
+		'local.page.how.4.body':
+			'Muestra el estado del servicio y permite cerrarlo. Al iniciar, Ember abre el navegador automáticamente.',
+		'local.page.offline.title': 'Funciona sin internet',
+		'local.page.offline.body':
+			'La operación diaria —tomar pedidos, cocina (KDS), impresión de tickets y cierre de caja— no depende de la conexión. Cuando hay internet, Ember Local se sincroniza con la nube de Vanter: el catálogo y los precios que editás en el panel central bajan al local, y las ventas cerradas suben para los reportes centrales.',
+		'local.page.offline.grace':
+			'Si te quedás varios días seguidos sin internet, Ember Local sigue operando durante un periodo de gracia y después pide reconectar para seguir cobrando. Nunca se borran tus datos.',
+		'local.page.data.title': 'Tus datos, en tu servidor',
+		'local.page.data.body':
+			'La base de datos vive en la PC servidor de tu local, no en la nube. Ember Local hace respaldos automáticos en el disco de esa PC. La analítica que ves es la de tu sucursal; los tableros que consolidan varias sucursales son una función del panel en la nube, que consume lo que cada local sube.',
+		'local.page.support.title': 'Actualizaciones y soporte',
+		'local.page.support.body':
+			'Las actualizaciones son manuales: Ember Local te avisa dentro de la app cuando hay una versión nueva y vos elegís cuándo instalarla, fuera del horario pico. La licencia anual cubre el mantenimiento y el soporte del equipo de Vanter.',
+		'local.page.req.title': 'Requisitos',
+		'local.page.req.system': 'Sistema',
+		'local.page.req.system.v': 'Windows 10 u 11 (64 bits) en la PC servidor',
+		'local.page.req.pc': 'PC servidor',
+		'local.page.req.pc.v':
+			'Una computadora dedicada —normalmente la de caja— encendida durante el servicio',
+		'local.page.req.net': 'Red',
+		'local.page.req.net.v': 'Router o Wi-Fi local que alcance las tablets y la pantalla de cocina',
+		'local.page.req.terminals': 'Terminales',
+		'local.page.req.terminals.v':
+			'Cualquier tablet o PC con un navegador moderno; no se instala nada en ellas',
+		'local.page.req.print': 'Impresión',
+		'local.page.req.print.v':
+			'Impresora térmica ESC/POS (red o USB) mediante el agente de impresión de Ember',
+		'local.page.req.internet': 'Internet',
+		'local.page.req.internet.v':
+			'No requerido para operar; recomendado para sincronizar con la nube',
+		'local.page.cta.title': '¿Lo querés en tu local?',
+		'local.page.cta.body':
+			'Escribinos y armamos una propuesta según la cantidad de tablets, mesas y la puesta en marcha que necesites.',
+		'local.page.cta.button': 'Hablar con el equipo',
+		'local.page.cta.plans': 'Ver formas de pago en planes',
 
 		// --- Page: contacto ---
 		'cpage.title': 'Contacto — Ember',
@@ -340,6 +401,7 @@ export const ui: Record<Lang, Record<string, string>> = {
 		'info.nav.overview': 'Resumen',
 		'info.nav.manual': 'Manual de usuario',
 		'info.nav.videos': 'Videos de Ember',
+		'info.nav.local': 'Ember Local',
 		'info.title': 'Información — Ember',
 		'info.desc': 'Manual de usuario y videos de Ember: aprendé a usar la plataforma.',
 		'info.h1': 'Aprendé a usar Ember',
@@ -351,6 +413,9 @@ export const ui: Record<Lang, Record<string, string>> = {
 		'info.card.videos.title': 'Videos de Ember',
 		'info.card.videos.body':
 			'Recorridos en video de la plataforma funcionando en un servicio real.',
+		'info.card.local.title': 'Ember Local (on-premise)',
+		'info.card.local.body':
+			'Cómo funciona la versión instalada en tu restaurante: requisitos, operación sin internet, respaldos y soporte.',
 
 		'manual.title': 'Manual de usuario — Ember',
 		'manual.desc':
@@ -777,7 +842,7 @@ export const ui: Record<Lang, Record<string, string>> = {
 			'Runs on a PC in your restaurant. If the internet goes down, service keeps going.',
 		'local.3.title': 'Your data, on your server',
 		'local.3.body': 'The database lives in your venue, not in the cloud. You stay in control.',
-		'local.cta': 'See Ember Local pricing',
+		'local.cta': 'Learn about Ember Local',
 		'local.plan.section': 'Prefer it on your own premises',
 		'local.plan.badge': 'Installed on your premises',
 		'local.plan.name': 'Ember Local',
@@ -800,11 +865,70 @@ export const ui: Record<Lang, Record<string, string>> = {
 		'local.plan.pay.note':
 			'License price agreed based on the number of tablets and tables. Get in touch and we will put together a proposal.',
 		'local.plan.cta': 'Talk to the team',
+		'local.plan.morelink': 'See how it works and requirements',
 		'local.feat.eyebrow': 'Ember Local',
 		'local.feat.title': 'Prefer fully staff-served operation?',
 		'local.feat.body':
 			'Install Ember in your restaurant and let staff run everything from tablets: no diner apps, working on your network even if the internet drops. Same engine, same features.',
+		'local.feat.diff.title': 'What changes from this page',
+		'local.feat.diff.1':
+			'Diners don’t use their phones: servers enter orders from tablets around the venue.',
+		'local.feat.diff.2':
+			'Analytics are for your venue; multi-venue dashboards are a feature of the cloud panel.',
 		'local.feat.cta': 'Learn about Ember Local',
+
+		// --- Page: Ember Local (/info/local) ---
+		'local.page.title': 'Ember Local (on-premise) — Ember',
+		'local.page.desc':
+			'Ember installed in your restaurant: staff-run from tablets, works without internet, and your data stays on your server. Requirements and how it works.',
+		'local.page.eyebrow': 'Ember Local',
+		'local.page.h1': 'Ember, installed in your restaurant',
+		'local.page.lede':
+			'The same platform as Ember in the cloud —collaborative cart, kitchen, floor, billing and analytics—, run by your team from tablets and working even if the internet drops. The database lives on a PC in your venue.',
+		'local.page.how.title': 'How it works',
+		'local.page.how.1.title': 'One PC acts as the server',
+		'local.page.how.1.body':
+			'Usually the register computer. It runs the whole of Ember and stays on during service.',
+		'local.page.how.2.title': 'Other terminals connect through the browser',
+		'local.page.how.2.body':
+			'Waiter tablets and the kitchen screen connect to that PC’s address on your local network. Nothing is installed on them.',
+		'local.page.how.3.title': 'Windows installer',
+		'local.page.how.3.body':
+			'A single .exe installer that bundles everything needed. No separate Java or database to install.',
+		'local.page.how.4.title': 'System tray icon',
+		'local.page.how.4.body':
+			'Shows service status and lets you shut it down. On start, Ember opens the browser automatically.',
+		'local.page.offline.title': 'Works without internet',
+		'local.page.offline.body':
+			'Day-to-day operation —taking orders, kitchen (KDS), ticket printing and cash close— does not depend on the connection. When the internet is available, Ember Local syncs with the Vanter cloud: the catalog and prices you edit in the central panel come down to the venue, and closed sales go up for central reporting.',
+		'local.page.offline.grace':
+			'If you go several days in a row without internet, Ember Local keeps operating through a grace period and then asks you to reconnect before taking more payments. Your data is never deleted.',
+		'local.page.data.title': 'Your data, on your server',
+		'local.page.data.body':
+			'The database lives on your venue’s server PC, not in the cloud. Ember Local makes automatic backups to that PC’s disk. The analytics you see are for your venue; dashboards that consolidate several venues are a feature of the cloud panel, which consumes what each venue uploads.',
+		'local.page.support.title': 'Updates and support',
+		'local.page.support.body':
+			'Updates are manual: Ember Local notifies you inside the app when a new version is available and you choose when to install it, outside peak hours. The annual license covers maintenance and support from the Vanter team.',
+		'local.page.req.title': 'Requirements',
+		'local.page.req.system': 'System',
+		'local.page.req.system.v': 'Windows 10 or 11 (64-bit) on the server PC',
+		'local.page.req.pc': 'Server PC',
+		'local.page.req.pc.v': 'A dedicated computer —usually the register— kept on during service',
+		'local.page.req.net': 'Network',
+		'local.page.req.net.v': 'A local router or Wi-Fi that reaches the tablets and the kitchen screen',
+		'local.page.req.terminals': 'Terminals',
+		'local.page.req.terminals.v':
+			'Any tablet or PC with a modern browser; nothing is installed on them',
+		'local.page.req.print': 'Printing',
+		'local.page.req.print.v':
+			'ESC/POS thermal printer (network or USB) via the Ember printing agent',
+		'local.page.req.internet': 'Internet',
+		'local.page.req.internet.v': 'Not required to operate; recommended for cloud sync',
+		'local.page.cta.title': 'Want it in your venue?',
+		'local.page.cta.body':
+			'Write to us and we’ll put together a proposal based on the number of tablets, tables and the setup you need.',
+		'local.page.cta.button': 'Talk to the team',
+		'local.page.cta.plans': 'See payment options on pricing',
 
 		// --- Page: contacto ---
 		'cpage.title': 'Contact — Ember',
@@ -827,6 +951,7 @@ export const ui: Record<Lang, Record<string, string>> = {
 		'info.nav.overview': 'Overview',
 		'info.nav.manual': 'User manual',
 		'info.nav.videos': 'Ember videos',
+		'info.nav.local': 'Ember Local',
 		'info.title': 'Information — Ember',
 		'info.desc': 'Ember user manual and videos: learn how to use the platform.',
 		'info.h1': 'Learn to use Ember',
@@ -837,6 +962,9 @@ export const ui: Record<Lang, Record<string, string>> = {
 			'How to use Ember step by step: getting started, roles, floor and tables, kitchen, payments and analytics.',
 		'info.card.videos.title': 'Ember videos',
 		'info.card.videos.body': 'Video walkthroughs of the platform running in a real service.',
+		'info.card.local.title': 'Ember Local (on-premise)',
+		'info.card.local.body':
+			'How the version installed in your restaurant works: requirements, offline operation, backups and support.',
 
 		'manual.title': 'User manual — Ember',
 		'manual.desc': 'Ember usage guide: getting started, roles, floor, kitchen, payments and analytics.',

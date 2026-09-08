@@ -89,8 +89,32 @@ const FEATURES = getFeatures(lang);
 				{t('local.feat.title')}
 			</h2>
 			<p class="mt-3 max-w-2xl text-muted-foreground">{t('local.feat.body')}</p>
+
+			<p class="mt-6 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+				{t('local.feat.diff.title')}
+			</p>
+			<ul class="mt-3 max-w-2xl space-y-2.5">
+				{[t('local.feat.diff.1'), t('local.feat.diff.2')].map((point) => (
+					<li class="flex items-start gap-2 text-sm text-foreground">
+						<svg
+							class="mt-0.5 size-4 shrink-0 text-primary"
+							viewBox="0 0 20 20"
+							fill="currentColor"
+							aria-hidden="true"
+						>
+							<path
+								fill-rule="evenodd"
+								d="M16.704 5.29a1 1 0 0 1 .006 1.414l-7.5 7.6a1 1 0 0 1-1.42.006l-3.5-3.5a1 1 0 1 1 1.414-1.414l2.79 2.79 6.795-6.885a1 1 0 0 1 1.414-.006Z"
+								clip-rule="evenodd"
+							/>
+						</svg>
+						<span>{point}</span>
+					</li>
+				))}
+			</ul>
+
 			<a
-				href={`${localizePath('/planes', lang)}#local`}
+				href={localizePath('/info/local', lang)}
 				class="mt-6 inline-flex items-center gap-1.5 text-sm font-medium text-primary transition-colors hover:text-primary/80"
 			>
 				{t('local.feat.cta')}
