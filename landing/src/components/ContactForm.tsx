@@ -4,11 +4,12 @@ import type { Lang } from '../i18n/ui';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-// Real key comes from the Cloudflare Pages env var PUBLIC_TURNSTILE_SITE_KEY,
-// inlined at build time. When it is absent (local dev, an unconfigured deploy)
-// no widget is shown at all — the server rejects the submit anyway until the
-// matching secret is configured, so a visible "testing only" box adds nothing.
-const SITE_KEY = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY as string | undefined;
+// Turnstile SITE key — public by design (it ships in the HTML). The matching
+// SECRET key lives only as a Worker secret (TURNSTILE_SECRET_KEY). An env
+// override is honoured so a fork/preview can point at its own widget.
+const SITE_KEY =
+  (import.meta.env.PUBLIC_TURNSTILE_SITE_KEY as string | undefined) ||
+  '0x4AAAAAAEsaAHQ6XDMni_IM';
 const HAS_CAPTCHA = Boolean(SITE_KEY);
 
 interface TurnstileApi {
