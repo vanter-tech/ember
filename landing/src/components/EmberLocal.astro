@@ -1,0 +1,72 @@
+---
+import { getLang, useTranslations, localizePath } from '../i18n/utils';
+
+const lang = getLang(Astro.currentLocale);
+const t = useTranslations(lang);
+
+const points = [
+	{ title: t('local.1.title'), body: t('local.1.body'), icon: 'no-phone' },
+	{ title: t('local.2.title'), body: t('local.2.body'), icon: 'wifi' },
+	{ title: t('local.3.title'), body: t('local.3.body'), icon: 'server' },
+];
+---
+
+<section class="border-y border-border bg-primary/[0.04]">
+	<div class="mx-auto max-w-6xl px-6 py-20 md:py-28">
+		<p class="text-xs font-semibold uppercase tracking-wider text-primary">{t('local.eyebrow')}</p>
+		<h2 class="mt-4 max-w-2xl text-3xl font-bold leading-tight tracking-tight text-foreground md:text-4xl">
+			{t('local.title')}
+		</h2>
+		<p class="mt-4 max-w-2xl text-lg text-muted-foreground">{t('local.lede')}</p>
+
+		<div class="mt-14 grid gap-6 sm:grid-cols-3">
+			{points.map((point) => (
+				<div class="local-card rounded-xl border border-border bg-card p-6 shadow-sm transition duration-200 hover:-translate-y-1 hover:border-primary/40 hover:shadow-md">
+					<span class="local-chip flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary transition-transform duration-200">
+						<svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+							{point.icon === 'no-phone' && (
+								<>
+									<rect x="7" y="2" width="10" height="20" rx="2" />
+									<path d="M11 18h2" />
+									<line x1="3" y1="3" x2="21" y2="21" />
+								</>
+							)}
+							{point.icon === 'wifi' && (
+								<>
+									<path d="M5 12.55a11 11 0 0 1 14 0" />
+									<path d="M8.5 16.11a6 6 0 0 1 7 0" />
+									<line x1="12" y1="20" x2="12.01" y2="20" />
+								</>
+							)}
+							{point.icon === 'server' && (
+								<>
+									<rect x="3" y="4" width="18" height="7" rx="1.5" />
+									<rect x="3" y="13" width="18" height="7" rx="1.5" />
+									<path d="M7 7.5h.01M7 16.5h.01" />
+								</>
+							)}
+						</svg>
+					</span>
+					<h3 class="mt-5 text-base font-semibold tracking-tight text-foreground">{point.title}</h3>
+					<p class="mt-2 text-sm text-muted-foreground">{point.body}</p>
+				</div>
+			))}
+		</div>
+
+		<a
+			href={`${localizePath('/planes', lang)}#local`}
+			class="mt-12 inline-flex items-center gap-1.5 text-sm font-medium text-primary transition-colors hover:text-primary/80"
+		>
+			{t('local.cta')}
+			<svg class="size-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+				<path fill-rule="evenodd" d="M7.21 4.21a1 1 0 0 1 1.42 0l5 5a1 1 0 0 1 0 1.42l-5 5a1 1 0 1 1-1.42-1.42L11.59 10 7.21 5.63a1 1 0 0 1 0-1.42Z" clip-rule="evenodd" />
+			</svg>
+		</a>
+	</div>
+</section>
+
+<style>
+	.local-card:hover .local-chip {
+		transform: scale(1.08);
+	}
+</style>

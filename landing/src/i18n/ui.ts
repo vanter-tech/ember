@@ -274,6 +274,50 @@ export const ui: Record<Lang, Record<string, string>> = {
 		'ppage.billing.annual': 'Anual',
 		'ppage.billing.save': '2 meses gratis',
 
+		// --- Ember Local (on-premise) ---
+		'local.eyebrow': 'Dos formas de usar Ember',
+		'local.title': '¿No querés que el comensal use el teléfono? Ember Local',
+		'local.lede':
+			'El mismo Ember, operado por tu equipo. Los meseros toman los pedidos desde tablets repartidas por el local y arman la cuenta por persona o por mesa. Instalado en tu restaurante.',
+		'local.1.title': 'Sin apps ni QR para el comensal',
+		'local.1.body':
+			'El personal maneja todo el servicio desde las tablets. El comensal pide y paga como siempre.',
+		'local.2.title': 'Funciona en tu red',
+		'local.2.body':
+			'Corre en una PC de tu restaurante. Si se cae internet, el servicio sigue sin cortarse.',
+		'local.3.title': 'Tus datos, en tu servidor',
+		'local.3.body': 'La base de datos vive en tu local, no en la nube. Vos tenés el control.',
+		'local.cta': 'Ver Ember Local en planes',
+		'local.plan.section': 'Preferís tenerlo en tu local',
+		'local.plan.badge': 'Instalado en tu local',
+		'local.plan.name': 'Ember Local',
+		'local.plan.tagline':
+			'El mismo Ember, operado por tu equipo desde tablets en el restaurante. On-premise, sin depender de internet.',
+		'local.plan.f1':
+			'Toda la plataforma: cocina (KDS), piso, división de cuenta, caja y analítica',
+		'local.plan.f2':
+			'Los meseros cargan pedidos y asientos desde tablets en puntos del local',
+		'local.plan.f3': 'Sin teléfonos de comensales: servicio 100% atendido',
+		'local.plan.f4': 'Corre en tu red — el servicio sigue aunque se caiga internet',
+		'local.plan.f5': 'La base de datos vive en tu servidor, no en la nube',
+		'local.plan.pay.title': 'Formas de pago',
+		'local.plan.pay.annual.title': 'Licencia anual',
+		'local.plan.pay.annual.body': 'El mejor precio. Una cuota al año y listo.',
+		'local.plan.pay.semiannual.title': 'Licencia semestral',
+		'local.plan.pay.semiannual.body':
+			'Para empezar con menos compromiso. Renovás cada 6 meses.',
+		'local.plan.pay.install.title': 'Instalación y capacitación',
+		'local.plan.pay.install.body':
+			'Pago único, según tu local: puesta en marcha, red, impresoras y entrenamiento del personal.',
+		'local.plan.pay.note':
+			'Precio de licencia a convenir según la cantidad de tablets y mesas. Escribinos y armamos la propuesta.',
+		'local.plan.cta': 'Hablar con el equipo',
+		'local.feat.eyebrow': 'Ember Local',
+		'local.feat.title': '¿Preferís el servicio 100% atendido?',
+		'local.feat.body':
+			'Instalá Ember en tu restaurante y que el personal opere todo desde tablets: sin apps para el comensal, funcionando en tu red aunque se caiga internet. Mismo motor, mismas funcionalidades.',
+		'local.feat.cta': 'Conocer Ember Local',
+
 		// --- Page: contacto ---
 		'cpage.title': 'Contacto — Ember',
 		'cpage.desc':
@@ -720,6 +764,47 @@ export const ui: Record<Lang, Record<string, string>> = {
 		'ppage.billing.monthly': 'Monthly',
 		'ppage.billing.annual': 'Annual',
 		'ppage.billing.save': '2 months free',
+
+		// --- Ember Local (on-premise) ---
+		'local.eyebrow': 'Two ways to run Ember',
+		'local.title': "Don't want diners ordering from their phones? Ember Local",
+		'local.lede':
+			'The same Ember, run by your team. Servers take orders from tablets placed around the venue and build the check per guest or for the whole table. Installed in your restaurant.',
+		'local.1.title': 'No apps or QR for the diner',
+		'local.1.body': 'Staff run the whole service from the tablets. Diners order and pay as usual.',
+		'local.2.title': 'Works on your network',
+		'local.2.body':
+			'Runs on a PC in your restaurant. If the internet goes down, service keeps going.',
+		'local.3.title': 'Your data, on your server',
+		'local.3.body': 'The database lives in your venue, not in the cloud. You stay in control.',
+		'local.cta': 'See Ember Local pricing',
+		'local.plan.section': 'Prefer it on your own premises',
+		'local.plan.badge': 'Installed on your premises',
+		'local.plan.name': 'Ember Local',
+		'local.plan.tagline':
+			'The same Ember, run by your team from tablets in the restaurant. On-premise, no internet dependency.',
+		'local.plan.f1':
+			'The whole platform: kitchen display (KDS), floor, bill splitting, cash register and analytics',
+		'local.plan.f2': 'Servers add orders and seats from tablets around the venue',
+		'local.plan.f3': 'No diner phones: fully staff-served',
+		'local.plan.f4': 'Runs on your network — service keeps going if the internet drops',
+		'local.plan.f5': 'The database lives on your server, not in the cloud',
+		'local.plan.pay.title': 'Payment options',
+		'local.plan.pay.annual.title': 'Annual license',
+		'local.plan.pay.annual.body': 'Best price. One payment a year and you are set.',
+		'local.plan.pay.semiannual.title': 'Semi-annual license',
+		'local.plan.pay.semiannual.body': 'Start with less commitment. Renew every 6 months.',
+		'local.plan.pay.install.title': 'Setup and training',
+		'local.plan.pay.install.body':
+			'One-time fee, based on your venue: rollout, network, printers and staff training.',
+		'local.plan.pay.note':
+			'License price agreed based on the number of tablets and tables. Get in touch and we will put together a proposal.',
+		'local.plan.cta': 'Talk to the team',
+		'local.feat.eyebrow': 'Ember Local',
+		'local.feat.title': 'Prefer fully staff-served operation?',
+		'local.feat.body':
+			'Install Ember in your restaurant and let staff run everything from tablets: no diner apps, working on your network even if the internet drops. Same engine, same features.',
+		'local.feat.cta': 'Learn about Ember Local',
 
 		// --- Page: contacto ---
 		'cpage.title': 'Contact — Ember',
