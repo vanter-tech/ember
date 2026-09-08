@@ -19,16 +19,16 @@ export const InfoSettings = () => {
           className="shrink-0 transition-opacity hover:opacity-80"
         >
           <img
-            src="/vanter-tech_logo.webp"
+            src="/vanter-tech_logo.svg"
             alt="Vanter"
-            className="h-12 w-auto object-contain sm:h-14"
+            className="h-20 w-auto object-contain sm:h-24"
           />
         </a>
-        <span aria-hidden className="h-12 w-px bg-zinc-200 sm:h-14" />
+        <span aria-hidden className="h-16 w-px bg-zinc-200 sm:h-20" />
         <img
           src="/ember_logo_info.svg"
           alt="Ember"
-          className="h-12 w-auto object-contain sm:h-14"
+          className="h-20 w-auto object-contain sm:h-24"
         />
       </div>
 
