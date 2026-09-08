@@ -19,6 +19,7 @@ import {
   Clock,
   Gift,
   Award,
+  Info,
   Menu,
   ChevronsUpDown,
   PanelLeftClose,
@@ -51,6 +52,7 @@ const LEAF: Record<LeafType, { labelKey: AdminKey; Icon: LucideIcon }> = {
   HORARIO: { labelKey: 'scheduleLabel', Icon: Clock },
   FIDELIZACION: { labelKey: 'loyaltyLabel', Icon: Gift },
   LOYALTY_REWARDS: { labelKey: 'rewardCatalogTitle', Icon: Award },
+  INFO: { labelKey: 'infoLabel', Icon: Info },
 }
 
 type NavNode =
@@ -70,6 +72,7 @@ const buildSettingsNav = (): NavNode[] => [
   ...(isHubBuild()
     ? []
     : [{ kind: 'group', group: 'FIDELIZACION', labelKey: 'loyaltyLabel', Icon: Gift, members: ['FIDELIZACION', 'LOYALTY_REWARDS'] } as NavNode]),
+  { kind: 'leaf', type: 'INFO' },
 ]
 
 export const SettingsBar = ({

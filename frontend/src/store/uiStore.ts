@@ -13,7 +13,7 @@ export type ModalType = 'CREATE_CATEGORY' | 'EDIT_CATEGORY' | 'DELETE_CATEGORY' 
                          'SEAT_FORM' | 'DELETE_SEAT' | null;
 
 export type SettingsType = 'BRANDING' | 'MENU' | 'BILLING' | 'PAYMENT_GATEWAY' | 'TICKET' | 'PRINTING' | 'HARDWARE'|
-                            'SPACE'| 'HORARIO'| 'FIDELIZACION' | 'LOYALTY_REWARDS'| null;
+                            'SPACE'| 'HORARIO'| 'FIDELIZACION' | 'LOYALTY_REWARDS'| 'INFO'| null;
 
 // Which section of the /admin/inventory hub (InventoryHub.tsx) is currently mounted, kept here
 // (rather than TopNav deriving it from the URL like every other admin route) so the "+" button
