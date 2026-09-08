@@ -374,6 +374,35 @@ export const ui: Record<Lang, Record<string, string>> = {
 		'local.page.cta.button': 'Hablar con el equipo',
 		'local.page.cta.plans': 'Ver formas de pago en planes',
 
+		// --- Page: Seguridad (/info/seguridad) ---
+		'sec.page.title': 'Seguridad — Ember',
+		'sec.page.desc':
+			'Cómo Ember protege los datos de tu restaurante: aislamiento entre cuentas, control de accesos, cifrado en tránsito y respaldos.',
+		'sec.page.eyebrow': 'Seguridad',
+		'sec.page.h1': 'Cómo protegemos los datos de tu restaurante',
+		'sec.page.lede':
+			'Un resumen práctico de las medidas técnicas que protegen la información de cada restaurante en Ember. Si te falta algún detalle para tu evaluación, escribinos.',
+		'sec.page.tenant.title': 'Aislamiento entre restaurantes',
+		'sec.page.tenant.body':
+			'Cada restaurante es un inquilino separado. El catálogo, las ventas, la facturación, la configuración y las comandas llevan un identificador de restaurante y las consultas se filtran por él: una cuenta nunca ve datos de otra. Los clientes que se unen a una mesa quedan atados a ese restaurante al ingresar.',
+		'sec.page.access.title': 'Cuentas y accesos',
+		'sec.page.access.body':
+			'El acceso se controla con tokens JWT firmados y con expiración. Las contraseñas se guardan con hash BCrypt, nunca en texto plano. Cada persona del equipo tiene un rol —administración, mesa o cocina— y solo puede usar las funciones de ese rol.',
+		'sec.page.transit.title': 'Datos en tránsito',
+		'sec.page.transit.body':
+			'Todo el tráfico entre el navegador y Ember viaja por HTTPS/TLS. El sitio y la aplicación se sirven detrás de Cloudflare.',
+		'sec.page.backup.title': 'Respaldos',
+		'sec.page.backup.body':
+			'La base de datos de producción se respalda todas las noches a un almacenamiento privado con versionado, y el disco del servidor tiene copias automáticas diarias. Los respaldos no son públicos ni se comparten con terceros.',
+		'sec.page.local.title': 'Cuando los datos no salen de tu local',
+		'sec.page.local.body':
+			'Con Ember Local la base de datos vive en una PC de tu restaurante y la operación diaria no depende de internet. Vos controlás dónde están los datos y sus respaldos.',
+		'sec.page.local.cta': 'Ver Ember Local',
+		'sec.page.contact.title': '¿Necesitás más detalle?',
+		'sec.page.contact.body':
+			'Si estás haciendo una evaluación de seguridad o de proveedores y te falta información, escribinos y te respondemos.',
+		'sec.page.contact.cta': 'Escribir al equipo',
+
 		// --- Page: contacto ---
 		'cpage.title': 'Contacto — Ember',
 		'cpage.desc':
@@ -397,6 +426,7 @@ export const ui: Record<Lang, Record<string, string>> = {
 		'info.nav.manual': 'Manual de usuario',
 		'info.nav.videos': 'Videos de Ember',
 		'info.nav.local': 'Ember Local',
+		'info.nav.security': 'Seguridad',
 		'info.title': 'Información — Ember',
 		'info.desc': 'Manual de usuario y videos de Ember: aprendé a usar la plataforma.',
 		'info.h1': 'Aprendé a usar Ember',
@@ -411,6 +441,9 @@ export const ui: Record<Lang, Record<string, string>> = {
 		'info.card.local.title': 'Ember Local (on-premise)',
 		'info.card.local.body':
 			'Cómo funciona la versión instalada en tu restaurante: requisitos, operación sin internet, respaldos y soporte.',
+		'info.card.security.title': 'Seguridad',
+		'info.card.security.body':
+			'Aislamiento entre cuentas, control de accesos, cifrado en tránsito y respaldos: cómo Ember protege los datos de tu restaurante.',
 
 		'manual.title': 'Manual de usuario — Ember',
 		'manual.desc':
@@ -920,6 +953,35 @@ export const ui: Record<Lang, Record<string, string>> = {
 		'local.page.cta.button': 'Talk to the team',
 		'local.page.cta.plans': 'See payment options on pricing',
 
+		// --- Page: Seguridad (/info/seguridad) ---
+		'sec.page.title': 'Security — Ember',
+		'sec.page.desc':
+			'How Ember protects your restaurant’s data: isolation between accounts, access control, encryption in transit and backups.',
+		'sec.page.eyebrow': 'Security',
+		'sec.page.h1': 'How we protect your restaurant’s data',
+		'sec.page.lede':
+			'A practical summary of the technical measures that protect each restaurant’s information in Ember. If you’re missing a detail for your review, write to us.',
+		'sec.page.tenant.title': 'Isolation between restaurants',
+		'sec.page.tenant.body':
+			'Each restaurant is a separate tenant. The catalog, sales, billing, settings and kitchen orders all carry a restaurant identifier and queries are filtered by it: one account never sees another’s data. Diners who join a table are bound to that restaurant when they enter.',
+		'sec.page.access.title': 'Accounts and access',
+		'sec.page.access.body':
+			'Access is controlled with signed, expiring JWT tokens. Passwords are stored as BCrypt hashes, never in plain text. Each team member has a role —admin, floor or kitchen— and can only use that role’s features.',
+		'sec.page.transit.title': 'Data in transit',
+		'sec.page.transit.body':
+			'All traffic between the browser and Ember travels over HTTPS/TLS. The site and the app are served behind Cloudflare.',
+		'sec.page.backup.title': 'Backups',
+		'sec.page.backup.body':
+			'The production database is backed up every night to private, versioned storage, and the server disk has automatic daily snapshots. Backups are not public and are not shared with third parties.',
+		'sec.page.local.title': 'When the data never leaves your venue',
+		'sec.page.local.body':
+			'With Ember Local the database lives on a PC in your restaurant and daily operation does not depend on the internet. You control where the data is and how it is backed up.',
+		'sec.page.local.cta': 'See Ember Local',
+		'sec.page.contact.title': 'Need more detail?',
+		'sec.page.contact.body':
+			'If you’re running a security or vendor review and need more information, write to us and we’ll get back to you.',
+		'sec.page.contact.cta': 'Write to the team',
+
 		// --- Page: contacto ---
 		'cpage.title': 'Contact — Ember',
 		'cpage.desc': 'How to reach the Ember team: email, office and support hours.',
@@ -942,6 +1004,7 @@ export const ui: Record<Lang, Record<string, string>> = {
 		'info.nav.manual': 'User manual',
 		'info.nav.videos': 'Ember videos',
 		'info.nav.local': 'Ember Local',
+		'info.nav.security': 'Security',
 		'info.title': 'Information — Ember',
 		'info.desc': 'Ember user manual and videos: learn how to use the platform.',
 		'info.h1': 'Learn to use Ember',
@@ -955,6 +1018,9 @@ export const ui: Record<Lang, Record<string, string>> = {
 		'info.card.local.title': 'Ember Local (on-premise)',
 		'info.card.local.body':
 			'How the version installed in your restaurant works: requirements, offline operation, backups and support.',
+		'info.card.security.title': 'Security',
+		'info.card.security.body':
+			'Isolation between accounts, access control, encryption in transit and backups: how Ember protects your restaurant’s data.',
 
 		'manual.title': 'User manual — Ember',
 		'manual.desc': 'Ember usage guide: getting started, roles, floor, kitchen, payments and analytics.',
