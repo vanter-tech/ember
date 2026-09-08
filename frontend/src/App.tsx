@@ -142,8 +142,9 @@ export default function App() {
           <Route path="/admin" element={<AdminLayout />}>
             {/* QA_SIMULATION_REPORT.md E-11: bare /admin (and /waiter, /kitchen below) rendered
                 a blank screen with no feedback after login — no <Route index> matched, so
-                AdminLayout's <Outlet/> had nothing to render. Redirect to the first dock item. */}
-            <Route index element={<Navigate to="inventory" replace />} />
+                AdminLayout's <Outlet/> had nothing to render. Land on analytics (the business
+                dashboard) rather than the inventory tab. */}
+            <Route index element={<Navigate to="analytics" replace />} />
             <Route path="inventory" element={<InventoryHub />}>
               <Route index element={<Inventory />} />
               <Route path="categories" element={<Category />} />

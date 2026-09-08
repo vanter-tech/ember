@@ -175,6 +175,14 @@ class CashShiftServiceTest {
     }
 
     @Test
+    void findCurrentOpenShift_returnsEmptyWhenNoneOpen() {
+        when(cashShiftRepository.findByTenantIdAndStatus(TENANT_ID, CashShiftStatus.OPEN))
+                .thenReturn(Optional.empty());
+
+        assertThat(cashShiftService.findCurrentOpenShift(TENANT_ID)).isEmpty();
+    }
+
+    @Test
     void getDetail_includesPaymentsForTheShift() {
         CashShift shift = openShift();
         when(cashShiftRepository.findById(1L)).thenReturn(Optional.of(shift));

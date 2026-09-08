@@ -32,6 +32,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
@@ -174,6 +175,14 @@ public class CashShiftService {
     public CashShift getCurrentOpenShift(UUID tenantId) {
         return cashShiftRepository.findByTenantIdAndStatus(tenantId, CashShiftStatus.OPEN)
                 .orElseThrow(() -> new ResourceNotFoundException("No open cash shift for this tenant"));
+    }
+
+    /**
+     * Like {@link #getCurrentOpenShift} but "nobody has opened the register" is a normal state,
+     * not a 404 — the /current endpoint returns an empty 200 so the browser console stays clean.
+     */
+    public Optional<CashShift> findCurrentOpenShift(UUID tenantId) {
+        return cashShiftRepository.findByTenantIdAndStatus(tenantId, CashShiftStatus.OPEN);
     }
 
     public CashShift getById(Long id) {
