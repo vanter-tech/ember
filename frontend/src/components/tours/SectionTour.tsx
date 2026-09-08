@@ -26,7 +26,10 @@ export const SectionTour = ({ sectionId, steps, ready = true, onStepAfter }: Sec
   const requestedTourSection = useUIStore((state) => state.requestedTourSection)
   const clearTourRequest = useUIStore((state) => state.clearTourRequest)
   const setActiveTourSection = useUIStore((state) => state.setActiveTourSection)
-  const [run, setRun] = useState(true)
+  // Tours never auto-start — they only run when the user explicitly asks for one via TopNav's
+  // "?" button (which sets `requestedTourSection`). A fresh login / cleared storage used to
+  // fire a tour in every section the user visited.
+  const [run, setRun] = useState(false)
 
   const isRequested = requestedTourSection === sectionId
 

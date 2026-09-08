@@ -31,18 +31,18 @@ describe('SectionTour', () => {
     expect(screen.queryByText('Analíticas')).not.toBeInTheDocument()
   })
 
-  test('renders the first step for a first-time user', () => {
+  test('does not auto-start for a first-time user (tours are request-only)', () => {
     render(<SectionTour sectionId="analytics" steps={steps} />)
 
-    expect(screen.getByText('Analíticas')).toBeInTheDocument()
+    expect(screen.queryByText('Analíticas')).not.toBeInTheDocument()
   })
 
-  test('does not render an already-seen tour for a different sectionId', () => {
+  test('still does not auto-start when a different sectionId was seen', () => {
     useSectionTourStore.getState().markTourSeen('staff', 'admin-1')
 
     render(<SectionTour sectionId="analytics" steps={steps} />)
 
-    expect(screen.getByText('Analíticas')).toBeInTheDocument()
+    expect(screen.queryByText('Analíticas')).not.toBeInTheDocument()
   })
 
   test('renders again when a replay is requested for this section', () => {

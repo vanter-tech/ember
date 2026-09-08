@@ -69,18 +69,21 @@ export const CashShiftSentinel = () => {
   }, [showAnyAlert, setCashShiftAlertOpen])
   useEffect(() => () => setCashShiftAlertOpen(false), [setCashShiftAlertOpen])
 
-  if (!shift) return null
-
-  const deadlineLabel = shift.effectiveDeadline
+  const deadlineLabel = shift?.effectiveDeadline
     ? new Date(shift.effectiveDeadline).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     : ''
 
   return (
     <>
-      {/* Mounted here (not just on the cash-register page) so the "Cerrar caja"
-          action in the alerts below works from any screen the sentinel shows on. */}
+      {/* Always mounted (not gated on `shift`, not scoped to the cash-register page) so the
+          "Cerrar caja" action works from any screen AND, crucially, the arqueo result panel
+          (expected / counted / difference) survives closing the shift: `close` flips
+          `cashShiftService.current` to null, which would otherwise unmount this dialog the
+          instant it shows the difference. It self-gates on `activeModal === 'CLOSE_SHIFT'`. */}
       <CloseShiftDialog />
 
+      {shift && (
+        <>
       <AlertDialog open={showPreWarning} onOpenChange={(o) => !o && snooze()}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -143,6 +146,8 @@ export const CashShiftSentinel = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+        </>
+      )}
     </>
   )
 }

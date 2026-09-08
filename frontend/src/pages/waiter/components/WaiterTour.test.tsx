@@ -28,10 +28,10 @@ describe('WaiterTour', () => {
     expect(screen.queryByText('Tus mesas')).not.toBeInTheDocument()
   })
 
-  test('renders the first step for a first-time user with tables', () => {
+  test('does not auto-start for a first-time user with tables (tours are request-only)', () => {
     render(<WaiterTour tableIds={['table-1']} onSelectFirstTable={() => {}} />)
 
-    expect(screen.getByText('Tus mesas')).toBeInTheDocument()
+    expect(screen.queryByText('Tus mesas')).not.toBeInTheDocument()
   })
 
   test('renders again for a user who already saw it when a replay is requested', () => {

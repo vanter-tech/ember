@@ -8,7 +8,6 @@ import { Badge } from '@/components/ui/badge'
 import { formatCurrency } from '@/lib/format'
 import { RotateCcw } from 'lucide-react'
 import { OpenShiftDialog } from './components/OpenShiftDialog'
-import { MovementDialog } from './components/MovementDialog'
 import { RefundPaymentModal } from '@/pages/waiter/components/RefundPaymentModal'
 import { SectionTour } from '@/components/tours/SectionTour'
 import { useTranslation } from '@/lib/i18n'
@@ -78,14 +77,6 @@ export const CashRegister = () => {
                 </div>
               </div>
               <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  disabled={shift.overdue ?? false}
-                  title={shift.overdue ? t('cashShiftOverdueMovementBlocked') : undefined}
-                  onClick={() => openModal('CASH_MOVEMENT', { shiftId: shift.id })}
-                >
-                  {t('recordMovementButton')}
-                </Button>
                 <Button onClick={() => openModal('CLOSE_SHIFT', { shiftId: shift.id })}>
                   {t('closeCajaButton')}
                 </Button>
@@ -192,7 +183,6 @@ export const CashRegister = () => {
       </div>
 
       <OpenShiftDialog />
-      <MovementDialog />
       {/* CloseShiftDialog is mounted globally by CashShiftSentinel (WaiterLayout). */}
       <RefundPaymentModal />
       <SectionTour sectionId="waiter-cash-register" steps={tourSteps} />
