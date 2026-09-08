@@ -1,0 +1,74 @@
+---
+import { getLang, useTranslations, localizePath } from '../i18n/utils';
+
+const lang = getLang(Astro.currentLocale);
+const t = useTranslations(lang);
+
+const features = [
+	t('local.plan.f1'),
+	t('local.plan.f2'),
+	t('local.plan.f3'),
+	t('local.plan.f4'),
+	t('local.plan.f5'),
+];
+
+const billing = [
+	{ title: t('local.plan.pay.annual.title'), body: t('local.plan.pay.annual.body') },
+	{ title: t('local.plan.pay.semiannual.title'), body: t('local.plan.pay.semiannual.body') },
+	{ title: t('local.plan.pay.install.title'), body: t('local.plan.pay.install.body') },
+];
+---
+
+<div
+	id="local"
+	class="local-plan scroll-mt-24 rounded-2xl border border-primary/40 bg-card p-6 shadow-sm ring-1 ring-primary/20 transition duration-200 hover:shadow-md md:p-10"
+>
+	<div class="grid gap-10 md:grid-cols-2 md:gap-14">
+		<div>
+			<span class="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-primary">
+				<svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+					<rect x="3" y="4" width="18" height="7" rx="1.5" />
+					<rect x="3" y="13" width="18" height="7" rx="1.5" />
+					<path d="M7 7.5h.01M7 16.5h.01" />
+				</svg>
+				{t('local.plan.badge')}
+			</span>
+			<h3 class="mt-4 text-2xl font-bold tracking-tight text-card-foreground md:text-3xl">
+				{t('local.plan.name')}
+			</h3>
+			<p class="mt-2 text-muted-foreground">{t('local.plan.tagline')}</p>
+
+			<ul class="mt-6 space-y-2.5">
+				{features.map((feature) => (
+					<li class="flex items-start gap-2 text-sm text-foreground">
+						<svg class="mt-0.5 size-4 shrink-0 text-primary" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+							<path fill-rule="evenodd" d="M16.704 5.29a1 1 0 0 1 .006 1.414l-7.5 7.6a1 1 0 0 1-1.42.006l-3.5-3.5a1 1 0 1 1 1.414-1.414l2.79 2.79 6.795-6.885a1 1 0 0 1 1.414-.006Z" clip-rule="evenodd" />
+						</svg>
+						<span>{feature}</span>
+					</li>
+				))}
+			</ul>
+		</div>
+
+		<div class="rounded-xl border border-border bg-muted/30 p-6">
+			<p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+				{t('local.plan.pay.title')}
+			</p>
+			<dl class="mt-4 space-y-4">
+				{billing.map((item) => (
+					<div>
+						<dt class="text-sm font-semibold text-foreground">{item.title}</dt>
+						<dd class="mt-0.5 text-sm text-muted-foreground">{item.body}</dd>
+					</div>
+				))}
+			</dl>
+			<p class="mt-5 text-xs text-muted-foreground">{t('local.plan.pay.note')}</p>
+			<a
+				href={localizePath('/contacto', lang)}
+				class="mt-6 block rounded-lg bg-primary px-4 py-3 text-center text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
+			>
+				{t('local.plan.cta')}
+			</a>
+		</div>
+	</div>
+</div>

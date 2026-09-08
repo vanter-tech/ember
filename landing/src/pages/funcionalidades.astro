@@ -6,7 +6,7 @@ import CTASection from '../components/CTASection.astro';
 import FeatureCards from '../components/FeatureCards.astro';
 import TiltedShot from '../components/TiltedShot.astro';
 import { getFeatures } from '../lib/features';
-import { getLang, useTranslations } from '../i18n/utils';
+import { getLang, useTranslations, localizePath } from '../i18n/utils';
 
 const lang = getLang(Astro.currentLocale);
 const t = useTranslations(lang);
@@ -79,6 +79,25 @@ const FEATURES = getFeatures(lang);
 					/>
 				</div>
 			))}
+		</div>
+	</section>
+
+	<section class="border-t border-border bg-primary/[0.04]">
+		<div class="mx-auto max-w-6xl px-6 py-16 md:py-20">
+			<p class="text-xs font-semibold uppercase tracking-wider text-primary">{t('local.feat.eyebrow')}</p>
+			<h2 class="mt-3 max-w-2xl text-2xl font-bold tracking-tight text-foreground md:text-3xl">
+				{t('local.feat.title')}
+			</h2>
+			<p class="mt-3 max-w-2xl text-muted-foreground">{t('local.feat.body')}</p>
+			<a
+				href={`${localizePath('/planes', lang)}#local`}
+				class="mt-6 inline-flex items-center gap-1.5 text-sm font-medium text-primary transition-colors hover:text-primary/80"
+			>
+				{t('local.feat.cta')}
+				<svg class="size-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+					<path fill-rule="evenodd" d="M7.21 4.21a1 1 0 0 1 1.42 0l5 5a1 1 0 0 1 0 1.42l-5 5a1 1 0 1 1-1.42-1.42L11.59 10 7.21 5.63a1 1 0 0 1 0-1.42Z" clip-rule="evenodd" />
+				</svg>
+			</a>
 		</div>
 	</section>
 

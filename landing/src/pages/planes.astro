@@ -4,6 +4,7 @@ import Nav from '../components/Nav.astro';
 import Footer from '../components/Footer.astro';
 import CTASection from '../components/CTASection.astro';
 import PlanCards from '../components/PlanCards.astro';
+import LocalPlan from '../components/LocalPlan.astro';
 import PricingTable from '../components/PricingTable.astro';
 import { getLang, useTranslations } from '../i18n/utils';
 
@@ -27,6 +28,15 @@ const t = useTranslations(lang);
 
 			<div class="mt-12">
 				<PlanCards />
+			</div>
+
+			<div class="mt-8">
+				<p class="text-xs font-semibold uppercase tracking-wider text-primary">
+					{t('local.plan.section')}
+				</p>
+				<div class="mt-4">
+					<LocalPlan />
+				</div>
 			</div>
 		</div>
 	</section>
