@@ -2,6 +2,7 @@
 import Layout from '../layouts/Layout.astro';
 import Nav from '../components/Nav.astro';
 import Footer from '../components/Footer.astro';
+import ContactForm from '../components/ContactForm.tsx';
 import { getLang, useTranslations } from '../i18n/utils';
 
 const lang = getLang(Astro.currentLocale);
@@ -41,7 +42,18 @@ const channels = [
 				{t('cpage.lede')}
 			</p>
 
-			<div class="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+			<section class="mt-12 rounded-lg border border-border bg-card p-6 shadow-sm md:p-8">
+				<h2 class="text-lg font-semibold tracking-tight text-card-foreground">{t('cpage.form.title')}</h2>
+				<p class="mt-1.5 text-sm text-muted-foreground">{t('cpage.form.lede')}</p>
+				<div class="mt-6">
+					<ContactForm client:visible lang={lang} />
+				</div>
+			</section>
+
+			<h2 class="mt-16 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+				{t('cpage.channels.title')}
+			</h2>
+			<div class="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
 				{channels.map((c) => (
 					<div class="flex flex-col rounded-lg border border-border bg-card p-6 shadow-sm">
 						<span class="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
