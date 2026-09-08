@@ -138,11 +138,6 @@ export const ui: Record<Lang, Record<string, string>> = {
 		'footer.contact': 'Contacto',
 		'footer.rights': 'Todos los derechos reservados.',
 
-		// --- Cookie banner ---
-		'cookie.text': 'Usamos cookies esenciales para el funcionamiento del sitio. Consulta nuestra',
-		'cookie.link': 'Política de Privacidad',
-		'cookie.accept': 'Aceptar',
-
 		// --- Sticky mobile CTA ---
 		'sticky.login': 'Iniciar sesión',
 		'sticky.register': 'Registrarme',
@@ -693,11 +688,6 @@ export const ui: Record<Lang, Record<string, string>> = {
 		'footer.terms': 'Terms of service',
 		'footer.contact': 'Contact',
 		'footer.rights': 'All rights reserved.',
-
-		// --- Cookie banner ---
-		'cookie.text': 'We use essential cookies for the site to work. See our',
-		'cookie.link': 'Privacy Policy',
-		'cookie.accept': 'Accept',
 
 		// --- Sticky mobile CTA ---
 		'sticky.login': 'Log in',
