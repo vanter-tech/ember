@@ -419,6 +419,31 @@ export const ui: Record<Lang, Record<string, string>> = {
 		'cpage.demo.text':
 			'¿Preferís vernos en acción? Coordinamos una demo de 20 minutos por videollamada.',
 		'cpage.demo.cta': 'Pedir una demo',
+		'cpage.form.title': 'Escribinos',
+		'cpage.form.lede': 'Contanos sobre tu restaurante y te respondemos dentro de un día hábil.',
+		'cpage.channels.title': 'Otras formas de contacto',
+
+		// --- Contact form ---
+		'cform.name': 'Nombre',
+		'cform.email': 'Correo',
+		'cform.message': 'Mensaje',
+		'cform.name.err': 'Ingresá tu nombre.',
+		'cform.email.err': 'Ingresá tu correo.',
+		'cform.email.invalid': 'Ingresá un correo válido.',
+		'cform.message.err': 'Contanos brevemente qué necesitás.',
+		'cform.submit': 'Enviar mensaje',
+		'cform.submitting': 'Enviando…',
+		'cform.error': 'No pudimos enviar tu mensaje. Intentá de nuevo en un momento.',
+		'cform.captcha': 'Confirmá que no sos un robot para enviar.',
+
+		// --- Page: gracias ---
+		'gracias.title': 'Gracias por escribirnos — Ember',
+		'gracias.desc': 'Recibimos tu mensaje. El equipo de Ember se pondrá en contacto a la brevedad.',
+		'gracias.eyebrow': 'Mensaje enviado',
+		'gracias.h1': '¡Gracias por escribirnos!',
+		'gracias.body':
+			'Recibimos tu mensaje y el equipo se va a poner en contacto dentro de un día hábil.',
+		'gracias.cta': 'Volver al inicio',
 
 		// --- Info section ---
 		'info.sidebar': 'Información',
@@ -997,6 +1022,30 @@ export const ui: Record<Lang, Record<string, string>> = {
 		'cpage.demo.text':
 			'Prefer to see it in action? We’ll set up a 20-minute video demo.',
 		'cpage.demo.cta': 'Request a demo',
+		'cpage.form.title': 'Write to us',
+		'cpage.form.lede': 'Tell us about your restaurant and we’ll reply within one business day.',
+		'cpage.channels.title': 'Other ways to reach us',
+
+		// --- Contact form ---
+		'cform.name': 'Name',
+		'cform.email': 'Email',
+		'cform.message': 'Message',
+		'cform.name.err': 'Enter your name.',
+		'cform.email.err': 'Enter your email.',
+		'cform.email.invalid': 'Enter a valid email.',
+		'cform.message.err': 'Tell us briefly what you need.',
+		'cform.submit': 'Send message',
+		'cform.submitting': 'Sending…',
+		'cform.error': 'We couldn’t send your message. Try again in a moment.',
+		'cform.captcha': 'Confirm you’re not a robot to send.',
+
+		// --- Page: gracias ---
+		'gracias.title': 'Thanks for writing — Ember',
+		'gracias.desc': 'We got your message. The Ember team will be in touch shortly.',
+		'gracias.eyebrow': 'Message sent',
+		'gracias.h1': 'Thanks for writing!',
+		'gracias.body': 'We got your message and the team will be in touch within one business day.',
+		'gracias.cta': 'Back to home',
 
 		// --- Info section ---
 		'info.sidebar': 'Information',

@@ -1,14 +1,15 @@
 # PROGRESS.md — Active Execution State
 
 ## Current Execution State
-- **Last Completed Task:** report 404 — **Landing: security page `/info/seguridad`** (+ `/en/…`) in `InfoLayout`, molde de `/info/local`. 4 card sections (aislamiento multi-tenant · JWT+BCrypt+roles · TLS/Cloudflare · respaldos nocturnos privados versionados + snapshots diarios) + on-premise callout (→ `/info/local`) + `/contacto` CTA. Every claim verified against the code/`RUNBOOK.md`. Added to `/info` sidebar + card. `sec.page.*` +21 keys/locale, parity 425/425. `pnpm build` clean (**24 pages**). Branch `feat/landing-ember-local`.
-- **Prev:** report 403 — **Landing: remove the cookie consent banner**. Deleted `CookieBanner.tsx` + `index.astro` import/mount + `cookie.*` keys. Plausible is cookieless/PROD-only so the "Aceptar"-only banner gated nothing. Privacy §4 unchanged.
+- **Last Completed Task:** report 405 — **Landing: real contact form on `/contacto`**. New `functions/api/contact.ts` Pages Function (honeypot → validate → Turnstile `siteverify` → Resend email; `500` if env unset, never silent-drops) + `ContactForm.tsx` React island (soft design, explicit Turnstile render, success → `/gracias`) + `gracias.astro` (+ `/en/…`). `contacto.astro` gets the form as primary action, mail/office/hours cards stay under "Otras formas de contacto". +20 keys/locale, parity 445/445. `pnpm build` clean (**26 pages**). **Needs 4 Cloudflare Pages env vars** (`RESEND_API_KEY`, `TURNSTILE_SECRET_KEY`, `PUBLIC_TURNSTILE_SITE_KEY`, `CONTACT_TO`) — see report 405. Branch `feat/landing-ember-local`.
+- **Prev:** report 404 — **Landing: security page `/info/seguridad`** (+ `/en/…`), molde de `/info/local`. 4 card sections (multi-tenant · JWT+BCrypt+roles · TLS/Cloudflare · respaldos privados versionados + snapshots) + on-premise callout + `/contacto` CTA. Claims verified vs code/`RUNBOOK.md`. `/info` sidebar + card. Parity 425/425.
+- **Prev:** report 403 — **Landing: remove the cookie consent banner**. Deleted `CookieBanner.tsx` + `index.astro` import/mount + `cookie.*` keys. Plausible is cookieless/PROD-only so the "Aceptar"-only banner gated nothing.
 - **Prev:** report 402 — **Landing: dedicated Ember Local page** `/info/local` (+ `/en/…`): cómo funciona / offline + cloud sync / datos / updates+soporte / **Requisitos** table. `/info` sidebar + card; home band + `/funcionalidades` callout CTAs → `/info/local`. PR #101.
 - **Prev:** report 401 — **Landing: add Ember Local (on-premise)**. `EmberLocal.astro` home band + `LocalPlan.astro` (`/planes#local`) + `/funcionalidades` callout; `local.*` i18n ES/EN. Merged PR #100.
 - **Prev:** report 400 — **Hub v2 prep: residual hardening**: `OptimisticLockingFailureException` → 409; `isHubBuild` → function (`VITE_HUB_BUILD` canonical); `.env.hub` + `build:hub`; CI job `build-hub`; `V9` → `ADD COLUMN IF NOT EXISTS`. **Not done:** prod Flyway baseline (ops).
-- **Current Active Task:** landing nice-to-have batch on `feat/landing-ember-local` (3 atomic commits): **[1 DONE r403] remove cookie banner** · **[2 DONE r404] `/info/seguridad` page** · [3] real contact form on `/contacto` (Cloudflare Pages Function + Resend + Turnstile + `/gracias`). Then PR. PR #101 (Ember Local page) still open.
+- **Current Active Task:** none. Landing nice-to-have batch DONE on `feat/landing-ember-local` — **r403** remove cookie banner · **r404** `/info/seguridad` · **r405** contact form. Next: push + open PR for r403–r405 (branch already has PR #101 for r402 — decide whether to fold in or stack). PR #101 (Ember Local page, r402) still open.
 - **Predecessor context:** guest-join PR #97 merged (`7dba69fe`, report 397); Live QA findings **Q1–Q6** merged (PRs #88/#89/#91–#95, reports 387–395); menu-responsive fix on `main` (report 396). Bug X + Bug Y confirmed fixed; Hub confirmed working on a real PC.
-- **System Health:** backend `./mvnw test` **1196/1196** (+1 optimistic-lock 409); frontend `build` **and `build:hub`** + `lint` clean (16 pre-existing warnings), `test:run` **118/118**; `landing` `pnpm build` clean (**24 pages**), ES/EN i18n parity 425/425.
+- **System Health:** backend `./mvnw test` **1196/1196** (+1 optimistic-lock 409); frontend `build` **and `build:hub`** + `lint` clean (16 pre-existing warnings), `test:run` **118/118**; `landing` `pnpm build` clean (**26 pages**), ES/EN i18n parity 445/445.
 - **⚠ Prod Flyway is NOT baselined** — `V7`/`V8`/`V9` run automatically on the next tagged backend release. `V9` is now `ADD COLUMN IF NOT EXISTS` (idempotent); `V7`/`V8` are NOT (editing an applied migration breaks `validate-on-migrate`). Only the *local dev* DB is baselined at v15, so migrations ≤ 15 are skipped there → add new columns by hand for local dev. Never pre-run migration DDL on prod (a ~15 min outage on 2026-09-06 came from doing exactly that on `V7`). **TODO (ops, not code):** inspect prod `flyway_schema_history` from Cloud Shell and baseline properly.
 - **Prod deploy:** tag `v*` on `main` → `backend-image.yml` builds the image → `./deploy/deploy.sh <tag>` from Cloud Shell (pure gcloud/IAP). Frontend auto-deploys from `main` via Cloudflare Pages. Backend currently on `v0.2.1`.
 
@@ -44,12 +45,19 @@
 - [x] 4 cruft: `to_delete/` (license blob) + `docs/~$CHITECTURE.docx` removed; `.gitignore` += `*.key` / `.claude/skills/` / `~$*`
 - [x] 5 public guest code-join — new `/join` page `JoinByCode` (Hub-build-gated) → existing `/sessions/join-as-guest` `{joinCode,name}`; i18n ES/EN
 
-### Landing — Ember Local (on-premise) — DONE, reports 401 + 402, PR #100 open
+### Landing — Ember Local (on-premise) — DONE, r401 (merged #100) + r402 (PR #101 open)
 - [x] `EmberLocal.astro` home band (after `<Compare/>`) + `LocalPlan.astro` on `/planes` (`#local`) + `/funcionalidades` callout (report 401)
 - [x] `local.*` i18n in `es`/`en`; billing = anual **o** semestral + install cotizado; CTA → `/contacto`
 - [x] Dedicated `/info/local` (+ `/en/…`) page: cómo funciona / offline / datos / soporte / **Requisitos** table; added to `/info` sidebar + card (report 402)
 - [x] Home band + funcionalidades callout CTAs → `/info/local`; callout lists 2 cloud-vs-Local diffs; `LocalPlan` secondary link → `/info/local`
-- [x] `pnpm build` clean (22 pages), ES/EN i18n parity 406/406. Branch `feat/landing-ember-local`
+- [x] r402 shipped as its own PR #101 (PR #100 with r401 was merged mid-work)
+
+### Landing nice-to-have batch — DONE r403–r405, branch `feat/landing-ember-local` (PR pending)
+- [x] r403 remove non-functional cookie consent banner (`CookieBanner.tsx` + `cookie.*` keys); Plausible is cookieless/PROD-only
+- [x] r404 `/info/seguridad` (+ `/en/…`): multi-tenant / JWT+BCrypt / TLS / backups; claims verified vs code + `RUNBOOK.md`; `/info` sidebar + card
+- [x] r405 real `/contacto` form: `functions/api/contact.ts` (honeypot → Turnstile `siteverify` → Resend; `500` if unconfigured) + `ContactForm.tsx` island + `/gracias` (+ `/en/…`)
+- [ ] **Config owed (user, in Cloudflare Pages env):** `RESEND_API_KEY`, `TURNSTILE_SECRET_KEY`, `PUBLIC_TURNSTILE_SITE_KEY`, `CONTACT_TO` — form errors until set (see report 405)
+- [x] `pnpm build` clean (26 pages), ES/EN i18n parity 445/445
 
 ### Hub v2 prep: residual hardening — DONE, report 400, merged in #99
 - [x] 1 `OptimisticLockingFailureException` → 409 (`code:"CONCURRENT_MODIFICATION"`) in `GlobalExceptionHandler` + slice test

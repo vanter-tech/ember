@@ -1,0 +1,31 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Nav from '../components/Nav.astro';
+import Footer from '../components/Footer.astro';
+import { getLang, useTranslations, localizePath } from '../i18n/utils';
+
+const lang = getLang(Astro.currentLocale);
+const t = useTranslations(lang);
+---
+
+<Layout title={t('gracias.title')} description={t('gracias.desc')}>
+	<Nav />
+	<main id="main-content" tabindex="-1" class="bg-background">
+		<div class="mx-auto max-w-2xl px-6 py-24 text-center md:py-32">
+			<p class="text-xs font-semibold uppercase tracking-wider text-primary">{t('gracias.eyebrow')}</p>
+			<h1 class="mt-4 text-3xl font-bold leading-tight tracking-tight text-foreground md:text-5xl">
+				{t('gracias.h1')}
+			</h1>
+			<p class="mx-auto mt-5 max-w-md text-lg text-muted-foreground">
+				{t('gracias.body')}
+			</p>
+			<a
+				href={localizePath('/', lang)}
+				class="mt-8 inline-flex items-center justify-center rounded-lg bg-primary px-6 py-3 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
+			>
+				{t('gracias.cta')}
+			</a>
+		</div>
+	</main>
+	<Footer />
+</Layout>
