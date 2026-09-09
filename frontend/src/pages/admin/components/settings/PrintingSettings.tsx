@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { KeyRound, Printer, RotateCcw, Trash2 } from 'lucide-react'
+import toast from 'react-hot-toast'
+import { KeyRound, Printer, RotateCcw, Ticket, Trash2 } from 'lucide-react'
 import { printingService, type PrintAgentResponse } from '@/lib/api'
 import { useUIStore } from '@/store/uiStore'
 import { useTranslation } from '@/lib/i18n'
@@ -111,6 +112,67 @@ const RegenerateKeyButton = ({ agentId }: { agentId: string }) => {
   )
 }
 
+const NewPairingCodeButton = ({ agentId }: { agentId: string }) => {
+  const { t } = useTranslation('admin')
+  const [result, setResult] = useState<{ code: string; expiresAt?: string } | null>(null)
+
+  const mutation = useMutation({
+    mutationFn: () => printingService.createPairingCode(agentId),
+    onSuccess: (created) => setResult({ code: created.code ?? '', expiresAt: created.expiresAt }),
+  })
+
+  return (
+    <>
+      <Button
+        variant="outline"
+        size="sm"
+        className="rounded-xl"
+        onClick={() => mutation.mutate()}
+        disabled={mutation.isPending}
+      >
+        <Ticket className="mr-2 h-4 w-4" />
+        {t('printingNewPairCodeButton')}
+      </Button>
+      <Dialog open={!!result} onOpenChange={(isOpen) => !isOpen && setResult(null)}>
+        <DialogContent className="sm:max-w-md rounded-3xl p-6">
+          <DialogHeader className="mb-4">
+            <DialogTitle className="text-2xl font-bold text-zinc-800">{t('printingPairCodeTitle')}</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-zinc-500">{t('printingPairCodeHint')}</p>
+          <div className="flex items-center gap-2">
+            <code className="flex-1 break-all rounded-xl bg-zinc-100 p-3 text-center text-2xl font-bold tracking-widest">
+              {result?.code}
+            </code>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                if (result?.code) {
+                  navigator.clipboard?.writeText(result.code)
+                  toast.success(t('printingCopyButton'))
+                }
+              }}
+            >
+              {t('printingCopyButton')}
+            </Button>
+          </div>
+          {result?.expiresAt && (
+            <p className="text-xs text-zinc-500">
+              {t('printingPairCodeExpiresLabel')}: {new Date(result.expiresAt).toLocaleString()}
+            </p>
+          )}
+          <DialogFooter>
+            <Button type="button" onClick={() => setResult(null)}>
+              {t('printingCloseButton')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  )
+}
+
 export const PrintingSettings = () => {
   const { t } = useTranslation('admin')
   const openModal = useUIStore((state) => state.openModal)
@@ -149,9 +211,20 @@ export const PrintingSettings = () => {
       <Card className="rounded-2xl border-zinc-200">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>{t('printingAgentsTitle')}</CardTitle>
-          <Button onClick={() => openModal('CREATE_PRINT_AGENT')} className="rounded-xl">
-            {t('printingGenerateAgentButton')}
-          </Button>
+          <div className="flex items-center gap-3">
+            <a
+              href={
+                import.meta.env.VITE_AGENT_DOWNLOAD_URL ??
+                'https://downloads.ember.vanter.net/EmberAgentSetup-latest.exe'
+              }
+              className="text-sm text-[#7a1315] underline"
+            >
+              {t('printingDownloadAgentLink')}
+            </a>
+            <Button onClick={() => openModal('CREATE_PRINT_AGENT')} className="rounded-xl">
+              {t('printingGenerateAgentButton')}
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="space-y-2">
           {agents.length === 0 && (
@@ -164,16 +237,25 @@ export const PrintingSettings = () => {
                   <p className="font-medium text-zinc-800">{agent.name}</p>
                   <p className="text-sm text-zinc-500">
                     {agent.status} ·{' '}
-                    {agent.connected ? t('printingConnectedStatus') : t('printingDisconnectedStatus')}
+                    {agent.connected ? t('printingConnectedStatus') : t('printingDisconnectedStatus')} ·{' '}
+                    <span className={agent.paired ? 'text-emerald-600' : 'text-amber-600'}>
+                      {agent.paired ? t('printingPairedBadge') : t('printingUnpairedBadge')}
+                    </span>
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
+                  {agent.id && <NewPairingCodeButton agentId={agent.id} />}
                   {agent.id && <RegenerateKeyButton agentId={agent.id} />}
                   <Button
                     variant="outline"
                     size="sm"
                     className="rounded-xl"
-                    onClick={() => openModal('ADD_PRINTER', agent.id)}
+                    onClick={() =>
+                      openModal('ADD_PRINTER', {
+                        agentId: agent.id,
+                        discoveredPrinters: agent.discoveredPrinters ?? [],
+                      })
+                    }
                   >
                     <Printer className="mr-2 h-4 w-4" />
                     {t('printingAddPrinterButton')}

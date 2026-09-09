@@ -1987,6 +1987,17 @@ export interface components {
             /** Format: int32 */
             additional?: number;
         };
+        DiscoveredPrinter: {
+            name?: string;
+            driverName?: string;
+            portName?: string;
+            inkjetGuess?: boolean;
+        };
+        PairingCodeResponse: {
+            code?: string;
+            /** Format: date-time */
+            expiresAt?: string;
+        };
         PrintAgentResponse: {
             /** Format: uuid */
             id?: string;
@@ -1995,6 +2006,8 @@ export interface components {
             /** Format: date-time */
             lastSeenAt?: string;
             connected?: boolean;
+            paired?: boolean;
+            discoveredPrinters?: components["schemas"]["DiscoveredPrinter"][];
         };
         UpdatePrinterConfigRequest: {
             host?: string;

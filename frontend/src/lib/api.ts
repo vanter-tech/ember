@@ -719,6 +719,7 @@ export type PrintAgentResponse = components['schemas']['PrintAgentResponse']
 export type CreatedPrintAgentResponse = components['schemas']['CreatedPrintAgentResponse']
 export type PrinterConfigResponse = components['schemas']['PrinterConfigResponse']
 export type PrintJobResponse = components['schemas']['PrintJobResponse']
+export type PairingCodeResponse = components['schemas']['PairingCodeResponse']
 
 export const printingService = {
   listAgents: async (): Promise<PrintAgentResponse[]> => {
@@ -735,6 +736,10 @@ export const printingService = {
   },
   regenerateKey: async (id: string): Promise<CreatedPrintAgentResponse> => {
     const { data } = await api.post<CreatedPrintAgentResponse>(`/printing/admin/agents/${id}/regenerate-key`)
+    return data
+  },
+  createPairingCode: async (id: string): Promise<PairingCodeResponse> => {
+    const { data } = await api.post<PairingCodeResponse>(`/printing/admin/agents/${id}/pairing-code`)
     return data
   },
   revokeAgent: async (id: string): Promise<void> => {
