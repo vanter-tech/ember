@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
-import { KeyRound, Printer, RotateCcw, Ticket, Trash2 } from 'lucide-react'
+import { Ban, KeyRound, Printer, RotateCcw, Ticket, Trash2 } from 'lucide-react'
 import { printingService, type PrintAgentResponse } from '@/lib/api'
 import { useUIStore } from '@/store/uiStore'
 import { useTranslation } from '@/lib/i18n'
@@ -196,6 +196,18 @@ export const PrintingSettings = () => {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['printJobs'] }),
   })
 
+  const cancelMutation = useMutation({
+    mutationFn: (jobId: string) => printingService.cancelJob(jobId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['printJobs'] }),
+  })
+
+  const cancelPendingMutation = useMutation({
+    mutationFn: () => printingService.cancelPendingJobs(),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['printJobs'] }),
+  })
+
+  const hasPendingJobs = jobs.some((job) => job.status === 'PENDING')
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center gap-4">
@@ -278,35 +290,67 @@ export const PrintingSettings = () => {
       </Card>
 
       <Card className="rounded-2xl border-zinc-200">
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>{t('printingJobsTitle')}</CardTitle>
+          {hasPendingJobs && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="rounded-xl"
+              onClick={() => cancelPendingMutation.mutate()}
+              disabled={cancelPendingMutation.isPending}
+            >
+              <Ban className="mr-2 h-4 w-4" />
+              {t('printingClearPendingButton')}
+            </Button>
+          )}
         </CardHeader>
         <CardContent className="space-y-2">
-          {jobs.map((job) => (
-            <div
-              key={job.id}
-              className="flex items-center justify-between rounded-xl border border-zinc-200 p-3"
-            >
-              <div>
-                <p className="text-sm text-zinc-800">
-                  {job.role} · {job.status}
-                </p>
-                {job.lastError && <p className="text-sm text-red-600">{job.lastError}</p>}
+          {jobs.map((job) => {
+            const canceled = job.status === 'CANCELED'
+            const cancelable = job.status === 'PENDING' || job.status === 'ERROR'
+            return (
+              <div
+                key={job.id}
+                className="flex items-center justify-between rounded-xl border border-zinc-200 p-3"
+              >
+                <div>
+                  <p className={`text-sm ${canceled ? 'text-zinc-400' : 'text-zinc-800'}`}>
+                    {job.role} · {canceled ? t('printingJobCanceledStatus') : job.status}
+                  </p>
+                  {job.lastError && !canceled && (
+                    <p className="text-sm text-red-600">{job.lastError}</p>
+                  )}
+                </div>
+                {cancelable && job.id && (
+                  <div className="flex items-center gap-2">
+                    {job.status === 'ERROR' && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="rounded-xl"
+                        onClick={() => retryMutation.mutate(job.id!)}
+                        disabled={retryMutation.isPending}
+                      >
+                        <RotateCcw className="mr-2 h-4 w-4" />
+                        {t('printingRetryButton')}
+                      </Button>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="rounded-xl text-zinc-500 hover:text-red-600"
+                      onClick={() => cancelMutation.mutate(job.id!)}
+                      disabled={cancelMutation.isPending}
+                    >
+                      <Ban className="mr-2 h-4 w-4" />
+                      {t('printingCancelJobButton')}
+                    </Button>
+                  </div>
+                )}
               </div>
-              {job.status === 'ERROR' && job.id && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="rounded-xl"
-                  onClick={() => retryMutation.mutate(job.id!)}
-                  disabled={retryMutation.isPending}
-                >
-                  <RotateCcw className="mr-2 h-4 w-4" />
-                  {t('printingRetryButton')}
-                </Button>
-              )}
-            </div>
-          ))}
+            )
+          })}
         </CardContent>
       </Card>
 

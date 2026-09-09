@@ -113,7 +113,9 @@ class SecurityAuditTest {
         "GET,  /printing/admin/agents/1/printers",
         "PATCH, /printing/admin/agents/printers/1",
         "GET,  /printing/jobs",
-        "POST, /printing/jobs/1/retry"
+        "POST, /printing/jobs/1/retry",
+        "POST, /printing/jobs/1/cancel",
+        "POST, /printing/jobs/cancel-pending"
     })
     void unauthenticated_returns401(String method, String path) throws Exception {
         var request = switch (method.trim()) {

@@ -4360,7 +4360,7 @@ export interface operations {
     list_2: {
         parameters: {
             query: {
-                status?: "PENDING" | "SENT" | "PRINTED" | "ERROR";
+                status?: "PENDING" | "SENT" | "PRINTED" | "ERROR" | "CANCELED";
                 pageable: components["schemas"]["Pageable"];
             };
             header?: never;

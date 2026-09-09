@@ -37,4 +37,16 @@ public class PrintJobController {
     public void retry(@PathVariable UUID id) {
         printDispatchService.retry(TenantContextHolder.requireTenantId(), id);
     }
+
+    @PostMapping("/{id}/cancel")
+    @PreAuthorize("hasAnyRole('ADMIN','WAITER')")
+    public void cancel(@PathVariable UUID id) {
+        printDispatchService.cancel(TenantContextHolder.requireTenantId(), id);
+    }
+
+    @PostMapping("/cancel-pending")
+    @PreAuthorize("hasAnyRole('ADMIN','WAITER')")
+    public int cancelPending() {
+        return printDispatchService.cancelAllPending(TenantContextHolder.requireTenantId());
+    }
 }

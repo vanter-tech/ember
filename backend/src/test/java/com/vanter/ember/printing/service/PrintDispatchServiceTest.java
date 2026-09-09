@@ -1,11 +1,13 @@
 package com.vanter.ember.printing.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.vanter.ember.config.ResourceNotFoundException;
 import com.vanter.ember.printing.dto.PrintJobAck;
 import com.vanter.ember.printing.event.PrintAgentConnected;
 import com.vanter.ember.printing.model.ConnectionType;
@@ -134,5 +136,51 @@ class PrintDispatchServiceTest {
 
         assertThat(job.getStatus()).isEqualTo(PrintJobStatus.ERROR);
         assertThat(job.getLastError()).isEqualTo("Sin papel");
+    }
+
+    @Test
+    void cancel_pendingJob_marksCanceledWithoutSending() {
+        PrintJob job = kitchenJob();
+        when(printJobRepository.findById(job.getId())).thenReturn(java.util.Optional.of(job));
+        when(printJobRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        printDispatchService.cancel(TENANT_ID, job.getId());
+
+        assertThat(job.getStatus()).isEqualTo(PrintJobStatus.CANCELED);
+        verify(messagingTemplate, never()).convertAndSend(any(String.class), any(Object.class));
+    }
+
+    @Test
+    void cancel_alreadyPrintedJob_throwsIllegalState() {
+        PrintJob job = kitchenJob();
+        job.setStatus(PrintJobStatus.PRINTED);
+        when(printJobRepository.findById(job.getId())).thenReturn(java.util.Optional.of(job));
+
+        assertThatThrownBy(() -> printDispatchService.cancel(TENANT_ID, job.getId()))
+                .isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    void cancel_jobOfAnotherTenant_throwsNotFound() {
+        PrintJob job = kitchenJob();
+        when(printJobRepository.findById(job.getId())).thenReturn(java.util.Optional.of(job));
+
+        assertThatThrownBy(() -> printDispatchService.cancel(UUID.randomUUID(), job.getId()))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void cancelAllPending_marksEveryPendingJobAndReturnsCount() {
+        PrintJob a = kitchenJob();
+        PrintJob b = kitchenJob();
+        when(printJobRepository.findByTenantIdAndStatus(TENANT_ID, PrintJobStatus.PENDING))
+                .thenReturn(List.of(a, b));
+        when(printJobRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        int cancelled = printDispatchService.cancelAllPending(TENANT_ID);
+
+        assertThat(cancelled).isEqualTo(2);
+        assertThat(a.getStatus()).isEqualTo(PrintJobStatus.CANCELED);
+        assertThat(b.getStatus()).isEqualTo(PrintJobStatus.CANCELED);
     }
 }

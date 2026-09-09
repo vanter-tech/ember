@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { describe, test, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { PrintingSettings } from './PrintingSettings'
 import { printingService } from '@/lib/api'
@@ -15,6 +15,8 @@ vi.mock('@/lib/api', async (importOriginal) => {
       listJobs: vi.fn().mockResolvedValue([]),
       listPrinters: vi.fn().mockResolvedValue([]),
       createPairingCode: vi.fn(),
+      cancelJob: vi.fn().mockResolvedValue(undefined),
+      cancelPendingJobs: vi.fn().mockResolvedValue(1),
     },
   }
 })
@@ -70,5 +72,20 @@ describe('PrintingSettings', () => {
 
     expect(await screen.findByText('ABCDEFGHJK')).toBeInTheDocument()
     expect(printingService.createPairingCode).toHaveBeenCalledWith('a-1')
+  })
+
+  test('cancels a pending job and clears all pending jobs', async () => {
+    vi.mocked(printingService.listAgents).mockResolvedValue([] as never)
+    vi.mocked(printingService.listJobs).mockResolvedValue([
+      { id: 'j-1', role: 'KITCHEN', status: 'PENDING' },
+    ] as never)
+
+    wrap(<PrintingSettings />)
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Cancelar' }))
+    await waitFor(() => expect(printingService.cancelJob).toHaveBeenCalledWith('j-1'))
+
+    fireEvent.click(screen.getByRole('button', { name: 'Limpiar pendientes' }))
+    await waitFor(() => expect(printingService.cancelPendingJobs).toHaveBeenCalled())
   })
 })
