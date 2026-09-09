@@ -3,6 +3,7 @@ package com.vanter.emberagent;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.vanter.emberagent.status.StatusHub;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -80,5 +81,24 @@ class PrintJobHandlerTest {
         assertEquals("job-1", acks.get(0)[0]);
         assertEquals("ERROR", acks.get(0)[1]);
         assertTrue(((String) acks.get(0)[2]).length() > 0);
+    }
+
+    @Test
+    void handle_withStatusHub_mirrorsEveryAckIntoIt() throws Exception {
+        server.enqueue(new MockResponse.Builder().code(500).body("boom").build());
+
+        PrintJobDispatcher dispatcher = new PrintJobDispatcher(
+                new NetworkPrinterSender(), new UsbPrinterSender(), new WindowsPrintQueueSender());
+        StatusHub status = new StatusHub();
+        PrintJobHandler handler = new PrintJobHandler(
+                new PrinterConfigClient(), dispatcher, server.url("/").toString(), "fake-jwt", status);
+
+        handler.handle(new AgentConnection.PrintJobPayload("job-1", "KITCHEN", "payload-1"),
+                (jobId, printerConfigId, result, error) -> {});
+
+        List<StatusHub.JobRecord> jobs = status.snapshot().recentJobs();
+        assertEquals(1, jobs.size());
+        assertEquals("KITCHEN", jobs.get(0).role());
+        assertEquals("ERROR", jobs.get(0).result());
     }
 }

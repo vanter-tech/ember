@@ -31,14 +31,6 @@ public record AgentConfig(String backendBaseUrl, String apiKey) {
         return Optional.empty();
     }
 
-    /**
-     * Legacy entry point still used by {@code Main}; T4 rewires {@code Main} onto
-     * {@link #resolve(CredentialStore, Path)} and this shim goes away.
-     */
-    public static AgentConfig load(Path propertiesFile) throws IOException {
-        return loadProperties(propertiesFile);
-    }
-
     private static AgentConfig loadProperties(Path file) throws IOException {
         Properties props = new Properties();
         try (InputStream in = Files.newInputStream(file)) {
