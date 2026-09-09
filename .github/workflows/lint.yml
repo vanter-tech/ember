@@ -80,3 +80,26 @@ jobs:
         run: pnpm run build:hub
       - name: Tests
         run: pnpm run test:run
+
+  # El print-agent (printing-agent/, com.vanter.emberagent) se empaqueta como app-image
+  # de jpackage sobre una JRE de jlink. Este job compila el fat jar y corre las etapas
+  # runtime + appimage del instalador para atrapar roturas del pom o del script antes de
+  # T7 (verificacion manual en Windows). La etapa Inno (.exe) queda manual: iscc no esta
+  # en el runner.
+  build-print-agent:
+    name: build-print-agent
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configurar Java 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+      - name: Empaquetar el fat jar del agente
+        run: mvn -f printing-agent/pom.xml -q -B -DskipTests package
+      - name: jlink + jpackage app-image
+        run: pwsh printing-agent/build-installer.ps1 -Stage appimage
+      - name: Verificar que el lanzador existe
+        run: if (-not (Test-Path "printing-agent/dist/app-image/Ember Agent/Ember Agent.exe")) { exit 1 }

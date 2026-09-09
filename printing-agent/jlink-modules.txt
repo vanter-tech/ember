@@ -1,0 +1,12 @@
+# Modules baked into the Ember Agent's embedded JRE (build-installer.ps1 -Stage runtime).
+# The shaded agent jar is not modular, so this is a conservative superset:
+# java.se covers Swing/AWT/desktop + java.net.http + JDBC; the jdk.* entries add crypto,
+# JNA's native access path, charsets and the es/en locale data.
+java.se
+jdk.crypto.ec
+jdk.crypto.cryptoki
+jdk.unsupported
+jdk.management
+jdk.zipfs
+jdk.localedata
+jdk.charsets
