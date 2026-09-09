@@ -107,6 +107,7 @@ class SecurityAuditTest {
         "GET,  /printing/admin/agents",
         "PATCH, /printing/admin/agents/1",
         "POST, /printing/admin/agents/1/regenerate-key",
+        "POST, /printing/admin/agents/1/pairing-code",
         "DELETE, /printing/admin/agents/1",
         "POST, /printing/admin/agents/1/printers",
         "GET,  /printing/admin/agents/1/printers",
