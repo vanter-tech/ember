@@ -415,6 +415,7 @@ export const ui: Record<Lang, Record<string, string>> = {
 		'dl.agent.body':
 			'Conecta impresoras térmicas (ESC/POS) o de cola de Windows y recibe comandas y recibos automáticamente cuando se confirma un pedido o se cobra una mesa. Se empareja con tu restaurante con un código.',
 		'dl.agent.req': 'Windows 10 u 11 (64 bits) · sin dependencias',
+		'dl.agent.badge': 'Necesario para la versión cloud',
 		'dl.hub.name': 'Ember Hub (on-premise)',
 		'dl.hub.body':
 			'La plataforma completa corriendo en una PC de tu local: carrito, cocina, piso, cuentas y analítica, funcionando aunque se caiga internet. La base de datos vive en tu servidor.',
@@ -1051,6 +1052,7 @@ export const ui: Record<Lang, Record<string, string>> = {
 		'dl.agent.body':
 			'Connects thermal (ESC/POS) or Windows-queue printers and receives kitchen tickets and receipts automatically when an order is confirmed or a table is charged. Pairs with your restaurant using a code.',
 		'dl.agent.req': 'Windows 10 or 11 (64-bit) · no dependencies',
+		'dl.agent.badge': 'Required for the cloud version',
 		'dl.hub.name': 'Ember Hub (on-premise)',
 		'dl.hub.body':
 			'The full platform running on a PC in your venue: cart, kitchen, floor, bills and analytics, working even if the internet drops. The database lives on your server.',
