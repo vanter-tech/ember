@@ -336,7 +336,7 @@ export const ui: Record<Lang, Record<string, string>> = {
 			'Las tablets de los meseros y la pantalla de cocina se conectan a la dirección de esa PC en tu red local. No se instala nada en ellas.',
 		'local.page.how.3.title': 'Instalador de Windows',
 		'local.page.how.3.body':
-			'Un instalador .exe que trae todo lo necesario. No hay que instalar Java ni una base de datos por separado.',
+			'Un instalador único que trae todo lo necesario. No hay que instalar ni configurar componentes por separado.',
 		'local.page.how.4.title': 'Ícono en la bandeja del sistema',
 		'local.page.how.4.body':
 			'Muestra el estado del servicio y permite cerrarlo. Al iniciar, Ember abre el navegador automáticamente.',
@@ -410,7 +410,7 @@ export const ui: Record<Lang, Record<string, string>> = {
 		'dl.page.eyebrow': 'Descargas',
 		'dl.page.h1': 'Instaladores de Ember',
 		'dl.page.lede':
-			'Aplicaciones de escritorio para Windows. Cada instalador trae todo lo necesario —incluido Java— y se ejecuta una sola vez.',
+			'Aplicaciones de escritorio para Windows. Cada instalador trae todo lo necesario y se ejecuta una sola vez.',
 		'dl.agent.name': 'Agente de impresión',
 		'dl.agent.body':
 			'Conecta impresoras térmicas (ESC/POS) o de cola de Windows y recibe comandas y recibos automáticamente cuando se confirma un pedido o se cobra una mesa. Se empareja con tu restaurante con un código.',
@@ -419,9 +419,9 @@ export const ui: Record<Lang, Record<string, string>> = {
 		'dl.hub.body':
 			'La plataforma completa corriendo en una PC de tu local: carrito, cocina, piso, cuentas y analítica, funcionando aunque se caiga internet. La base de datos vive en tu servidor.',
 		'dl.hub.req': 'Windows 10 u 11 (64 bits) · PC servidor dedicada',
-		'dl.cta': 'Descargar .exe',
+		'dl.cta': 'Descargar',
 		'dl.note':
-			'El instalador incluye todo lo necesario (Java embebido). Si Windows muestra un aviso de SmartScreen, elegí «Más información» → «Ejecutar de todas formas».',
+			'El instalador incluye todo lo necesario para funcionar. Si Windows muestra un aviso de SmartScreen, elegí «Más información» → «Ejecutar de todas formas».',
 		'dl.hub.more.title': '¿No sabés si necesitás Ember Hub?',
 		'dl.hub.more.body':
 			'Ember Hub es para locales que quieren operar sin depender de internet y con los datos en su propia PC. Revisá cómo funciona y los requisitos antes de instalarlo.',
@@ -974,7 +974,7 @@ export const ui: Record<Lang, Record<string, string>> = {
 			'Waiter tablets and the kitchen screen connect to that PC’s address on your local network. Nothing is installed on them.',
 		'local.page.how.3.title': 'Windows installer',
 		'local.page.how.3.body':
-			'A single .exe installer that bundles everything needed. No separate Java or database to install.',
+			'A single installer that bundles everything needed. Nothing to install or configure separately.',
 		'local.page.how.4.title': 'System tray icon',
 		'local.page.how.4.body':
 			'Shows service status and lets you shut it down. On start, Ember opens the browser automatically.',
@@ -1046,7 +1046,7 @@ export const ui: Record<Lang, Record<string, string>> = {
 		'dl.page.eyebrow': 'Downloads',
 		'dl.page.h1': 'Ember installers',
 		'dl.page.lede':
-			'Desktop apps for Windows. Each installer bundles everything it needs —Java included— and runs once.',
+			'Desktop apps for Windows. Each installer bundles everything it needs and runs once.',
 		'dl.agent.name': 'Print agent',
 		'dl.agent.body':
 			'Connects thermal (ESC/POS) or Windows-queue printers and receives kitchen tickets and receipts automatically when an order is confirmed or a table is charged. Pairs with your restaurant using a code.',
@@ -1055,9 +1055,9 @@ export const ui: Record<Lang, Record<string, string>> = {
 		'dl.hub.body':
 			'The full platform running on a PC in your venue: cart, kitchen, floor, bills and analytics, working even if the internet drops. The database lives on your server.',
 		'dl.hub.req': 'Windows 10 or 11 (64-bit) · dedicated server PC',
-		'dl.cta': 'Download .exe',
+		'dl.cta': 'Download',
 		'dl.note':
-			'The installer bundles everything it needs (embedded Java). If Windows shows a SmartScreen prompt, choose “More info” → “Run anyway”.',
+			'The installer bundles everything it needs to run. If Windows shows a SmartScreen prompt, choose “More info” → “Run anyway”.',
 		'dl.hub.more.title': 'Not sure you need Ember Hub?',
 		'dl.hub.more.body':
 			'Ember Hub is for venues that want to operate without depending on the internet, with the data on their own PC. Check how it works and the requirements before installing it.',
