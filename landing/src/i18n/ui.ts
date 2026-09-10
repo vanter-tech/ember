@@ -88,7 +88,7 @@ export const ui: Record<Lang, Record<string, string>> = {
 		'why.title': 'Pensado para el ritmo de un restaurante',
 		'why.1.title': 'En tiempo real',
 		'why.1.body':
-			'Mesas, comandas y pagos se sincronizan al instante por WebSocket entre todos los dispositivos.',
+			'Mesas, comandas y pagos se sincronizan al instante entre todos los dispositivos.',
 		'why.2.title': 'Sin apps para el comensal',
 		'why.2.body': 'Se une con el QR desde el navegador del teléfono. Nada que descargar ni instalar.',
 		'why.3.title': 'Un solo panel',
@@ -155,7 +155,7 @@ export const ui: Record<Lang, Record<string, string>> = {
 			'Cada pedido avanza por estados controlados — pendiente, en preparación, listo, entregado — visibles al instante en pantalla.',
 		'feat.kds.p1': 'Cola de pedidos en tiempo real por estación',
 		'feat.kds.p2': 'Transiciones Pendiente → En preparación → Listo → Entregado',
-		'feat.kds.p3': 'Sincronización instantánea vía WebSocket',
+		'feat.kds.p3': 'Sincronización instantánea entre estaciones',
 		'feat.kds.p4': 'Los pedidos demorados se destacan solos',
 		'feat.floor.title': 'Gestión de piso y meseros',
 		'feat.floor.desc':
@@ -384,13 +384,13 @@ export const ui: Record<Lang, Record<string, string>> = {
 			'Un resumen práctico de las medidas técnicas que protegen la información de cada restaurante en Ember. Si te falta algún detalle para tu evaluación, escribinos.',
 		'sec.page.tenant.title': 'Aislamiento entre restaurantes',
 		'sec.page.tenant.body':
-			'Cada restaurante es un inquilino separado. El catálogo, las ventas, la facturación, la configuración y las comandas llevan un identificador de restaurante y las consultas se filtran por él: una cuenta nunca ve datos de otra. Los clientes que se unen a una mesa quedan atados a ese restaurante al ingresar.',
+			'Cada restaurante está aislado del resto. El catálogo, las ventas, la facturación, la configuración y las comandas quedan ligadas a ese restaurante, y una cuenta nunca ve datos de otra. Los clientes que se unen a una mesa quedan asociados a ese restaurante al ingresar.',
 		'sec.page.access.title': 'Cuentas y accesos',
 		'sec.page.access.body':
-			'El acceso se controla con tokens JWT firmados y con expiración. Las contraseñas se guardan con hash BCrypt, nunca en texto plano. Cada persona del equipo tiene un rol —administración, mesa o cocina— y solo puede usar las funciones de ese rol.',
+			'El acceso se controla con sesiones firmadas que expiran solas. Las contraseñas se guardan cifradas, nunca en texto plano. Cada persona del equipo tiene un rol —administración, mesa o cocina— y solo puede usar las funciones de ese rol.',
 		'sec.page.transit.title': 'Datos en tránsito',
 		'sec.page.transit.body':
-			'Todo el tráfico entre el navegador y Ember viaja por HTTPS/TLS. El sitio y la aplicación se sirven detrás de Cloudflare.',
+			'Todo el tráfico entre el navegador y Ember viaja cifrado (HTTPS). El sitio y la aplicación están detrás de una red de protección global.',
 		'sec.page.backup.title': 'Respaldos',
 		'sec.page.backup.body':
 			'La base de datos de producción se respalda todas las noches a un almacenamiento privado con versionado, y el disco del servidor tiene copias automáticas diarias. Los respaldos no son públicos ni se comparten con terceros.',
@@ -616,7 +616,7 @@ export const ui: Record<Lang, Record<string, string>> = {
 			'El acceso a Ember se rige por el plan contratado (FREE, STARTER, PRO o ENTERPRISE). Los cambios de plan, suspensión o cancelación se gestionan según lo acordado comercialmente con Vanter o desde el panel de administración correspondiente.',
 		'terms.s5.title': '5. Uso aceptable',
 		'terms.s5.body':
-			'No está permitido usar Ember para fines ilícitos, interferir con la operación del servicio, intentar acceder a datos de otro restaurante (tenant) sin autorización, o realizar ingeniería inversa sobre la plataforma.',
+			'No está permitido usar Ember para fines ilícitos, interferir con la operación del servicio, intentar acceder a datos de otro restaurante sin autorización, o realizar ingeniería inversa sobre la plataforma.',
 		'terms.s6.title': '6. Disponibilidad del servicio',
 		'terms.s6.body':
 			'Vanter realiza esfuerzos razonables para mantener Ember disponible, pero no garantiza un servicio libre de interrupciones. Se podrán realizar mantenimientos programados o de emergencia con o sin aviso previo según la criticidad.',
@@ -728,7 +728,7 @@ export const ui: Record<Lang, Record<string, string>> = {
 		'why.title': 'Built for the pace of a restaurant',
 		'why.1.title': 'Real time',
 		'why.1.body':
-			'Tables, orders and payments sync instantly over WebSocket across every device.',
+			'Tables, orders and payments sync instantly across every device.',
 		'why.2.title': 'No app for the guest',
 		'why.2.body': 'They join via QR from the phone browser. Nothing to download or install.',
 		'why.3.title': 'One panel',
@@ -796,7 +796,7 @@ export const ui: Record<Lang, Record<string, string>> = {
 			'Every order moves through controlled states — pending, preparing, ready, delivered — visible on screen instantly.',
 		'feat.kds.p1': 'Real-time order queue per station',
 		'feat.kds.p2': 'Pending → Preparing → Ready → Delivered transitions',
-		'feat.kds.p3': 'Instant sync over WebSocket',
+		'feat.kds.p3': 'Instant sync across stations',
 		'feat.kds.p4': 'Overdue orders flag themselves',
 		'feat.floor.title': 'Floor & server management',
 		'feat.floor.desc':
@@ -1020,13 +1020,13 @@ export const ui: Record<Lang, Record<string, string>> = {
 			'A practical summary of the technical measures that protect each restaurant’s information in Ember. If you’re missing a detail for your review, write to us.',
 		'sec.page.tenant.title': 'Isolation between restaurants',
 		'sec.page.tenant.body':
-			'Each restaurant is a separate tenant. The catalog, sales, billing, settings and kitchen orders all carry a restaurant identifier and queries are filtered by it: one account never sees another’s data. Diners who join a table are bound to that restaurant when they enter.',
+			'Each restaurant is fully isolated from the others. The catalog, sales, billing, settings and kitchen orders are all tied to that restaurant, and one account never sees another’s data. Diners who join a table are linked to that restaurant when they enter.',
 		'sec.page.access.title': 'Accounts and access',
 		'sec.page.access.body':
-			'Access is controlled with signed, expiring JWT tokens. Passwords are stored as BCrypt hashes, never in plain text. Each team member has a role —admin, floor or kitchen— and can only use that role’s features.',
+			'Access is controlled with signed sessions that expire on their own. Passwords are stored encrypted, never in plain text. Each team member has a role —admin, floor or kitchen— and can only use that role’s features.',
 		'sec.page.transit.title': 'Data in transit',
 		'sec.page.transit.body':
-			'All traffic between the browser and Ember travels over HTTPS/TLS. The site and the app are served behind Cloudflare.',
+			'All traffic between the browser and Ember is encrypted (HTTPS). The site and the app sit behind a global protection network.',
 		'sec.page.backup.title': 'Backups',
 		'sec.page.backup.body':
 			'The production database is backed up every night to private, versioned storage, and the server disk has automatic daily snapshots. Backups are not public and are not shared with third parties.',
@@ -1247,7 +1247,7 @@ export const ui: Record<Lang, Record<string, string>> = {
 			'Access to Ember is governed by the contracted plan (FREE, STARTER, PRO or ENTERPRISE). Plan changes, suspension or cancellation are handled as commercially agreed with Vanter or from the corresponding admin panel.',
 		'terms.s5.title': '5. Acceptable use',
 		'terms.s5.body':
-			'It is not permitted to use Ember for unlawful purposes, to interfere with the operation of the service, to attempt to access another restaurant’s (tenant’s) data without authorization, or to reverse-engineer the platform.',
+			'It is not permitted to use Ember for unlawful purposes, to interfere with the operation of the service, to attempt to access another restaurant’s data without authorization, or to reverse-engineer the platform.',
 		'terms.s6.title': '6. Service availability',
 		'terms.s6.body':
 			'Vanter makes reasonable efforts to keep Ember available but does not guarantee an interruption-free service. Scheduled or emergency maintenance may be carried out with or without prior notice depending on criticality.',
