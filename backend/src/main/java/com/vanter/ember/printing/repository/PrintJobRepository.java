@@ -16,4 +16,6 @@ public interface PrintJobRepository extends JpaRepository<PrintJob, UUID> {
             UUID tenantId, PrintJobStatus status, Pageable pageable);
 
     List<PrintJob> findByStatus(PrintJobStatus status);
+
+    List<PrintJob> findByTenantIdAndStatus(UUID tenantId, PrintJobStatus status);
 }

@@ -4,6 +4,7 @@ import com.vanter.ember.config.TenantContextHolder;
 import com.vanter.ember.printing.dto.CreatePrintAgentRequest;
 import com.vanter.ember.printing.dto.CreatePrinterConfigRequest;
 import com.vanter.ember.printing.dto.CreatedPrintAgentResponse;
+import com.vanter.ember.printing.dto.PairingCodeResponse;
 import com.vanter.ember.printing.dto.PrintAgentResponse;
 import com.vanter.ember.printing.dto.PrinterConfigResponse;
 import com.vanter.ember.printing.dto.UpdatePrinterConfigRequest;
@@ -53,6 +54,11 @@ public class PrintAgentAdminController {
     @PostMapping("/{id}/regenerate-key")
     public CreatedPrintAgentResponse regenerateKey(@PathVariable UUID id) {
         return printAgentService.regenerateKey(TenantContextHolder.requireTenantId(), id);
+    }
+
+    @PostMapping("/{id}/pairing-code")
+    public PairingCodeResponse createPairingCode(@PathVariable UUID id) {
+        return printAgentService.createPairingCode(TenantContextHolder.requireTenantId(), id);
     }
 
     @DeleteMapping("/{id}")

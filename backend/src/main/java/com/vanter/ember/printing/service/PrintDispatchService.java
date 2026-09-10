@@ -99,6 +99,39 @@ public class PrintDispatchService {
         dispatch(job);
     }
 
+    /**
+     * Cancels a job that never reached a printer — only {@code PENDING} or {@code ERROR} jobs
+     * qualify. Cancelled jobs keep their row (status {@code CANCELED}) but are skipped by
+     * {@link #flushPendingFor}, so an agent reconnecting no longer replays them onto a printer
+     * that has been sitting out of paper.
+     */
+    @Transactional
+    public void cancel(UUID tenantId, UUID jobId) {
+        PrintJob job = printJobRepository.findById(jobId)
+                .filter(j -> j.getTenantId().equals(tenantId))
+                .orElseThrow(() -> new ResourceNotFoundException("Print job not found: " + jobId));
+        if (job.getStatus() != PrintJobStatus.PENDING && job.getStatus() != PrintJobStatus.ERROR) {
+            throw new IllegalStateException("Only pending or errored jobs can be cancelled");
+        }
+        job.setStatus(PrintJobStatus.CANCELED);
+        job.setUpdatedAt(LocalDateTime.now());
+        printJobRepository.save(job);
+    }
+
+    /** Bulk-cancels every {@code PENDING} job for the tenant. Returns the number cancelled. */
+    @Transactional
+    public int cancelAllPending(UUID tenantId) {
+        List<PrintJob> pending =
+                printJobRepository.findByTenantIdAndStatus(tenantId, PrintJobStatus.PENDING);
+        LocalDateTime now = LocalDateTime.now();
+        pending.forEach(job -> {
+            job.setStatus(PrintJobStatus.CANCELED);
+            job.setUpdatedAt(now);
+        });
+        printJobRepository.saveAll(pending);
+        return pending.size();
+    }
+
     private void sendTo(UUID agentId, PrintJob job) {
         messagingTemplate.convertAndSend(
                 "/topic/print-agent/" + agentId,

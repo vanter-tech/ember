@@ -9,6 +9,7 @@ import com.vanter.ember.config.ResourceNotFoundException;
 import com.vanter.ember.printing.dto.CreatedPrintAgentResponse;
 import com.vanter.ember.printing.model.PrintAgent;
 import com.vanter.ember.printing.model.PrintAgentStatus;
+import com.vanter.ember.printing.repository.PairingCodeRepository;
 import com.vanter.ember.printing.repository.PrintAgentRepository;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -27,6 +28,7 @@ class PrintAgentServiceTest {
     @Mock PrintAgentRepository printAgentRepository;
     @Mock PasswordEncoder passwordEncoder;
     @Mock PrintAgentConnectionRegistry connectionRegistry;
+    @Mock PairingCodeRepository pairingCodeRepository;
     @InjectMocks PrintAgentService printAgentService;
 
     private static final UUID TENANT_ID = UUID.randomUUID();

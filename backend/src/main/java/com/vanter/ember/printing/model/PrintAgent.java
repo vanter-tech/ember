@@ -7,11 +7,14 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 /**
  * One local Hardware Bridge process registered for a restaurant. A tenant may register more
@@ -56,4 +59,14 @@ public class PrintAgent {
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
+
+    @Column(name = "paired_at")
+    private LocalDateTime pairedAt;
+
+    // SqlTypes.JSON resolves to the dialect's JSON type on both PostgreSQL and H2 — same
+    // pattern as Session.participants / RestaurantSettings.payload. Null until the agent's
+    // first discovered-printers report.
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "discovered_printers")
+    private List<DiscoveredPrinter> discoveredPrinters;
 }

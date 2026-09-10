@@ -48,4 +48,21 @@ class PrintJobControllerTest {
         mockMvc.perform(post("/printing/jobs/" + jobId + "/retry").with(csrf()))
                 .andExpect(status().isOk());
     }
+
+    @Test
+    @WithMockUser(roles = "WAITER")
+    void cancel_delegatesToDispatchService() throws Exception {
+        TenantContextHolder.setTenantId(UUID.randomUUID());
+        UUID jobId = UUID.randomUUID();
+        mockMvc.perform(post("/printing/jobs/" + jobId + "/cancel").with(csrf()))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void cancelPending_delegatesToDispatchService() throws Exception {
+        TenantContextHolder.setTenantId(UUID.randomUUID());
+        mockMvc.perform(post("/printing/jobs/cancel-pending").with(csrf()))
+                .andExpect(status().isOk());
+    }
 }

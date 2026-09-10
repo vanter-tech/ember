@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -34,7 +35,12 @@ type AddPrinterInputs = z.infer<typeof addPrinterSchema>
 export const AddPrinterModal = () => {
   const { t } = useTranslation('admin')
   const { activeModal, modalPayload, closeModal } = useUIStore()
-  const agentId = modalPayload as string | null
+  const { agentId, discoveredPrinters = [] } = (modalPayload ?? {}) as {
+    agentId?: string
+    discoveredPrinters?: Array<{ name?: string; inkjetGuess?: boolean }>
+  }
+  const knownQueues = discoveredPrinters.filter((p): p is { name: string; inkjetGuess?: boolean } => !!p.name)
+  const [queueFreeText, setQueueFreeText] = useState(false)
   const queryClient = useQueryClient()
 
   const form = useForm<AddPrinterInputs>({
@@ -77,6 +83,7 @@ export const AddPrinterModal = () => {
 
   const handleClose = () => {
     form.reset()
+    setQueueFreeText(false)
     closeModal()
   }
 
@@ -172,9 +179,46 @@ export const AddPrinterModal = () => {
                   name="windowsQueueName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormControl>
-                        <Input placeholder={t('printingQueueNamePlaceholder')} className="rounded-xl" {...field} />
-                      </FormControl>
+                      {knownQueues.length > 0 && (
+                        <Select
+                          value={queueFreeText ? '__other__' : field.value || ''}
+                          onValueChange={(value) => {
+                            if (value === '__other__') {
+                              setQueueFreeText(true)
+                              field.onChange('')
+                              return
+                            }
+                            setQueueFreeText(false)
+                            field.onChange(value)
+                            if (knownQueues.find((p) => p.name === value)?.inkjetGuess) {
+                              form.setValue('renderMode', 'DRIVER')
+                            }
+                          }}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="w-full rounded-xl">
+                              <SelectValue placeholder={t('printingQueueNamePlaceholder')} />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {knownQueues.map((p) => (
+                              <SelectItem key={p.name} value={p.name}>
+                                {p.name}
+                              </SelectItem>
+                            ))}
+                            <SelectItem value="__other__">{t('printingQueueOtherOption')}</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
+                      {(knownQueues.length === 0 || queueFreeText) && (
+                        <FormControl>
+                          <Input
+                            placeholder={t('printingQueueNamePlaceholder')}
+                            className="rounded-xl"
+                            {...field}
+                          />
+                        </FormControl>
+                      )}
                       <p className="text-xs text-zinc-500">{t('printingQueueNameHint')}</p>
                     </FormItem>
                   )}

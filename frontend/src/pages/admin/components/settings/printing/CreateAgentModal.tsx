@@ -29,6 +29,7 @@ export const CreateAgentModal = () => {
   const { activeModal, closeModal } = useUIStore()
   const queryClient = useQueryClient()
   const [apiKey, setApiKey] = useState<string | null>(null)
+  const [pairCode, setPairCode] = useState<string | null>(null)
 
   const form = useForm<CreateAgentInputs>({
     resolver: zodResolver(createAgentSchema),
@@ -37,9 +38,17 @@ export const CreateAgentModal = () => {
 
   const mutation = useMutation({
     mutationFn: (data: CreateAgentInputs) => printingService.createAgent(data.name),
-    onSuccess: (created) => {
+    onSuccess: async (created) => {
       queryClient.invalidateQueries({ queryKey: ['printAgents'] })
       setApiKey(created.apiKey ?? null)
+      if (created.id) {
+        try {
+          const { code } = await printingService.createPairingCode(created.id)
+          setPairCode(code ?? null)
+        } catch {
+          setPairCode(null)
+        }
+      }
     },
     onError: () => {
       toast.error(t('printingAddButton'))
@@ -49,7 +58,13 @@ export const CreateAgentModal = () => {
   const handleClose = () => {
     form.reset()
     setApiKey(null)
+    setPairCode(null)
     closeModal()
+  }
+
+  const copy = (value: string) => {
+    navigator.clipboard?.writeText(value)
+    toast.success(t('printingCopyButton'))
   }
 
   return (
@@ -90,13 +105,25 @@ export const CreateAgentModal = () => {
         ) : (
           <>
             <DialogHeader className="mb-4">
-              <DialogTitle className="text-2xl font-bold text-zinc-800">{t('printingApiKeyTitle')}</DialogTitle>
+              <DialogTitle className="text-2xl font-bold text-zinc-800">{t('printingPairCodeTitle')}</DialogTitle>
             </DialogHeader>
-            <p className="text-sm text-zinc-500">{t('printingApiKeyWarning')}</p>
-            <code className="block break-all rounded-xl bg-zinc-100 p-3 text-sm">{apiKey}</code>
-            <p className="rounded-xl bg-amber-50 p-3 text-xs text-amber-800">
-              {t('printingApiKeySetupHint')}
-            </p>
+            {pairCode ? (
+              <div className="flex items-center gap-2">
+                <code className="flex-1 break-all rounded-xl bg-zinc-100 p-3 text-center text-2xl font-bold tracking-widest">
+                  {pairCode}
+                </code>
+                <Button type="button" variant="outline" size="sm" onClick={() => copy(pairCode)}>
+                  {t('printingCopyButton')}
+                </Button>
+              </div>
+            ) : (
+              <p className="text-sm text-zinc-500">{t('printingApiKeyWarning')}</p>
+            )}
+            <p className="text-xs text-zinc-500">{t('printingPairCodeHint')}</p>
+            <details className="mt-3">
+              <summary className="cursor-pointer text-xs text-zinc-500">{t('printingAdvancedInstallLabel')}</summary>
+              <code className="mt-2 block break-all rounded-xl bg-zinc-100 p-3 text-xs">{apiKey}</code>
+            </details>
             <DialogFooter>
               <Button type="button" onClick={handleClose}>
                 {t('printingCloseButton')}

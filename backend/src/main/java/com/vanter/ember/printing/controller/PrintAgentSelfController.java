@@ -2,14 +2,20 @@ package com.vanter.ember.printing.controller;
 
 import com.vanter.ember.identity.service.JwtService;
 import com.vanter.ember.printing.dto.PrinterConfigResponse;
+import com.vanter.ember.printing.dto.ReportDiscoveredPrintersRequest;
 import com.vanter.ember.printing.model.PrinterConfig;
 import com.vanter.ember.printing.repository.PrinterConfigRepository;
+import com.vanter.ember.printing.service.PrintAgentService;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -24,6 +30,7 @@ public class PrintAgentSelfController {
 
     private final PrinterConfigRepository printerConfigRepository;
     private final JwtService jwtService;
+    private final PrintAgentService printAgentService;
 
     @GetMapping("/printers")
     public List<PrinterConfigResponse> myPrinters(@RequestHeader("Authorization") String authHeader) {
@@ -32,6 +39,16 @@ public class PrintAgentSelfController {
         return printerConfigRepository.findByAgentIdAndActiveTrue(agentId).stream()
                 .map(this::toResponse)
                 .toList();
+    }
+
+    @PostMapping("/discovered-printers")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void reportDiscoveredPrinters(
+            @RequestHeader("Authorization") String authHeader,
+            @RequestBody ReportDiscoveredPrintersRequest request) {
+        String token = authHeader.substring("Bearer ".length());
+        UUID agentId = UUID.fromString(jwtService.extractSubject(token));
+        printAgentService.saveDiscoveredPrinters(agentId, request.printers());
     }
 
     private PrinterConfigResponse toResponse(PrinterConfig config) {
