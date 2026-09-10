@@ -100,6 +100,13 @@ Cloud agent only (spec §4.1 Hub-local detection = separate future plan). One ta
 ### Next up (spec/plan pending)
 - [ ] **F-21 — hardcoded credentials** in `PortableDatabaseBootstrap`/`PortableMinioBootstrap`: generate random creds at first boot, persist in `hub.env`, read from env. Own small task.
 
+### PILOT-READINESS — gate before onboarding the first paying customer (~1 week, not more)
+Rationale: architecture is sound but prod infra is early (single VM, no HA, manual deploy). These four close the gap between "demo-able" and "safe to run a real restaurant's money on". Framing to customers stays **early access / founding restaurant**, no uptime SLA, no "diner pays from phone" (gateway is a stub — EMB-GATEWAY).
+- [ ] **1 — Lower the RPO.** Nightly `pg_dump` = up to 24 h of lost orders/sales/cash-shift data on a VM failure. Minimum: hourly dumps to `gs://ember-backups-ember-prod-vanter`. Ideal: WAL archiving / PITR. Pairs with **HPD-21** (restore test).
+- [ ] **2 — Rehearse rollback once.** `./deploy/deploy.sh <previous-tag>` documented in `deploy/RUNBOOK.md` and actually run once against prod (or a clone), not improvised during an incident.
+- [ ] **3 — Bus factor = 1, acknowledged.** Founder reachable + able to fix fast; a support/status channel for pilots and a basic "prod is down" response checklist.
+- [ ] **4 — Privacy/Terms lawyer pass.** `landing/src/pages/privacy.astro` is thin; taking payment + handling restaurant (and possibly diner) data needs a real review. Not a pilot blocker, is a scale blocker.
+
 ### Open / deferred
 - [ ] **EMB-GATEWAY** — real payment gateway. Blocked on GATEWAY-01 (certified provider for Nicaragua). GATEWAY-02..06 open.
 - [ ] **HUB-03 T10** — manual Windows verification (clean install, LAN 2nd PC, license picker, upgrade-in-place, uninstall-keep, boot errors) → `reports/382-…`. Spec/plan `…/2026-09-05-hub-installer*`.
