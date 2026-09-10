@@ -45,6 +45,14 @@ powershell -ExecutionPolicy Bypass -File ember-hub\build-installer.ps1
 `<version>` comes from `backend/pom.xml`'s `<version>` (minus `-SNAPSHOT`).
 Output and `.vendor-cache/` are gitignored.
 
+> **Bump `backend/pom.xml` `<version>` for every release.** It names the
+> installer (`EmberHubSetup-<version>.exe`), is the `--app-version` jpackage
+> stamps in, and is what Inno Setup compares to decide an upgrade. If two
+> releases share a version, the second overwrites the first in
+> `gs://ember-downloads-prod` (breaking the `immutable` cache header) and
+> customers cannot cleanly update. Keep it aligned with the git release tag —
+> tag `v0.2.4` ⇢ pom `0.2.4-SNAPSHOT`.
+
 ## Install layout (on the customer PC)
 
 | Path | Contents | Lifecycle |
