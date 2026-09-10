@@ -23,7 +23,7 @@
 set -euo pipefail
 
 BUCKET="gs://ember-downloads-prod"
-CF_ZONE_ID="${CF_ZONE_ID:-REPLACE_WITH_VANTER_NET_ZONE_ID}"   # vanter.net -> Overview -> Zone ID (not a secret)
+CF_ZONE_ID="${CF_ZONE_ID:-167aaa15781ebd1455a86eec0ac5ec9b}"   # vanter.net zone id (not a secret; in every CF API URL)
 CF_TOKEN_SECRET="${CF_TOKEN_SECRET:-cloudflare-cache-purge-token}"
 PUBLIC_HOST="downloads.ember.vanter.net"
 
