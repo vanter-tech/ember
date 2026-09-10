@@ -703,6 +703,12 @@ Pass `latest` (or a bare `0.1.0`), **not** `v0.1.0` — CI publishes
 `:v0.1.0` image, so `git describe --tags` would set an `EMBER_IMAGE_TAG` that
 fails `compose pull`.
 
+Before tagging a release, bump `backend/pom.xml` `<version>` to match (tag
+`v0.2.4` ⇢ pom `0.2.4-SNAPSHOT`). The pom version doesn't affect the image tag,
+but it names the Ember Hub installer (`EmberHubSetup-<version>.exe`) and shows in
+the jar MANIFEST / `/actuator/info`; a stale `0.0.1` there means every Hub build
+collides in the downloads bucket.
+
 - The `MINIO_*` keys hold the GCS S3-XML credentials (set in HPD-20 — endpoint
   `https://storage.googleapis.com`, a user-account HMAC key); rotate via the
   same GCS Interoperability screen, then a new secret version + `deploy.sh latest`.

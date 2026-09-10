@@ -65,6 +65,10 @@ jobs as they arrive. The dashboard shows the connection state, the reported prin
   `java -jar printing-agent-<version>.jar`. DPAPI is Windows-only, so the key is stored in
   clear text with a warning on other platforms.
 - Build from source: `pwsh printing-agent/build-installer.ps1` (needs JDK 17 + Inno Setup 6).
+- **Bump `printing-agent/pom.xml` `<version>` for every release** — it names the
+  installer (`EmberAgentSetup-<version>.exe`) and jpackage's `--app-version`. Two
+  releases sharing a version overwrite each other in `gs://ember-downloads-prod`
+  and block clean in-place updates.
 
 ## Troubleshooting
 
