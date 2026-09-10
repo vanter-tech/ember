@@ -403,6 +403,34 @@ export const ui: Record<Lang, Record<string, string>> = {
 			'Si estás haciendo una evaluación de seguridad o de proveedores y te falta información, escribinos y te respondemos.',
 		'sec.page.contact.cta': 'Escribir al equipo',
 
+		// --- Page: Descargas (/info/descarga) ---
+		'dl.page.title': 'Descargas — Ember',
+		'dl.page.desc':
+			'Instaladores de Windows para el Agente de impresión de Ember y para Ember Hub (on-premise).',
+		'dl.page.eyebrow': 'Descargas',
+		'dl.page.h1': 'Instaladores de Ember',
+		'dl.page.lede':
+			'Aplicaciones de escritorio para Windows. Cada instalador trae todo lo necesario —incluido Java— y se ejecuta una sola vez.',
+		'dl.agent.name': 'Agente de impresión',
+		'dl.agent.body':
+			'Conecta impresoras térmicas (ESC/POS) o de cola de Windows y recibe comandas y recibos automáticamente cuando se confirma un pedido o se cobra una mesa. Se empareja con tu restaurante con un código.',
+		'dl.agent.req': 'Windows 10 u 11 (64 bits) · sin dependencias',
+		'dl.hub.name': 'Ember Hub (on-premise)',
+		'dl.hub.body':
+			'La plataforma completa corriendo en una PC de tu local: carrito, cocina, piso, cuentas y analítica, funcionando aunque se caiga internet. La base de datos vive en tu servidor.',
+		'dl.hub.req': 'Windows 10 u 11 (64 bits) · PC servidor dedicada',
+		'dl.cta': 'Descargar .exe',
+		'dl.note':
+			'El instalador incluye todo lo necesario (Java embebido). Si Windows muestra un aviso de SmartScreen, elegí «Más información» → «Ejecutar de todas formas».',
+		'dl.hub.more.title': '¿No sabés si necesitás Ember Hub?',
+		'dl.hub.more.body':
+			'Ember Hub es para locales que quieren operar sin depender de internet y con los datos en su propia PC. Revisá cómo funciona y los requisitos antes de instalarlo.',
+		'dl.hub.more.cta': 'Ver cómo funciona y requisitos',
+		'dl.help.title': '¿Problemas con la instalación?',
+		'dl.help.body':
+			'Si el instalador no abre, no encuentra la impresora o no se empareja, escribinos y te ayudamos.',
+		'dl.help.cta': 'Contactar al equipo',
+
 		// --- Page: contacto ---
 		'cpage.title': 'Contacto — Ember',
 		'cpage.desc':
@@ -452,6 +480,7 @@ export const ui: Record<Lang, Record<string, string>> = {
 		'info.nav.videos': 'Videos de Ember',
 		'info.nav.local': 'Ember Local',
 		'info.nav.security': 'Seguridad',
+		'info.nav.downloads': 'Descargas',
 		'info.title': 'Información — Ember',
 		'info.desc': 'Manual de usuario y videos de Ember: aprendé a usar la plataforma.',
 		'info.h1': 'Aprendé a usar Ember',
@@ -469,6 +498,9 @@ export const ui: Record<Lang, Record<string, string>> = {
 		'info.card.security.title': 'Seguridad',
 		'info.card.security.body':
 			'Aislamiento entre cuentas, control de accesos, cifrado en tránsito y respaldos: cómo Ember protege los datos de tu restaurante.',
+		'info.card.downloads.title': 'Descargas',
+		'info.card.downloads.body':
+			'Instaladores de Windows para el Agente de impresión y para Ember Hub (on-premise).',
 
 		'manual.title': 'Manual de usuario — Ember',
 		'manual.desc':
@@ -1007,6 +1039,34 @@ export const ui: Record<Lang, Record<string, string>> = {
 			'If you’re running a security or vendor review and need more information, write to us and we’ll get back to you.',
 		'sec.page.contact.cta': 'Write to the team',
 
+		// --- Page: Descargas (/info/descarga) ---
+		'dl.page.title': 'Downloads — Ember',
+		'dl.page.desc':
+			'Windows installers for the Ember print agent and for Ember Hub (on-premise).',
+		'dl.page.eyebrow': 'Downloads',
+		'dl.page.h1': 'Ember installers',
+		'dl.page.lede':
+			'Desktop apps for Windows. Each installer bundles everything it needs —Java included— and runs once.',
+		'dl.agent.name': 'Print agent',
+		'dl.agent.body':
+			'Connects thermal (ESC/POS) or Windows-queue printers and receives kitchen tickets and receipts automatically when an order is confirmed or a table is charged. Pairs with your restaurant using a code.',
+		'dl.agent.req': 'Windows 10 or 11 (64-bit) · no dependencies',
+		'dl.hub.name': 'Ember Hub (on-premise)',
+		'dl.hub.body':
+			'The full platform running on a PC in your venue: cart, kitchen, floor, bills and analytics, working even if the internet drops. The database lives on your server.',
+		'dl.hub.req': 'Windows 10 or 11 (64-bit) · dedicated server PC',
+		'dl.cta': 'Download .exe',
+		'dl.note':
+			'The installer bundles everything it needs (embedded Java). If Windows shows a SmartScreen prompt, choose “More info” → “Run anyway”.',
+		'dl.hub.more.title': 'Not sure you need Ember Hub?',
+		'dl.hub.more.body':
+			'Ember Hub is for venues that want to operate without depending on the internet, with the data on their own PC. Check how it works and the requirements before installing it.',
+		'dl.hub.more.cta': 'See how it works and requirements',
+		'dl.help.title': 'Trouble installing?',
+		'dl.help.body':
+			'If the installer won’t open, can’t find the printer or won’t pair, write to us and we’ll help.',
+		'dl.help.cta': 'Contact the team',
+
 		// --- Page: contacto ---
 		'cpage.title': 'Contact — Ember',
 		'cpage.desc': 'How to reach the Ember team: email, office and support hours.',
@@ -1054,6 +1114,7 @@ export const ui: Record<Lang, Record<string, string>> = {
 		'info.nav.videos': 'Ember videos',
 		'info.nav.local': 'Ember Local',
 		'info.nav.security': 'Security',
+		'info.nav.downloads': 'Downloads',
 		'info.title': 'Information — Ember',
 		'info.desc': 'Ember user manual and videos: learn how to use the platform.',
 		'info.h1': 'Learn to use Ember',
@@ -1070,6 +1131,9 @@ export const ui: Record<Lang, Record<string, string>> = {
 		'info.card.security.title': 'Security',
 		'info.card.security.body':
 			'Isolation between accounts, access control, encryption in transit and backups: how Ember protects your restaurant’s data.',
+		'info.card.downloads.title': 'Downloads',
+		'info.card.downloads.body':
+			'Windows installers for the print agent and for Ember Hub (on-premise).',
 
 		'manual.title': 'User manual — Ember',
 		'manual.desc': 'Ember usage guide: getting started, roles, floor, kitchen, payments and analytics.',

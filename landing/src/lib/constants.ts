@@ -16,6 +16,17 @@ if (import.meta.env.PROD && !frontendUrl) {
 
 export const FRONTEND_URL = frontendUrl ?? FALLBACK_FRONTEND_URL;
 
+// Windows installer downloads. An explicit PUBLIC_*_DOWNLOAD_URL always wins;
+// otherwise both point at the public downloads host. Kept as -latest so the
+// link never needs a version bump.
+export const AGENT_DOWNLOAD_URL =
+  import.meta.env.PUBLIC_AGENT_DOWNLOAD_URL ??
+  'https://downloads.ember.vanter.net/EmberAgentSetup-latest.exe';
+
+export const HUB_DOWNLOAD_URL =
+  import.meta.env.PUBLIC_HUB_DOWNLOAD_URL ??
+  'https://downloads.ember.vanter.net/EmberHubSetup-latest.exe';
+
 export const NAV_LINKS = [
   { href: '/funcionalidades', key: 'nav.features' },
   { href: '/planes', key: 'nav.pricing' },

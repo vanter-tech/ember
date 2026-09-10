@@ -1,0 +1,79 @@
+---
+import InfoLayout from '../../layouts/InfoLayout.astro';
+import { getLang, useTranslations, localizePath } from '../../i18n/utils';
+import { AGENT_DOWNLOAD_URL, HUB_DOWNLOAD_URL } from '../../lib/constants';
+
+const lang = getLang(Astro.currentLocale);
+const t = useTranslations(lang);
+
+const downloads = [
+	{
+		name: t('dl.agent.name'),
+		body: t('dl.agent.body'),
+		req: t('dl.agent.req'),
+		href: AGENT_DOWNLOAD_URL,
+	},
+	{
+		name: t('dl.hub.name'),
+		body: t('dl.hub.body'),
+		req: t('dl.hub.req'),
+		href: HUB_DOWNLOAD_URL,
+	},
+];
+---
+
+<InfoLayout title={t('dl.page.title')} description={t('dl.page.desc')}>
+	<p class="text-xs font-semibold uppercase tracking-wider text-primary">{t('dl.page.eyebrow')}</p>
+	<h1 class="mt-3 text-3xl font-bold tracking-tight text-foreground md:text-4xl">{t('dl.page.h1')}</h1>
+	<p class="mt-4 leading-relaxed text-muted-foreground">
+		{t('dl.page.lede')}
+	</p>
+
+	<div class="mt-10 grid gap-6 sm:grid-cols-2">
+		{downloads.map((item) => (
+			<section class="flex flex-col rounded-lg border border-border bg-card p-6 shadow-sm">
+				<h2 class="text-lg font-semibold tracking-tight text-card-foreground">{item.name}</h2>
+				<p class="mt-3 text-sm leading-relaxed text-muted-foreground">{item.body}</p>
+				<p class="mt-4 text-xs font-medium uppercase tracking-wider text-muted-foreground/80">{item.req}</p>
+				<a
+					href={item.href}
+					class="mt-6 inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
+				>
+					<svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+						<path d="M12 3v12" />
+						<path d="m7 10 5 5 5-5" />
+						<path d="M5 21h14" />
+					</svg>
+					{t('dl.cta')}
+				</a>
+			</section>
+		))}
+	</div>
+
+	<p class="mt-6 text-sm leading-relaxed text-muted-foreground">{t('dl.note')}</p>
+
+	<section class="mt-6 scroll-mt-24 rounded-lg border border-primary/40 bg-primary/[0.04] p-6">
+		<h2 class="text-lg font-semibold tracking-tight text-foreground">{t('dl.hub.more.title')}</h2>
+		<p class="mt-3 text-sm leading-relaxed text-muted-foreground">{t('dl.hub.more.body')}</p>
+		<a
+			href={localizePath('/info/local', lang)}
+			class="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-primary transition-colors hover:text-primary/80"
+		>
+			{t('dl.hub.more.cta')}
+			<svg class="size-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+				<path fill-rule="evenodd" d="M7.21 4.21a1 1 0 0 1 1.42 0l5 5a1 1 0 0 1 0 1.42l-5 5a1 1 0 1 1-1.42-1.42L11.59 10 7.21 5.63a1 1 0 0 1 0-1.42Z" clip-rule="evenodd" />
+			</svg>
+		</a>
+	</section>
+
+	<section class="mt-12 rounded-lg border border-border bg-muted/40 p-6">
+		<h2 class="text-lg font-semibold tracking-tight text-foreground">{t('dl.help.title')}</h2>
+		<p class="mt-2 text-sm leading-relaxed text-muted-foreground">{t('dl.help.body')}</p>
+		<a
+			href={localizePath('/contacto', lang)}
+			class="mt-5 inline-flex items-center justify-center rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
+		>
+			{t('dl.help.cta')}
+		</a>
+	</section>
+</InfoLayout>
