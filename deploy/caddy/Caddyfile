@@ -15,3 +15,22 @@ api.ember.vanter.net {
 
 	encode gzip
 }
+
+# Public file downloads (Windows installers: Ember Agent, Ember Hub).
+# Reverse-proxies to the public GCS bucket gs://ember-downloads-prod via the
+# path-style endpoint — objects there are world-readable, so no auth is added.
+# Cloudflare caches .exe responses by default, so the VM only serves cache
+# misses. The Cloudflare Origin Certificate mounted above must cover this
+# hostname (create it for *.ember.vanter.net if it was issued api-only).
+downloads.ember.vanter.net {
+	tls /certs/origin.pem /certs/origin.key
+
+	@methods method GET HEAD
+	handle @methods {
+		rewrite * /ember-downloads-prod{uri}
+		reverse_proxy https://storage.googleapis.com {
+			header_up Host storage.googleapis.com
+		}
+	}
+	respond 405
+}
