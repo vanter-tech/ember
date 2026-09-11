@@ -51,6 +51,7 @@ export const waiter = {
     'Abre tu turno, registra movimientos de efectivo y cierra la caja al final del día desde aquí.',
   noOpenShift: 'No hay un turno de caja abierto.',
   openCajaButton: 'Abrir caja',
+  adminCashRegisterReadOnly: 'Solo un mesero puede abrir, cerrar o modificar la caja. Tu sesión de administrador solo puede consultarla.',
   shiftNumberLabel: 'Turno #{{number}}',
   shiftStatusOpen: 'Abierto',
   shiftStatusClosed: 'Cerrado',

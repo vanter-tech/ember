@@ -52,6 +52,7 @@ export const waiter = {
   tourCashRegisterContent: 'Open your shift, record cash movements, and close it out at the end of the day from here.',
   noOpenShift: 'There is no open cash shift.',
   openCajaButton: 'Open register',
+  adminCashRegisterReadOnly: 'Only a waiter can open, close, or modify the register. Your admin session can only view it.',
   shiftNumberLabel: 'Shift #{{number}}',
   shiftStatusOpen: 'Open',
   shiftStatusClosed: 'Closed',
