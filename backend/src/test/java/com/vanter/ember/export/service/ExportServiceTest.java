@@ -32,11 +32,15 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+import org.apache.poi.ss.usermodel.BorderStyle;
 import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.FillPatternType;
 import org.apache.poi.ss.usermodel.Font;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -94,21 +98,21 @@ class ExportServiceTest {
         return settings;
     }
 
-    /** Asserts the shared business-info block (rows 0-5) any sheet starts with. */
+    /** Asserts the shared business-info block (rows 1-6, under the row-0 title bar) any sheet starts with. */
     private static void assertHasBusinessHeaderBlock(Sheet sheet) {
-        assertThat(text(sheet.getRow(0), 0)).isEqualTo("Negocio");
-        assertThat(text(sheet.getRow(0), 1)).isEqualTo("Ember Demo");
-        assertThat(text(sheet.getRow(1), 0)).isEqualTo("Nombre legal");
-        assertThat(text(sheet.getRow(1), 1)).isEqualTo("Ember Gastronomía S.A. de C.V.");
-        assertThat(text(sheet.getRow(2), 0)).isEqualTo("RUC");
-        assertThat(text(sheet.getRow(2), 1)).isEqualTo("800-123456-7");
-        assertThat(text(sheet.getRow(3), 0)).isEqualTo("Teléfono");
-        assertThat(text(sheet.getRow(3), 1)).isEqualTo("+52 55 1234 5678");
-        assertThat(text(sheet.getRow(4), 0)).isEqualTo("Dirección");
-        assertThat(text(sheet.getRow(4), 1)).isEqualTo("123 Culinary Ave");
-        assertThat(text(sheet.getRow(5), 0)).isEqualTo("Rango exportado");
-        assertThat(text(sheet.getRow(5), 1)).isEqualTo("2026-08-01T00:00 a 2026-08-14T23:59:59");
-        assertThat(sheet.getRow(6)).isNull();
+        assertThat(text(sheet.getRow(1), 0)).isEqualTo("Negocio");
+        assertThat(text(sheet.getRow(1), 1)).isEqualTo("Ember Demo");
+        assertThat(text(sheet.getRow(2), 0)).isEqualTo("Nombre legal");
+        assertThat(text(sheet.getRow(2), 1)).isEqualTo("Ember Gastronomía S.A. de C.V.");
+        assertThat(text(sheet.getRow(3), 0)).isEqualTo("RUC");
+        assertThat(text(sheet.getRow(3), 1)).isEqualTo("800-123456-7");
+        assertThat(text(sheet.getRow(4), 0)).isEqualTo("Teléfono");
+        assertThat(text(sheet.getRow(4), 1)).isEqualTo("+52 55 1234 5678");
+        assertThat(text(sheet.getRow(5), 0)).isEqualTo("Dirección");
+        assertThat(text(sheet.getRow(5), 1)).isEqualTo("123 Culinary Ave");
+        assertThat(text(sheet.getRow(6), 0)).isEqualTo("Rango exportado");
+        assertThat(text(sheet.getRow(6), 1)).isEqualTo("2026-08-01T00:00 a 2026-08-14T23:59:59");
+        assertThat(sheet.getRow(7)).isNull();
     }
 
     private void stubEmptyBillsAndProducts() {
@@ -129,7 +133,7 @@ class ExportServiceTest {
         Sheet ventas = workbook.getSheet("Ventas");
         assertThat(ventas).isNotNull();
         assertHasBusinessHeaderBlock(ventas);
-        Row ventasColumnHeader = ventas.getRow(7);
+        Row ventasColumnHeader = ventas.getRow(8);
         assertThat(text(ventasColumnHeader, 0)).isEqualTo("ID Cuenta");
         assertThat(text(ventasColumnHeader, 1)).isEqualTo("Mesa");
         assertThat(text(ventasColumnHeader, 2)).isEqualTo("Fecha");
@@ -137,18 +141,18 @@ class ExportServiceTest {
         assertThat(text(ventasColumnHeader, 4)).isEqualTo("Estado");
         assertThat(text(ventasColumnHeader, 5)).isEqualTo("Métodos de pago");
         assertThat(text(ventasColumnHeader, 6)).isEqualTo("Participantes");
-        assertThat(ventas.getRow(8)).isNull();
+        assertThat(ventas.getRow(9)).isNull();
 
         Sheet productos = workbook.getSheet("Productos");
         assertThat(productos).isNotNull();
         assertHasBusinessHeaderBlock(productos);
-        Row productosColumnHeader = productos.getRow(7);
+        Row productosColumnHeader = productos.getRow(8);
         assertThat(text(productosColumnHeader, 0)).isEqualTo("Producto");
         assertThat(text(productosColumnHeader, 1)).isEqualTo("Categoría");
         assertThat(text(productosColumnHeader, 2)).isEqualTo("Unidades vendidas");
         assertThat(text(productosColumnHeader, 3)).isEqualTo("Ingresos");
         assertThat(text(productosColumnHeader, 4)).isEqualTo("% Ingresos");
-        assertThat(productos.getRow(8)).isNull();
+        assertThat(productos.getRow(9)).isNull();
     }
 
     @Test
@@ -157,9 +161,39 @@ class ExportServiceTest {
 
         Workbook workbook = readWorkbook(exportService.buildTenantExportWorkbook(TENANT_ID, FROM, TO));
 
-        Cell headerCell = workbook.getSheet("Ventas").getRow(7).getCell(0);
+        Cell headerCell = workbook.getSheet("Ventas").getRow(8).getCell(0);
         Font font = workbook.getFontAt(headerCell.getCellStyle().getFontIndexAsInt());
         assertThat(font.getBold()).isTrue();
+    }
+
+    @Test
+    void buildTenantExportWorkbook_columnHeaderCellsHaveThinBorderOnAllSides() throws IOException {
+        stubEmptyBillsAndProducts();
+
+        Workbook workbook = readWorkbook(exportService.buildTenantExportWorkbook(TENANT_ID, FROM, TO));
+
+        CellStyle style = workbook.getSheet("Ventas").getRow(8).getCell(0).getCellStyle();
+        assertThat(style.getBorderTop()).isEqualTo(BorderStyle.THIN);
+        assertThat(style.getBorderBottom()).isEqualTo(BorderStyle.THIN);
+        assertThat(style.getBorderLeft()).isEqualTo(BorderStyle.THIN);
+        assertThat(style.getBorderRight()).isEqualTo(BorderStyle.THIN);
+    }
+
+    @Test
+    void buildTenantExportWorkbook_hasABoldMergedTitleRowAboveTheBusinessHeader() throws IOException {
+        stubEmptyBillsAndProducts();
+
+        Workbook workbook = readWorkbook(exportService.buildTenantExportWorkbook(TENANT_ID, FROM, TO));
+
+        Sheet ventas = workbook.getSheet("Ventas");
+        assertThat(text(ventas.getRow(0), 0)).isEqualTo("Reporte de Ventas");
+        assertThat(ventas.getMergedRegions()).contains(new CellRangeAddress(0, 0, 0, 6));
+        Font titleFont = workbook.getFontAt(ventas.getRow(0).getCell(0).getCellStyle().getFontIndexAsInt());
+        assertThat(titleFont.getBold()).isTrue();
+
+        Sheet productos = workbook.getSheet("Productos");
+        assertThat(text(productos.getRow(0), 0)).isEqualTo("Reporte de Productos");
+        assertThat(productos.getMergedRegions()).contains(new CellRangeAddress(0, 0, 0, 4));
     }
 
     @Test
@@ -202,7 +236,7 @@ class ExportServiceTest {
 
         Workbook workbook = readWorkbook(exportService.buildTenantExportWorkbook(TENANT_ID, FROM, TO));
 
-        Row dataRow = workbook.getSheet("Ventas").getRow(8);
+        Row dataRow = workbook.getSheet("Ventas").getRow(9);
         assertThat(numeric(dataRow, 0)).isEqualTo(1.0);
         assertThat(numeric(dataRow, 1)).isEqualTo(7.0);
         assertThat(dataRow.getCell(2).getLocalDateTimeCellValue()).isEqualTo(LocalDateTime.of(2026, 8, 5, 20, 0));
@@ -211,6 +245,32 @@ class ExportServiceTest {
         // Only the two CONFIRMED payments count for methods/participants; PENDING is excluded.
         assertThat(text(dataRow, 5)).isEqualTo("DIGITAL/PHYSICAL");
         assertThat(numeric(dataRow, 6)).isEqualTo(2.0);
+    }
+
+    @Test
+    void buildTenantExportWorkbook_ventasSheet_dataRowsAlternateFillForReadability() throws IOException {
+        Bill firstBill = Bill.builder()
+                .id(1L).sessionId("sess-1").total(new BigDecimal("50.00"))
+                .splitMethod(SplitMethod.EQUAL_PARTS).status(BillStatus.PAID)
+                .createdAt(LocalDateTime.of(2026, 8, 5, 20, 0)).build();
+        Bill secondBill = Bill.builder()
+                .id(2L).sessionId("sess-2").total(new BigDecimal("30.00"))
+                .splitMethod(SplitMethod.EQUAL_PARTS).status(BillStatus.PAID)
+                .createdAt(LocalDateTime.of(2026, 8, 6, 13, 0)).build();
+        when(billRepository.findByTenantIdAndCreatedAtBetweenAndStatusIn(eq(TENANT_ID), eq(FROM), eq(TO), any()))
+                .thenReturn(List.of(firstBill, secondBill));
+        when(paymentRepository.findByBillIdIn(List.of(1L, 2L))).thenReturn(List.of());
+        when(sessionRepository.findByTenantIdAndIdIn(TENANT_ID, List.of("sess-1", "sess-2"))).thenReturn(List.of());
+        when(analyticsService.getProducts(TENANT_ID, FROM, TO, null)).thenReturn(emptyProducts());
+        when(settingService.getSettings(TENANT_ID)).thenReturn(sampleSettings());
+
+        Workbook workbook = readWorkbook(exportService.buildTenantExportWorkbook(TENANT_ID, FROM, TO));
+
+        Sheet ventas = workbook.getSheet("Ventas");
+        CellStyle firstRowStyle = ventas.getRow(9).getCell(4).getCellStyle();
+        CellStyle secondRowStyle = ventas.getRow(10).getCell(4).getCellStyle();
+        assertThat(firstRowStyle.getFillPattern()).isEqualTo(FillPatternType.NO_FILL);
+        assertThat(secondRowStyle.getFillPattern()).isEqualTo(FillPatternType.SOLID_FOREGROUND);
     }
 
     @Test
@@ -229,7 +289,7 @@ class ExportServiceTest {
 
         Workbook workbook = readWorkbook(exportService.buildTenantExportWorkbook(TENANT_ID, FROM, TO));
 
-        Row dataRow = workbook.getSheet("Ventas").getRow(8);
+        Row dataRow = workbook.getSheet("Ventas").getRow(9);
         assertThat(numeric(dataRow, 0)).isEqualTo(2.0);
         assertThat(dataRow.getCell(1)).isNull();
         assertThat(text(dataRow, 4)).isEqualTo("VOIDED");
@@ -249,7 +309,7 @@ class ExportServiceTest {
 
         Workbook workbook = readWorkbook(exportService.buildTenantExportWorkbook(TENANT_ID, FROM, TO));
 
-        Row dataRow = workbook.getSheet("Productos").getRow(8);
+        Row dataRow = workbook.getSheet("Productos").getRow(9);
         assertThat(text(dataRow, 0)).isEqualTo("Lomo saltado");
         assertThat(text(dataRow, 1)).isEqualTo("Fondos");
         assertThat(numeric(dataRow, 2)).isEqualTo(5.0);
