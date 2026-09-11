@@ -28,6 +28,7 @@ const SETTINGS_TAB_LABEL_KEYS: Record<Exclude<SettingsType, null>, AdminTranslat
   FIDELIZACION: 'loyaltyLabel',
   LOYALTY_REWARDS: 'rewardCatalogTitle',
   INFO: 'infoLabel',
+  EXPORT: 'exportLabel',
 }
 
 interface ResultEntry {
