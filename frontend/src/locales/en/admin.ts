@@ -169,7 +169,7 @@ export const admin = {
   infoSupportLinkText: 'Contact support',
   exportLabel: 'Export data',
   exportCardTitle: 'Export data',
-  exportCardDescription: "Download your business's sales and product history as a .zip of CSV files.",
+  exportCardDescription: "Download your business's sales and product history as an Excel (.xlsx) file.",
   exportFromLabel: 'From',
   exportToLabel: 'To',
   exportHint: 'Leave the dates blank to export the whole history.',

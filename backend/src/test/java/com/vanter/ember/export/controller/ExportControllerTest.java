@@ -48,33 +48,34 @@ class ExportControllerTest {
 
     @Test
     @WithMockUser(roles = "ADMIN")
-    void export_returnsTheZipWithAttachmentHeaders() throws Exception {
+    void export_returnsTheWorkbookWithAttachmentHeaders() throws Exception {
         TenantContextHolder.setTenantId(TENANT_ID);
-        byte[] fixtureZip = {80, 75, 3, 4};
+        byte[] fixtureWorkbook = {80, 75, 3, 4};
         LocalDateTime from = LocalDateTime.of(2026, 8, 1, 0, 0);
         LocalDateTime to = LocalDateTime.of(2026, 8, 14, 23, 59, 59);
-        when(exportService.buildTenantExportZip(TENANT_ID, from, to)).thenReturn(fixtureZip);
+        when(exportService.buildTenantExportWorkbook(TENANT_ID, from, to)).thenReturn(fixtureWorkbook);
 
         mockMvc.perform(get("/admin/export")
                         .param("from", "2026-08-01T00:00:00")
                         .param("to", "2026-08-14T23:59:59"))
                 .andExpect(status().isOk())
-                .andExpect(header().string("Content-Type", "application/zip"))
+                .andExpect(header().string(
+                        "Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
                 .andExpect(header().string("Content-Disposition", containsString("attachment")))
-                .andExpect(content().bytes(fixtureZip));
+                .andExpect(content().bytes(fixtureWorkbook));
 
-        verify(exportService).buildTenantExportZip(TENANT_ID, from, to);
+        verify(exportService).buildTenantExportWorkbook(TENANT_ID, from, to);
     }
 
     @Test
     @WithMockUser(roles = "ADMIN")
     void export_withoutParams_passesNullBoundsToTheService() throws Exception {
         TenantContextHolder.setTenantId(TENANT_ID);
-        when(exportService.buildTenantExportZip(TENANT_ID, null, null)).thenReturn(new byte[0]);
+        when(exportService.buildTenantExportWorkbook(TENANT_ID, null, null)).thenReturn(new byte[0]);
 
         mockMvc.perform(get("/admin/export")).andExpect(status().isOk());
 
-        verify(exportService).buildTenantExportZip(TENANT_ID, null, null);
+        verify(exportService).buildTenantExportWorkbook(TENANT_ID, null, null);
     }
 
     @Test
@@ -84,7 +85,7 @@ class ExportControllerTest {
 
         mockMvc.perform(get("/admin/export")).andExpect(status().isForbidden());
 
-        verify(exportService, never()).buildTenantExportZip(any(), any(), any());
+        verify(exportService, never()).buildTenantExportWorkbook(any(), any(), any());
     }
 
     @Test
@@ -92,13 +93,13 @@ class ExportControllerTest {
     void export_withoutTenantBound_isRejected() throws Exception {
         mockMvc.perform(get("/admin/export")).andExpect(status().isConflict());
 
-        verify(exportService, never()).buildTenantExportZip(any(), any(), any());
+        verify(exportService, never()).buildTenantExportWorkbook(any(), any(), any());
     }
 
     @Test
     void export_unauthenticatedReturns401() throws Exception {
         mockMvc.perform(get("/admin/export")).andExpect(status().isUnauthorized());
 
-        verify(exportService, never()).buildTenantExportZip(any(), any(), any());
+        verify(exportService, never()).buildTenantExportWorkbook(any(), any(), any());
     }
 }

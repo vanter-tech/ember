@@ -22,7 +22,7 @@ export const ExportSettings = () => {
       const url = window.URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url
-      link.download = `ember-export-${new Date().toISOString().slice(0, 10)}.zip`
+      link.download = `ember-export-${new Date().toISOString().slice(0, 10)}.xlsx`
       document.body.appendChild(link)
       link.click()
       link.remove()

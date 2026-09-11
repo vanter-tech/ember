@@ -17,17 +17,20 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "Export", description = "Tenant business-data CSV export (ADMIN only)")
+@Tag(name = "Export", description = "Tenant business-data Excel export (ADMIN only)")
 @RestController
 @RequestMapping("/admin/export")
 @RequiredArgsConstructor
 @PreAuthorize("hasRole('ADMIN')")
 public class ExportController {
 
+    private static final String XLSX_CONTENT_TYPE =
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+
     private final ExportService exportService;
 
     @Operation(
-            summary = "Download the tenant's sales and product-performance history as a CSV zip",
+            summary = "Download the tenant's sales and product-performance history as an .xlsx workbook",
             description = "'from'/'to' are optional inclusive ISO date-times; they default to the "
                     + "tenant's whole history up to now, the same rule every analytics read uses.")
     @GetMapping
@@ -36,11 +39,11 @@ public class ExportController {
                     LocalDateTime from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
                     LocalDateTime to) {
-        byte[] zip = exportService.buildTenantExportZip(TenantContextHolder.requireTenantId(), from, to);
-        String filename = "ember-export-" + LocalDate.now() + ".zip";
+        byte[] workbook = exportService.buildTenantExportWorkbook(TenantContextHolder.requireTenantId(), from, to);
+        String filename = "ember-export-" + LocalDate.now() + ".xlsx";
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
-                .contentType(MediaType.valueOf("application/zip"))
-                .body(zip);
+                .contentType(MediaType.valueOf(XLSX_CONTENT_TYPE))
+                .body(workbook);
     }
 }

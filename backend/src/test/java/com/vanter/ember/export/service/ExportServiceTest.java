@@ -29,14 +29,15 @@ import com.vanter.ember.settings.service.SettingService;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Font;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -60,15 +61,17 @@ class ExportServiceTest {
 
     @InjectMocks ExportService exportService;
 
-    private static Map<String, String> unzip(byte[] zipBytes) throws IOException {
-        Map<String, String> entries = new LinkedHashMap<>();
-        try (ZipInputStream zis = new ZipInputStream(new ByteArrayInputStream(zipBytes))) {
-            ZipEntry entry;
-            while ((entry = zis.getNextEntry()) != null) {
-                entries.put(entry.getName(), new String(zis.readAllBytes(), StandardCharsets.UTF_8));
-            }
-        }
-        return entries;
+    private static Workbook readWorkbook(byte[] bytes) throws IOException {
+        return new XSSFWorkbook(new ByteArrayInputStream(bytes));
+    }
+
+    private static String text(Row row, int col) {
+        Cell cell = row.getCell(col);
+        return cell == null ? null : cell.getStringCellValue();
+    }
+
+    private static double numeric(Row row, int col) {
+        return row.getCell(col).getNumericCellValue();
     }
 
     private static AnalyticsProductsResponse emptyProducts() {
@@ -91,15 +94,21 @@ class ExportServiceTest {
         return settings;
     }
 
-    /** The exact business header block every CSV should start with, given {@link #sampleSettings()}. */
-    private static String expectedHeaderBlock() {
-        return "Negocio,Ember Demo\r\n"
-                + "Nombre legal,Ember Gastronomía S.A. de C.V.\r\n"
-                + "RUC,800-123456-7\r\n"
-                + "Teléfono,+52 55 1234 5678\r\n"
-                + "Dirección,123 Culinary Ave\r\n"
-                + "Rango exportado,2026-08-01T00:00 a 2026-08-14T23:59:59\r\n"
-                + "\r\n";
+    /** Asserts the shared business-info block (rows 0-5) any sheet starts with. */
+    private static void assertHasBusinessHeaderBlock(Sheet sheet) {
+        assertThat(text(sheet.getRow(0), 0)).isEqualTo("Negocio");
+        assertThat(text(sheet.getRow(0), 1)).isEqualTo("Ember Demo");
+        assertThat(text(sheet.getRow(1), 0)).isEqualTo("Nombre legal");
+        assertThat(text(sheet.getRow(1), 1)).isEqualTo("Ember Gastronomía S.A. de C.V.");
+        assertThat(text(sheet.getRow(2), 0)).isEqualTo("RUC");
+        assertThat(text(sheet.getRow(2), 1)).isEqualTo("800-123456-7");
+        assertThat(text(sheet.getRow(3), 0)).isEqualTo("Teléfono");
+        assertThat(text(sheet.getRow(3), 1)).isEqualTo("+52 55 1234 5678");
+        assertThat(text(sheet.getRow(4), 0)).isEqualTo("Dirección");
+        assertThat(text(sheet.getRow(4), 1)).isEqualTo("123 Culinary Ave");
+        assertThat(text(sheet.getRow(5), 0)).isEqualTo("Rango exportado");
+        assertThat(text(sheet.getRow(5), 1)).isEqualTo("2026-08-01T00:00 a 2026-08-14T23:59:59");
+        assertThat(sheet.getRow(6)).isNull();
     }
 
     private void stubEmptyBillsAndProducts() {
@@ -112,30 +121,49 @@ class ExportServiceTest {
     }
 
     @Test
-    void buildTenantExportZip_containsBothCsvFilesEvenWhenEmpty() throws IOException {
+    void buildTenantExportWorkbook_hasBothSheetsWithTheBusinessHeaderAndColumnTitles() throws IOException {
         stubEmptyBillsAndProducts();
 
-        byte[] zip = exportService.buildTenantExportZip(TENANT_ID, FROM, TO);
+        Workbook workbook = readWorkbook(exportService.buildTenantExportWorkbook(TENANT_ID, FROM, TO));
 
-        Map<String, String> entries = unzip(zip);
-        assertThat(entries).containsKeys("ventas.csv", "productos.csv");
-        assertThat(entries.get("ventas.csv")).isEqualTo(expectedHeaderBlock()
-                + "ID Cuenta,Mesa,Fecha,Total,Estado,Métodos de pago,Participantes\r\n");
-        assertThat(entries.get("productos.csv")).isEqualTo(expectedHeaderBlock()
-                + "Producto,Categoría,Unidades vendidas,Ingresos,% Ingresos\r\n");
+        Sheet ventas = workbook.getSheet("Ventas");
+        assertThat(ventas).isNotNull();
+        assertHasBusinessHeaderBlock(ventas);
+        Row ventasColumnHeader = ventas.getRow(7);
+        assertThat(text(ventasColumnHeader, 0)).isEqualTo("ID Cuenta");
+        assertThat(text(ventasColumnHeader, 1)).isEqualTo("Mesa");
+        assertThat(text(ventasColumnHeader, 2)).isEqualTo("Fecha");
+        assertThat(text(ventasColumnHeader, 3)).isEqualTo("Total");
+        assertThat(text(ventasColumnHeader, 4)).isEqualTo("Estado");
+        assertThat(text(ventasColumnHeader, 5)).isEqualTo("Métodos de pago");
+        assertThat(text(ventasColumnHeader, 6)).isEqualTo("Participantes");
+        assertThat(ventas.getRow(8)).isNull();
+
+        Sheet productos = workbook.getSheet("Productos");
+        assertThat(productos).isNotNull();
+        assertHasBusinessHeaderBlock(productos);
+        Row productosColumnHeader = productos.getRow(7);
+        assertThat(text(productosColumnHeader, 0)).isEqualTo("Producto");
+        assertThat(text(productosColumnHeader, 1)).isEqualTo("Categoría");
+        assertThat(text(productosColumnHeader, 2)).isEqualTo("Unidades vendidas");
+        assertThat(text(productosColumnHeader, 3)).isEqualTo("Ingresos");
+        assertThat(text(productosColumnHeader, 4)).isEqualTo("% Ingresos");
+        assertThat(productos.getRow(8)).isNull();
     }
 
     @Test
-    void buildTenantExportZip_ventasCsv_startsWithTheBusinessHeaderBlock() throws IOException {
+    void buildTenantExportWorkbook_columnHeaderRowIsBold() throws IOException {
         stubEmptyBillsAndProducts();
 
-        byte[] zip = exportService.buildTenantExportZip(TENANT_ID, FROM, TO);
+        Workbook workbook = readWorkbook(exportService.buildTenantExportWorkbook(TENANT_ID, FROM, TO));
 
-        assertThat(unzip(zip).get("ventas.csv")).startsWith(expectedHeaderBlock());
+        Cell headerCell = workbook.getSheet("Ventas").getRow(7).getCell(0);
+        Font font = workbook.getFontAt(headerCell.getCellStyle().getFontIndexAsInt());
+        assertThat(font.getBold()).isTrue();
     }
 
     @Test
-    void buildTenantExportZip_ventasCsv_oneRowPerBillWithTableAndDistinctConfirmedPaymentMethods()
+    void buildTenantExportWorkbook_ventasSheet_oneRowPerBillWithTableAndDistinctConfirmedPaymentMethods()
             throws IOException {
         Bill bill = Bill.builder()
                 .id(1L).sessionId("sess-1").total(new BigDecimal("50.00"))
@@ -172,17 +200,21 @@ class ExportServiceTest {
         when(analyticsService.getProducts(TENANT_ID, FROM, TO, null)).thenReturn(emptyProducts());
         when(settingService.getSettings(TENANT_ID)).thenReturn(sampleSettings());
 
-        byte[] zip = exportService.buildTenantExportZip(TENANT_ID, FROM, TO);
+        Workbook workbook = readWorkbook(exportService.buildTenantExportWorkbook(TENANT_ID, FROM, TO));
 
-        String[] lines = unzip(zip).get("ventas.csv").split("\r\n");
-        assertThat(lines[lines.length - 2])
-                .isEqualTo("ID Cuenta,Mesa,Fecha,Total,Estado,Métodos de pago,Participantes");
+        Row dataRow = workbook.getSheet("Ventas").getRow(8);
+        assertThat(numeric(dataRow, 0)).isEqualTo(1.0);
+        assertThat(numeric(dataRow, 1)).isEqualTo(7.0);
+        assertThat(dataRow.getCell(2).getLocalDateTimeCellValue()).isEqualTo(LocalDateTime.of(2026, 8, 5, 20, 0));
+        assertThat(numeric(dataRow, 3)).isEqualTo(50.00);
+        assertThat(text(dataRow, 4)).isEqualTo("PAID");
         // Only the two CONFIRMED payments count for methods/participants; PENDING is excluded.
-        assertThat(lines[lines.length - 1]).isEqualTo("1,7,2026-08-05T20:00,50.00,PAID,DIGITAL/PHYSICAL,2");
+        assertThat(text(dataRow, 5)).isEqualTo("DIGITAL/PHYSICAL");
+        assertThat(numeric(dataRow, 6)).isEqualTo(2.0);
     }
 
     @Test
-    void buildTenantExportZip_ventasCsv_billWithNoConfirmedPaymentHasEmptyMethodsAndZeroParticipants()
+    void buildTenantExportWorkbook_ventasSheet_billWithNoTableAndNoConfirmedPaymentLeavesThoseCellsBlank()
             throws IOException {
         Bill voidedBill = Bill.builder()
                 .id(2L).sessionId("sess-2").total(new BigDecimal("15.00"))
@@ -195,14 +227,18 @@ class ExportServiceTest {
         when(analyticsService.getProducts(TENANT_ID, FROM, TO, null)).thenReturn(emptyProducts());
         when(settingService.getSettings(TENANT_ID)).thenReturn(sampleSettings());
 
-        byte[] zip = exportService.buildTenantExportZip(TENANT_ID, FROM, TO);
+        Workbook workbook = readWorkbook(exportService.buildTenantExportWorkbook(TENANT_ID, FROM, TO));
 
-        String[] lines = unzip(zip).get("ventas.csv").split("\r\n");
-        assertThat(lines[lines.length - 1]).isEqualTo("2,,2026-08-06T13:00,15.00,VOIDED,,0");
+        Row dataRow = workbook.getSheet("Ventas").getRow(8);
+        assertThat(numeric(dataRow, 0)).isEqualTo(2.0);
+        assertThat(dataRow.getCell(1)).isNull();
+        assertThat(text(dataRow, 4)).isEqualTo("VOIDED");
+        assertThat(text(dataRow, 5)).isEqualTo("");
+        assertThat(numeric(dataRow, 6)).isEqualTo(0.0);
     }
 
     @Test
-    void buildTenantExportZip_productosCsv_oneRowPerProductPerformance() throws IOException {
+    void buildTenantExportWorkbook_productosSheet_oneRowPerProductPerformance() throws IOException {
         stubEmptyBillsAndProducts();
         when(analyticsService.getProducts(TENANT_ID, FROM, TO, null)).thenReturn(new AnalyticsProductsResponse(
                 FROM, TO, new BigDecimal("100.00"), 5L, 1,
@@ -211,20 +247,22 @@ class ExportServiceTest {
                         new BigDecimal("100.00"), new BigDecimal("100.00"), new BigDecimal("100.00"))),
                 List.of()));
 
-        byte[] zip = exportService.buildTenantExportZip(TENANT_ID, FROM, TO);
+        Workbook workbook = readWorkbook(exportService.buildTenantExportWorkbook(TENANT_ID, FROM, TO));
 
-        String[] lines = unzip(zip).get("productos.csv").split("\r\n");
-        assertThat(lines[lines.length - 2])
-                .isEqualTo("Producto,Categoría,Unidades vendidas,Ingresos,% Ingresos");
-        assertThat(lines[lines.length - 1]).isEqualTo("Lomo saltado,Fondos,5,100.00,100.00");
+        Row dataRow = workbook.getSheet("Productos").getRow(8);
+        assertThat(text(dataRow, 0)).isEqualTo("Lomo saltado");
+        assertThat(text(dataRow, 1)).isEqualTo("Fondos");
+        assertThat(numeric(dataRow, 2)).isEqualTo(5.0);
+        assertThat(numeric(dataRow, 3)).isEqualTo(100.00);
+        assertThat(numeric(dataRow, 4)).isEqualTo(100.00);
     }
 
     @Test
-    void buildTenantExportZip_missingBoundsDefaultToTheWholeHistoryUpToNow() {
+    void buildTenantExportWorkbook_missingBoundsDefaultToTheWholeHistoryUpToNow() {
         stubEmptyBillsAndProducts();
         LocalDateTime beforeCall = LocalDateTime.now();
 
-        exportService.buildTenantExportZip(TENANT_ID, null, null);
+        exportService.buildTenantExportWorkbook(TENANT_ID, null, null);
 
         ArgumentCaptor<LocalDateTime> from = ArgumentCaptor.forClass(LocalDateTime.class);
         ArgumentCaptor<LocalDateTime> to = ArgumentCaptor.forClass(LocalDateTime.class);
@@ -236,8 +274,8 @@ class ExportServiceTest {
     }
 
     @Test
-    void buildTenantExportZip_invertedWindowThrows() {
-        assertThatThrownBy(() -> exportService.buildTenantExportZip(TENANT_ID, TO, FROM))
+    void buildTenantExportWorkbook_invertedWindowThrows() {
+        assertThatThrownBy(() -> exportService.buildTenantExportWorkbook(TENANT_ID, TO, FROM))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 }

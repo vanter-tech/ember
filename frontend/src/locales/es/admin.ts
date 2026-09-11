@@ -167,7 +167,7 @@ export const admin = {
   infoSupportLinkText: 'Contactar a soporte',
   exportLabel: 'Exportar datos',
   exportCardTitle: 'Exportar datos',
-  exportCardDescription: 'Descarga el historial de ventas y productos de tu negocio en un .zip con archivos CSV.',
+  exportCardDescription: 'Descarga el historial de ventas y productos de tu negocio en un archivo de Excel (.xlsx).',
   exportFromLabel: 'Desde',
   exportToLabel: 'Hasta',
   exportHint: 'Deja las fechas en blanco para exportar todo el historial.',
