@@ -67,4 +67,34 @@ class BillRepositoryTest {
         assertThat(openBills).hasSize(1);
         assertThat(openBills.get(0).getSessionId()).isEqualTo("sess-1");
     }
+
+    @Test
+    void findByTenantIdAndCreatedAtBetweenAndStatusIn_returnsOnlyMatchingStatusesInRangeOldestFirst() {
+        LocalDateTime from = LocalDateTime.of(2026, 8, 1, 0, 0);
+        LocalDateTime to = LocalDateTime.of(2026, 8, 14, 23, 59, 59);
+
+        Bill paidInRange = billRepository.save(Bill.builder()
+                .sessionId("sess-paid").total(new BigDecimal("50.00"))
+                .splitMethod(SplitMethod.EQUAL_PARTS).status(BillStatus.PAID)
+                .createdAt(LocalDateTime.of(2026, 8, 10, 12, 0)).build());
+        Bill voidedInRange = billRepository.save(Bill.builder()
+                .sessionId("sess-voided").total(new BigDecimal("20.00"))
+                .splitMethod(SplitMethod.EQUAL_PARTS).status(BillStatus.VOIDED)
+                .createdAt(LocalDateTime.of(2026, 8, 5, 9, 0)).build());
+        billRepository.save(Bill.builder()
+                .sessionId("sess-open").total(new BigDecimal("30.00"))
+                .splitMethod(SplitMethod.EQUAL_PARTS).status(BillStatus.OPEN)
+                .createdAt(LocalDateTime.of(2026, 8, 6, 9, 0)).build());
+        billRepository.save(Bill.builder()
+                .sessionId("sess-out-of-range").total(new BigDecimal("40.00"))
+                .splitMethod(SplitMethod.EQUAL_PARTS).status(BillStatus.PAID)
+                .createdAt(LocalDateTime.of(2026, 7, 1, 9, 0)).build());
+
+        List<Bill> result = billRepository.findByTenantIdAndCreatedAtBetweenAndStatusIn(
+                com.vanter.ember.config.TenantIdentifierResolver.NO_TENANT,
+                from, to, List.of(BillStatus.PAID, BillStatus.VOIDED));
+
+        assertThat(result).extracting(Bill::getSessionId)
+                .containsExactly("sess-voided", "sess-paid");
+    }
 }

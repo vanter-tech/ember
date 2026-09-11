@@ -4,6 +4,7 @@ import com.vanter.ember.billing.model.Bill;
 import com.vanter.ember.billing.model.BillStatus;
 import jakarta.persistence.LockModeType;
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -121,4 +122,27 @@ public interface BillRepository extends JpaRepository<Bill, Long> {
             @Param("tenantId") UUID tenantId,
             @Param("from") LocalDateTime from,
             @Param("to") LocalDateTime to);
+
+    /**
+     * The tenant's bills between {@code from} and {@code to} (both inclusive) whose status is one
+     * of {@code statuses}, oldest first — the row source for the business-data CSV export.
+     * {@code OPEN} bills are deliberately excludable: an unsettled table isn't yet a fact about
+     * "how the business performed." Carries the same deliberate {@code tenantId} predicate as
+     * {@link #findActivityWindow}.
+     */
+    @Query(
+            """
+            select b
+            from Bill b
+            where b.tenantId = :tenantId
+              and b.status in :statuses
+              and b.createdAt >= :from
+              and b.createdAt <= :to
+            order by b.createdAt asc
+            """)
+    List<Bill> findByTenantIdAndCreatedAtBetweenAndStatusIn(
+            @Param("tenantId") UUID tenantId,
+            @Param("from") LocalDateTime from,
+            @Param("to") LocalDateTime to,
+            @Param("statuses") Collection<BillStatus> statuses);
 }
