@@ -626,6 +626,16 @@ export const analyticsService = {
   },
 }
 
+export const exportService = {
+  downloadTenantData: async (from?: string, to?: string): Promise<Blob> => {
+    const { data } = await api.get('/admin/export', {
+      params: { from, to },
+      responseType: 'blob',
+    })
+    return data
+  },
+}
+
 export type StaffMemberResponse = components['schemas']['StaffMemberResponse']
 export type CreateStaffRequest = components['schemas']['CreateStaffRequest']
 export type UpdateStaffProfileRequest = components['schemas']['UpdateStaffProfileRequest']
