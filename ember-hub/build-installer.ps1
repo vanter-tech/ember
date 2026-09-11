@@ -54,7 +54,14 @@ function Build-AppImage {
     }
 
     Write-Host "-- frontend --"
+    # vite's hub build writes a non-fatal warning to stderr (env-config.js script tag isn't
+    # type="module"); under $ErrorActionPreference="Stop" that native stderr write is treated as
+    # a terminating error even though the process exits 0, so relax it locally and trust
+    # $LASTEXITCODE (checked right below) for the real pass/fail signal.
+    $prevEap = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
     & powershell -ExecutionPolicy Bypass -File $frontendPs
+    $ErrorActionPreference = $prevEap
     if ($LASTEXITCODE -ne 0) { throw "build-frontend.ps1 failed" }
 
     Write-Host "-- mvn package --"
