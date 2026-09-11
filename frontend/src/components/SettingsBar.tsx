@@ -74,8 +74,8 @@ const buildSettingsNav = (): NavNode[] => [
   ...(isHubBuild()
     ? []
     : [{ kind: 'group', group: 'FIDELIZACION', labelKey: 'loyaltyLabel', Icon: Gift, members: ['FIDELIZACION', 'LOYALTY_REWARDS'] } as NavNode]),
-  { kind: 'leaf', type: 'INFO' },
   { kind: 'leaf', type: 'EXPORT' },
+  { kind: 'leaf', type: 'INFO' },
 ]
 
 export const SettingsBar = ({

@@ -22,7 +22,10 @@ import com.vanter.ember.session.model.Session;
 import com.vanter.ember.session.model.SessionStatus;
 import com.vanter.ember.session.repository.SessionRepository;
 import com.vanter.ember.settings.model.DiningTables;
+import com.vanter.ember.settings.model.RestaurantSettings;
+import com.vanter.ember.settings.model.SettingsPayload;
 import com.vanter.ember.settings.repository.DiningTableRepository;
+import com.vanter.ember.settings.service.SettingService;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -53,6 +56,7 @@ class ExportServiceTest {
     @Mock SessionRepository sessionRepository;
     @Mock DiningTableRepository diningTableRepository;
     @Mock AnalyticsService analyticsService;
+    @Mock SettingService settingService;
 
     @InjectMocks ExportService exportService;
 
@@ -71,12 +75,40 @@ class ExportServiceTest {
         return new AnalyticsProductsResponse(FROM, TO, BigDecimal.ZERO, 0L, 0, List.of(), List.of());
     }
 
+    private static RestaurantSettings sampleSettings() {
+        SettingsPayload.BrandingSettings branding = new SettingsPayload.BrandingSettings();
+        branding.setBusinessName("Ember Demo");
+        branding.setLegalName("Ember Gastronomía S.A. de C.V.");
+        branding.setRuc("800-123456-7");
+        branding.setPhone("+52 55 1234 5678");
+        branding.setAddress("123 Culinary Ave");
+
+        SettingsPayload payload = new SettingsPayload();
+        payload.setBranding(branding);
+
+        RestaurantSettings settings = new RestaurantSettings();
+        settings.setPayload(payload);
+        return settings;
+    }
+
+    /** The exact business header block every CSV should start with, given {@link #sampleSettings()}. */
+    private static String expectedHeaderBlock() {
+        return "Negocio,Ember Demo\r\n"
+                + "Nombre legal,Ember Gastronomía S.A. de C.V.\r\n"
+                + "RUC,800-123456-7\r\n"
+                + "Teléfono,+52 55 1234 5678\r\n"
+                + "Dirección,123 Culinary Ave\r\n"
+                + "Rango exportado,2026-08-01T00:00 a 2026-08-14T23:59:59\r\n"
+                + "\r\n";
+    }
+
     private void stubEmptyBillsAndProducts() {
         when(billRepository.findByTenantIdAndCreatedAtBetweenAndStatusIn(eq(TENANT_ID), any(), any(), any()))
                 .thenReturn(List.of());
         when(paymentRepository.findByBillIdIn(any())).thenReturn(List.of());
         when(sessionRepository.findByTenantIdAndIdIn(eq(TENANT_ID), any())).thenReturn(List.of());
         when(analyticsService.getProducts(eq(TENANT_ID), any(), any(), eq(null))).thenReturn(emptyProducts());
+        when(settingService.getSettings(TENANT_ID)).thenReturn(sampleSettings());
     }
 
     @Test
@@ -87,10 +119,19 @@ class ExportServiceTest {
 
         Map<String, String> entries = unzip(zip);
         assertThat(entries).containsKeys("ventas.csv", "productos.csv");
-        assertThat(entries.get("ventas.csv"))
-                .isEqualTo("bill_id,mesa,fecha,total,estado,metodos_pago,participantes\r\n");
-        assertThat(entries.get("productos.csv"))
-                .isEqualTo("nombre,categoria,unidades_vendidas,ingresos,porcentaje_ingresos\r\n");
+        assertThat(entries.get("ventas.csv")).isEqualTo(expectedHeaderBlock()
+                + "ID Cuenta,Mesa,Fecha,Total,Estado,Métodos de pago,Participantes\r\n");
+        assertThat(entries.get("productos.csv")).isEqualTo(expectedHeaderBlock()
+                + "Producto,Categoría,Unidades vendidas,Ingresos,% Ingresos\r\n");
+    }
+
+    @Test
+    void buildTenantExportZip_ventasCsv_startsWithTheBusinessHeaderBlock() throws IOException {
+        stubEmptyBillsAndProducts();
+
+        byte[] zip = exportService.buildTenantExportZip(TENANT_ID, FROM, TO);
+
+        assertThat(unzip(zip).get("ventas.csv")).startsWith(expectedHeaderBlock());
     }
 
     @Test
@@ -129,13 +170,15 @@ class ExportServiceTest {
                 .thenReturn(List.of(table));
 
         when(analyticsService.getProducts(TENANT_ID, FROM, TO, null)).thenReturn(emptyProducts());
+        when(settingService.getSettings(TENANT_ID)).thenReturn(sampleSettings());
 
         byte[] zip = exportService.buildTenantExportZip(TENANT_ID, FROM, TO);
 
         String[] lines = unzip(zip).get("ventas.csv").split("\r\n");
-        assertThat(lines[0]).isEqualTo("bill_id,mesa,fecha,total,estado,metodos_pago,participantes");
+        assertThat(lines[lines.length - 2])
+                .isEqualTo("ID Cuenta,Mesa,Fecha,Total,Estado,Métodos de pago,Participantes");
         // Only the two CONFIRMED payments count for methods/participants; PENDING is excluded.
-        assertThat(lines[1]).isEqualTo("1,7,2026-08-05T20:00,50.00,PAID,DIGITAL/PHYSICAL,2");
+        assertThat(lines[lines.length - 1]).isEqualTo("1,7,2026-08-05T20:00,50.00,PAID,DIGITAL/PHYSICAL,2");
     }
 
     @Test
@@ -150,11 +193,12 @@ class ExportServiceTest {
         when(paymentRepository.findByBillIdIn(List.of(2L))).thenReturn(List.of());
         when(sessionRepository.findByTenantIdAndIdIn(TENANT_ID, List.of("sess-2"))).thenReturn(List.of());
         when(analyticsService.getProducts(TENANT_ID, FROM, TO, null)).thenReturn(emptyProducts());
+        when(settingService.getSettings(TENANT_ID)).thenReturn(sampleSettings());
 
         byte[] zip = exportService.buildTenantExportZip(TENANT_ID, FROM, TO);
 
         String[] lines = unzip(zip).get("ventas.csv").split("\r\n");
-        assertThat(lines[1]).isEqualTo("2,,2026-08-06T13:00,15.00,VOIDED,,0");
+        assertThat(lines[lines.length - 1]).isEqualTo("2,,2026-08-06T13:00,15.00,VOIDED,,0");
     }
 
     @Test
@@ -170,7 +214,9 @@ class ExportServiceTest {
         byte[] zip = exportService.buildTenantExportZip(TENANT_ID, FROM, TO);
 
         String[] lines = unzip(zip).get("productos.csv").split("\r\n");
-        assertThat(lines[1]).isEqualTo("Lomo saltado,Fondos,5,100.00,100.00");
+        assertThat(lines[lines.length - 2])
+                .isEqualTo("Producto,Categoría,Unidades vendidas,Ingresos,% Ingresos");
+        assertThat(lines[lines.length - 1]).isEqualTo("Lomo saltado,Fondos,5,100.00,100.00");
     }
 
     @Test

@@ -13,7 +13,9 @@ import com.vanter.ember.export.util.CsvWriter;
 import com.vanter.ember.session.model.Session;
 import com.vanter.ember.session.repository.SessionRepository;
 import com.vanter.ember.settings.model.DiningTables;
+import com.vanter.ember.settings.model.SettingsPayload;
 import com.vanter.ember.settings.repository.DiningTableRepository;
+import com.vanter.ember.settings.service.SettingService;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -49,6 +51,7 @@ public class ExportService {
     private final SessionRepository sessionRepository;
     private final DiningTableRepository diningTableRepository;
     private final AnalyticsService analyticsService;
+    private final SettingService settingService;
 
     @Transactional(readOnly = true)
     public byte[] buildTenantExportZip(UUID tenantId, LocalDateTime from, LocalDateTime to) {
@@ -58,13 +61,39 @@ public class ExportService {
             throw new IllegalArgumentException("Export range 'from' must not be after 'to'");
         }
 
+        SettingsPayload.BrandingSettings branding = settingService.getSettings(tenantId).getPayload().getBranding();
+        String headerBlock = buildHeaderBlock(branding, windowStart, windowEnd);
+
         Map<String, byte[]> files = new LinkedHashMap<>();
-        files.put("ventas.csv", buildVentasCsv(tenantId, windowStart, windowEnd));
-        files.put("productos.csv", buildProductosCsv(tenantId, windowStart, windowEnd));
+        files.put("ventas.csv", buildVentasCsv(tenantId, windowStart, windowEnd, headerBlock));
+        files.put("productos.csv", buildProductosCsv(tenantId, windowStart, windowEnd, headerBlock));
         return zip(files);
     }
 
-    private byte[] buildVentasCsv(UUID tenantId, LocalDateTime from, LocalDateTime to) {
+    /**
+     * A small label/value block identifying the business behind the report, prepended to every
+     * CSV so a file opened on its own is still self-describing — pulled from the same Branding
+     * settings the admin already fills in under Settings > Marca y negocio. CSV tolerates the
+     * ragged row lengths this produces against the column table below; every spreadsheet app
+     * just shows fewer values on the shorter rows.
+     */
+    private String buildHeaderBlock(SettingsPayload.BrandingSettings branding, LocalDateTime from, LocalDateTime to) {
+        StringBuilder header = new StringBuilder();
+        header.append(CsvWriter.writeRow(List.of("Negocio", blankToEmpty(branding.getBusinessName()))));
+        header.append(CsvWriter.writeRow(List.of("Nombre legal", blankToEmpty(branding.getLegalName()))));
+        header.append(CsvWriter.writeRow(List.of("RUC", blankToEmpty(branding.getRuc()))));
+        header.append(CsvWriter.writeRow(List.of("Teléfono", blankToEmpty(branding.getPhone()))));
+        header.append(CsvWriter.writeRow(List.of("Dirección", blankToEmpty(branding.getAddress()))));
+        header.append(CsvWriter.writeRow(List.of("Rango exportado", from + " a " + to)));
+        header.append(CsvWriter.writeRow(List.of()));
+        return header.toString();
+    }
+
+    private static String blankToEmpty(String value) {
+        return value == null ? "" : value;
+    }
+
+    private byte[] buildVentasCsv(UUID tenantId, LocalDateTime from, LocalDateTime to, String headerBlock) {
         List<Bill> bills = billRepository.findByTenantIdAndCreatedAtBetweenAndStatusIn(
                 tenantId, from, to, List.of(BillStatus.PAID, BillStatus.VOIDED));
 
@@ -85,9 +114,9 @@ public class ExportService {
                 diningTableRepository.findByRestaurantIdAndIdIn(tenantId, tableIds).stream()
                         .collect(Collectors.toMap(DiningTables::getId, DiningTables::getTableNumber));
 
-        StringBuilder csv = new StringBuilder();
+        StringBuilder csv = new StringBuilder(headerBlock);
         csv.append(CsvWriter.writeRow(
-                List.of("bill_id", "mesa", "fecha", "total", "estado", "metodos_pago", "participantes")));
+                List.of("ID Cuenta", "Mesa", "Fecha", "Total", "Estado", "Métodos de pago", "Participantes")));
 
         for (Bill bill : bills) {
             Session session = sessionsById.get(bill.getSessionId());
@@ -119,12 +148,12 @@ public class ExportService {
         return csv.toString().getBytes(StandardCharsets.UTF_8);
     }
 
-    private byte[] buildProductosCsv(UUID tenantId, LocalDateTime from, LocalDateTime to) {
+    private byte[] buildProductosCsv(UUID tenantId, LocalDateTime from, LocalDateTime to, String headerBlock) {
         AnalyticsProductsResponse products = analyticsService.getProducts(tenantId, from, to, null);
 
-        StringBuilder csv = new StringBuilder();
+        StringBuilder csv = new StringBuilder(headerBlock);
         csv.append(CsvWriter.writeRow(
-                List.of("nombre", "categoria", "unidades_vendidas", "ingresos", "porcentaje_ingresos")));
+                List.of("Producto", "Categoría", "Unidades vendidas", "Ingresos", "% Ingresos")));
 
         for (ProductPerformance product : products.products()) {
             csv.append(CsvWriter.writeRow(List.of(
