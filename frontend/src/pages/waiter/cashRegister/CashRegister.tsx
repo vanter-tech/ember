@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { cashShiftService } from '@/lib/api'
 import { useUIStore } from '@/store/uiStore'
+import { useAuthStore } from '@/store/authStore'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
@@ -16,6 +17,7 @@ import { useTranslation } from '@/lib/i18n'
 export const CashRegister = () => {
   const { t } = useTranslation('waiter')
   const { openModal } = useUIStore()
+  const isWaiter = useAuthStore((state) => state.role) === 'WAITER'
 
   const tourSteps = [
     {
@@ -54,7 +56,11 @@ export const CashRegister = () => {
         <Card className="border border-border/40 bg-background py-6 shadow-sm">
           <CardContent className="flex flex-col items-center gap-4 py-10">
             <p className="text-sm text-muted-foreground">{t('noOpenShift')}</p>
-            <Button onClick={() => openModal('OPEN_SHIFT')}>{t('openCajaButton')}</Button>
+            {isWaiter ? (
+              <Button onClick={() => openModal('OPEN_SHIFT')}>{t('openCajaButton')}</Button>
+            ) : (
+              <p className="text-xs text-muted-foreground">{t('adminCashRegisterReadOnly')}</p>
+            )}
           </CardContent>
         </Card>
       ) : (
@@ -80,13 +86,17 @@ export const CashRegister = () => {
               <div className="flex gap-2">
                 <Button
                   variant="outline"
-                  disabled={shift.overdue ?? false}
-                  title={shift.overdue ? t('cashShiftOverdueMovementBlocked') : undefined}
+                  disabled={!isWaiter || (shift.overdue ?? false)}
+                  title={!isWaiter ? t('adminCashRegisterReadOnly') : shift.overdue ? t('cashShiftOverdueMovementBlocked') : undefined}
                   onClick={() => openModal('CASH_MOVEMENT', { shiftId: shift.id })}
                 >
                   {t('recordMovementButton')}
                 </Button>
-                <Button onClick={() => openModal('CLOSE_SHIFT', { shiftId: shift.id })}>
+                <Button
+                  disabled={!isWaiter}
+                  title={!isWaiter ? t('adminCashRegisterReadOnly') : undefined}
+                  onClick={() => openModal('CLOSE_SHIFT', { shiftId: shift.id })}
+                >
                   {t('closeCajaButton')}
                 </Button>
               </div>
@@ -168,7 +178,8 @@ export const CashRegister = () => {
                           <Button
                             variant="ghost"
                             size="sm"
-                            disabled={!payment.remaining || payment.remaining <= 0}
+                            disabled={!isWaiter || !payment.remaining || payment.remaining <= 0}
+                            title={!isWaiter ? t('adminCashRegisterReadOnly') : undefined}
                             onClick={() =>
                               openModal('REFUND_PAYMENT', {
                                 billId: payment.billId,

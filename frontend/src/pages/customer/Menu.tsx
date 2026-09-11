@@ -18,6 +18,7 @@ import { useTranslation } from '@/lib/i18n'
 import { useSessionStore } from '@/store/sessionStore'
 import { ParticipantsPopUp } from '@/pages/customer/components/ParticipantsPopUp'
 import { ItemsFloatingIsland } from './components/ItemsFloatingIsland'
+import { LoyaltySection } from './components/LoyaltySection'
 import { MobileActionsIsland } from './components/MobileActionsIsland'
 import { SelectModifiersModal } from './components/SelectModifiersModal'
 import { useNavigate } from 'react-router-dom'
@@ -145,6 +146,7 @@ export const Menu = () => {
               </Button>
             </div>
           </div>
+          <LoyaltySection />
           <div className="flex flex-row gap-3 p-2 pb-5 border-b overflow-x-auto">
             {menuItems.map((categories) => (
               <div

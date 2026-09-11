@@ -396,8 +396,8 @@ export const SessionTableService = {
     return data
   },
 
-  getQrToken: async (sessionId: string): Promise<{ qrToken: string }> => {
-    const { data } = await api.get<{ qrToken: string }>(
+  getQrToken: async (sessionId: string): Promise<{ qrToken: string; joinCode?: string }> => {
+    const { data } = await api.get<{ qrToken: string; joinCode?: string }>(
       `/sessions/${sessionId}/qr`
     )
     return data
