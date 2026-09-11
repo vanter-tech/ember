@@ -77,6 +77,7 @@ class SessionControllerTest {
                 .status(SessionStatus.OPEN).maxParticipants(4)
                 .participants(new ArrayList<>())
                 .createdAt(LocalDateTime.now())
+                .joinCode("ABCDE")
                 .build();
     }
 
@@ -160,7 +161,8 @@ class SessionControllerTest {
 
         mockMvc.perform(get("/sessions/sess-1/qr"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.qrToken").value("qr-jwt-token"));
+                .andExpect(jsonPath("$.qrToken").value("qr-jwt-token"))
+                .andExpect(jsonPath("$.joinCode").value("ABCDE"));
     }
 
     @Test

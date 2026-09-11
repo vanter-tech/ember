@@ -123,7 +123,7 @@ public class SessionController {
             throw new AccessDeniedException("Only the assigned waiter can generate QR codes");
         }
         String token = qrTokenService.generateQrToken(session.getId());
-        return Map.of("qrToken", token);
+        return Map.of("qrToken", token, "joinCode", session.getJoinCode());
     }
 
     @Operation(summary = "Join a session via QR token (CUSTOMER)")

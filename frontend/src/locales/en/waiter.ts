@@ -101,6 +101,8 @@ export const waiter = {
   selectParticipantCountLabel: 'Select the number of guests for the table.',
   qrPlaceholderLabel: 'The QR code will appear here.',
   joinCodeLabel: 'Code to join the table:',
+  tableQrInfoLabel: 'Table code & QR',
+  qrLoadingLabel: 'Generating code...',
   qrSavingLabel: 'Saving',
   openTableGenerateQrButton: 'Open Table and Generate QR',
   seatNamesLabel: 'Seat names (optional)',

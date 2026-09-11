@@ -17,7 +17,9 @@ import {
   RotateCcw,
   UserMinus,
   Pencil,
+  CircleAlert,
 } from 'lucide-react'
+import { QRCodeSVG } from 'qrcode.react'
 import { Badge } from '@/components/ui/badge'
 import toast from 'react-hot-toast'
 import axios from 'axios'
@@ -29,6 +31,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { useUIStore } from '@/store/uiStore'
 import { useSettingStore } from '@/store/settingStore'
 import { GlobalDeleteModal } from '../../components/GlobalDeleteModal'
@@ -70,6 +73,16 @@ export const TableInformation = () => {
     queryFn: () => billingService.getBillState(id!),
     enabled: !!id,
   })
+
+  const [qrPopoverOpen, setQrPopoverOpen] = useState(false)
+  const { data: qrData, isFetching: isLoadingQr } = useQuery({
+    queryKey: ['sessionQr', id],
+    queryFn: () => SessionTableService.getQrToken(id!),
+    enabled: qrPopoverOpen && !!id,
+  })
+  const clientJoinUrl = qrData?.qrToken
+    ? `${window.location.origin}/menu/join?token=${qrData.qrToken}`
+    : ''
 
   useEffect(() => {
     if (id && isConnected && stompClient?.connected) {
@@ -227,6 +240,37 @@ export const TableInformation = () => {
           </div>
         </div>
         <div id="table-tour-actions" className="flex items-center gap-3 pr-7">
+          <Popover open={qrPopoverOpen} onOpenChange={setQrPopoverOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="secondary"
+                size="icon"
+                className="rounded-full bg-gray-100 hover:bg-gray-200 h-18 w-18"
+                disabled={actionsDisabled}
+                title={t('tableQrInfoLabel')}
+              >
+                <CircleAlert className="w-5 h-5" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-72 flex flex-col items-center gap-3 p-4">
+              <p className="text-sm font-semibold text-zinc-800">{t('tableQrInfoLabel')}</p>
+              <div className="border-dashed border-2 h-48 w-48 flex items-center justify-center">
+                {isLoadingQr ? (
+                  <span className="text-zinc-400 text-sm text-center px-2">{t('qrLoadingLabel')}</span>
+                ) : clientJoinUrl ? (
+                  <QRCodeSVG value={clientJoinUrl} size={180} bgColor="#ffffff" fgColor="#000" level="Q" />
+                ) : (
+                  <span className="text-zinc-400 text-sm text-center px-2">{t('qrPlaceholderLabel')}</span>
+                )}
+              </div>
+              {qrData?.joinCode && (
+                <div className="flex w-full flex-col items-center bg-zinc-100 rounded-2xl p-3 gap-1">
+                  <span className="text-sm font-bold">{t('joinCodeLabel')}</span>
+                  <span className="text-[#8c1717] text-2xl font-bold">{qrData.joinCode}</span>
+                </div>
+              )}
+            </PopoverContent>
+          </Popover>
           <Button
             variant="secondary"
             className="rounded-full bg-gray-100 hover:bg-gray-200 text-1xl px-6 h-18"
