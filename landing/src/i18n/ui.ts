@@ -136,6 +136,7 @@ export const ui: Record<Lang, Record<string, string>> = {
 		'footer.privacy': 'Política de privacidad',
 		'footer.terms': 'Términos de servicio',
 		'footer.contact': 'Contacto',
+		'footer.facebook': 'Síguenos en Facebook',
 		'footer.rights': 'Todos los derechos reservados.',
 
 		// --- Sticky mobile CTA ---
@@ -778,6 +779,7 @@ export const ui: Record<Lang, Record<string, string>> = {
 		'footer.privacy': 'Privacy policy',
 		'footer.terms': 'Terms of service',
 		'footer.contact': 'Contact',
+		'footer.facebook': 'Follow us on Facebook',
 		'footer.rights': 'All rights reserved.',
 
 		// --- Sticky mobile CTA ---

@@ -1,7 +1,10 @@
 import { useState } from "react";
+import { Flag } from "lucide-react";
 import {useSettingsStore, type SettingsType} from "@/store/uiStore";
 import {SettingsBar} from "@/components/SettingsBar";
 import { SectionTour } from "@/components/tours/SectionTour";
+import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useTranslation } from "@/lib/i18n";
 import { isHubBuild } from "@/lib/isHubBuild";
 import { dictionaries } from "@/locales";
@@ -18,6 +21,7 @@ import { LoyaltySettings } from "./components/settings/LoyaltySettings";
 import { LoyaltyRewardsSettings } from "./components/settings/LoyaltyRewardsSettings";
 import { InfoSettings } from "./components/settings/InfoSettings";
 import { ExportSettings } from "./components/settings/ExportSettings";
+import { ReportIssueForm } from "./components/settings/ReportIssueForm";
 
 // Every tab's tour is a single step against the shared #settings-tour-content pane (the tab
 // switch is local state, not a route, so there's no per-tab element to add stable ids to without
@@ -46,6 +50,7 @@ const TAB_TOUR_KEYS: Partial<Record<
 export const Settings = () => {
     const { activeSettings } = useSettingsStore();
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+    const [reportIssueOpen, setReportIssueOpen] = useState(false);
     const { t } = useTranslation('admin');
 
     const renderContent = () => {
@@ -120,6 +125,26 @@ export const Settings = () => {
                     steps={tourSteps}
                 />
             )}
+
+            <Popover open={reportIssueOpen} onOpenChange={setReportIssueOpen}>
+                <PopoverTrigger asChild>
+                    <Button
+                        variant="destructive"
+                        size="icon"
+                        className="fixed right-6 bottom-[calc(1rem_+_env(safe-area-inset-bottom))] sm:bottom-8 z-50 h-16 w-16 rounded-full shadow-2xl"
+                        title={t('reportIssueLabel')}
+                    >
+                        <Flag className="h-7 w-7" />
+                    </Button>
+                </PopoverTrigger>
+                <PopoverContent side="top" align="end" sideOffset={16} className="w-96 max-w-[calc(100vw-2rem)] p-4">
+                    <div className="mb-3 space-y-1">
+                        <p className="font-heading text-base font-medium">{t('reportIssueCardTitle')}</p>
+                        <p className="text-sm text-muted-foreground">{t('reportIssueCardDescription')}</p>
+                    </div>
+                    <ReportIssueForm onSubmitted={() => setReportIssueOpen(false)} />
+                </PopoverContent>
+            </Popover>
         </div>
     )
 }

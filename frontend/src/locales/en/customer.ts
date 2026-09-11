@@ -44,6 +44,9 @@ export const customer = {
   menuSubtitle: "Explore today's gourmet selection.",
   tableCodeLabel: 'Table code: {{code}}',
   viewBillLabel: 'View bill',
+  loyaltyRewardsTitle: 'Rewards',
+  loyaltyRewardLocked: '{{tierName}} tier required',
+  loyaltyRewardUnlocked: 'Available',
 
   // Bill
   billTitle: 'My Bill',

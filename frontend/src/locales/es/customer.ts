@@ -42,6 +42,9 @@ export const customer = {
   menuSubtitle: 'Explora nuestra seleccion gourmet para hoy.',
   tableCodeLabel: 'Codigo de la mesa: {{code}}',
   viewBillLabel: 'Ver cuenta',
+  loyaltyRewardsTitle: 'Recompensas',
+  loyaltyRewardLocked: 'Nivel {{tierName}} requerido',
+  loyaltyRewardUnlocked: 'Disponible',
 
   // Bill
   billTitle: 'Mi Cuenta',
