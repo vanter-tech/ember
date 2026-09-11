@@ -69,6 +69,27 @@ class PaymentRepositoryTest {
     }
 
     @Test
+    void findByBillIdIn_returnsPaymentsAcrossMultipleBills() {
+        Bill billA = savedBill();
+        Bill billB = billRepository.save(Bill.builder()
+                .sessionId("sess-2").total(new BigDecimal("20.00"))
+                .splitMethod(SplitMethod.EQUAL_PARTS).status(BillStatus.PAID)
+                .createdAt(LocalDateTime.now()).build());
+        paymentRepository.save(Payment.builder()
+                .bill(billA).participantName("Ana").amount(new BigDecimal("25.00"))
+                .method(PaymentMethod.DIGITAL).status(PaymentStatus.CONFIRMED)
+                .createdAt(LocalDateTime.now()).build());
+        paymentRepository.save(Payment.builder()
+                .bill(billB).participantName("Beto").amount(new BigDecimal("20.00"))
+                .method(PaymentMethod.PHYSICAL).status(PaymentStatus.CONFIRMED)
+                .createdAt(LocalDateTime.now()).build());
+
+        List<Payment> result = paymentRepository.findByBillIdIn(List.of(billA.getId(), billB.getId()));
+
+        assertThat(result).hasSize(2);
+    }
+
+    @Test
     void findByStatus_returnsPendingPayments() {
         Bill bill = savedBill();
         paymentRepository.save(Payment.builder()

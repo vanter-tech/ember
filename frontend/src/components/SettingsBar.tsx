@@ -20,6 +20,7 @@ import {
   Gift,
   Award,
   Info,
+  Download,
   Menu,
   ChevronsUpDown,
   PanelLeftClose,
@@ -53,6 +54,7 @@ const LEAF: Record<LeafType, { labelKey: AdminKey; Icon: LucideIcon }> = {
   FIDELIZACION: { labelKey: 'loyaltyLabel', Icon: Gift },
   LOYALTY_REWARDS: { labelKey: 'rewardCatalogTitle', Icon: Award },
   INFO: { labelKey: 'infoLabel', Icon: Info },
+  EXPORT: { labelKey: 'exportLabel', Icon: Download },
 }
 
 type NavNode =
@@ -72,6 +74,7 @@ const buildSettingsNav = (): NavNode[] => [
   ...(isHubBuild()
     ? []
     : [{ kind: 'group', group: 'FIDELIZACION', labelKey: 'loyaltyLabel', Icon: Gift, members: ['FIDELIZACION', 'LOYALTY_REWARDS'] } as NavNode]),
+  { kind: 'leaf', type: 'EXPORT' },
   { kind: 'leaf', type: 'INFO' },
 ]
 

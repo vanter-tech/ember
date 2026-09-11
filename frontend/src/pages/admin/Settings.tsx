@@ -20,6 +20,7 @@ import { HardwareSettings } from "./components/settings/HardwareSettings";
 import { LoyaltySettings } from "./components/settings/LoyaltySettings";
 import { LoyaltyRewardsSettings } from "./components/settings/LoyaltyRewardsSettings";
 import { InfoSettings } from "./components/settings/InfoSettings";
+import { ExportSettings } from "./components/settings/ExportSettings";
 import { ReportIssueForm } from "./components/settings/ReportIssueForm";
 
 // Every tab's tour is a single step against the shared #settings-tour-content pane (the tab
@@ -78,6 +79,8 @@ export const Settings = () => {
                 return isHubBuild() ? null : <LoyaltyRewardsSettings />;
             case 'INFO':
                 return <InfoSettings />;
+            case 'EXPORT':
+                return <ExportSettings />;
         }
     };
 

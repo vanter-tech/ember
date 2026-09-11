@@ -5,6 +5,7 @@ import com.vanter.ember.billing.model.PaymentStatus;
 import jakarta.persistence.LockModeType;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -21,6 +22,9 @@ import org.springframework.data.repository.query.Param;
 public interface PaymentRepository extends JpaRepository<Payment, Long> {
 
     List<Payment> findByBillId(Long billId);
+
+    /** Batch form of {@link #findByBillId}, for the business-data CSV export. */
+    List<Payment> findByBillIdIn(Collection<Long> billIds);
 
     List<Payment> findByStatus(PaymentStatus status);
 
