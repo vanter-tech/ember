@@ -118,23 +118,47 @@ consistente con el resto del producto sin acoplarse a su código. Build
 estático (`astro build`) — sin servidor Node en producción, Tauri carga los
 archivos directo del disco.
 
-### 2.5 Alcance funcional de la v2 (fase 1): paridad, no features nuevas
+### 2.5 Alcance funcional de la v2 (fase 1): paridad real con el Swing de hoy
 
-La ventana Tauri de printer-agent iguala lo que `AgentDashboard`/`PairDialog`
-ya hacen hoy — **no** agrega los botones de acción nuevos que aparecen en el
-mockup de referencia (`Reiniciar Servicio`, `Imprimir Página de Prueba`,
-`Configurar RAW`), que quedan explícitamente diferidos a una fase 2 futura
-fuera de este spec, porque requieren lógica nueva del lado del agente (no
-solo la ventana). Pantallas de la fase 1:
+> **Corrección (post-revisión de código, misma sesión):** la primera versión
+> de esta sección asumía que "Imprimir página de prueba" era una acción
+> nueva del mockup de referencia. Al leer `AgentDashboard.java` completo se
+> confirmó que **ya existe hoy** (botón real, con selección de cola +
+> `WindowsPrintQueueSender`), igual que "Abrir carpeta de logs" y "Copiar
+> diagnóstico". Solo `Reiniciar Servicio` y `Configurar RAW` (del mockup) son
+> genuinamente nuevos frente al Swing actual. Corregido antes de escribir el
+> plan de implementación.
+
+La ventana Tauri de printer-agent iguala **todo** lo que
+`AgentDashboard`/`AgentTrayIcon`/`PairDialog` ya hacen hoy — **no** agrega
+`Reiniciar Servicio` ni `Configurar RAW` (del mockup de referencia), que
+quedan explícitamente diferidos a una fase 2 futura fuera de este spec,
+porque requieren lógica nueva del lado del agente (no solo la ventana).
+Pantallas/acciones de la fase 1:
 
 - **Estado de conexión:** fase (`UNPAIRED`/`CONNECTING`/`CONNECTED`/
-  `RETRYING`), último heartbeat, id del agente — espejo de `StatusHub.Snapshot`.
+  `RETRYING`), host del backend, último heartbeat, id del agente — espejo de
+  `StatusHub.Snapshot` (igual a `connectionPanel()` de hoy).
 - **Emparejamiento:** input de código → `PairingClient.redeem` vía el server
-  local.
-- **Impresoras detectadas:** lista de solo lectura de `WindowsPrinterEnumerator`.
+  local; conserva también el modo manual "Tengo una API key" (URL + key,
+  guardado directo sin canjear código) que ya ofrece `PairDialog` hoy.
+- **Impresoras detectadas + prueba de impresión:** lista de solo lectura de
+  `WindowsPrinterEnumerator` (con botón "Actualizar") y **acción real**
+  "Imprimir página de prueba" sobre la cola seleccionada — mismo
+  comportamiento que `AgentDashboard.onTestPrint()` (arma un
+  `PrinterConfigDto` sintético, `RAW` o `DRIVER` según `inkjetGuess()`, y
+  llama `WindowsPrintQueueSender.print`). El resultado se muestra como
+  mensaje puntual en la ventana, **sin** agregarse a la tabla de trabajos
+  recientes — así se comporta hoy (`onTestPrint` nunca llama
+  `StatusHub.recordJob`).
 - **Trabajos recientes:** tabla de solo lectura de los últimos 20 `JobRecord`
-  de `StatusHub`.
-- Bandeja: clic abre/enfoca la ventana, menú "Abrir"/"Salir" — reemplaza
+  de `StatusHub` — jobs reales, no las pruebas manuales.
+- **Diagnóstico y logs:** "Copiar diagnóstico" (mismo texto de
+  `DiagnosticsReport.build`, copiado con el portapapeles del navegador/
+  WebView en vez de `java.awt.Toolkit`) y "Abrir carpeta de logs" (mismo
+  directorio de `AgentPaths.logsDir()`, abierto con el plugin nativo de
+  Tauri en vez de `java.awt.Desktop`).
+- Bandeja: clic abre/enfoca la ventana, menú "Mostrar"/"Salir" — reemplaza
   `AgentTrayIcon` usando la API de bandeja de Tauri.
 
 Para Ember Hub v2 (implementado después, en su propio plan) el mismo patrón
@@ -144,13 +168,17 @@ en navegador" — sin tocar el SPA que ese botón abre.
 
 ## 3. Contrato de API local (printer-agent, fase 1)
 
-Todo bajo `http://127.0.0.1:<puerto>/`, JSON:
+Todo bajo `http://127.0.0.1:<puerto>/`, JSON (salvo `/api/diagnostics`, texto
+plano):
 
 | Método/ruta | Uso |
 |---|---|
 | `GET /api/status` | Snapshot completo: `{phase, detail, lastSeen, agentId, printerCount, recentJobs[]}` — espejo directo de `StatusHub.Snapshot`. |
-| `POST /api/pair` `{code}` | Envuelve `PairingClient.redeem`. `200` + estado actualizado, o el mismo `4xx`/mensaje que ya produce `PairingClient` (429 → "Demasiados intentos…", no-200 → "Código inválido…"). |
-| `GET /api/printers` | Última lista reportada por `WindowsPrinterEnumerator` (cacheada en memoria, no re-escanea en cada llamada). |
+| `POST /api/pair` `{code, backendUrl}` **o** `{apiKey, backendUrl}` | Modo código: envuelve `PairingClient.redeem` (`200` + estado, o el mismo `4xx`/mensaje que ya produce — 429 → "Demasiados intentos…", no-200 → "Código inválido…"). Modo manual: guarda la credencial directo vía `CredentialStore.save`, igual que el "Tengo una API key" de hoy. |
+| `GET /api/printers` | Última lista reportada por `WindowsPrinterEnumerator` (cacheada en memoria propia del servidor de control, refrescada cada ~30s — no re-escanea en cada llamada). |
+| `POST /api/test-print` `{queue}` | Arma el `PrinterConfigDto` sintético (usando el `inkjetGuess` de la lista cacheada) y llama `WindowsPrintQueueSender.print` — mismo comportamiento que `AgentDashboard.onTestPrint()` hoy. `200` en éxito, `4xx`/mensaje en error. No toca `StatusHub`. |
+| `GET /api/diagnostics` | Texto plano de `DiagnosticsReport.build(snapshot, store)`, sin cambios — la ventana lo copia al portapapeles vía la API del navegador. |
+| `GET /api/paths` | `{logsDir}` (de `AgentPaths.logsDir()`) para que el plugin de shell de Tauri abra la carpeta nativamente. |
 
 ## 4. Manejo de errores
 
@@ -221,8 +249,9 @@ Swing + bundler de Tauri), detallado en su propio plan de implementación.
 
 ## 8. Fuera de alcance de este spec (explícito)
 
-- Botones de acción nuevos del mockup (reiniciar servicio, imprimir página
-  de prueba, configurar RAW) — fase 2 futura, no incluida aquí.
+- Botones de acción genuinamente nuevos del mockup (reiniciar servicio,
+  configurar RAW) — fase 2 futura, no incluida aquí. ("Imprimir página de
+  prueba" **sí** está en esta fase 1 — ya existe hoy, ver §2.5.)
 - Cualquier cambio a la app de trabajo real (el SPA del SaaS que Hub abre en
   el navegador) — sigue exactamente igual.
 - Cualquier cambio a la lógica de negocio de printer-agent o Hub (bootstrap,
