@@ -83,6 +83,15 @@ function Build-AppImage {
     Write-Host "app-image at $appImageDir" -ForegroundColor Green
 }
 
+function Clear-ReadOnlyRecurse($path) {
+    if (-not (Test-Path $path)) { return }
+    Get-ChildItem -Path $path -Recurse -Force -File | ForEach-Object {
+        if ($_.Attributes -band [System.IO.FileAttributes]::ReadOnly) {
+            $_.Attributes = $_.Attributes -band (-bnot [System.IO.FileAttributes]::ReadOnly)
+        }
+    }
+}
+
 function Build-Installer {
     Write-Host "== installer (Tauri) ==" -ForegroundColor Cyan
     if (-not (Test-Path (Join-Path $appImageDir "Ember Agent.exe"))) { Build-AppImage }
@@ -90,6 +99,13 @@ function Build-Installer {
     $cargoTauri = (Get-Command cargo-tauri.exe -ErrorAction SilentlyContinue) -or
                   (Get-Command cargo -ErrorAction SilentlyContinue)
     if (-not $cargoTauri) { throw "Rust/cargo not found - install Rust and ``cargo install tauri-cli --version '^2'``." }
+
+    # jpackage marks its app-image launcher exe read-only; tauri-build's copy_resources step
+    # re-copies that app-image into src-tauri/target/<profile>/app-image on every build, and Rust's
+    # fs::copy on Windows cannot overwrite a read-only destination (fails with "Acceso denegado" /
+    # os error 5). Clear read-only on any previous copy before rebuilding so the overwrite succeeds.
+    Clear-ReadOnlyRecurse (Join-Path $tauriDir "target\release\app-image")
+    Clear-ReadOnlyRecurse (Join-Path $tauriDir "target\debug\app-image")
 
     Push-Location $tauriDir
     try {

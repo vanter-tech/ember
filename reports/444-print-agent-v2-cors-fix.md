@@ -31,6 +31,7 @@ the server or the sidecar, was the blocker.
 ## Modified Files
 - `printing-agent/src/main/java/com/vanter/emberagent/control/LocalControlServer.java`
 - `printing-agent/src/test/java/com/vanter/emberagent/control/LocalControlServerTest.java`
+- `printing-agent/build-installer.ps1`
 
 ## What Changed?
 - New `CORS_FILTER` (a `com.sun.net.httpserver.Filter`) attached to every `/api/*` context:
@@ -47,23 +48,26 @@ the server or the sidecar, was the blocker.
   with the fix, launched it standalone (bypassing the Tauri shell) and re-verified live: the
   same cross-origin fetch that failed before the fix now returns `200
   {"phase":"UNPAIRED",...}` from a real Chromium tab against the rebuilt sidecar (port 55463).
-- **Could not produce a fresh installer `.exe` in this session.** `build-installer.ps1 -Stage
-  installer` (`cargo tauri build`) failed 3 times in a row with `Acceso denegado. (os error 5)`
-  while embedding the `app-image` resources into the Tauri bundle — right after emitting
-  `cargo:rerun-if-changed=..\dist\app-image\Ember Agent\Ember Agent.exe`. Ruled out: a locking
-  process (killed the two test sidecars I'd started; no process had an open handle — a direct
-  exclusive `FileStream` open on that exact exe succeeded), a read-only attribute (cleared
-  recursively, no change), and a corrupted incremental build cache (deleted both
-  `target\release\build\ember-agent-shell-*` dirs and rebuilt clean — same failure, same file).
-  Per `systematic-debugging`'s 3-strikes rule this is flagged as an environment blocker rather
-  than guessed at further — most likely antivirus real-time scanning holding a transient lock on
-  the freshly-jpackaged `.exe` at the exact moment Tauri's build script tries to copy it. **The
-  Java-side fix and its tests are unaffected by this** — it's specific to the NSIS/Tauri
-  packaging step, unrelated to `LocalControlServer`. The still-installed `EmberAgentSetup-0.1.1.exe`
-  on the user's machine has the OLD (buggy) code; a fresh installer with the fix still needs to
-  be built (retry `printing-agent/build-installer.ps1 -Stage installer`, possibly with real-time
-  AV protection paused or a Defender exclusion on `printing-agent/dist`) and reinstalled before
-  the fix is live for the user.
+- **Root-caused and fixed a second, unrelated bug in the installer pipeline itself** (found while
+  rebuilding to verify the CORS fix): `build-installer.ps1 -Stage installer` failed 3 times with
+  `Acceso denegado. (os error 5)` right after `cargo:rerun-if-changed=..\dist\app-image\Ember
+  Agent\Ember Agent.exe`. Traced into `tauri-build 2.6.3`'s `copy_resources`
+  (`~/.cargo/registry/src/.../tauri-build-2.6.3/src/lib.rs`): it re-copies the configured
+  `resources` (the whole app-image) into `src-tauri/target/<profile>/app-image/` on every build
+  via `fs::copy`, which **cannot overwrite a read-only destination file on Windows**. `jpackage`
+  marks its launcher exe read-only, `CopyFileW` preserves that attribute on the destination, so
+  the *first* build's copy leaves a read-only file behind that makes *every subsequent* build
+  fail the same way — a real, deterministic (not flaky/AV) papercut, confirmed by locating the
+  stale read-only file directly (`still-readonly: src-tauri/target/release/app-image/Ember
+  Agent/Ember Agent.exe`).
+- Fixed in `printing-agent/build-installer.ps1`: `Build-Installer` now clears the read-only
+  attribute recursively on any previous `target/{release,debug}/app-image` copy before invoking
+  `cargo tauri build`. Verified idempotent: ran the installer stage twice in a row unattended,
+  both succeeded → `printing-agent/dist/EmberAgentSetup-0.1.1.exe` (48.17 MB, containing the
+  CORS fix).
+- **This installer-pipeline bug predates this session** — it was latent in Task 5's
+  `build-installer.ps1` (report 442) the whole time; report 442's own verification happened to
+  be the *first* build in a clean `target/`, so it never hit the read-only-destination case.
 
 ## Why It Changed?
 Loopback-only HTTP was chosen deliberately (spec §2.3) to let the Tauri shell talk to the Java
