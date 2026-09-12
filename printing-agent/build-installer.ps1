@@ -2,9 +2,10 @@
 Builds the Ember Agent Windows installer.
 Stages (run all by default, or one via -Stage):
   runtime   -> printing-agent/dist/runtime               (jlink JRE image)
-  appimage  -> printing-agent/dist/app-image             (jpackage + shaded jar)
-  installer -> printing-agent/dist/EmberAgentSetup-*.exe  (Inno Setup)
-Requires: JDK 17 on PATH (java, jlink, jpackage), mvn, Inno Setup (iscc) for the last stage.
+  appimage  -> printing-agent/dist/app-image             (jpackage + shaded jar, headless sidecar)
+  installer -> printing-agent/dist/EmberAgentSetup-*.exe  (Tauri bundler, NSIS)
+Requires: JDK 17 on PATH (java, jlink, jpackage), mvn, Node (for printing-agent/ui), Rust +
+`cargo install tauri-cli --version "^2"` for the last stage.
 The agent installer bakes in no secrets/URLs -- the backend URL comes from POST /printing/agents/pair.
 #>
 param([ValidateSet("all","runtime","appimage","installer")] [string] $Stage = "all")
@@ -18,6 +19,7 @@ $runtimeDir = Join-Path $distDir "runtime"
 $appImageParent = Join-Path $distDir "app-image"
 $appImageDir    = Join-Path $appImageParent "Ember Agent"
 $installerDir   = Join-Path $agentDir "installer"
+$tauriDir       = Join-Path $agentDir "src-tauri"
 
 function Get-AgentVersion {
     $pom = Get-Content (Join-Path $agentDir "pom.xml") -Raw
@@ -77,34 +79,39 @@ function Build-AppImage {
         --dest $appImageParent
     if ($LASTEXITCODE -ne 0) { throw "jpackage failed ($LASTEXITCODE)" }
 
-    Copy-Item (Join-Path $installerDir "Iniciar Ember Agent.cmd") $appImageDir
-
     if (-not (Test-Path (Join-Path $appImageDir "Ember Agent.exe"))) { throw "app-image launcher missing" }
     Write-Host "app-image at $appImageDir" -ForegroundColor Green
 }
 
 function Build-Installer {
-    Write-Host "== installer ==" -ForegroundColor Cyan
+    Write-Host "== installer (Tauri) ==" -ForegroundColor Cyan
     if (-not (Test-Path (Join-Path $appImageDir "Ember Agent.exe"))) { Build-AppImage }
-    $iscc = (Get-Command iscc.exe -ErrorAction SilentlyContinue).Source
-    if (-not $iscc) {
-        $iscc = @(
-            "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe",
-            "${env:ProgramFiles}\Inno Setup 6\ISCC.exe",
-            "${env:LOCALAPPDATA}\Programs\Inno Setup 6\ISCC.exe"
-        ) | Where-Object { Test-Path $_ } | Select-Object -First 1
-    }
-    if (-not $iscc -or -not (Test-Path $iscc)) { throw "Inno Setup (ISCC.exe) not found - install Inno Setup 6." }
 
-    $version = Get-AgentVersion
-    Push-Location $installerDir
+    $cargoTauri = (Get-Command cargo-tauri.exe -ErrorAction SilentlyContinue) -or
+                  (Get-Command cargo -ErrorAction SilentlyContinue)
+    if (-not $cargoTauri) { throw "Rust/cargo not found - install Rust and ``cargo install tauri-cli --version '^2'``." }
+
+    Push-Location $tauriDir
     try {
-        & $iscc "/DAppVersion=$version" "EmberAgent.iss"
-        if ($LASTEXITCODE -ne 0) { throw "iscc failed ($LASTEXITCODE)" }
+        # cargo/tauri-cli write non-fatal "Info"/progress lines to stderr; under
+        # $ErrorActionPreference="Stop" Windows PowerShell 5.1 treats any native stderr write as a
+        # terminating NativeCommandError regardless of the real exit code (same class of bug fixed
+        # in ember-hub/build-installer.ps1's frontend step) -- relax it locally and trust
+        # $LASTEXITCODE (checked right below) for the real pass/fail signal.
+        $prevEap = $ErrorActionPreference
+        $ErrorActionPreference = "Continue"
+        & cargo tauri build
+        $ErrorActionPreference = $prevEap
+        if ($LASTEXITCODE -ne 0) { throw "cargo tauri build failed ($LASTEXITCODE)" }
     } finally { Pop-Location }
 
+    $bundleDir = Join-Path $tauriDir "target\release\bundle\nsis"
+    $produced = Get-ChildItem $bundleDir -Filter "*-setup.exe" | Select-Object -First 1
+    if (-not $produced) { throw "no NSIS installer produced under $bundleDir" }
+
+    $version = Get-AgentVersion
     $out = Join-Path $distDir "EmberAgentSetup-$version.exe"
-    if (-not (Test-Path $out)) { throw "installer not produced at $out" }
+    Copy-Item $produced.FullName $out -Force
     Write-Host "installer: $out" -ForegroundColor Green
 }
 
