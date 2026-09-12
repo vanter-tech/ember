@@ -122,6 +122,31 @@ class LocalControlServerTest {
         assertEquals(405, res.statusCode());
     }
 
+    @Test
+    void status_includesCorsHeaderSoTheTauriWebviewCanReadIt() throws Exception {
+        // The Tauri window's origin is never http://127.0.0.1:<port>, so every fetch() the React
+        // UI makes is cross-origin; without this header the browser silently discards the
+        // response and the dashboard is stuck on "Cargando..." forever (reproduced live against
+        // the packaged installer — see report 444).
+        HttpResponse<String> res = get("/api/status");
+
+        assertEquals("*", res.headers().firstValue("Access-Control-Allow-Origin").orElse(null));
+    }
+
+    @Test
+    void pair_optionsPreflight_returns204WithCorsHeaders() throws Exception {
+        // pairWithCode/pairWithApiKey send Content-Type: application/json, which isn't a
+        // CORS-safelisted content type — the browser sends an OPTIONS preflight first and
+        // requires a 2xx response carrying Allow-Methods/Allow-Headers before it will send the
+        // real POST.
+        HttpResponse<String> res = options("/api/pair");
+
+        assertEquals(204, res.statusCode());
+        assertEquals("*", res.headers().firstValue("Access-Control-Allow-Origin").orElse(null));
+        assertTrue(res.headers().firstValue("Access-Control-Allow-Methods").orElse("").contains("POST"));
+        assertTrue(res.headers().firstValue("Access-Control-Allow-Headers").orElse("").contains("Content-Type"));
+    }
+
     private HttpResponse<String> get(String path) throws Exception {
         return http.send(HttpRequest.newBuilder(URI.create(base + path)).GET().build(),
                 HttpResponse.BodyHandlers.ofString());
@@ -131,6 +156,13 @@ class LocalControlServerTest {
         return http.send(HttpRequest.newBuilder(URI.create(base + path))
                         .header("Content-Type", "application/json")
                         .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+                        .build(),
+                HttpResponse.BodyHandlers.ofString());
+    }
+
+    private HttpResponse<String> options(String path) throws Exception {
+        return http.send(HttpRequest.newBuilder(URI.create(base + path))
+                        .method("OPTIONS", HttpRequest.BodyPublishers.noBody())
                         .build(),
                 HttpResponse.BodyHandlers.ofString());
     }

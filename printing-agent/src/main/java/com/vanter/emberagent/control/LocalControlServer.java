@@ -1,6 +1,7 @@
 package com.vanter.emberagent.control;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sun.net.httpserver.Filter;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import com.vanter.emberagent.AgentCredential;
@@ -39,6 +40,29 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public final class LocalControlServer {
 
+    // The Tauri window's origin is never http://127.0.0.1:<port>, so every fetch() the React UI
+    // makes is cross-origin; without this, the browser silently discards every response (and
+    // blocks the POST endpoints' preflight outright), leaving the dashboard stuck on "Cargando...".
+    private static final Filter CORS_FILTER = new Filter() {
+        @Override
+        public String description() {
+            return "CORS (loopback-only, any origin)";
+        }
+
+        @Override
+        public void doFilter(HttpExchange exchange, Chain chain) throws IOException {
+            exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
+            if ("OPTIONS".equals(exchange.getRequestMethod())) {
+                exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+                exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type");
+                exchange.sendResponseHeaders(204, -1);
+                exchange.close();
+                return;
+            }
+            chain.doFilter(exchange);
+        }
+    };
+
     private final StatusHub hub;
     private final CredentialStore store;
     private final AgentRunner runner;
@@ -62,12 +86,12 @@ public final class LocalControlServer {
     /** Starts listening on 127.0.0.1 at an OS-assigned port and returns that port. */
     public int start() throws IOException {
         httpServer = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
-        httpServer.createContext("/api/status", this::handleStatus);
-        httpServer.createContext("/api/pair", this::handlePair);
-        httpServer.createContext("/api/printers", this::handlePrinters);
-        httpServer.createContext("/api/test-print", this::handleTestPrint);
-        httpServer.createContext("/api/diagnostics", this::handleDiagnostics);
-        httpServer.createContext("/api/paths", this::handlePaths);
+        httpServer.createContext("/api/status", this::handleStatus).getFilters().add(CORS_FILTER);
+        httpServer.createContext("/api/pair", this::handlePair).getFilters().add(CORS_FILTER);
+        httpServer.createContext("/api/printers", this::handlePrinters).getFilters().add(CORS_FILTER);
+        httpServer.createContext("/api/test-print", this::handleTestPrint).getFilters().add(CORS_FILTER);
+        httpServer.createContext("/api/diagnostics", this::handleDiagnostics).getFilters().add(CORS_FILTER);
+        httpServer.createContext("/api/paths", this::handlePaths).getFilters().add(CORS_FILTER);
         httpServer.setExecutor(Executors.newCachedThreadPool(daemonThreadFactory()));
         httpServer.start();
 
