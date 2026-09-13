@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "identifier": "net.vanter.ember.hub",
   "build": {
-    "beforeBuildCommand": "npm --prefix ui install && npm --prefix ui run build",
+    "beforeBuildCommand": "cd ui && pnpm install && pnpm run build",
     "frontendDist": "../ui/dist"
   },
   "app": {

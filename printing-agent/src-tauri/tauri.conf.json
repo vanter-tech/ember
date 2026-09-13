@@ -4,7 +4,7 @@
   "version": "0.1.1",
   "identifier": "net.vanter.ember.agent",
   "build": {
-    "beforeBuildCommand": "npm --prefix ui install && npm --prefix ui run build",
+    "beforeBuildCommand": "cd ui && pnpm install && pnpm run build",
     "frontendDist": "../ui/dist"
   },
   "app": {

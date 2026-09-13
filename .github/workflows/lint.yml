@@ -102,16 +102,22 @@ jobs:
         run: pwsh printing-agent/build-installer.ps1 -Stage appimage
       - name: Verificar que el lanzador existe
         run: if (-not (Test-Path "printing-agent/dist/app-image/Ember Agent/Ember Agent.exe")) { exit 1 }
+      - name: Configurar pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
       - name: Configurar Node
         uses: actions/setup-node@v4
         with:
           node-version: '22'
+          cache: 'pnpm'
+          cache-dependency-path: ./printing-agent/ui/pnpm-lock.yaml
       - name: Instalar dependencias y compilar la UI del agente
         run: |
           cd printing-agent/ui
-          npm install
-          npm run test
-          npm run build
+          pnpm install --frozen-lockfile
+          pnpm run test
+          pnpm run build
       - name: Configurar Rust
         uses: dtolnay/rust-toolchain@stable
       - name: Instalar tauri-cli
