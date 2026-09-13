@@ -73,11 +73,13 @@ export default function ServiceCard({
         {expanded && <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />}
       </div>
       {expanded && (
-        <div className="mt-3 rounded-2xl bg-foreground text-background font-mono text-xs p-3 overflow-auto max-h-32">
+        <div className="mt-3 rounded-2xl bg-[#8c1717] text-white font-mono text-xs p-3 overflow-auto max-h-32">
           {isError ? (
-            <p className="text-red-300">{error}</p>
+            <p className="mb-1 last:mb-0">{error}</p>
           ) : (
-            (starting ? startLines : stopLines).map((line, i) => <p key={i}>{line}</p>)
+            (starting ? startLines : stopLines).map((line, i) => (
+              <p key={i} className="mb-1 last:mb-0">{line}</p>
+            ))
           )}
         </div>
       )}

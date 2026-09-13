@@ -23,11 +23,13 @@ export function IconBadge({
 export default function Card({
   icon: Icon,
   title,
+  badge,
   children,
   className = ''
 }: {
   icon: ComponentType<{ className?: string }>;
   title: string;
+  badge?: ReactNode;
   children: ReactNode;
   className?: string;
 }) {
@@ -35,7 +37,8 @@ export default function Card({
     <section className={`${cardShellClass} p-4 flex flex-col min-w-0 ${className}`}>
       <div className="flex items-center gap-3 mb-3 shrink-0">
         <IconBadge icon={Icon} />
-        <h2 className="font-semibold text-lg">{title}</h2>
+        <h2 className="font-semibold text-lg flex-1 min-w-0">{title}</h2>
+        {badge}
       </div>
       {children}
     </section>

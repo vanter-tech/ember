@@ -35,16 +35,17 @@ export default function LicenseCard({
   onSelectLicense: () => void;
 }) {
   return (
-    <Card icon={KeyRound} title="Licencia">
-      <div className="flex items-center gap-2 mb-3">
-        <Badge variant={STATUS_VARIANT[license.status]}>{STATUS_LABEL[license.status]}</Badge>
-        {license.status === 'OK' && (
-          <span className="text-sm text-muted-foreground">último contacto {humanizeSince(license.lastHeartbeatAt)}</span>
-        )}
-        {license.status === 'SUSPENDED' && (
-          <span className="text-sm text-muted-foreground">suspendida {humanizeSince(license.suspendedSince)}</span>
-        )}
-      </div>
+    <Card
+      icon={KeyRound}
+      title="Licencia"
+      badge={<Badge variant={STATUS_VARIANT[license.status]}>{STATUS_LABEL[license.status]}</Badge>}
+    >
+      {license.status === 'OK' && (
+        <p className="text-sm text-muted-foreground mb-3">último contacto {humanizeSince(license.lastHeartbeatAt)}</p>
+      )}
+      {license.status === 'SUSPENDED' && (
+        <p className="text-sm text-muted-foreground mb-3">suspendida {humanizeSince(license.suspendedSince)}</p>
+      )}
       <Button variant="primary" className="w-fit" onClick={onSelectLicense}>
         Seleccionar license.key…
       </Button>
