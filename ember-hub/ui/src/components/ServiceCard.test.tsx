@@ -36,10 +36,42 @@ describe('ServiceCard', () => {
     expect(screen.queryByText(/database system is ready/)).toBeNull();
   });
 
-  it('collapses back to compact once RUNNING', () => {
+  it('mounting directly at RUNNING has no log to show yet', () => {
     render(<ServiceCard id="postgres" icon={Database} title="PostgreSQL" phase="RUNNING" error={null} />);
 
     expect(screen.getByText('En ejecución')).toBeTruthy();
     expect(screen.queryByText(/database system is ready/)).toBeNull();
+  });
+
+  describe('log persistence and manual toggle', () => {
+    beforeEach(() => vi.useFakeTimers());
+    afterEach(() => vi.useRealTimers());
+
+    it('keeps showing the log after the phase moves past STARTING (does not auto-clear)', () => {
+      const { rerender } = render(
+        <ServiceCard id="postgres" icon={Database} title="PostgreSQL" phase="STARTING" error={null} />
+      );
+      act(() => {
+        vi.advanceTimersByTime(3 * 350);
+      });
+      expect(screen.getByText(/database system is ready/)).toBeTruthy();
+
+      rerender(<ServiceCard id="postgres" icon={Database} title="PostgreSQL" phase="RUNNING" error={null} />);
+      expect(screen.getByText(/database system is ready/)).toBeTruthy();
+    });
+
+    it('can be manually collapsed and re-expanded via the toggle button', () => {
+      render(
+        <ServiceCard id="postgres" icon={Database} title="PostgreSQL" phase="ERROR" error="El puerto 5432 ya está en uso." />
+      );
+      expect(screen.getByText('El puerto 5432 ya está en uso.')).toBeTruthy();
+
+      const toggle = screen.getByRole('button');
+      act(() => toggle.click());
+      expect(screen.queryByText('El puerto 5432 ya está en uso.')).toBeNull();
+
+      act(() => toggle.click());
+      expect(screen.getByText('El puerto 5432 ya está en uso.')).toBeTruthy();
+    });
   });
 });

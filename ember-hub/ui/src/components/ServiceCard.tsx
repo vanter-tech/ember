@@ -1,4 +1,4 @@
-import { useEffect, useState, type ComponentType } from 'react';
+import { useEffect, useRef, useState, type ComponentType } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { cardShellClass, IconBadge } from './Card';
 import Badge from './Badge';
@@ -21,24 +21,28 @@ const PHASE_VARIANT: Record<ServicePhase, 'success' | 'warning' | 'danger' | 'ne
   ERROR: 'danger'
 };
 
-/** Reveals one script line every ~350ms while `active`, resets when `active` goes false. */
-function useTypedLog(script: readonly string[], active: boolean): string[] {
+/**
+ * Reveals one script line every ~350ms while starting/stopping. Unlike the old version, lines are
+ * NOT cleared once the phase moves on (e.g. STARTING -> RUNNING) — the last revealed script stays
+ * around so the card can be reopened later and still show what happened, until the next start/stop
+ * cycle replaces it.
+ */
+function useServiceLog(id: ServiceId, phase: ServicePhase): string[] {
   const [lines, setLines] = useState<string[]>([]);
 
   useEffect(() => {
-    if (!active) {
-      setLines([]);
-      return;
-    }
+    const script = phase === 'STARTING' ? START_SCRIPTS[id] : phase === 'STOPPING' ? STOP_SCRIPTS[id] : null;
+    if (!script) return;
+
     setLines([]);
     let i = 0;
-    const id = setInterval(() => {
+    const intervalId = setInterval(() => {
       i += 1;
       setLines(script.slice(0, i));
-      if (i >= script.length) clearInterval(id);
+      if (i >= script.length) clearInterval(intervalId);
     }, 350);
-    return () => clearInterval(id);
-  }, [active, script]);
+    return () => clearInterval(intervalId);
+  }, [id, phase]);
 
   return lines;
 }
@@ -59,10 +63,20 @@ export default function ServiceCard({
   const starting = phase === 'STARTING';
   const stopping = phase === 'STOPPING';
   const isError = phase === 'ERROR';
-  const expanded = starting || stopping || isError;
 
-  const startLines = useTypedLog(START_SCRIPTS[id], starting);
-  const stopLines = useTypedLog(STOP_SCRIPTS[id], stopping);
+  const [expanded, setExpanded] = useState(starting || stopping || isError);
+  const prevPhaseRef = useRef(phase);
+  useEffect(() => {
+    if (phase !== prevPhaseRef.current) {
+      if (phase === 'STARTING' || phase === 'STOPPING' || phase === 'ERROR') {
+        setExpanded(true);
+      }
+      prevPhaseRef.current = phase;
+    }
+  }, [phase]);
+
+  const lines = useServiceLog(id, phase);
+  const hasContent = isError || lines.length > 0;
 
   return (
     <section className={`${cardShellClass} p-4 flex flex-col min-w-0`}>
@@ -70,15 +84,24 @@ export default function ServiceCard({
         <IconBadge icon={icon} />
         <h2 className="font-semibold text-lg flex-1 min-w-0">{title}</h2>
         <Badge variant={PHASE_VARIANT[phase]}>{PHASE_LABEL[phase]}</Badge>
-        {expanded && <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />}
+        <button
+          type="button"
+          aria-label={expanded ? `Ocultar registro de ${title}` : `Mostrar registro de ${title}`}
+          onClick={() => setExpanded((v) => !v)}
+          className="shrink-0 rounded-full p-1 hover:bg-primary/10 cursor-pointer"
+        >
+          <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${expanded ? 'rotate-180' : ''}`} />
+        </button>
       </div>
-      {expanded && (
-        <div className="mt-3 rounded-2xl bg-[#8c1717] text-white font-mono text-xs p-3 overflow-auto max-h-32">
+      {expanded && hasContent && (
+        <div className="mt-3 flex flex-col gap-1 overflow-y-auto max-h-32">
           {isError ? (
-            <p className="mb-1 last:mb-0">{error}</p>
+            <p className="rounded-lg bg-[#8c1717] text-white font-mono text-xs px-2 py-1">{error}</p>
           ) : (
-            (starting ? startLines : stopLines).map((line, i) => (
-              <p key={i} className="mb-1 last:mb-0">{line}</p>
+            lines.map((line, i) => (
+              <p key={i} className="rounded-lg bg-[#8c1717] text-white font-mono text-xs px-2 py-1">
+                {line}
+              </p>
             ))
           )}
         </div>
