@@ -4,6 +4,7 @@ import { Router, RotateCw } from 'lucide-react';
 import { getStatus } from '../lib/api';
 import type { Status } from '../lib/types';
 import { watchAgentShell, type AgentShellState } from '../lib/agent-events';
+import { cardShellClass, IconBadge } from './Card';
 import ConnectionCard from './ConnectionCard';
 import PrintersSection from './PrintersSection';
 import JobsTable from './JobsTable';
@@ -49,9 +50,9 @@ export default function Dashboard() {
 
   return (
     <main className="h-full p-4 flex flex-col gap-4 max-w-4xl mx-auto min-h-0">
-      <header className="flex items-center justify-between gap-3 flex-wrap shrink-0">
+      <header className={`${cardShellClass} p-4 flex items-center justify-between gap-3 flex-wrap shrink-0`}>
         <div className="flex items-center gap-3 min-w-0">
-          <Router className="h-8 w-8 text-primary shrink-0" />
+          <IconBadge icon={Router} size="lg" />
           <div className="min-w-0">
             <h1 className="text-xl font-bold leading-tight">Ember Agent</h1>
             <p className="text-sm text-muted-foreground">

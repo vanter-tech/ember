@@ -1,6 +1,7 @@
 import { ScrollText } from 'lucide-react';
 import type { JobRecord } from '../lib/types';
 import Card from './Card';
+import Badge from './Badge';
 
 function formatTime(iso: string | null): string {
   if (!iso) return '—';
@@ -9,6 +10,14 @@ function formatTime(iso: string | null): string {
 
 function dash(s: string | null): string {
   return s && s.trim() !== '' ? s : '—';
+}
+
+function resultVariant(result: string | null): 'success' | 'danger' | 'neutral' {
+  if (!result) return 'neutral';
+  const r = result.toUpperCase();
+  if (r === 'OK') return 'success';
+  if (r.includes('ERROR')) return 'danger';
+  return 'neutral';
 }
 
 export default function JobsTable({ jobs }: { jobs: JobRecord[] }) {
@@ -34,7 +43,9 @@ export default function JobsTable({ jobs }: { jobs: JobRecord[] }) {
                 <td className="py-1">{formatTime(j.at)}</td>
                 <td className="py-1">{dash(j.role)}</td>
                 <td className="py-1">{dash(j.queue)}</td>
-                <td className="py-1">{dash(j.result)}</td>
+                <td className="py-1">
+                  {j.result ? <Badge variant={resultVariant(j.result)}>{j.result}</Badge> : '—'}
+                </td>
                 <td className="py-1">{dash(j.error)}</td>
               </tr>
             ))}

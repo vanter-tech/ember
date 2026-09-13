@@ -36,7 +36,7 @@ export default function PairingSection({
   }
 
   return (
-    <div className="border-t border-border pt-3 mt-1">
+    <div>
       {mode === 'code' ? (
         <input
           className="border border-border rounded-md px-2 py-1 w-full mb-2 uppercase"

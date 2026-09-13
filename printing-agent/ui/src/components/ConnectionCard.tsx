@@ -1,14 +1,16 @@
 import { useState } from 'react';
-import { Wifi } from 'lucide-react';
+import { Wifi, KeyRound } from 'lucide-react';
 import type { Status } from '../lib/types';
 import Card from './Card';
+import Badge from './Badge';
+import Modal from './Modal';
 import PairingSection from './PairingSection';
 
-const DOT_COLOR: Record<Status['phase'], string> = {
-  CONNECTED: 'bg-emerald-500',
-  CONNECTING: 'bg-amber-500',
-  RETRYING: 'bg-amber-500',
-  UNPAIRED: 'bg-red-700'
+const PHASE_VARIANT: Record<Status['phase'], 'success' | 'warning' | 'danger'> = {
+  CONNECTED: 'success',
+  CONNECTING: 'warning',
+  RETRYING: 'warning',
+  UNPAIRED: 'danger'
 };
 
 function humanizeSince(iso: string | null): string {
@@ -38,11 +40,10 @@ export default function ConnectionCard({
       {!status ? (
         <p className="text-muted-foreground">Cargando…</p>
       ) : (
-        <dl className="grid grid-cols-2 gap-y-1 text-sm">
+        <dl className="grid grid-cols-2 gap-y-2 text-sm items-center">
           <dt className="text-muted-foreground">Estado</dt>
-          <dd className="flex items-center gap-2">
-            <span className={`inline-block h-2.5 w-2.5 rounded-full ${DOT_COLOR[status.phase]}`} />
-            {status.detail ?? status.phase}
+          <dd>
+            <Badge variant={PHASE_VARIANT[status.phase]}>{status.detail ?? status.phase}</Badge>
           </dd>
           <dt className="text-muted-foreground">Última vez visto</dt>
           <dd>{humanizeSince(status.lastSeen)}</dd>
@@ -51,23 +52,29 @@ export default function ConnectionCard({
         </dl>
       )}
 
-      {status && !pairingVisible && (
+      {status && !needsPairing && (
         <button
-          className="text-sm text-primary underline mt-3 w-fit"
+          className="mt-3 inline-flex items-center gap-2 border border-border rounded-md px-3 py-1.5 text-sm w-fit"
           onClick={() => setShowPairing(true)}
         >
+          <KeyRound className="h-4 w-4" />
           Volver a poner API key o código
         </button>
       )}
 
-      {status && pairingVisible && (
-        <PairingSection
-          onPaired={() => {
-            setShowPairing(false);
-            onPaired();
-          }}
-          onCancel={needsPairing ? undefined : () => setShowPairing(false)}
-        />
+      {pairingVisible && (
+        <Modal
+          title="Emparejar este agente"
+          onClose={needsPairing ? undefined : () => setShowPairing(false)}
+        >
+          <PairingSection
+            onPaired={() => {
+              setShowPairing(false);
+              onPaired();
+            }}
+            onCancel={needsPairing ? undefined : () => setShowPairing(false)}
+          />
+        </Modal>
       )}
     </Card>
   );
