@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
+import { Router, RotateCw } from 'lucide-react';
 import { getStatus } from '../lib/api';
 import type { Status } from '../lib/types';
 import { watchAgentShell, type AgentShellState } from '../lib/agent-events';
-import StatusSection from './StatusSection';
-import PairingSection from './PairingSection';
+import ConnectionCard from './ConnectionCard';
 import PrintersSection from './PrintersSection';
 import JobsTable from './JobsTable';
 import FooterActions from './FooterActions';
@@ -47,17 +47,34 @@ export default function Dashboard() {
     );
   }
 
-  const needsPairing = status?.phase === 'UNPAIRED';
-
   return (
-    <main className="p-4 flex flex-col gap-4 max-w-2xl mx-auto">
-      <header className="flex items-center gap-2">
-        <h1 className="text-xl font-bold">Ember Agent</h1>
+    <main className="h-full p-4 flex flex-col gap-4 max-w-4xl mx-auto min-h-0">
+      <header className="flex items-center justify-between gap-3 flex-wrap shrink-0">
+        <div className="flex items-center gap-3 min-w-0">
+          <Router className="h-8 w-8 text-primary shrink-0" />
+          <div className="min-w-0">
+            <h1 className="text-xl font-bold leading-tight">Ember Agent</h1>
+            <p className="text-sm text-muted-foreground">
+              Agente local de impresión y puente de hardware para estación POS
+            </p>
+          </div>
+        </div>
+        <button
+          className="border border-border rounded-md px-3 py-1.5 text-sm flex items-center gap-2 shrink-0"
+          onClick={() => invoke('restart_agent')}
+        >
+          <RotateCw className="h-4 w-4" />
+          Reiniciar servicios
+        </button>
       </header>
-      <StatusSection status={status} />
-      {needsPairing && <PairingSection onPaired={refresh} />}
-      <PrintersSection />
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 shrink-0">
+        <ConnectionCard status={status} onPaired={refresh} />
+        <PrintersSection />
+      </div>
+
       <JobsTable jobs={status?.recentJobs ?? []} />
+
       <FooterActions />
     </main>
   );

@@ -3,7 +3,13 @@ import { pairWithApiKey, pairWithCode } from '../lib/api';
 
 const DEFAULT_BACKEND = 'https://api.ember.vanter.net/v1';
 
-export default function PairingSection({ onPaired }: { onPaired: () => void }) {
+export default function PairingSection({
+  onPaired,
+  onCancel
+}: {
+  onPaired: () => void;
+  onCancel?: () => void;
+}) {
   const [mode, setMode] = useState<'code' | 'key'>('code');
   const [code, setCode] = useState('');
   const [apiKey, setApiKey] = useState('');
@@ -30,8 +36,7 @@ export default function PairingSection({ onPaired }: { onPaired: () => void }) {
   }
 
   return (
-    <section className="rounded-lg border border-border p-4">
-      <h2 className="font-semibold text-lg mb-3">Emparejar este agente</h2>
+    <div className="border-t border-border pt-3 mt-1">
       {mode === 'code' ? (
         <input
           className="border border-border rounded-md px-2 py-1 w-full mb-2 uppercase"
@@ -53,22 +58,29 @@ export default function PairingSection({ onPaired }: { onPaired: () => void }) {
         value={backendUrl}
         onChange={(e) => setBackendUrl(e.target.value)}
       />
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <button
           className="text-sm text-primary underline"
           onClick={() => setMode(mode === 'code' ? 'key' : 'code')}
         >
           {mode === 'code' ? 'Tengo una API key' : 'Usar un código'}
         </button>
-        <button
-          className="bg-primary text-primary-foreground rounded-md px-4 py-1.5 disabled:opacity-50"
-          disabled={busy}
-          onClick={submit}
-        >
-          {mode === 'code' ? 'Emparejar' : 'Guardar'}
-        </button>
+        <div className="flex items-center gap-2">
+          {onCancel && (
+            <button className="text-sm text-muted-foreground" onClick={onCancel}>
+              Cancelar
+            </button>
+          )}
+          <button
+            className="bg-primary text-primary-foreground rounded-md px-4 py-1.5 disabled:opacity-50"
+            disabled={busy}
+            onClick={submit}
+          >
+            {mode === 'code' ? 'Emparejar' : 'Guardar'}
+          </button>
+        </div>
       </div>
       {message && <p className="text-red-700 text-sm mt-2">{message}</p>}
-    </section>
+    </div>
   );
 }
