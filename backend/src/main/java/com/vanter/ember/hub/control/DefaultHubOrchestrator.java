@@ -11,6 +11,7 @@ import com.vanter.ember.hub.license.HubState;
 import com.vanter.ember.hub.license.HubStateStore;
 import com.vanter.ember.hub.license.InvalidLicenseException;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -143,6 +144,12 @@ public final class DefaultHubOrchestrator implements HubOrchestrator {
     @Override
     public void installLicense(Path source) throws IOException {
         LicenseFileInstaller.install(source, properties.licenseFile());
+    }
+
+    @Override
+    public synchronized void removeLicense() throws IOException {
+        Files.deleteIfExists(properties.licenseFile());
+        Files.deleteIfExists(properties.stateFile());
     }
 
     @Override

@@ -98,6 +98,24 @@ class HubControlServerTest {
         assertEquals(Path.of("C:/x/license.key"), orchestrator.installedFrom);
     }
 
+    @Test
+    void license_delete_callsOrchestratorAndReturns200() throws Exception {
+        HttpResponse<String> res = delete("/api/license");
+
+        assertEquals(200, res.statusCode());
+        assertTrue(orchestrator.removeLicenseCalled);
+    }
+
+    @Test
+    void license_delete_failure_returns400WithMessage() throws Exception {
+        orchestrator.removeLicenseFailure = new IOException("no se pudo borrar");
+
+        HttpResponse<String> res = delete("/api/license");
+
+        assertEquals(400, res.statusCode());
+        assertEquals("no se pudo borrar", mapper.readTree(res.body()).get("error").asText());
+    }
+
     private HttpResponse<String> get(String path) throws Exception {
         return http.send(HttpRequest.newBuilder(URI.create(base + path)).GET().build(),
                 HttpResponse.BodyHandlers.ofString());
@@ -111,11 +129,18 @@ class HubControlServerTest {
                 HttpResponse.BodyHandlers.ofString());
     }
 
+    private HttpResponse<String> delete(String path) throws Exception {
+        return http.send(HttpRequest.newBuilder(URI.create(base + path)).DELETE().build(),
+                HttpResponse.BodyHandlers.ofString());
+    }
+
     private static final class FakeOrchestrator implements HubOrchestrator {
         boolean startCalled;
         boolean stopCalled;
+        boolean removeLicenseCalled;
         Path installedFrom;
         IOException installLicenseFailure;
+        IOException removeLicenseFailure;
         HubOrchestrator.HubStatusSnapshot snapshot = new HubOrchestrator.HubStatusSnapshot(
                 ServicePhase.STOPPED, null, ServicePhase.STOPPED, null, ServicePhase.STOPPED, null,
                 new HubOrchestrator.LicenseSnapshot("NONE", null, null), 8080);
@@ -136,6 +161,14 @@ class HubControlServerTest {
                 throw installLicenseFailure;
             }
             installedFrom = source;
+        }
+
+        @Override
+        public void removeLicense() throws IOException {
+            if (removeLicenseFailure != null) {
+                throw removeLicenseFailure;
+            }
+            removeLicenseCalled = true;
         }
 
         @Override

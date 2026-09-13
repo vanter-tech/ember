@@ -29,10 +29,12 @@ function humanizeSince(iso: string | null): string {
 
 export default function LicenseCard({
   license,
-  onSelectLicense
+  onSelectLicense,
+  onRemoveLicense
 }: {
   license: LicenseSnapshot;
   onSelectLicense: () => void;
+  onRemoveLicense: () => void;
 }) {
   return (
     <Card
@@ -46,9 +48,16 @@ export default function LicenseCard({
       {license.status === 'SUSPENDED' && (
         <p className="text-sm text-muted-foreground mb-3">suspendida {humanizeSince(license.suspendedSince)}</p>
       )}
-      <Button variant="primary" className="w-fit" onClick={onSelectLicense}>
-        Seleccionar license.key…
-      </Button>
+      <div className="flex flex-wrap gap-2">
+        <Button variant="primary" className="w-fit" onClick={onSelectLicense}>
+          Seleccionar license.key…
+        </Button>
+        {license.status !== 'NONE' && (
+          <Button variant="outline" className="w-fit" onClick={onRemoveLicense}>
+            Eliminar license.key
+          </Button>
+        )}
+      </div>
     </Card>
   );
 }

@@ -1,11 +1,13 @@
 package com.vanter.ember.hub.control;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.vanter.ember.hub.config.HubProperties;
 import com.vanter.ember.hub.license.HubState;
 import com.vanter.ember.hub.license.HubStateStore;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.UUID;
@@ -60,6 +62,32 @@ class DefaultHubOrchestratorTest {
 
         assertEquals(HubOrchestrator.LicenseSnapshot.SUSPENDED, license.status());
         assertEquals(suspendedSince, license.suspendedSince());
+    }
+
+    @Test
+    void removeLicense_deletesLicenseFileAndStateFile_resetsToNone() throws Exception {
+        Path stateFile = tempDir.resolve("hub-state.json");
+        new HubStateStore(stateFile).save(new HubState("fp-1", UUID.randomUUID(), Instant.now()));
+        HubProperties properties = propertiesWithStateFile(stateFile);
+        Files.createFile(properties.licenseFile());
+        DefaultHubOrchestrator orchestrator = new DefaultHubOrchestrator(properties);
+        assertEquals(HubOrchestrator.LicenseSnapshot.OK, orchestrator.snapshot().license().status());
+
+        orchestrator.removeLicense();
+
+        assertFalse(Files.exists(properties.licenseFile()));
+        assertFalse(Files.exists(stateFile));
+        assertEquals(HubOrchestrator.LicenseSnapshot.NONE, orchestrator.snapshot().license().status());
+    }
+
+    @Test
+    void removeLicense_noExistingFiles_isANoOp() throws Exception {
+        DefaultHubOrchestrator orchestrator =
+                new DefaultHubOrchestrator(propertiesWithStateFile(tempDir.resolve("hub-state.json")));
+
+        orchestrator.removeLicense();
+
+        assertEquals(HubOrchestrator.LicenseSnapshot.NONE, orchestrator.snapshot().license().status());
     }
 
     @Test

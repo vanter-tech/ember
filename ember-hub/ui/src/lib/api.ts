@@ -3,6 +3,12 @@ import type { HubStatus } from './types';
 
 let cachedPort: number | null = null;
 
+/** The sidecar's control-server port is OS-assigned (ephemeral) — a restart gets a new one, so the
+ * cache must be dropped whenever the sidecar is restarted (see `Dashboard.tsx`'s onRestart). */
+export function resetPortCache(): void {
+  cachedPort = null;
+}
+
 async function port(): Promise<number> {
   if (cachedPort === null) {
     cachedPort = await invoke<number>('get_port');
@@ -40,4 +46,8 @@ export async function installLicense(path: string): Promise<HubStatus> {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ path })
   }));
+}
+
+export async function removeLicense(): Promise<HubStatus> {
+  return asJson<HubStatus>(await fetch(`${await base()}/api/license`, { method: 'DELETE' }));
 }

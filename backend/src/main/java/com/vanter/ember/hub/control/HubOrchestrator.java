@@ -22,6 +22,9 @@ public interface HubOrchestrator {
     /** Copies {@code source} into the configured license file location. */
     void installLicense(Path source) throws IOException;
 
+    /** Deletes the current license file and any persisted activation state, resetting to NONE. */
+    void removeLicense() throws IOException;
+
     HubStatusSnapshot snapshot();
 
     record LicenseSnapshot(String status, Instant lastHeartbeatAt, Instant suspendedSince) {

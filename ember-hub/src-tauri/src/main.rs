@@ -102,6 +102,17 @@ fn strip_verbatim_prefix(path: &std::path::Path) -> PathBuf {
     PathBuf::from(s.strip_prefix(r"\\?\").unwrap_or(&s))
 }
 
+/// `Child::kill()` only terminates the sidecar process itself via `TerminateProcess` — it does not
+/// cascade to grandchildren. `Ember Hub.exe` (the JVM) spawns `postgres.exe`/`minio.exe` as its own
+/// children, so killing just the JVM orphans them: they keep holding ports 5432/9000 forever, and
+/// the *next* launch's fresh Postgres/MinIO then fails with "port already in use" against its own
+/// previous instance. `taskkill /T` kills the whole process tree, not just the one PID.
+fn kill_process_tree(child: &Child) {
+    let _ = Command::new("taskkill")
+        .args(["/F", "/T", "/PID", &child.id().to_string()])
+        .output();
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -176,8 +187,8 @@ fn restart_agent(
     port_state: tauri::State<PortState>,
     agent_process: tauri::State<AgentProcessState>,
 ) {
-    if let Some(mut child) = agent_process.0.lock().unwrap().take() {
-        let _ = child.kill();
+    if let Some(child) = agent_process.0.lock().unwrap().take() {
+        kill_process_tree(&child);
     }
     *port_state.0.lock().unwrap() = 0;
     spawn_agent(&app, port_state.0.clone(), agent_process.0.clone());
@@ -247,8 +258,8 @@ fn main() {
         .expect("error while building the Ember Hub shell")
         .run(move |_app_handle, event| {
             if let tauri::RunEvent::Exit = event {
-                if let Some(mut child) = agent_process_exit.lock().unwrap().take() {
-                    let _ = child.kill();
+                if let Some(child) = agent_process_exit.lock().unwrap().take() {
+                    kill_process_tree(&child);
                 }
             }
         });

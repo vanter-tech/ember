@@ -35,7 +35,7 @@ public final class HubControlServer {
         public void doFilter(HttpExchange exchange, Chain chain) throws IOException {
             exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
             if ("OPTIONS".equals(exchange.getRequestMethod())) {
-                exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+                exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
                 exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type");
                 exchange.sendResponseHeaders(204, -1);
                 exchange.close();
@@ -101,7 +101,17 @@ public final class HubControlServer {
     }
 
     private void handleLicense(HttpExchange exchange) throws IOException {
-        if (!"POST".equals(exchange.getRequestMethod())) {
+        String method = exchange.getRequestMethod();
+        if ("DELETE".equals(method)) {
+            try {
+                orchestrator.removeLicense();
+                sendJson(exchange, 200, StatusDto.from(orchestrator.snapshot()));
+            } catch (IOException | RuntimeException e) {
+                sendJson(exchange, 400, Map.of("error", e.getMessage()));
+            }
+            return;
+        }
+        if (!"POST".equals(method)) {
             sendJson(exchange, 405, Map.of("error", "method not allowed"));
             return;
         }
