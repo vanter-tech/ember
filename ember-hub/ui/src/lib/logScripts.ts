@@ -10,9 +10,9 @@ export const START_SCRIPTS = {
     'Status: 1 Online, 0 Offline.'
   ],
   server: [
-    'Starting EmberApplication using Java 17 (hub profile)',
-    'Tomcat started on port(s): 8080 (http)',
-    'Started EmberApplication in 4.2 seconds'
+    'Iniciando el servidor…',
+    'Servicio web escuchando en el puerto 8080',
+    'Servidor listo.'
   ]
 } as const;
 
@@ -26,7 +26,7 @@ export const STOP_SCRIPTS = {
     'MinIO instance stopped.'
   ],
   server: [
-    'Cerrando el contexto de Spring…',
+    'Cerrando el servidor…',
     'Servidor detenido.'
   ]
 } as const;
