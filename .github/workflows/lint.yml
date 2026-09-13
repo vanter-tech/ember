@@ -81,11 +81,10 @@ jobs:
       - name: Tests
         run: pnpm run test:run
 
-  # El print-agent (printing-agent/, com.vanter.emberagent) se empaqueta como app-image
-  # de jpackage sobre una JRE de jlink. Este job compila el fat jar y corre las etapas
-  # runtime + appimage del instalador para atrapar roturas del pom o del script antes de
-  # T7 (verificacion manual en Windows). La etapa Inno (.exe) queda manual: iscc no esta
-  # en el runner.
+  # El print-agent (printing-agent/, com.vanter.emberagent) corre headless como sidecar de
+  # un shell Tauri (printing-agent/src-tauri, ventana Astro+React en printing-agent/ui).
+  # Este job compila el fat jar, la app-image jpackage/jlink, la UI, y el instalador NSIS
+  # via el bundler de Tauri (reemplaza Inno Setup).
   build-print-agent:
     name: build-print-agent
     runs-on: windows-latest
@@ -103,3 +102,23 @@ jobs:
         run: pwsh printing-agent/build-installer.ps1 -Stage appimage
       - name: Verificar que el lanzador existe
         run: if (-not (Test-Path "printing-agent/dist/app-image/Ember Agent/Ember Agent.exe")) { exit 1 }
+      - name: Configurar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Instalar dependencias y compilar la UI del agente
+        run: |
+          cd printing-agent/ui
+          npm install
+          npm run test
+          npm run build
+      - name: Configurar Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Instalar tauri-cli
+        run: cargo install tauri-cli --version "^2" --locked
+      - name: cargo tauri build (release + instalador NSIS)
+        run: |
+          cd printing-agent/src-tauri
+          cargo tauri build
+      - name: Verificar que el instalador existe
+        run: if (-not (Get-ChildItem "printing-agent/src-tauri/target/release/bundle/nsis" -Filter "*-setup.exe")) { exit 1 }

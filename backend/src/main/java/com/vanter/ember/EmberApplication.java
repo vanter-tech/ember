@@ -1,6 +1,9 @@
 package com.vanter.ember;
 
-import com.vanter.ember.hub.dashboard.HubDashboard;
+import com.vanter.ember.hub.config.HubProperties;
+import com.vanter.ember.hub.control.DefaultHubOrchestrator;
+import com.vanter.ember.hub.control.HubControlServer;
+import java.io.IOException;
 import java.util.Arrays;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -8,16 +11,39 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication
 public class EmberApplication {
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         if (isHubProfile()) {
-            // Spring Boot forces java.awt.headless=true before the environment is even read —
-            // the dashboard (and HubTrayIcon) need a real desktop, so this has to win the race
-            // by setting the raw JVM property directly, before Spring gets a chance to default it.
-            System.setProperty("java.awt.headless", "false");
-            HubDashboard.launch(args);
+            runHubSidecar(args);
             return;
         }
         SpringApplication.run(EmberApplication.class, args);
+    }
+
+    /**
+     * Runs headless: a {@link HubControlServer} that a separate Tauri shell process polls/calls
+     * instead of the old Swing {@code HubDashboard}/{@code HubTrayIcon} reading/mutating state
+     * in-process (spec docs/superpowers/specs/2026-09-12-tauri-native-shells-design.md, plan
+     * docs/superpowers/plans/2026-09-13-ember-hub-v2-tauri-shell.md). Prints "PORT=&lt;n&gt;" to
+     * stdout once the control server is listening — the Tauri shell reads that single line from
+     * this process's stdout to know where to send requests. Auto-starts services immediately,
+     * same as {@code HubDashboard.launch}'s old {@code --autostart} argument did (the Tauri shell
+     * always passes it, mirroring "Iniciar Ember Hub.cmd"'s prior behavior).
+     */
+    private static void runHubSidecar(String[] args) throws IOException {
+        HubProperties properties = HubProperties.fromEnvironment();
+        DefaultHubOrchestrator orchestrator = new DefaultHubOrchestrator(properties);
+
+        HubControlServer controlServer = new HubControlServer(orchestrator);
+        int port = controlServer.start();
+        System.out.println("PORT=" + port);
+        System.out.flush();
+
+        orchestrator.start(args);
+
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            orchestrator.stop();
+            controlServer.stop();
+        }, "ember-hub-shutdown"));
     }
 
     /**

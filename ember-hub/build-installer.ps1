@@ -3,8 +3,9 @@ Builds the Ember Hub Windows installer.
 Stages (run all by default, or one via -Stage):
   runtime   -> ember-hub/dist/runtime            (jlink JRE image)
   appimage  -> ember-hub/dist/app-image          (jpackage + assembled binaries)
-  installer -> ember-hub/dist/EmberHubSetup-*.exe (Inno Setup)                      [Task 8]
-Requires: JDK 17 on PATH (java, jlink, jpackage), pnpm, mvn, Inno Setup (iscc).
+  installer -> ember-hub/dist/EmberHubSetup-*.exe (Tauri bundler, NSIS)
+Requires: JDK 17 on PATH (java, jlink, jpackage), pnpm, mvn, Node (for ember-hub/ui), Rust +
+`cargo install tauri-cli --version "^2"` for the last stage.
 #>
 param([ValidateSet("all","runtime","appimage","installer")] [string] $Stage = "all")
 
@@ -20,6 +21,7 @@ $stageDir       = Join-Path $hubDir ".vendor-cache\staging"
 $appImageParent = Join-Path $distDir "app-image"
 $appImageDir    = Join-Path $appImageParent "Ember Hub"
 $installerDir   = Join-Path $hubDir "installer"
+$tauriDir       = Join-Path $hubDir "src-tauri"
 
 function Get-HubVersion {
     $pom = Get-Content (Join-Path $repoRoot "backend\pom.xml") -Raw
@@ -71,8 +73,12 @@ function Build-AppImage {
         if ($LASTEXITCODE -ne 0) { throw "mvn package failed" }
     } finally { Pop-Location }
 
+    # backend/target can accumulate jars from older builds/versions (it's a shared Maven module);
+    # Get-ChildItem's enumeration order is not chronological, so an unsorted -First 1 can silently
+    # pick a stale jar instead of the one `mvn package` just produced above. Sort by build time.
     $jar = Get-ChildItem (Join-Path $repoRoot "backend\target") -Filter "ember-*.jar" |
            Where-Object { $_.Name -notmatch "sources|javadoc|original" } |
+           Sort-Object LastWriteTime -Descending |
            Select-Object -First 1
     if (-not $jar) { throw "no ember-*.jar in backend/target" }
 
@@ -100,7 +106,6 @@ function Build-AppImage {
     # assemble the extras next to the launcher
     Copy-Item (Join-Path $stageDir "pgsql")  (Join-Path $appImageDir "pgsql")  -Recurse
     Copy-Item (Join-Path $stageDir "minio")  (Join-Path $appImageDir "minio")  -Recurse
-    Copy-Item (Join-Path $installerDir "Iniciar Ember Hub.cmd") $appImageDir
     Copy-Item (Join-Path $hubDir "keys\hub-public-key.der") $appImageDir
 
     if (-not (Test-Path (Join-Path $appImageDir "Ember Hub.exe"))) { throw "app-image launcher missing" }
@@ -117,34 +122,50 @@ function Read-BuildEnv {
     return $map
 }
 
-function Build-Installer {
-    Write-Host "== installer ==" -ForegroundColor Cyan
-    if (-not (Test-Path (Join-Path $appImageDir "Ember Hub.exe"))) { Build-AppImage }
-    $iscc = (Get-Command iscc.exe -ErrorAction SilentlyContinue).Source
-    if (-not $iscc) {
-        $iscc = @(
-            "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe",
-            "${env:ProgramFiles}\Inno Setup 6\ISCC.exe",
-            "${env:LOCALAPPDATA}\Programs\Inno Setup 6\ISCC.exe"
-        ) | Where-Object { Test-Path $_ } | Select-Object -First 1
+function Clear-ReadOnlyRecurse($path) {
+    if (-not (Test-Path $path)) { return }
+    Get-ChildItem -Path $path -Recurse -Force -File | ForEach-Object {
+        if ($_.Attributes -band [System.IO.FileAttributes]::ReadOnly) {
+            $_.Attributes = $_.Attributes -band (-bnot [System.IO.FileAttributes]::ReadOnly)
+        }
     }
-    if (-not $iscc -or -not (Test-Path $iscc)) { throw "Inno Setup (ISCC.exe) not found - install Inno Setup 6." }
+}
 
-    $env = Read-BuildEnv
-    $version = Get-HubVersion
-    Push-Location $installerDir
+function Build-Installer {
+    Write-Host "== installer (Tauri) ==" -ForegroundColor Cyan
+    if (-not (Test-Path (Join-Path $appImageDir "Ember Hub.exe"))) { Build-AppImage }
+
+    $cargoTauri = (Get-Command cargo-tauri.exe -ErrorAction SilentlyContinue) -or
+                  (Get-Command cargo -ErrorAction SilentlyContinue)
+    if (-not $cargoTauri) { throw "Rust/cargo not found - install Rust and `cargo install tauri-cli --version '^2'`." }
+
+    # Same read-only app-image copy issue printer-agent's build-installer.ps1 hit (report 444):
+    # jpackage's launcher exe is read-only and tauri-build's copy_resources step can't overwrite
+    # a read-only destination on a second build.
+    Clear-ReadOnlyRecurse (Join-Path $tauriDir "target\release\app-image")
+    Clear-ReadOnlyRecurse (Join-Path $tauriDir "target\debug\app-image")
+
+    Push-Location $tauriDir
     try {
-        & $iscc `
-            "/DAppVersion=$version" `
-            "/DServerPort=$($env['EMBER_HUB_SERVER_PORT'])" `
-            "/DEmberHubActivationUrl=$($env['EMBER_HUB_ACTIVATION_URL'])" `
-            "/DEmberHubHeartbeatUrl=$($env['EMBER_HUB_HEARTBEAT_URL'])" `
-            "EmberHub.iss"
-        if ($LASTEXITCODE -ne 0) { throw "iscc failed ($LASTEXITCODE)" }
+        # cargo/tauri-cli write non-fatal "Info"/progress lines to stderr; under
+        # $ErrorActionPreference="Stop" Windows PowerShell 5.1 treats any native stderr write as
+        # a terminating NativeCommandError regardless of the real exit code (same bug class fixed
+        # in printer-agent/build-installer.ps1 and this script's own frontend step) -- relax it
+        # locally and trust $LASTEXITCODE for the real pass/fail signal.
+        $prevEap = $ErrorActionPreference
+        $ErrorActionPreference = "Continue"
+        & cargo tauri build
+        $ErrorActionPreference = $prevEap
+        if ($LASTEXITCODE -ne 0) { throw "cargo tauri build failed ($LASTEXITCODE)" }
     } finally { Pop-Location }
 
+    $bundleDir = Join-Path $tauriDir "target\release\bundle\nsis"
+    $produced = Get-ChildItem $bundleDir -Filter "*-setup.exe" | Select-Object -First 1
+    if (-not $produced) { throw "no NSIS installer produced under $bundleDir" }
+
+    $version = Get-HubVersion
     $out = Join-Path $distDir "EmberHubSetup-$version.exe"
-    if (-not (Test-Path $out)) { throw "installer not produced at $out" }
+    Copy-Item $produced.FullName $out -Force
     Write-Host "installer: $out" -ForegroundColor Green
 }
 

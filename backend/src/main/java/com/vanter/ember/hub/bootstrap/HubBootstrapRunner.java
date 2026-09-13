@@ -28,6 +28,11 @@ public class HubBootstrapRunner {
 
     public void startServices()
             throws InvalidLicenseException, PortableDatabaseException, PortableMinioException {
+        startServices(HubBootProgressListener.NO_OP);
+    }
+
+    public void startServices(HubBootProgressListener listener)
+            throws InvalidLicenseException, PortableDatabaseException, PortableMinioException {
         PublicKey publicKey = LicenseKeyParser.loadPublicKey(properties.publicKeyFile());
         LicenseService licenseService = new LicenseService(
                 properties.licenseFile(),
@@ -38,13 +43,17 @@ public class HubBootstrapRunner {
                 java.time.Duration.ofHours(properties.suspendedGraceHours()));
         licenseService.validateOrActivate();
 
+        listener.onPostgresStarting();
         dbBootstrap = new PortableDatabaseBootstrap(
                 properties.dataDir(), properties.postgresBinDir(), properties.postgresPort());
         dbBootstrap.ensureRunning();
+        listener.onPostgresReady();
 
+        listener.onMinioStarting();
         minioBootstrap = new PortableMinioBootstrap(
                 properties.minioDataDir(), properties.minioBinDir(), properties.minioPort());
         minioBootstrap.ensureRunning();
+        listener.onMinioReady();
 
         shutdownHook = new Thread(this::stopServicesQuietly, "hub-db-shutdown");
         Runtime.getRuntime().addShutdownHook(shutdownHook);

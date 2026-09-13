@@ -35,7 +35,8 @@ export const MenuJoin = () => {
   )
   const sessionId = qrToken ? sessionIdFromQrToken(qrToken) : null
 
-  const [name, setName] = useState('')
+  const accountName = useAuthStore((s) => s.name)
+  const [name, setName] = useState(accountName ?? '')
   const [submitting, setSubmitting] = useState(false)
   const [guestMode, setGuestMode] = useState(false)
 
@@ -148,9 +149,15 @@ export const MenuJoin = () => {
     try {
       finishJoin(await SessionTableService.joinSessionViaQr(sessionId, qrToken, name.trim()))
     } catch (error) {
-      sessionStorage.removeItem(PENDING_QR_TOKEN_KEY)
       reportJoinError(error)
-      navigate('/customer', { replace: true })
+      // Only a genuinely dead QR (404) has nothing left to retry — anything else (already seated
+      // elsewhere, full table, a transient network blip) should keep the user on this screen so
+      // they can just try again, instead of silently dropping the join and bouncing them to the
+      // account home with no menu and no explanation.
+      if (isAxiosError(error) && error.response?.status === 404) {
+        sessionStorage.removeItem(PENDING_QR_TOKEN_KEY)
+        navigate('/customer', { replace: true })
+      }
     } finally {
       setSubmitting(false)
     }

@@ -56,6 +56,14 @@ describe('ExportSettings', () => {
     )
   })
 
+  test('blocks picking a date after today on both inputs', () => {
+    wrap(<ExportSettings />)
+    const today = new Date().toISOString().slice(0, 10)
+
+    expect(screen.getByLabelText('Desde')).toHaveAttribute('max', today)
+    expect(screen.getByLabelText('Hasta')).toHaveAttribute('max', today)
+  })
+
   test('a failed download does not throw out of the component', async () => {
     vi.mocked(exportService.downloadTenantData).mockRejectedValue(new Error('network error'))
 

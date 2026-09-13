@@ -11,10 +11,13 @@ import { useTranslation } from '@/lib/i18n'
 const toIsoStart = (date: string): string | undefined => (date ? `${date}T00:00:00` : undefined)
 const toIsoEnd = (date: string): string | undefined => (date ? `${date}T23:59:59` : undefined)
 
+const today = () => new Date().toISOString().slice(0, 10)
+
 export const ExportSettings = () => {
   const { t } = useTranslation('admin')
   const [fromDate, setFromDate] = useState('')
   const [toDate, setToDate] = useState('')
+  const maxDate = today()
 
   const downloadMutation = useMutation({
     mutationFn: () => exportService.downloadTenantData(toIsoStart(fromDate), toIsoEnd(toDate)),
@@ -54,6 +57,7 @@ export const ExportSettings = () => {
             <Input
               id="export-from"
               type="date"
+              max={maxDate}
               value={fromDate}
               onChange={(e) => setFromDate(e.target.value)}
             />
@@ -63,6 +67,7 @@ export const ExportSettings = () => {
             <Input
               id="export-to"
               type="date"
+              max={maxDate}
               value={toDate}
               onChange={(e) => setToDate(e.target.value)}
             />

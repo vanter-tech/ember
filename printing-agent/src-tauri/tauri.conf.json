@@ -1,0 +1,39 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Ember Agent",
+  "version": "0.1.1",
+  "identifier": "net.vanter.ember.agent",
+  "build": {
+    "beforeBuildCommand": "npm --prefix ui install && npm --prefix ui run build",
+    "frontendDist": "../ui/dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "Ember Agent",
+        "width": 720,
+        "height": 768,
+        "minWidth": 640,
+        "minHeight": 560,
+        "visible": true
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; connect-src 'self' http://127.0.0.1:*"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis"],
+    "icon": ["icons/icon.ico"],
+    "resources": {
+      "../dist/app-image/Ember Agent": "app-image/Ember Agent"
+    },
+    "windows": {
+      "nsis": {
+        "installMode": "perMachine"
+      }
+    }
+  }
+}

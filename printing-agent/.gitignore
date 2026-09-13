@@ -5,3 +5,4 @@ agent.properties
 dependency-reduced-pom.xml
 dist/
 build.env
+src-tauri/gen/

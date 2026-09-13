@@ -13,3 +13,4 @@ jdk.zipfs
 jdk.localedata
 jdk.jdwp.agent
 jdk.charsets
+jdk.httpserver

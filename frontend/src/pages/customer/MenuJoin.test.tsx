@@ -18,6 +18,7 @@ const renderAt = (path: string) =>
         <Route path="/menu/join" element={<MenuJoin />} />
         <Route path="/login" element={<div>LOGIN PAGE</div>} />
         <Route path="/customer/menu" element={<div>MENU PAGE</div>} />
+        <Route path="/customer" element={<div>ACCOUNT HOME</div>} />
       </Routes>
     </MemoryRouter>,
   )
@@ -25,7 +26,7 @@ const renderAt = (path: string) =>
 describe('MenuJoin (QR landing)', () => {
   beforeEach(() => {
     sessionStorage.clear()
-    useAuthStore.setState({ token: undefined, role: undefined })
+    useAuthStore.setState({ token: undefined, role: undefined, name: undefined })
     useSessionStore.setState({ id: undefined })
     vi.restoreAllMocks()
   })
@@ -73,6 +74,47 @@ describe('MenuJoin (QR landing)', () => {
     await waitFor(() =>
       expect(spy).toHaveBeenCalledWith('sess-42', QR_TOKEN, 'Ana'),
     )
+    expect(sessionStorage.getItem(PENDING_QR_TOKEN_KEY)).toBeNull()
+  })
+
+  test('authenticated: pre-fills the name field with the account name', () => {
+    useAuthStore.setState({ token: 'login-token', role: 'CUSTOMER', name: 'Ana' })
+
+    renderAt(`/menu/join?token=${QR_TOKEN}`)
+
+    expect(screen.getByPlaceholderText('Ej. Ana')).toHaveValue('Ana')
+  })
+
+  test('authenticated: a recoverable join error (409) keeps the user on the join screen', async () => {
+    useAuthStore.setState({ token: 'login-token', role: 'CUSTOMER' })
+    vi.spyOn(SessionTableService, 'joinSessionViaQr').mockRejectedValue({
+      isAxiosError: true,
+      response: { status: 409 },
+    })
+
+    renderAt(`/menu/join?token=${QR_TOKEN}`)
+    await userEvent.type(screen.getByPlaceholderText('Ej. Ana'), 'Ana')
+    await userEvent.click(screen.getByRole('button', { name: 'Entrar' }))
+
+    await waitFor(() => expect(SessionTableService.joinSessionViaQr).toHaveBeenCalled())
+    // Stays on the join screen instead of being bounced to the account home — the pending token
+    // is kept so a retry (e.g. once the table frees up) can still use it.
+    expect(screen.queryByText('ACCOUNT HOME')).not.toBeInTheDocument()
+    expect(sessionStorage.getItem(PENDING_QR_TOKEN_KEY)).toBe(QR_TOKEN)
+  })
+
+  test('authenticated: an expired QR (404) clears the token and goes home', async () => {
+    useAuthStore.setState({ token: 'login-token', role: 'CUSTOMER' })
+    vi.spyOn(SessionTableService, 'joinSessionViaQr').mockRejectedValue({
+      isAxiosError: true,
+      response: { status: 404 },
+    })
+
+    renderAt(`/menu/join?token=${QR_TOKEN}`)
+    await userEvent.type(screen.getByPlaceholderText('Ej. Ana'), 'Ana')
+    await userEvent.click(screen.getByRole('button', { name: 'Entrar' }))
+
+    await waitFor(() => expect(screen.getByText('ACCOUNT HOME')).toBeInTheDocument())
     expect(sessionStorage.getItem(PENDING_QR_TOKEN_KEY)).toBeNull()
   })
 })
