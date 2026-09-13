@@ -12,9 +12,9 @@
       {
         "label": "main",
         "title": "Ember Agent",
-        "width": 1024,
+        "width": 720,
         "height": 768,
-        "minWidth": 720,
+        "minWidth": 640,
         "minHeight": 560,
         "visible": true
       }

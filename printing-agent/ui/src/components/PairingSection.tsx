@@ -2,6 +2,7 @@ import { useState, type ComponentType } from 'react';
 import { Hash, KeyRound, ChevronDown } from 'lucide-react';
 import { pairWithApiKey, pairWithCode } from '../lib/api';
 import Button from './Button';
+import { IconBadge } from './Card';
 
 const DEFAULT_BACKEND = 'https://api.ember.vanter.net/v1';
 
@@ -32,8 +33,6 @@ export default function PairingSection({
   const [openMode, setOpenMode] = useState<Mode | null>(null);
   const [code, setCode] = useState('');
   const [apiKey, setApiKey] = useState('');
-  const [backendUrl, setBackendUrl] = useState(DEFAULT_BACKEND);
-  const [showBackendUrl, setShowBackendUrl] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -42,9 +41,9 @@ export default function PairingSection({
     setMessage('Procesando…');
     try {
       if (mode === 'key') {
-        await pairWithApiKey(apiKey.trim(), backendUrl.trim());
+        await pairWithApiKey(apiKey.trim(), DEFAULT_BACKEND);
       } else {
-        await pairWithCode(code.trim().toUpperCase(), backendUrl.trim());
+        await pairWithCode(code.trim().toUpperCase(), DEFAULT_BACKEND);
       }
       setMessage(null);
       onPaired();
@@ -56,17 +55,17 @@ export default function PairingSection({
   }
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-3">
       {OPTIONS.map((opt) => {
         const isOpen = openMode === opt.mode;
         return (
           <div key={opt.mode} className="rounded-2xl border border-border overflow-hidden">
             <button
               type="button"
-              className="w-full flex items-start gap-3 p-3 text-left"
+              className="w-full flex items-start gap-3 p-4 text-left cursor-pointer"
               onClick={() => setOpenMode(isOpen ? null : opt.mode)}
             >
-              <opt.icon className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+              <IconBadge icon={opt.icon} />
               <span className="flex-1 min-w-0">
                 <span className="block font-medium">{opt.title}</span>
                 <span className="block text-sm text-muted-foreground">{opt.description}</span>
@@ -74,7 +73,7 @@ export default function PairingSection({
               <ChevronDown className={`h-4 w-4 text-muted-foreground shrink-0 mt-1 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
             </button>
             {isOpen && (
-              <div className="p-3 pt-0 flex flex-col gap-2">
+              <div className="p-4 pt-0 flex flex-col gap-2">
                 {opt.mode === 'code' ? (
                   <input
                     className="border border-border rounded-xl px-3 py-1.5 w-full uppercase"
@@ -90,22 +89,6 @@ export default function PairingSection({
                     value={apiKey}
                     onChange={(e) => setApiKey(e.target.value)}
                   />
-                )}
-
-                {showBackendUrl ? (
-                  <input
-                    className="border border-border rounded-xl px-3 py-1.5 w-full text-sm text-muted-foreground"
-                    value={backendUrl}
-                    onChange={(e) => setBackendUrl(e.target.value)}
-                  />
-                ) : (
-                  <button
-                    type="button"
-                    className="text-xs text-primary underline self-start"
-                    onClick={() => setShowBackendUrl(true)}
-                  >
-                    Usar otra URL de backend
-                  </button>
                 )}
 
                 <div className="flex items-center justify-end gap-2 mt-1">

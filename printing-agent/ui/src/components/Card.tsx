@@ -4,15 +4,17 @@ export const cardShellClass = 'rounded-3xl border border-border shadow-md bg-bac
 
 export function IconBadge({
   icon: Icon,
-  size = 'md'
+  size = 'md',
+  className = ''
 }: {
   icon: ComponentType<{ className?: string }>;
   size?: 'md' | 'lg';
+  className?: string;
 }) {
   const wrapper = size === 'lg' ? 'h-12 w-12' : 'h-9 w-9';
   const iconSize = size === 'lg' ? 'h-6 w-6' : 'h-5 w-5';
   return (
-    <span className={`inline-flex items-center justify-center shrink-0 rounded-full bg-primary/10 text-primary ${wrapper}`}>
+    <span className={`inline-flex items-center justify-center shrink-0 rounded-full bg-primary/10 text-primary ${wrapper} ${className}`}>
       <Icon className={iconSize} />
     </span>
   );
