@@ -1,5 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
 import { getDiagnostics, getLogsDir } from '../lib/api';
+import Button from './Button';
 
 export default function FooterActions() {
   async function openLogs() {
@@ -13,13 +14,13 @@ export default function FooterActions() {
   }
 
   return (
-    <div className="flex gap-2">
-      <button className="border border-border rounded-md px-3 py-1.5 text-sm" onClick={openLogs}>
+    <div className="flex gap-2 shrink-0">
+      <Button variant="primary" onClick={openLogs}>
         Abrir carpeta de logs
-      </button>
-      <button className="border border-border rounded-md px-3 py-1.5 text-sm" onClick={copyDiagnostics}>
+      </Button>
+      <Button variant="primary" onClick={copyDiagnostics}>
         Copiar diagnóstico
-      </button>
+      </Button>
     </div>
   );
 }

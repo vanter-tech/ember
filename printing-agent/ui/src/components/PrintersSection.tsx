@@ -3,6 +3,7 @@ import { Printer } from 'lucide-react';
 import { getPrinters, testPrint } from '../lib/api';
 import type { DiscoveredPrinter } from '../lib/types';
 import Card from './Card';
+import Button from './Button';
 
 export default function PrintersSection() {
   const [printers, setPrinters] = useState<DiscoveredPrinter[]>([]);
@@ -40,7 +41,7 @@ export default function PrintersSection() {
     <Card icon={Printer} title="Impresoras conectadas">
       <div className="flex gap-2 mb-2">
         <select
-          className="border border-border rounded-md px-2 py-1 flex-1 min-w-0"
+          className="border border-border rounded-full px-3 py-1 flex-1 min-w-0"
           value={selected}
           onChange={(e) => setSelected(e.target.value)}
         >
@@ -48,16 +49,13 @@ export default function PrintersSection() {
             <option key={p.name} value={p.name}>{p.name}</option>
           ))}
         </select>
-        <button className="border border-border rounded-md px-3 py-1 shrink-0" onClick={refresh}>
+        <Button variant="primary" className="shrink-0" onClick={refresh}>
           Actualizar
-        </button>
+        </Button>
       </div>
-      <button
-        className="bg-primary text-primary-foreground rounded-md px-4 py-1.5 w-fit"
-        onClick={onTestPrint}
-      >
+      <Button variant="primary" className="w-fit" onClick={onTestPrint}>
         Imprimir página de prueba
-      </button>
+      </Button>
       {message && <p className="text-sm mt-2">{message}</p>}
     </Card>
   );

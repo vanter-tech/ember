@@ -3,6 +3,7 @@ import { Wifi, KeyRound } from 'lucide-react';
 import type { Status } from '../lib/types';
 import Card from './Card';
 import Badge from './Badge';
+import Button from './Button';
 import Modal from './Modal';
 import PairingSection from './PairingSection';
 
@@ -53,13 +54,10 @@ export default function ConnectionCard({
       )}
 
       {status && !needsPairing && (
-        <button
-          className="mt-3 inline-flex items-center gap-2 border border-border rounded-md px-3 py-1.5 text-sm w-fit"
-          onClick={() => setShowPairing(true)}
-        >
+        <Button variant="primary" className="mt-3 w-fit" onClick={() => setShowPairing(true)}>
           <KeyRound className="h-4 w-4" />
           Volver a poner API key o código
-        </button>
+        </Button>
       )}
 
       {pairingVisible && (

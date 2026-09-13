@@ -11,6 +11,7 @@ describe('PairingSection', () => {
     const onPaired = vi.fn();
     render(<PairingSection onPaired={onPaired} />);
 
+    fireEvent.click(screen.getByText('Código de emparejamiento'));
     fireEvent.change(screen.getByPlaceholderText('Código de 10 caracteres'), { target: { value: 'ABCDEFGHIJ' } });
     fireEvent.click(screen.getByText('Emparejar'));
 
@@ -25,9 +26,25 @@ describe('PairingSection', () => {
     const onPaired = vi.fn();
     render(<PairingSection onPaired={onPaired} />);
 
+    fireEvent.click(screen.getByText('Código de emparejamiento'));
     fireEvent.change(screen.getByPlaceholderText('Código de 10 caracteres'), { target: { value: 'ABCDEFGHIJ' } });
     fireEvent.click(screen.getByText('Emparejar'));
 
     await waitFor(() => expect(onPaired).toHaveBeenCalledTimes(1));
+  });
+
+  it('shows only one option expanded, with only one data input, at a time', () => {
+    render(<PairingSection onPaired={vi.fn()} />);
+
+    expect(screen.queryByPlaceholderText('Código de 10 caracteres')).toBeNull();
+    expect(screen.queryByPlaceholderText('API key')).toBeNull();
+
+    fireEvent.click(screen.getByText('Código de emparejamiento'));
+    expect(screen.getByPlaceholderText('Código de 10 caracteres')).toBeTruthy();
+    expect(screen.queryByPlaceholderText('API key')).toBeNull();
+
+    fireEvent.click(screen.getByText('API key'));
+    expect(screen.getByPlaceholderText('API key')).toBeTruthy();
+    expect(screen.queryByPlaceholderText('Código de 10 caracteres')).toBeNull();
   });
 });

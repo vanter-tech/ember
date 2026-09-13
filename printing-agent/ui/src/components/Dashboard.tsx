@@ -5,6 +5,7 @@ import { getStatus } from '../lib/api';
 import type { Status } from '../lib/types';
 import { watchAgentShell, type AgentShellState } from '../lib/agent-events';
 import { cardShellClass, IconBadge } from './Card';
+import Button from './Button';
 import ConnectionCard from './ConnectionCard';
 import PrintersSection from './PrintersSection';
 import JobsTable from './JobsTable';
@@ -38,12 +39,9 @@ export default function Dashboard() {
     return (
       <main className="p-4 flex flex-col gap-3">
         <p className="text-red-700">El agente no pudo iniciar.</p>
-        <button
-          className="bg-primary text-primary-foreground rounded-md px-4 py-1.5 w-fit"
-          onClick={() => invoke('restart_agent')}
-        >
+        <Button variant="primary" className="w-fit" onClick={() => invoke('restart_agent')}>
           Reintentar
-        </button>
+        </Button>
       </main>
     );
   }
@@ -60,13 +58,10 @@ export default function Dashboard() {
             </p>
           </div>
         </div>
-        <button
-          className="border border-border rounded-md px-3 py-1.5 text-sm flex items-center gap-2 shrink-0"
-          onClick={() => invoke('restart_agent')}
-        >
+        <Button variant="outline" className="shrink-0" onClick={() => invoke('restart_agent')}>
           <RotateCw className="h-4 w-4" />
           Reiniciar servicios
-        </button>
+        </Button>
       </header>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 shrink-0">

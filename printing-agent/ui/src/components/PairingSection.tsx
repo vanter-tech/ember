@@ -1,7 +1,26 @@
-import { useState } from 'react';
+import { useState, type ComponentType } from 'react';
+import { Hash, KeyRound, ChevronDown } from 'lucide-react';
 import { pairWithApiKey, pairWithCode } from '../lib/api';
+import Button from './Button';
 
 const DEFAULT_BACKEND = 'https://api.ember.vanter.net/v1';
+
+type Mode = 'code' | 'key';
+
+const OPTIONS: { mode: Mode; icon: ComponentType<{ className?: string }>; title: string; description: string }[] = [
+  {
+    mode: 'code',
+    icon: Hash,
+    title: 'Código de emparejamiento',
+    description: 'Código de 10 caracteres generado desde Configuración → Impresión en el panel de administración. Válido por ~15 minutos.'
+  },
+  {
+    mode: 'key',
+    icon: KeyRound,
+    title: 'API key',
+    description: 'Usa una API key existente si ya tienes un agente configurado con una clave manual.'
+  }
+];
 
 export default function PairingSection({
   onPaired,
@@ -10,14 +29,15 @@ export default function PairingSection({
   onPaired: () => void;
   onCancel?: () => void;
 }) {
-  const [mode, setMode] = useState<'code' | 'key'>('code');
+  const [openMode, setOpenMode] = useState<Mode | null>(null);
   const [code, setCode] = useState('');
   const [apiKey, setApiKey] = useState('');
   const [backendUrl, setBackendUrl] = useState(DEFAULT_BACKEND);
+  const [showBackendUrl, setShowBackendUrl] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  async function submit() {
+  async function submit(mode: Mode) {
     setBusy(true);
     setMessage('Procesando…');
     try {
@@ -36,51 +56,74 @@ export default function PairingSection({
   }
 
   return (
-    <div>
-      {mode === 'code' ? (
-        <input
-          className="border border-border rounded-md px-2 py-1 w-full mb-2 uppercase"
-          placeholder="Código de 10 caracteres"
-          maxLength={10}
-          value={code}
-          onChange={(e) => setCode(e.target.value)}
-        />
-      ) : (
-        <input
-          className="border border-border rounded-md px-2 py-1 w-full mb-2"
-          placeholder="API key"
-          value={apiKey}
-          onChange={(e) => setApiKey(e.target.value)}
-        />
-      )}
-      <input
-        className="border border-border rounded-md px-2 py-1 w-full mb-2 text-sm text-muted-foreground"
-        value={backendUrl}
-        onChange={(e) => setBackendUrl(e.target.value)}
-      />
-      <div className="flex items-center justify-between gap-2">
-        <button
-          className="text-sm text-primary underline"
-          onClick={() => setMode(mode === 'code' ? 'key' : 'code')}
-        >
-          {mode === 'code' ? 'Tengo una API key' : 'Usar un código'}
-        </button>
-        <div className="flex items-center gap-2">
-          {onCancel && (
-            <button className="text-sm text-muted-foreground" onClick={onCancel}>
-              Cancelar
+    <div className="flex flex-col gap-2">
+      {OPTIONS.map((opt) => {
+        const isOpen = openMode === opt.mode;
+        return (
+          <div key={opt.mode} className="rounded-2xl border border-border overflow-hidden">
+            <button
+              type="button"
+              className="w-full flex items-start gap-3 p-3 text-left"
+              onClick={() => setOpenMode(isOpen ? null : opt.mode)}
+            >
+              <opt.icon className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+              <span className="flex-1 min-w-0">
+                <span className="block font-medium">{opt.title}</span>
+                <span className="block text-sm text-muted-foreground">{opt.description}</span>
+              </span>
+              <ChevronDown className={`h-4 w-4 text-muted-foreground shrink-0 mt-1 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
             </button>
-          )}
-          <button
-            className="bg-primary text-primary-foreground rounded-md px-4 py-1.5 disabled:opacity-50"
-            disabled={busy}
-            onClick={submit}
-          >
-            {mode === 'code' ? 'Emparejar' : 'Guardar'}
-          </button>
-        </div>
-      </div>
-      {message && <p className="text-red-700 text-sm mt-2">{message}</p>}
+            {isOpen && (
+              <div className="p-3 pt-0 flex flex-col gap-2">
+                {opt.mode === 'code' ? (
+                  <input
+                    className="border border-border rounded-xl px-3 py-1.5 w-full uppercase"
+                    placeholder="Código de 10 caracteres"
+                    maxLength={10}
+                    value={code}
+                    onChange={(e) => setCode(e.target.value)}
+                  />
+                ) : (
+                  <input
+                    className="border border-border rounded-xl px-3 py-1.5 w-full"
+                    placeholder="API key"
+                    value={apiKey}
+                    onChange={(e) => setApiKey(e.target.value)}
+                  />
+                )}
+
+                {showBackendUrl ? (
+                  <input
+                    className="border border-border rounded-xl px-3 py-1.5 w-full text-sm text-muted-foreground"
+                    value={backendUrl}
+                    onChange={(e) => setBackendUrl(e.target.value)}
+                  />
+                ) : (
+                  <button
+                    type="button"
+                    className="text-xs text-primary underline self-start"
+                    onClick={() => setShowBackendUrl(true)}
+                  >
+                    Usar otra URL de backend
+                  </button>
+                )}
+
+                <div className="flex items-center justify-end gap-2 mt-1">
+                  {onCancel && (
+                    <Button variant="outline" onClick={onCancel}>
+                      Cancelar
+                    </Button>
+                  )}
+                  <Button variant="primary" disabled={busy} onClick={() => submit(opt.mode)}>
+                    {opt.mode === 'code' ? 'Emparejar' : 'Guardar'}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })}
+      {message && <p className="text-red-700 text-sm">{message}</p>}
     </div>
   );
 }
