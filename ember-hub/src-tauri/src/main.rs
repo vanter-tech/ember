@@ -92,8 +92,35 @@ fn read_hub_env() -> HashMap<String, String> {
     map
 }
 
+/// Tauri's `resource_dir()` returns a canonicalized path, which on Windows carries a `\\?\`
+/// verbatim-path prefix. Java's `java.nio.file.Path.of(...)` (used by `HubProperties.fromEnvironment`
+/// for every `EMBER_HUB_*_DIR`/`_FILE` env var) cannot parse that prefix at all and throws
+/// `InvalidPathException` — so any path baked into `hub.env` must have it stripped first, or the
+/// sidecar crashes on every single first launch, not just on this machine.
+fn strip_verbatim_prefix(path: &std::path::Path) -> PathBuf {
+    let s = path.to_string_lossy();
+    PathBuf::from(s.strip_prefix(r"\\?\").unwrap_or(&s))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn strips_verbatim_prefix_when_present() {
+        let input = PathBuf::from(r"\\?\C:\Users\ferob\app-image\Ember Hub");
+        assert_eq!(strip_verbatim_prefix(&input), PathBuf::from(r"C:\Users\ferob\app-image\Ember Hub"));
+    }
+
+    #[test]
+    fn leaves_normal_path_unchanged() {
+        let input = PathBuf::from(r"C:\Users\ferob\app-image\Ember Hub");
+        assert_eq!(strip_verbatim_prefix(&input), input);
+    }
+}
+
 fn spawn_agent(app: &AppHandle, port_state: Arc<Mutex<u16>>, agent_process: Arc<Mutex<Option<Child>>>) {
-    let resource_dir = app.path().resource_dir().expect("no resource dir");
+    let resource_dir = strip_verbatim_prefix(&app.path().resource_dir().expect("no resource dir"));
     let app_dir = resource_dir.join("app-image").join("Ember Hub");
     let exe = app_dir.join("Ember Hub.exe");
 

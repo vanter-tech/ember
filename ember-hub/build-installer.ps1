@@ -73,8 +73,12 @@ function Build-AppImage {
         if ($LASTEXITCODE -ne 0) { throw "mvn package failed" }
     } finally { Pop-Location }
 
+    # backend/target can accumulate jars from older builds/versions (it's a shared Maven module);
+    # Get-ChildItem's enumeration order is not chronological, so an unsorted -First 1 can silently
+    # pick a stale jar instead of the one `mvn package` just produced above. Sort by build time.
     $jar = Get-ChildItem (Join-Path $repoRoot "backend\target") -Filter "ember-*.jar" |
            Where-Object { $_.Name -notmatch "sources|javadoc|original" } |
+           Sort-Object LastWriteTime -Descending |
            Select-Object -First 1
     if (-not $jar) { throw "no ember-*.jar in backend/target" }
 
