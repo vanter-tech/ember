@@ -36,6 +36,15 @@ describe('ServiceCard', () => {
     expect(screen.queryByText(/database system is ready/)).toBeNull();
   });
 
+  it('renders no empty chip on ERROR when the caller passes a null error (license-blocked case)', () => {
+    const { container } = render(
+      <ServiceCard id="postgres" icon={Database} title="PostgreSQL" phase="ERROR" error={null} />
+    );
+
+    expect(screen.getByText('Error')).toBeTruthy();
+    expect(container.querySelector('.mt-3')).toBeNull();
+  });
+
   it('mounting directly at RUNNING has no log to show yet', () => {
     render(<ServiceCard id="postgres" icon={Database} title="PostgreSQL" phase="RUNNING" error={null} />);
 

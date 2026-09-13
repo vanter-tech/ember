@@ -76,7 +76,10 @@ export default function ServiceCard({
   }, [phase]);
 
   const lines = useServiceLog(id, phase);
-  const hasContent = isError || lines.length > 0;
+  // `error` can be intentionally null even while isError is true — the caller (Dashboard) does
+  // this for a license-blocked Postgres startup, whose real message is shown next to the License
+  // card instead. Don't render an empty red chip in that case.
+  const hasContent = (isError && !!error) || lines.length > 0;
 
   return (
     <section className={`${cardShellClass} p-4 flex flex-col min-w-0`}>

@@ -53,6 +53,12 @@ export default function Dashboard() {
   const stopped = status?.server === 'STOPPED' && status?.postgres === 'STOPPED';
   const running = status?.server === 'RUNNING';
 
+  // An invalid/missing license blocks everything before Postgres itself ever gets to run — the
+  // backend still reports it as `postgres.ERROR` (it's the first real step in the boot sequence),
+  // but showing "no license.key found" inside the PostgreSQL card is misleading. Move it next to
+  // the License card instead whenever postgres errored out with no license on file.
+  const licenseBlockedStartup = status?.postgres === 'ERROR' && status?.license.status === 'NONE';
+
   async function onStart() {
     setBusy(true);
     try {
@@ -163,10 +169,21 @@ export default function Dashboard() {
 
       {status && (
         <>
-          <ServiceCard id="postgres" icon={Database} title="PostgreSQL" phase={status.postgres} error={status.postgresError} />
+          <ServiceCard
+            id="postgres"
+            icon={Database}
+            title="PostgreSQL"
+            phase={status.postgres}
+            error={licenseBlockedStartup ? null : status.postgresError}
+          />
           <ServiceCard id="minio" icon={HardDrive} title="MinIO" phase={status.minio} error={status.minioError} />
           <ServiceCard id="server" icon={Server} title="Servidor" phase={status.server} error={status.serverError} />
           <LicenseCard license={status.license} onSelectLicense={onSelectLicense} onRemoveLicense={onRemoveLicense} />
+          {licenseBlockedStartup && status.postgresError && (
+            <p className="rounded-2xl bg-primary text-primary-foreground text-sm font-medium px-4 py-3">
+              {status.postgresError}
+            </p>
+          )}
         </>
       )}
     </main>
