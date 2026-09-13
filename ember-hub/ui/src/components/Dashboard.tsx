@@ -2,14 +2,18 @@ import { useEffect, useState } from 'react';
 import { Database, HardDrive, Server, Router } from 'lucide-react';
 import { getStatus, startServices, stopServices, installLicense } from '../lib/api';
 import type { HubStatus } from '../lib/types';
+import { watchAgentShell, type AgentShellState } from '../lib/agent-events';
 import { cardShellClass, IconBadge } from './Card';
 import Button from './Button';
 import ServiceCard from './ServiceCard';
 import LicenseCard from './LicenseCard';
 
 export default function Dashboard() {
+  const [shellState, setShellState] = useState<AgentShellState>('starting');
   const [status, setStatus] = useState<HubStatus | null>(null);
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => watchAgentShell(setShellState), []);
 
   async function refresh() {
     try {
@@ -20,10 +24,25 @@ export default function Dashboard() {
   }
 
   useEffect(() => {
+    if (shellState !== 'ready') return;
     refresh();
     const id = setInterval(refresh, 1500);
     return () => clearInterval(id);
-  }, []);
+  }, [shellState]);
+
+  if (shellState === 'starting') {
+    return <main className="p-4 text-muted-foreground">Iniciando Ember Hub…</main>;
+  }
+  if (shellState === 'timeout' || shellState === 'crashed') {
+    return (
+      <main className="p-4 flex flex-col gap-3">
+        <p className="text-red-700">Ember Hub no pudo iniciar.</p>
+        <Button variant="primary" className="w-fit" onClick={async () => (await import('@tauri-apps/api/core')).invoke('restart_agent')}>
+          Reintentar
+        </Button>
+      </main>
+    );
+  }
 
   const stopped = status?.server === 'STOPPED' && status?.postgres === 'STOPPED';
   const running = status?.server === 'RUNNING';

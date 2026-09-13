@@ -1,0 +1,39 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Ember Hub",
+  "version": "0.1.0",
+  "identifier": "net.vanter.ember.hub",
+  "build": {
+    "beforeBuildCommand": "npm --prefix ui install && npm --prefix ui run build",
+    "frontendDist": "../ui/dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "Ember Hub",
+        "width": 720,
+        "height": 800,
+        "minWidth": 640,
+        "minHeight": 640,
+        "visible": true
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; connect-src 'self' http://127.0.0.1:*"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis"],
+    "icon": ["icons/icon.ico"],
+    "resources": {
+      "../dist/app-image/Ember Hub": "app-image/Ember Hub"
+    },
+    "windows": {
+      "nsis": {
+        "installMode": "perMachine"
+      }
+    }
+  }
+}
