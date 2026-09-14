@@ -195,6 +195,17 @@ export const platformRestaurantService = {
     return data
   },
 
+  updatePlan: async (
+    id: string,
+    plan: PlatformRestaurantDetail['plan']
+  ): Promise<PlatformRestaurantSummary> => {
+    const { data } = await platformApi.patch<PlatformRestaurantSummary>(
+      `/platform/restaurants/${id}/plan`,
+      { plan }
+    )
+    return data
+  },
+
   issueHubLicense: async (id: string): Promise<string> => {
     const { data } = await platformApi.post<string>(`/platform/restaurants/${id}/hub-license`)
     return data
