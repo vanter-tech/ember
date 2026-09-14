@@ -10,11 +10,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/lib/i18n';
+import { extractPlanGateError } from '@/lib/planGate';
 
 type SettingsPayload = components['schemas']['SettingsPayload'];
 
 export const SpacesSettings = () => {
   const { t } = useTranslation('admin');
+  const { t: tCommon } = useTranslation('common');
   const queryClient = useQueryClient();
   
   const { data: settings, isPending: isLoadingSettings } = useQuery({
@@ -35,8 +37,13 @@ export const SpacesSettings = () => {
       queryClient.invalidateQueries({ queryKey: ['restaurantSettings'] });
       toast.success(t('settingsSavedToast'));
     },
-    onError: () => {
-      toast.error(t('settingsSaveErrorToast'));
+    onError: (error) => {
+      const gate = extractPlanGateError(error);
+      toast.error(
+        gate
+          ? tCommon('planGateUpgradeToast', { plan: gate.requiredPlan ?? '' })
+          : t('settingsSaveErrorToast'),
+      );
     }
   });
 
