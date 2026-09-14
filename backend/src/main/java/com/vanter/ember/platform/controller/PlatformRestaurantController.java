@@ -2,6 +2,7 @@ package com.vanter.ember.platform.controller;
 
 import com.vanter.ember.platform.model.dto.PlatformRestaurantCreateRequest;
 import com.vanter.ember.platform.model.dto.PlatformRestaurantDetailResponse;
+import com.vanter.ember.platform.model.dto.PlatformRestaurantPlanUpdateRequest;
 import com.vanter.ember.platform.model.dto.PlatformRestaurantStatusUpdateRequest;
 import com.vanter.ember.platform.model.dto.PlatformRestaurantSummaryResponse;
 import com.vanter.ember.platform.service.PlatformRestaurantService;
@@ -85,5 +86,15 @@ public class PlatformRestaurantController {
             Authentication authentication) {
         return ResponseEntity.ok(
                 platformRestaurantService.updateStatus(id, request.getStatus(), authentication.getName()));
+    }
+
+    @Operation(summary = "Update a tenant's subscription plan, audited")
+    @PatchMapping("/{id}/plan")
+    public ResponseEntity<PlatformRestaurantSummaryResponse> updatePlan(
+            @PathVariable UUID id,
+            @Valid @RequestBody PlatformRestaurantPlanUpdateRequest request,
+            Authentication authentication) {
+        return ResponseEntity.ok(
+                platformRestaurantService.updatePlan(id, request.getPlan(), authentication.getName()));
     }
 }

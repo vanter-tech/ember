@@ -71,6 +71,7 @@ export interface PlatformRestaurantDetail {
 export interface PlatformRestaurantCreateRequest {
   name: string
   slug: string
+  plan?: 'FREE' | 'STARTER' | 'PRO' | 'ENTERPRISE'
   adminName: string
   adminEmail: string
   adminPassword: string
@@ -190,6 +191,17 @@ export const platformRestaurantService = {
     const { data } = await platformApi.patch<PlatformRestaurantSummary>(
       `/platform/restaurants/${id}/status`,
       { status }
+    )
+    return data
+  },
+
+  updatePlan: async (
+    id: string,
+    plan: PlatformRestaurantDetail['plan']
+  ): Promise<PlatformRestaurantSummary> => {
+    const { data } = await platformApi.patch<PlatformRestaurantSummary>(
+      `/platform/restaurants/${id}/plan`,
+      { plan }
     )
     return data
   },

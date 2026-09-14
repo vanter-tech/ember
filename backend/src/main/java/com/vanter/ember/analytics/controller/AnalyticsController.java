@@ -5,11 +5,15 @@ import com.vanter.ember.analytics.dto.AnalyticsRangeResponse;
 import com.vanter.ember.analytics.dto.AnalyticsSalesResponse;
 import com.vanter.ember.analytics.dto.AnalyticsSummaryResponse;
 import com.vanter.ember.analytics.dto.AnalyticsTablesResponse;
+import com.vanter.ember.analytics.dto.SalesGranularity;
 import com.vanter.ember.analytics.service.AnalyticsService;
 import com.vanter.ember.config.TenantContextHolder;
+import com.vanter.ember.restaurant.model.RestaurantPlan;
+import com.vanter.ember.restaurant.service.PlanGateService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.time.LocalDateTime;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -26,6 +30,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class AnalyticsController {
 
     private final AnalyticsService analyticsService;
+    private final PlanGateService planGateService;
 
     @Operation(summary = "Get the tenant's billing-activity window, to bound dashboard date pickers")
     @GetMapping("/range")
@@ -61,8 +66,11 @@ public class AnalyticsController {
                     LocalDateTime from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
                     LocalDateTime to) {
-        return analyticsService.getSales(
-                TenantContextHolder.requireTenantId(), granularity, from, to);
+        UUID tenantId = TenantContextHolder.requireTenantId();
+        if (SalesGranularity.from(granularity) != SalesGranularity.DAY) {
+            planGateService.requirePlanAtLeast(tenantId, RestaurantPlan.STARTER, "periodfilters");
+        }
+        return analyticsService.getSales(tenantId, granularity, from, to);
     }
 
     @Operation(

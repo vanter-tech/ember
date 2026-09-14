@@ -73,6 +73,7 @@ export const admin = {
   manualCashOutLabel: 'Salidas manuales',
   loadingDailyReport: 'Cargando corte diario...',
   loadingDailyReportError: 'Error al cargar el corte diario.',
+  dailyReportShiftsTitle: 'Turnos del día',
   loadingShifts: 'Cargando turnos...',
   loadingShiftsError: 'Error al cargar el historial.',
   shiftColumnLabel: 'Turno',

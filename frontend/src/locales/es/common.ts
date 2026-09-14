@@ -1,4 +1,5 @@
 export const common = {
+  planGateUpgradeToast: 'Esta función requiere el plan {{plan}} o superior.',
   languageSwitcherLabel: 'Idioma',
   languageSpanish: 'Español',
   languageEnglish: 'English',

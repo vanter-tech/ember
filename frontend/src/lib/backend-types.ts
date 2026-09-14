@@ -720,6 +720,23 @@ export interface paths {
         patch: operations["updateStatus"];
         trace?: never;
     };
+    "/platform/restaurants/{id}/plan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update a tenant's subscription plan, audited */
+        patch: operations["updatePlan"];
+        trace?: never;
+    };
     "/platform/auth/password": {
         parameters: {
             query?: never;
@@ -907,23 +924,6 @@ export interface paths {
         head?: never;
         /** Update a staff member's HR profile fields (ADMIN) */
         patch: operations["updateStaffProfile"];
-        trace?: never;
-    };
-    "/admin/restaurant/plan": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /** Change the current tenant's subscription plan (ADMIN) */
-        patch: operations["updatePlan"];
         trace?: never;
     };
     "/sessions/{id}": {
@@ -1960,7 +1960,7 @@ export interface components {
             email: string;
             password: string;
             /** @enum {string} */
-            role: "CUSTOMER" | "WAITER" | "KITCHEN" | "ADMIN";
+            role: "CUSTOMER" | "WAITER" | "KITCHEN" | "ADMIN" | "ACCOUNTANT";
             jobTitle: string;
             shift: string;
             contractType: string;
@@ -1971,7 +1971,7 @@ export interface components {
             name?: string;
             email?: string;
             /** @enum {string} */
-            role?: "CUSTOMER" | "WAITER" | "KITCHEN" | "ADMIN";
+            role?: "CUSTOMER" | "WAITER" | "KITCHEN" | "ADMIN" | "ACCOUNTANT";
             /** Format: date-time */
             createdAt?: string;
             active?: boolean;
@@ -2072,7 +2072,7 @@ export interface components {
         };
         UpdateUserRoleRequest: {
             /** @enum {string} */
-            role: "CUSTOMER" | "WAITER" | "KITCHEN" | "ADMIN";
+            role: "CUSTOMER" | "WAITER" | "KITCHEN" | "ADMIN" | "ACCOUNTANT";
         };
         Restaurant: {
             /** Format: uuid */
@@ -2094,7 +2094,7 @@ export interface components {
             name?: string;
             email?: string;
             /** @enum {string} */
-            role?: "CUSTOMER" | "WAITER" | "KITCHEN" | "ADMIN";
+            role?: "CUSTOMER" | "WAITER" | "KITCHEN" | "ADMIN" | "ACCOUNTANT";
             active?: boolean;
             jobTitle?: string;
             shift?: string;
@@ -2116,7 +2116,7 @@ export interface components {
             name?: string;
             email?: string;
         };
-        UpdateRestaurantPlanRequest: {
+        PlatformRestaurantPlanUpdateRequest: {
             /** @enum {string} */
             plan: "FREE" | "STARTER" | "PRO" | "ENTERPRISE";
         };
@@ -4247,12 +4247,14 @@ export interface operations {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                id: string;
+            };
             cookie?: never;
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["UpdateRestaurantPlanRequest"];
+                "application/json": components["schemas"]["PlatformRestaurantPlanUpdateRequest"];
             };
         };
         responses: {
@@ -4262,7 +4264,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["Restaurant"];
+                    "*/*": components["schemas"]["PlatformRestaurantSummaryResponse"];
                 };
             };
         };

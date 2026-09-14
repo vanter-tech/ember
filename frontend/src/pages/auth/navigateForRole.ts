@@ -51,6 +51,9 @@ export async function navigateForRole(
     case 'KITCHEN':
       navigate('/kitchen', { replace: true })
       break
+    case 'ACCOUNTANT':
+      navigate('/accountant', { replace: true })
+      break
     default:
       break
   }

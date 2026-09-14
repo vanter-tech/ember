@@ -9,7 +9,7 @@ import { cashShiftService } from '@/lib/api'
 import { useUIStore } from '@/store/uiStore'
 import { useTranslation } from '@/lib/i18n'
 import { deriveCashShiftAlert, REMINDER_INTERVAL_MS } from '@/lib/cashShiftAlert'
-import { CloseShiftDialog } from '@/pages/waiter/cashRegister/components/CloseShiftDialog'
+import { CloseShiftDialog } from '@/pages/accountant/cashRegister/components/CloseShiftDialog'
 
 export const CashShiftSentinel = () => {
   const { t } = useTranslation('waiter')

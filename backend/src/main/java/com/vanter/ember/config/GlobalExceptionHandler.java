@@ -99,6 +99,19 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return problem;
     }
 
+    @ExceptionHandler(com.vanter.ember.restaurant.exception.PlanLimitExceededException.class)
+    public ProblemDetail handlePlanLimitExceeded(
+            com.vanter.ember.restaurant.exception.PlanLimitExceededException ex, HttpServletRequest request) {
+        ProblemDetail problem = problem(HttpStatus.PAYMENT_REQUIRED, ex.getMessage(), request.getRequestURI());
+        problem.setProperty("code", "PLAN_LIMIT_EXCEEDED");
+        problem.setProperty("feature", ex.getFeature());
+        if (ex.getRequiredPlan() != null) {
+            problem.setProperty("requiredPlan", ex.getRequiredPlan().name());
+        }
+        problem.setProperty("currentPlan", ex.getCurrentPlan().name());
+        return problem;
+    }
+
     @ExceptionHandler(BadCredentialsException.class)
     public ProblemDetail handleBadCredentials(BadCredentialsException ex, HttpServletRequest request) {
         return problem(HttpStatus.UNAUTHORIZED, "Invalid credentials", request.getRequestURI());

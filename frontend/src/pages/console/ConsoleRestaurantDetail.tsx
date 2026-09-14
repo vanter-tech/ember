@@ -27,6 +27,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { HubBadge } from '@/components/console/HubBadge'
 import { ConsolePageHeader } from '@/components/console/ConsolePageHeader'
 
@@ -80,6 +87,12 @@ export default function ConsoleRestaurantDetail() {
   const toggleStatus = useMutation({
     mutationFn: (status: PlatformRestaurantDetail['status']) =>
       platformRestaurantService.updateStatus(id!, status),
+    onSuccess: invalidateAll,
+  })
+
+  const changePlan = useMutation({
+    mutationFn: (plan: PlatformRestaurantDetail['plan']) =>
+      platformRestaurantService.updatePlan(id!, plan),
     onSuccess: invalidateAll,
   })
 
@@ -182,7 +195,20 @@ export default function ConsoleRestaurantDetail() {
           </div>
           <div>
             <div className="text-zinc-500">Plan</div>
-            <div className="font-medium text-zinc-800">{restaurant.plan}</div>
+            <Select
+              value={restaurant.plan}
+              onValueChange={(value) => changePlan.mutate(value as PlatformRestaurantDetail['plan'])}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="FREE">Free</SelectItem>
+                <SelectItem value="STARTER">Starter</SelectItem>
+                <SelectItem value="PRO">Pro</SelectItem>
+                <SelectItem value="ENTERPRISE">Enterprise</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           <div>
             <div className="text-zinc-500">Estado</div>

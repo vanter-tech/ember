@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { useTranslation } from '@/lib/i18n'
+import { extractPlanGateErrorFromBlob } from '@/lib/planGate'
 
 const toIsoStart = (date: string): string | undefined => (date ? `${date}T00:00:00` : undefined)
 const toIsoEnd = (date: string): string | undefined => (date ? `${date}T23:59:59` : undefined)
@@ -15,6 +16,7 @@ const today = () => new Date().toISOString().slice(0, 10)
 
 export const ExportSettings = () => {
   const { t } = useTranslation('admin')
+  const { t: tCommon } = useTranslation('common')
   const [fromDate, setFromDate] = useState('')
   const [toDate, setToDate] = useState('')
   const maxDate = today()
@@ -32,7 +34,14 @@ export const ExportSettings = () => {
       window.URL.revokeObjectURL(url)
       toast.success(t('exportDownloadedToast'))
     },
-    onError: () => toast.error(t('exportErrorToast')),
+    onError: async (error) => {
+      const gate = await extractPlanGateErrorFromBlob(error)
+      toast.error(
+        gate
+          ? tCommon('planGateUpgradeToast', { plan: gate.requiredPlan ?? '' })
+          : t('exportErrorToast'),
+      )
+    },
   })
 
   return (

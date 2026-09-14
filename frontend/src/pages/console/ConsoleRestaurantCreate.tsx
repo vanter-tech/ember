@@ -18,6 +18,13 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { ConsolePageHeader } from '@/components/console/ConsolePageHeader'
 
 const passwordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).+$/
@@ -31,6 +38,7 @@ const createSchema = z.object({
       /^[a-z0-9]+(-[a-z0-9]+)*$/,
       'El slug debe ser minúsculas y números separados por guiones'
     ),
+  plan: z.enum(['FREE', 'STARTER', 'PRO', 'ENTERPRISE']),
   adminName: z.string().min(1, 'El nombre del admin es obligatorio'),
   adminEmail: z
     .string()
@@ -54,6 +62,7 @@ export default function ConsoleRestaurantCreate() {
     defaultValues: {
       name: '',
       slug: '',
+      plan: 'FREE',
       adminName: '',
       adminEmail: '',
       adminPassword: '',
@@ -118,6 +127,30 @@ export default function ConsoleRestaurantCreate() {
                     <FormControl>
                       <Input placeholder="ember-grill" {...field} />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="plan"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Plan</FormLabel>
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <FormControl>
+                        <SelectTrigger className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="FREE">Free</SelectItem>
+                        <SelectItem value="STARTER">Starter</SelectItem>
+                        <SelectItem value="PRO">Pro</SelectItem>
+                        <SelectItem value="ENTERPRISE">Enterprise</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}

@@ -38,6 +38,7 @@ class ExportControllerTest {
     @MockBean JwtService jwtService;
     @MockBean UserDetailsService userDetailsService;
     @MockBean RestaurantRepository restaurantRepository;
+    @MockBean com.vanter.ember.restaurant.service.PlanGateService planGateService;
 
     private static final UUID TENANT_ID = UUID.randomUUID();
 
@@ -94,6 +95,22 @@ class ExportControllerTest {
         mockMvc.perform(get("/admin/export")).andExpect(status().isConflict());
 
         verify(exportService, never()).buildTenantExportWorkbook(any(), any(), any());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void export_blockedWhenPlanBelowPro() throws Exception {
+        TenantContextHolder.setTenantId(TENANT_ID);
+        org.mockito.Mockito.doThrow(new com.vanter.ember.restaurant.exception.PlanLimitExceededException(
+                        "export", com.vanter.ember.restaurant.model.RestaurantPlan.PRO,
+                        com.vanter.ember.restaurant.model.RestaurantPlan.STARTER))
+                .when(planGateService).requirePlanAtLeast(
+                        TENANT_ID, com.vanter.ember.restaurant.model.RestaurantPlan.PRO, "export");
+
+        mockMvc.perform(get("/admin/export"))
+                .andExpect(status().isPaymentRequired())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers
+                        .jsonPath("$.code").value("PLAN_LIMIT_EXCEEDED"));
     }
 
     @Test

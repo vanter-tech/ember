@@ -405,6 +405,95 @@ class PlatformRestaurantServiceTest {
     }
 
     @Test
+    void create_defaultsToFreeWhenPlanOmitted() {
+        PlatformOperator operator = PlatformOperator.builder()
+                .id(UUID.randomUUID())
+                .email("operator@ember.local")
+                .build();
+        when(platformOperatorRepository.findByEmail("operator@ember.local")).thenReturn(Optional.of(operator));
+        when(restaurantRepository.existsBySlug("tenant-grill")).thenReturn(false);
+        when(userRepository.existsByEmail("owner@tenant-grill.local")).thenReturn(false);
+        when(passwordEncoder.encode("Str0ng!Pass")).thenReturn("hashed");
+        ArgumentCaptor<Restaurant> captor = ArgumentCaptor.forClass(Restaurant.class);
+        when(restaurantRepository.save(captor.capture())).thenReturn(restaurant());
+
+        PlatformRestaurantCreateRequest request = createRequest();
+        request.setPlan(null);
+        platformRestaurantService.create(request, "operator@ember.local");
+
+        assertThat(captor.getValue().getPlan()).isEqualTo(RestaurantPlan.FREE);
+    }
+
+    @Test
+    void create_usesRequestedPlanWhenProvided() {
+        PlatformOperator operator = PlatformOperator.builder()
+                .id(UUID.randomUUID())
+                .email("operator@ember.local")
+                .build();
+        when(platformOperatorRepository.findByEmail("operator@ember.local")).thenReturn(Optional.of(operator));
+        when(restaurantRepository.existsBySlug("tenant-grill")).thenReturn(false);
+        when(userRepository.existsByEmail("owner@tenant-grill.local")).thenReturn(false);
+        when(passwordEncoder.encode("Str0ng!Pass")).thenReturn("hashed");
+        ArgumentCaptor<Restaurant> captor = ArgumentCaptor.forClass(Restaurant.class);
+        when(restaurantRepository.save(captor.capture())).thenReturn(restaurant());
+
+        PlatformRestaurantCreateRequest request = createRequest();
+        request.setPlan(RestaurantPlan.PRO);
+        platformRestaurantService.create(request, "operator@ember.local");
+
+        assertThat(captor.getValue().getPlan()).isEqualTo(RestaurantPlan.PRO);
+    }
+
+    @Test
+    void updatePlan_updatesRestaurantAndWritesAuditLog() {
+        UUID restaurantId = UUID.randomUUID();
+        Restaurant restaurant = Restaurant.builder()
+                .id(restaurantId).name("Acme").slug("acme").plan(RestaurantPlan.FREE).build();
+        PlatformOperator operator = PlatformOperator.builder()
+                .id(UUID.randomUUID()).email("operator@ember.local").build();
+        when(platformOperatorRepository.findByEmail("operator@ember.local")).thenReturn(Optional.of(operator));
+        when(restaurantRepository.findById(restaurantId)).thenReturn(Optional.of(restaurant));
+        when(restaurantService.updatePlan(restaurantId, RestaurantPlan.PRO))
+                .thenReturn(Restaurant.builder()
+                        .id(restaurantId).name("Acme").slug("acme").plan(RestaurantPlan.PRO).build());
+
+        PlatformRestaurantSummaryResponse response =
+                platformRestaurantService.updatePlan(restaurantId, RestaurantPlan.PRO, "operator@ember.local");
+
+        assertThat(response.getPlan()).isEqualTo(RestaurantPlan.PRO);
+
+        ArgumentCaptor<com.vanter.ember.platform.model.PlatformAuditLog> auditCaptor =
+                ArgumentCaptor.forClass(com.vanter.ember.platform.model.PlatformAuditLog.class);
+        org.mockito.Mockito.verify(platformAuditLogRepository).save(auditCaptor.capture());
+        assertThat(auditCaptor.getValue().getAction()).isEqualTo("RESTAURANT_PLAN_UPDATED");
+        assertThat(auditCaptor.getValue().getOldValue()).isEqualTo("FREE");
+        assertThat(auditCaptor.getValue().getNewValue()).isEqualTo("PRO");
+    }
+
+    @Test
+    void updatePlan_throwsWhenRestaurantNotFound() {
+        UUID restaurantId = UUID.randomUUID();
+        PlatformOperator operator = PlatformOperator.builder()
+                .id(UUID.randomUUID()).email("operator@ember.local").build();
+        when(platformOperatorRepository.findByEmail("operator@ember.local")).thenReturn(Optional.of(operator));
+        when(restaurantRepository.findById(restaurantId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() ->
+                platformRestaurantService.updatePlan(restaurantId, RestaurantPlan.PRO, "operator@ember.local"))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void updatePlan_throwsWhenOperatorNotFound() {
+        UUID restaurantId = UUID.randomUUID();
+        when(platformOperatorRepository.findByEmail("ghost@ember.local")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() ->
+                platformRestaurantService.updatePlan(restaurantId, RestaurantPlan.PRO, "ghost@ember.local"))
+                .isInstanceOf(BadCredentialsException.class);
+    }
+
+    @Test
     void create_throwsWhenOperatorNotFound() {
         when(platformOperatorRepository.findByEmail("ghost@ember.local")).thenReturn(Optional.empty());
 

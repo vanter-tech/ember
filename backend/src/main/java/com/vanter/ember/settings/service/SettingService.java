@@ -1,4 +1,6 @@
 package com.vanter.ember.settings.service;
+import com.vanter.ember.restaurant.model.RestaurantPlan;
+import com.vanter.ember.restaurant.service.PlanGateService;
 import com.vanter.ember.settings.model.DiningTables;
 import com.vanter.ember.settings.model.RestaurantSettings;
 import com.vanter.ember.settings.model.SettingsPayload;
@@ -18,6 +20,7 @@ public class SettingService {
 
     private final SettingsRepository settingsRepository;
     private final DiningTableRepository diningTableRepository;
+    private final PlanGateService planGateService;
 
     public RestaurantSettings getSettings(UUID restaurantId) {
         return settingsRepository.findByRestaurantId(restaurantId)
@@ -40,7 +43,14 @@ public class SettingService {
 
     @Transactional
     public void updateSettings(UUID restaurantId, SettingsPayload payload) {
+        planGateService.requireTableCapacity(restaurantId, payload.getSpace().getTotalTables());
+
         RestaurantSettings currentSettings = getSettings(restaurantId);
+
+        if (!payload.getBranding().equals(currentSettings.getPayload().getBranding())) {
+            planGateService.requirePlanAtLeast(restaurantId, RestaurantPlan.STARTER, "branding");
+        }
+
         currentSettings.setPayload(payload);
         settingsRepository.save(currentSettings);
 

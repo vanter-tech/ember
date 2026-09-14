@@ -126,10 +126,10 @@ export const FloatingNav = () => {
         </Link>
       )}
 
-      {role === 'WAITER' && (
+      {role === 'ACCOUNTANT' && (
         <Link
-          to="/waiter/cash-register"
-          className={navItemClass('/waiter/cash-register')}
+          to="/accountant/cash-register"
+          className={navItemClass('/accountant/cash-register')}
           title={t('navCash')}
         >
           <Banknote strokeWidth={1.5} size={24} />

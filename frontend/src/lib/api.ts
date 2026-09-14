@@ -98,7 +98,6 @@ export interface Page<T> {
 }
 
 export type RestaurantResponse = components['schemas']['Restaurant']
-export type UpdateRestaurantPlanRequest = components['schemas']['UpdateRestaurantPlanRequest']
 export type PublicBranding = components['schemas']['PublicBrandingResponse']
 
 export type AnalyticsSummaryResponse = components['schemas']['AnalyticsSummaryResponse']
@@ -577,10 +576,6 @@ export const kitchenServices = {
 export const restaurantAdminService = {
   getPlan: async (): Promise<RestaurantResponse> => {
     const { data } = await api.get<RestaurantResponse>('/admin/restaurant')
-    return data
-  },
-  updatePlan: async (plan: UpdateRestaurantPlanRequest['plan']): Promise<RestaurantResponse> => {
-    const { data } = await api.patch<RestaurantResponse>('/admin/restaurant/plan', { plan })
     return data
   },
 }

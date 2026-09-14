@@ -43,6 +43,7 @@ class CashShiftControllerProlongTest {
     @MockBean JwtService jwtService;
     @MockBean UserDetailsService userDetailsService;
     @MockBean RestaurantRepository restaurantRepository;
+    @MockBean com.vanter.ember.restaurant.service.PlanGateService planGateService;
 
     @AfterEach
     void clearTenant() {
@@ -50,7 +51,7 @@ class CashShiftControllerProlongTest {
     }
 
     private User sampleUser(String email) {
-        return User.builder().id("user-1").email(email).name("Alice").role(Role.WAITER).build();
+        return User.builder().id("user-1").email(email).name("Alice").role(Role.ACCOUNTANT).build();
     }
 
     private CashShift sampleShift() {
@@ -60,10 +61,10 @@ class CashShiftControllerProlongTest {
     }
 
     @Test
-    @WithMockUser(username = "waiter@ember.local", roles = "WAITER")
-    void prolong_returnsOkAndResponseForWaiter() throws Exception {
-        when(userRepository.findByEmail("waiter@ember.local"))
-                .thenReturn(Optional.of(sampleUser("waiter@ember.local")));
+    @WithMockUser(username = "accountant@ember.local", roles = "ACCOUNTANT")
+    void prolong_returnsOkAndResponseForAccountant() throws Exception {
+        when(userRepository.findByEmail("accountant@ember.local"))
+                .thenReturn(Optional.of(sampleUser("accountant@ember.local")));
         when(cashShiftService.prolongShift(eq(5L), eq("user-1"))).thenReturn(sampleShift());
         when(cashShiftService.toResponse(any(CashShift.class))).thenReturn(new CashShiftResponse(
                 5L, 1, "OPEN", new BigDecimal("0.00"), "Alice",
@@ -80,6 +81,20 @@ class CashShiftControllerProlongTest {
     @Test
     @WithMockUser(roles = "CUSTOMER")
     void prolong_forbiddenForCustomer() throws Exception {
+        mockMvc.perform(post("/cash-shifts/5/prolong"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "WAITER")
+    void prolong_forbiddenForWaiter() throws Exception {
+        mockMvc.perform(post("/cash-shifts/5/prolong"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void prolong_forbiddenForAdmin() throws Exception {
         mockMvc.perform(post("/cash-shifts/5/prolong"))
                 .andExpect(status().isForbidden());
     }

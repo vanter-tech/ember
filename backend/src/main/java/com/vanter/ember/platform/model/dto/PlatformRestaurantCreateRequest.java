@@ -1,5 +1,6 @@
 package com.vanter.ember.platform.model.dto;
 
+import com.vanter.ember.restaurant.model.RestaurantPlan;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -15,6 +16,9 @@ public class PlatformRestaurantCreateRequest {
     @NotBlank(message = "Slug is required")
     @Pattern(regexp = "^[a-z0-9]+(-[a-z0-9]+)*$", message = "Slug must be lowercase alphanumeric with single hyphens")
     private String slug;
+
+    /** Optional — omitted or null defaults to FREE, same as Restaurant's own @Builder.Default. */
+    private RestaurantPlan plan;
 
     @NotBlank(message = "Admin name is required")
     private String adminName;

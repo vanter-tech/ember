@@ -2,10 +2,13 @@ package com.vanter.ember.export.controller;
 
 import com.vanter.ember.config.TenantContextHolder;
 import com.vanter.ember.export.service.ExportService;
+import com.vanter.ember.restaurant.model.RestaurantPlan;
+import com.vanter.ember.restaurant.service.PlanGateService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpHeaders;
@@ -28,6 +31,7 @@ public class ExportController {
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
     private final ExportService exportService;
+    private final PlanGateService planGateService;
 
     @Operation(
             summary = "Download the tenant's sales and product-performance history as an .xlsx workbook",
@@ -39,7 +43,9 @@ public class ExportController {
                     LocalDateTime from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
                     LocalDateTime to) {
-        byte[] workbook = exportService.buildTenantExportWorkbook(TenantContextHolder.requireTenantId(), from, to);
+        UUID tenantId = TenantContextHolder.requireTenantId();
+        planGateService.requirePlanAtLeast(tenantId, RestaurantPlan.PRO, "export");
+        byte[] workbook = exportService.buildTenantExportWorkbook(tenantId, from, to);
         String filename = "ember-export-" + LocalDate.now() + ".xlsx";
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")

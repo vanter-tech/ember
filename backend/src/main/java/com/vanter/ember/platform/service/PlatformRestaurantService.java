@@ -15,6 +15,7 @@ import com.vanter.ember.platform.model.dto.PlatformRestaurantSummaryResponse;
 import com.vanter.ember.platform.repository.PlatformAuditLogRepository;
 import com.vanter.ember.platform.repository.PlatformOperatorRepository;
 import com.vanter.ember.restaurant.model.Restaurant;
+import com.vanter.ember.restaurant.model.RestaurantPlan;
 import com.vanter.ember.restaurant.model.RestaurantStatus;
 import com.vanter.ember.restaurant.repository.RestaurantRepository;
 import com.vanter.ember.restaurant.service.RestaurantService;
@@ -144,6 +145,36 @@ public class PlatformRestaurantService {
     }
 
     /**
+     * Wires the platform-operator path to {@link RestaurantService#updatePlan} — the tenant-facing
+     * self-service endpoint was removed once plan gating had real consequences (see PLAN-GATING-
+     * PHASE1). Writes a {@link PlatformAuditLog} row in the same transaction as the plan change.
+     */
+    @Transactional
+    public PlatformRestaurantSummaryResponse updatePlan(UUID restaurantId, RestaurantPlan newPlan,
+                                                          String operatorEmail) {
+        PlatformOperator operator = platformOperatorRepository.findByEmail(operatorEmail)
+                .orElseThrow(() -> new BadCredentialsException("Invalid credentials"));
+
+        Restaurant restaurant = restaurantRepository.findById(restaurantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Restaurant not found: " + restaurantId));
+
+        RestaurantPlan oldPlan = restaurant.getPlan();
+
+        Restaurant updated = restaurantService.updatePlan(restaurantId, newPlan);
+
+        platformAuditLogRepository.save(PlatformAuditLog.builder()
+                .operatorId(operator.getId())
+                .operatorEmail(operator.getEmail())
+                .restaurantId(restaurantId)
+                .action("RESTAURANT_PLAN_UPDATED")
+                .oldValue(oldPlan.name())
+                .newValue(newPlan.name())
+                .build());
+
+        return PlatformRestaurantSummaryResponse.from(updated);
+    }
+
+    /**
      * Soft-delete a churned tenant. Only a SUSPENDED restaurant may be deleted — the operator has
      * to suspend it first, a deliberate two-step gate. Reversible via {@link #restore}. Nothing is
      * physically removed; DELETED is just another "not ACTIVE" status, so every access gate
@@ -223,6 +254,7 @@ public class PlatformRestaurantService {
         Restaurant restaurant = restaurantRepository.save(Restaurant.builder()
                 .name(request.getName())
                 .slug(request.getSlug())
+                .plan(request.getPlan() != null ? request.getPlan() : RestaurantPlan.FREE)
                 .build());
 
         userRepository.save(User.builder()

@@ -22,7 +22,9 @@ public class RestaurantService {
     }
 
     /**
-     * Self-service plan change (upgrade/downgrade) — safe for the tenant's own ADMIN to trigger.
+     * Applies a plan change. Only reachable via the platform-operator path
+     * ({@link com.vanter.ember.platform.service.PlatformRestaurantService#updatePlan}) — the
+     * tenant-facing self-service endpoint was removed once plan gating had real consequences.
      */
     public Restaurant updatePlan(UUID restaurantId, RestaurantPlan plan) {
         Restaurant restaurant = getCurrent(restaurantId);

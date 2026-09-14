@@ -1,5 +1,4 @@
 import { FloatingNav } from '@/components/FloatingNav'
-import { CashShiftSentinel } from '@/components/CashShiftSentinel'
 import { TopNav } from '@/components/TopNav'
 import { Outlet } from 'react-router-dom'
 import { useWebsocketStore } from '@/store/websocket'
@@ -34,7 +33,6 @@ export const WaiterLayout = () => {
         <Outlet />
       </main>
       <FloatingNav />
-      <CashShiftSentinel />
     </div>
   )
 }

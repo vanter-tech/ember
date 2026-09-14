@@ -14,6 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { useTranslation } from '@/lib/i18n'
+import { extractPlanGateError } from '@/lib/planGate'
 
 const GRANULARITY_OPTIONS: { value: SalesGranularity; labelKey: 'granularityDayLabel' | 'granularityWeekLabel' | 'granularityMonthLabel' | 'granularityYearLabel' }[] = [
   { value: 'day', labelKey: 'granularityDayLabel' },
@@ -31,12 +32,14 @@ const BUCKET_LABEL_FORMAT: Record<SalesGranularity, Intl.DateTimeFormatOptions> 
 
 export const SalesChart = () => {
   const { t, locale } = useTranslation('admin')
+  const { t: tCommon } = useTranslation('common')
   const [granularity, setGranularity] = useState<SalesGranularity>('day')
 
-  const { data, isLoading, isError } = useQuery({
+  const { data, isLoading, isError, error } = useQuery({
     queryKey: ['analyticsSales', granularity],
     queryFn: () => analyticsService.getSales(granularity),
   })
+  const planGate = isError ? extractPlanGateError(error) : null
 
   const buckets = data?.buckets ?? []
 
@@ -84,7 +87,9 @@ export const SalesChart = () => {
         )}
         {isError && (
           <div className="flex items-center justify-center py-16 text-sm text-destructive">
-            {t('loadingSalesError')}
+            {planGate
+              ? tCommon('planGateUpgradeToast', { plan: planGate.requiredPlan ?? '' })
+              : t('loadingSalesError')}
           </div>
         )}
         {data && chartData.length === 0 && (

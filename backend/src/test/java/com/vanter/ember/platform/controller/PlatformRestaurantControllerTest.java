@@ -280,6 +280,64 @@ class PlatformRestaurantControllerTest {
     }
 
     @Test
+    void updatePlan_returns401WithoutAuthHeader() throws Exception {
+        UUID id = UUID.randomUUID();
+        mockMvc.perform(patch("/platform/restaurants/" + id + "/plan")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"plan\":\"PRO\"}"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void updatePlan_returns400OnMissingPlan() throws Exception {
+        authenticate();
+        UUID id = UUID.randomUUID();
+
+        mockMvc.perform(patch("/platform/restaurants/" + id + "/plan")
+                        .header("Authorization", "Bearer " + TOKEN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void updatePlan_returns200WithUpdatedSummary() throws Exception {
+        authenticate();
+        UUID id = UUID.randomUUID();
+        PlatformRestaurantSummaryResponse summary = PlatformRestaurantSummaryResponse.builder()
+                .id(id)
+                .name("Tenant Grill")
+                .slug("tenant-grill")
+                .plan(RestaurantPlan.PRO)
+                .status(RestaurantStatus.ACTIVE)
+                .createdAt(Instant.now())
+                .build();
+        when(platformRestaurantService.updatePlan(eq(id), eq(RestaurantPlan.PRO), eq(OPERATOR_EMAIL)))
+                .thenReturn(summary);
+
+        mockMvc.perform(patch("/platform/restaurants/" + id + "/plan")
+                        .header("Authorization", "Bearer " + TOKEN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"plan\":\"PRO\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.plan").value("PRO"));
+    }
+
+    @Test
+    void updatePlan_returns404WhenRestaurantNotFound() throws Exception {
+        authenticate();
+        UUID id = UUID.randomUUID();
+        when(platformRestaurantService.updatePlan(eq(id), eq(RestaurantPlan.PRO), eq(OPERATOR_EMAIL)))
+                .thenThrow(new ResourceNotFoundException("Restaurant not found: " + id));
+
+        mockMvc.perform(patch("/platform/restaurants/" + id + "/plan")
+                        .header("Authorization", "Bearer " + TOKEN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"plan\":\"PRO\"}"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
     void updateStatus_returns404WhenRestaurantNotFound() throws Exception {
         authenticate();
         UUID id = UUID.randomUUID();

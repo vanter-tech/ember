@@ -32,4 +32,10 @@ describe('navigateForRole', () => {
     await navigateForRole({ role: 'CUSTOMER' } as never, navigate, { tAuth })
     expect(navigate).toHaveBeenCalledWith('/customer/home', { replace: true })
   })
+
+  test('ACCOUNTANT → /accountant', async () => {
+    const navigate = vi.fn()
+    await navigateForRole({ role: 'ACCOUNTANT' } as never, navigate, { tAuth })
+    expect(navigate).toHaveBeenCalledWith('/accountant', { replace: true })
+  })
 })

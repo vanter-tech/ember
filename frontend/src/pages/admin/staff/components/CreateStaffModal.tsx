@@ -32,6 +32,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { staffService } from '@/lib/api'
 import { ROLE_LABELS } from '../types'
 import { useTranslation } from '@/lib/i18n'
+import { extractPlanGateError } from '@/lib/planGate'
 
 const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).+$/
 
@@ -43,7 +44,7 @@ const createStaffSchemaFactory = (t: ReturnType<typeof useTranslation<'admin'>>[
       .string()
       .min(8, t('staffPasswordMinLengthError'))
       .regex(PASSWORD_REGEX, t('staffPasswordComplexityError')),
-    role: z.enum(['WAITER', 'KITCHEN', 'ADMIN']),
+    role: z.enum(['WAITER', 'KITCHEN', 'ADMIN', 'ACCOUNTANT']),
     jobTitle: z.string().min(1, t('staffJobTitleRequiredError')),
     shift: z.string().min(1, t('staffShiftRequiredError')),
     contractType: z.string().min(1, t('staffContractTypeRequiredError')),
@@ -56,6 +57,7 @@ export const CreateStaffModal = () => {
   const { activeModal, closeModal } = useUIStore()
   const queryClient = useQueryClient()
   const { t } = useTranslation('admin')
+  const { t: tCommon } = useTranslation('common')
   const createStaffSchema = useMemo(() => createStaffSchemaFactory(t), [t])
 
   const form = useForm<CreateStaffInputs>({
@@ -80,8 +82,13 @@ export const CreateStaffModal = () => {
       form.reset()
       closeModal()
     },
-    onError: () => {
-      toast.error(t('staffCreateErrorToast'))
+    onError: (error) => {
+      const gate = extractPlanGateError(error)
+      toast.error(
+        gate
+          ? tCommon('planGateUpgradeToast', { plan: gate.requiredPlan ?? '' })
+          : t('staffCreateErrorToast'),
+      )
     },
   })
 
@@ -173,6 +180,7 @@ export const CreateStaffModal = () => {
                     <SelectContent>
                       <SelectItem value="WAITER">{ROLE_LABELS.WAITER}</SelectItem>
                       <SelectItem value="KITCHEN">{ROLE_LABELS.KITCHEN}</SelectItem>
+                      <SelectItem value="ACCOUNTANT">{ROLE_LABELS.ACCOUNTANT}</SelectItem>
                       <SelectItem value="ADMIN">{ROLE_LABELS.ADMIN}</SelectItem>
                     </SelectContent>
                   </Select>
