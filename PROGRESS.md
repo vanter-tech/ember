@@ -36,7 +36,8 @@
 - **Prev:** report 421 — **T5 (frontend admin)**: `CreateAgentModal` leads with the pairing code (API key → `<details>`); `PrintingSettings` "Nuevo código" Dialog + Emparejado/Sin emparejar badge (`agent.paired`) + `VITE_AGENT_DOWNLOAD_URL` `.exe` anchor; `AddPrinterModal` `windowsQueueName` → shadcn `<Select>` of `discoveredPrinters` + "Otra…" free-text, inkjet auto-`DRIVER`. `backend-types.ts` hand-patched (no full `pnpm run openapi` — ~1230 lines of unrelated drift). +10 i18n ES/EN, +2 tests. `build` clean, `lint` 0/16, `test:run` **120/120**.
 - **Prev:** report 420 — **T4 (agent)**: `AgentRunner` extracted from `Main` (loop behaviour-identical + `AgentConfig.resolve`, `UNPAIRED` 3s re-poll, discovered-printers report on connect, `StatusHub` feed), `PrintJobHandler` nullable `StatusHub` ack-mirror, `Main` `--headless`/`--tray`, `AgentConfig.load` shim dropped. Swing `ui/{AgentDashboard,AgentTrayIcon,PairDialog}` + `DiagnosticsReport`. +4 tests (Swing = T7). Agent `mvn -f printing-agent/pom.xml test` **41/41**.
 - **Prev (compressed, r401–419 — full detail in `reports/`, checklists in Task Queue Status below):** EMB-PRINT-AGENT T1–T3 (backend `V10` pairing/discovered-printers schema+endpoints r417; agent `CredentialStore`/DPAPI/`StatusHub` r418; agent `PairingClient`/`WindowsPrinterEnumerator` r419); SaaS favicon distinct from landing r415; Settings "Información" tab + logo polish r412–414; waiter cash-register/TopNav hotfixes r409–411; landing contact form (`ContactForm.tsx`+Turnstile+Resend — needs Cloudflare `TURNSTILE_SECRET_KEY`/`RESEND_API_KEY`/`PUBLIC_TURNSTILE_SITE_KEY`/`CONTACT_TO`) r404–408; Ember Local on-premise page r401–402.
-- **Current Active Task:** none — **KDS-BULK-STATUS-UPDATE done** (all 4 tasks, reports 464–467: bulk service method, bulk endpoint, frontend API+i18n, `FocusedCard.tsx` UI). Plan `docs/superpowers/plans/2026-09-13-kds-bulk-status-update.md`. No live UI verification in a real browser yet (unit/component tests only) — worth a manual check next time the Hub/KDS is exercised live.
+- **Current Active Task:** **PLAN-GATING-PHASE1** — Task 1 of 10 starting next (`PlanGateService` core). Spec `docs/superpowers/specs/2026-09-14-plan-gating-design.md`, plan `docs/superpowers/plans/2026-09-14-plan-gating-phase1.md`. One task per context, `/clear` between each.
+- **Prev active:** none — **KDS-BULK-STATUS-UPDATE done** (all 4 tasks, reports 464–467: bulk service method, bulk endpoint, frontend API+i18n, `FocusedCard.tsx` UI). Plan `docs/superpowers/plans/2026-09-13-kds-bulk-status-update.md`. No live UI verification in a real browser yet (unit/component tests only) — worth a manual check next time the Hub/KDS is exercised live.
 - **Prev active:** **EMBER-HUB-V2** — Tauri native shell for the Hub, same pattern as PRINT-AGENT-V2. **Code/doc-complete (reports 449–454, +post-completion fix rounds 455–463)**; only the clean-Windows-machine `VERIFY.md` ops run remains open (see Open/deferred).
 - **Prev active:** **PRINT-AGENT-V2** — Tauri native shell for printer-agent. **Code-complete (reports 438–443)**; reports 444–448 are post-completion polish. Only the clean-Windows-machine manual `VERIFY.md` run remains open.
 - **Prev active:** **EMB-EXPORT** — tenant data Excel export, **DONE** — merged PR #120, tagged + deployed backend `v0.2.4`. Plan `docs/superpowers/plans/2026-09-11-tenant-data-csv-export.md`.
@@ -57,6 +58,19 @@
 - Missing shadcn primitives are built from the installed unified `radix-ui` export (`data-slot` convention), not a new dep.
 
 ## Task Queue Status
+
+### PLAN-GATING-PHASE1 — restaurant.plan actually restricts features — spec `docs/superpowers/specs/2026-09-14-plan-gating-design.md`, plan `docs/superpowers/plans/2026-09-14-plan-gating-phase1.md`
+Audited landing's marketing plan matrix against the codebase: 6/16 rows don't exist, 4 are spread across many files (deferred), 6 are real single-gate-point features — this phase. New `PlanGateService` (402 `PLAN_LIMIT_EXCEEDED`), forward-only (never retroactive). Self-service tenant plan-change endpoint removed at the end, once the Console has a full replacement. One task per context, `/clear` between.
+- [ ] Task 1 — `PlanGateService` + `PlanLimitExceededException` + 402 handler + frontend `extractPlanGateError`
+- [ ] Task 2 — gate: dining table count (`SettingService.updateSettings`)
+- [ ] Task 3 — gate: cash register open (`CashShiftController.open`, STARTER+)
+- [ ] Task 4 — gate: analytics period filters (`AnalyticsController.getSales`, STARTER+)
+- [ ] Task 5 — gate: tenant data export (`ExportController`, PRO+)
+- [ ] Task 6 — gate: custom branding (`SettingService.updateSettings`, STARTER+)
+- [ ] Task 7 — gate: KITCHEN/ACCOUNTANT staff roles (`UserAdminService.create`, STARTER+)
+- [ ] Task 8 — Console: assign plan when creating a tenant
+- [ ] Task 9 — Console: change a tenant's plan after creation, audited
+- [ ] Task 10 — remove tenant self-service `PATCH /admin/restaurant/plan`, regen `backend-types.ts`
 
 ### KDS-BULK-STATUS-UPDATE — kitchen bulk item status — plan `docs/superpowers/plans/2026-09-13-kds-bulk-status-update.md`
 Focused-ticket-only bulk select (checkbox per dish + select-all) + status dropdown; each dish walks every intermediate status one at a time (forward/backward) to the chosen target. New, separate backend method/endpoint — existing `updateItemStatus`/`isValidTransition` and `QueueCard.tsx` untouched. One task per context, `/clear` between.
@@ -84,26 +98,8 @@ Admin exports sales/billing + product-performance history as a `.zip` of CSVs fr
 - [x] Task 5 — frontend `exportService` + `ExportSettings.tsx` (date range + download button) — report 432
 - [x] Task 6 — wire "Exportar datos" tab into Settings (`uiStore`, `SettingsBar`, `GlobalSearchResults`, `Settings.tsx`) — report 433, **EMB-EXPORT complete**
 
-### EMB-FEAT-HUB — Ember Hub: waiter-managed seats — DONE, report 398, merged in #98
-- [x] Strip the customer flow from the Hub build (`isHubBuild` = `import.meta.env.BASE_URL !== '/'`); waiter opens a table with N name-only seats (`Participant.userId == null`, auto-named "Asiento N"), renames/adds/removes them, adds items per seat via the existing `waiter-items` path, split billing works unchanged. No DB migration. Branch `spec/hub-waiter-seats` (off `main` post-#97).
-  - [x] T1 seat seeding (`CreateSessionRequest.seatNames` + `createSession` 4-arg; position-based auto-name w/ collision bump)
-  - [x] T2 null-safety sweep (8 `Objects.equals` sites + controller) + `LoyaltyAccountJoinListener` null-`userId` guard
-  - [x] T3 `ParticipantRenamed` event → session + waiter WS topics
-  - [x] T4 `POST /sessions/{id}/participants` (add seat, lowest-free "Asiento N")
-  - [x] T5 `PATCH` rename (bill-blocked 409, cascades item/activity names) + `DELETE …/{name}` remove (leave semantics) + `HubSeatFlowIntegrationTest`
-  - [x] T6 `lib/isHubBuild.ts`, `App.tsx` lazy customer pages + `!isHubBuild` route gate, `Login.tsx` → shared module
-  - [x] T7 `ParticipantsQrModal` Hub branch (seat-name inputs, no QR) + `createSession` 3rd arg + navigate to `/waiter/tables/{id}`
-  - [x] T8 `SeatFormModal` (add/rename/remove-confirm) + `TableInformation` seat controls + API + `participant.name` key + WS invalidation
-  - [x] T9 hide loyalty admin UI in the Hub build (`SettingsBar`, `Settings.renderContent`, `GlobalSearchResults`)
-  - [x] T10 i18n ES/EN, report 398, PROGRESS, squash, PR
-- Known: `HubSeatFlowIntegrationTest` skips the bill-blocks-rename 409 (billing precondition not worth satisfying in that test); covered by `renameSeat_billExists_*` unit/slice tests.
-
-### Post-audit hardening — DONE, report 399, merged in #99
-- [x] 1 `@Transactional` on `addSeat`/`renameSeat`/`removeSeat` endpoints
-- [x] 2 `App.hubBuild.test.tsx` de-flaked (mock `isHubBuild`, no `resetModules`/dynamic `import('./App')`); frontend suite 79s→43s
-- [x] 3 `addSeat` 409s at capacity, no silent `maxParticipants` bump; unit + `HubSeatFlowIntegrationTest` updated (calls `PATCH /capacity` first)
-- [x] 4 cruft: `to_delete/` (license blob) + `docs/~$CHITECTURE.docx` removed; `.gitignore` += `*.key` / `.claude/skills/` / `~$*`
-- [x] 5 public guest code-join — new `/join` page `JoinByCode` (Hub-build-gated) → existing `/sessions/join-as-guest` `{joinCode,name}`; i18n ES/EN
+### EMB-FEAT-HUB + Post-audit hardening — DONE, reports 398-399, merged #98/#99
+- [x] Hub waiter-managed seats (T1-T10: seat seeding, null-safety sweep, `ParticipantRenamed`, add/rename/remove endpoints, `isHubBuild` frontend fork, seat controls, loyalty UI hidden) + hardening (`@Transactional` on seat endpoints, `addSeat` capacity 409, cruft cleanup, public `/join` guest code page). `HubSeatFlowIntegrationTest` skips the bill-blocks-rename 409 (covered by unit/slice tests instead).
 
 ### Landing — Ember Local (on-premise) — DONE, r401 (merged #100) + r402 (PR #101 open)
 - [x] `EmberLocal.astro` home band (after `<Compare/>`) + `LocalPlan.astro` on `/planes` (`#local`) + `/funcionalidades` callout (report 401)
@@ -127,8 +123,7 @@ Admin exports sales/billing + product-performance history as a `.zip` of CSVs fr
 - [ ] Ops (not code, not a Hub-v2 blocker): baseline prod Flyway — inspect `flyway_schema_history` from Cloud Shell first
 
 ### Guest table-join (Cloud) — DONE, report 397, PR #97 merged
-- [x] T1 `GuestNameGenerator` · [x] T2 `V9` + `User.guest` + `GuestUserService` · [x] T3 `ParticipantJoined.guest` + loyalty guards · [x] T4 `POST /sessions/join-as-guest` · [x] T5 frontend "Entrar como invitado" on `/menu/join` · [x] T6 report + squash + PR.
-- [x] Follow-up (report 399): public **code-entry-as-guest** page — `/join` (`JoinByCode`), 5-char code + optional name, no account, no QR.
+- [x] `GuestNameGenerator`, `V9`/`User.guest`/`GuestUserService`, `ParticipantJoined.guest` + loyalty guards, `POST /sessions/join-as-guest`, frontend "Entrar como invitado". Follow-up (r399): public code-entry-as-guest `/join` page.
 
 ### EMB-PRINT-AGENT — Print agent: desktop app + Windows installer — plan `docs/superpowers/plans/2026-09-08-print-agent-installer.md`
 Cloud agent only (spec §4.1 Hub-local detection = separate future plan). One task per context, `/clear` between.
