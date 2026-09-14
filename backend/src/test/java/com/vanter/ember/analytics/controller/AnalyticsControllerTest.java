@@ -50,6 +50,7 @@ class AnalyticsControllerTest {
     @MockBean JwtService jwtService;
     @MockBean UserDetailsService userDetailsService;
     @MockBean RestaurantRepository restaurantRepository;
+    @MockBean com.vanter.ember.restaurant.service.PlanGateService planGateService;
 
     private static final UUID TENANT_ID = UUID.randomUUID();
     private static final UUID OTHER_TENANT_ID = UUID.randomUUID();
@@ -289,6 +290,32 @@ class AnalyticsControllerTest {
         mockMvc.perform(get("/admin/analytics/sales")).andExpect(status().isUnauthorized());
 
         verify(analyticsService, never()).getSales(any(), any(), any(), any());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void sales_blockedWhenNonDayGranularityAndPlanBelowStarter() throws Exception {
+        TenantContextHolder.setTenantId(TENANT_ID);
+        org.mockito.Mockito.doThrow(new com.vanter.ember.restaurant.exception.PlanLimitExceededException(
+                        "periodfilters", com.vanter.ember.restaurant.model.RestaurantPlan.STARTER,
+                        com.vanter.ember.restaurant.model.RestaurantPlan.FREE))
+                .when(planGateService).requirePlanAtLeast(
+                        TENANT_ID, com.vanter.ember.restaurant.model.RestaurantPlan.STARTER, "periodfilters");
+
+        mockMvc.perform(get("/admin/analytics/sales").param("granularity", "week"))
+                .andExpect(status().isPaymentRequired())
+                .andExpect(jsonPath("$.code").value("PLAN_LIMIT_EXCEEDED"));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void sales_defaultDayGranularityIsNeverGated() throws Exception {
+        TenantContextHolder.setTenantId(TENANT_ID);
+        when(analyticsService.getSales(TENANT_ID, null, null, null)).thenReturn(salesFixture());
+
+        mockMvc.perform(get("/admin/analytics/sales")).andExpect(status().isOk());
+
+        verify(planGateService, never()).requirePlanAtLeast(any(), any(), any());
     }
 
     private static AnalyticsProductsResponse productsFixture() {
