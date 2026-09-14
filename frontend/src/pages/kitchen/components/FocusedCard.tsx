@@ -1,6 +1,9 @@
+import { useState } from 'react'
 import { kitchenServices, type kitchenOrders, type OrderItemStatus } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { getColorForTable } from '@/components/AvatarInitials'
 import { Clock, TicketCheck, UserCheck } from 'lucide-react'
@@ -9,9 +12,14 @@ import toast from 'react-hot-toast'
 import { NEXT_ACTION_LABEL, NEXT_STATUS, STATUS_LABEL } from '../lib/itemStatus'
 import { useTranslation } from '@/lib/i18n'
 
+const BULK_TARGET_STATUSES: OrderItemStatus[] = ['PENDING', 'PREPARING', 'READY', 'DELIVERED']
+
 export const FocusedCard = ({ order }: { order: kitchenOrders }) => {
   const queryClient = useQueryClient()
   const { t } = useTranslation('kitchen')
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+
+  const visibleItems = order.items?.filter((item) => item.status !== 'DELIVERED') ?? []
 
   const updateItemStatusMutation = useMutation({
     mutationFn: ({ itemId, status }: { itemId: string; status: OrderItemStatus }) =>
@@ -23,6 +31,33 @@ export const FocusedCard = ({ order }: { order: kitchenOrders }) => {
       toast.error(t('itemStatusUpdateErrorToast'))
     },
   })
+
+  const bulkUpdateMutation = useMutation({
+    mutationFn: (status: OrderItemStatus) =>
+      kitchenServices.updateItemsStatus(order.id!, Array.from(selectedIds), status),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['kitchenOrders'] })
+      setSelectedIds(new Set())
+    },
+    onError: () => {
+      toast.error(t('itemStatusUpdateErrorToast'))
+    },
+  })
+
+  const toggleItem = (itemId: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(itemId)) next.delete(itemId)
+      else next.add(itemId)
+      return next
+    })
+  }
+
+  const allSelected = visibleItems.length > 0 && selectedIds.size === visibleItems.length
+
+  const toggleSelectAll = () => {
+    setSelectedIds(allSelected ? new Set() : new Set(visibleItems.map((item) => item.itemId!)))
+  }
 
   return (
     <>
@@ -55,10 +90,37 @@ export const FocusedCard = ({ order }: { order: kitchenOrders }) => {
                 </Button>
               </div>
             </div>
+            <div className="w-full flex items-center gap-3">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={toggleSelectAll}
+                disabled={visibleItems.length === 0}
+              >
+                {allSelected ? t('kdsDeselectAll') : t('kdsSelectAll')}
+              </Button>
+              {selectedIds.size > 0 && (
+                <Select
+                  disabled={bulkUpdateMutation.isPending}
+                  onValueChange={(value) => bulkUpdateMutation.mutate(value as OrderItemStatus)}
+                >
+                  <SelectTrigger className="rounded-xl">
+                    <SelectValue placeholder={t('kdsBulkStatusPlaceholder')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {BULK_TARGET_STATUSES.map((status) => (
+                      <SelectItem key={status} value={status}>
+                        {STATUS_LABEL[status]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
           </CardHeader>
           <CardContent>
             <ul className="flex flex-wrap gap-3">
-              {order.items?.filter((item) => item.status !== 'DELIVERED').map((item) => {
+              {visibleItems.map((item) => {
                 const status = item.status ?? 'PENDING'
                 const next = NEXT_STATUS[status]
                 return (
@@ -66,6 +128,12 @@ export const FocusedCard = ({ order }: { order: kitchenOrders }) => {
                     key={item.itemId}
                     className="flex items-center gap-3 rounded-2xl border border-gray-200 px-4 py-2"
                   >
+                    <Checkbox
+                      className="rounded-full"
+                      aria-label={t('kdsSelectItemAriaLabel', { name: item.name ?? '' })}
+                      checked={selectedIds.has(item.itemId!)}
+                      onCheckedChange={() => toggleItem(item.itemId!)}
+                    />
                     <div className="flex flex-col gap-1">
                       <span className="text-sm font-semibold text-gray-800">
                         {item.name}
