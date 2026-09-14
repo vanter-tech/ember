@@ -194,9 +194,8 @@ export const Tables = () => {
                 )}
                 <Button
                   id="waiter-tour-assign"
-                  variant={'outline'}
                   className="w-full text-md"
-                  disabled={!isCajaOpen}
+                  disabled={!isCajaOpen || tableDetails.isOccupied}
                   onClick={(e) => {
                     openModal('PARTICIPANTS_QR', tableDetails)
                     e.preventDefault()
