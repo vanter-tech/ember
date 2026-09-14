@@ -2,6 +2,7 @@ package com.vanter.ember.kitchen.controller;
 
 import com.vanter.ember.kitchen.dto.KitchenDisplayEntry;
 import com.vanter.ember.kitchen.dto.UpdateItemStatusRequest;
+import com.vanter.ember.kitchen.dto.UpdateItemsStatusRequest;
 import com.vanter.ember.kitchen.model.KitchenOrder;
 import com.vanter.ember.kitchen.service.KitchenService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -55,5 +56,13 @@ public class KitchenController {
                                          @PathVariable String itemId,
                                          @Valid @RequestBody UpdateItemStatusRequest request) {
         return kitchenService.updateItemStatus(orderId, itemId, request.status());
+    }
+
+    @Operation(summary = "Bulk-update several items to the same status at once (KITCHEN)")
+    @PatchMapping("/orders/{orderId}/items/status")
+    @PreAuthorize("hasRole('KITCHEN')")
+    public KitchenOrder updateItemsStatus(@PathVariable String orderId,
+                                           @Valid @RequestBody UpdateItemsStatusRequest request) {
+        return kitchenService.updateItemsStatus(orderId, request.itemIds(), request.status());
     }
 }
