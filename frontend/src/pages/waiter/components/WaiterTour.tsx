@@ -18,7 +18,6 @@ export const WaiterTour = ({ tableIds, onSelectFirstTable }: WaiterTourProps) =>
   const steps: Step[] = [
     { target: '#waiter-tour-grid', title: t('tourGridTitle'), content: t('tourGridContent'), skipBeacon: true },
     { target: '#waiter-tour-panel', title: t('tourPanelTitle'), content: t('tourPanelContent') },
-    { target: '#waiter-tour-action', title: t('tourActionTitle'), content: t('tourActionContent') },
     { target: '#waiter-tour-assign', title: t('tourAssignTitle'), content: t('tourAssignContent') },
   ]
 

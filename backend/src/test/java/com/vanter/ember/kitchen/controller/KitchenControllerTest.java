@@ -6,6 +6,7 @@ import com.vanter.ember.config.SecurityConfig;
 import com.vanter.ember.identity.service.JwtService;
 import com.vanter.ember.kitchen.dto.KitchenDisplayEntry;
 import com.vanter.ember.kitchen.dto.UpdateItemStatusRequest;
+import com.vanter.ember.kitchen.dto.UpdateItemsStatusRequest;
 import com.vanter.ember.kitchen.model.KitchenItem;
 import com.vanter.ember.kitchen.model.KitchenOrder;
 import com.vanter.ember.kitchen.service.KitchenService;
@@ -174,6 +175,63 @@ class KitchenControllerTest {
         mockMvc.perform(patch("/kitchen/orders/ko-1/items/order-item-1/status")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new UpdateItemStatusRequest(OrderItemStatus.PREPARING))))
+                .andExpect(status().isUnauthorized());
+    }
+
+    // --- PATCH /kitchen/orders/{orderId}/items/status (bulk) ---
+
+    @Test
+    @WithMockUser(roles = "KITCHEN")
+    void updateItemsStatus_returnsUpdatedOrderForKitchen() throws Exception {
+        KitchenOrder updated = sampleOrder();
+        updated.getItems().get(0).setStatus(OrderItemStatus.READY);
+        when(kitchenService.updateItemsStatus("ko-1", List.of("order-item-1"), OrderItemStatus.READY))
+                .thenReturn(updated);
+
+        mockMvc.perform(patch("/kitchen/orders/ko-1/items/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                new UpdateItemsStatusRequest(List.of("order-item-1"), OrderItemStatus.READY))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].status").value("READY"));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void updateItemsStatus_forbiddenForAdmin() throws Exception {
+        mockMvc.perform(patch("/kitchen/orders/ko-1/items/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                new UpdateItemsStatusRequest(List.of("order-item-1"), OrderItemStatus.READY))))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "WAITER")
+    void updateItemsStatus_forbiddenForWaiter() throws Exception {
+        mockMvc.perform(patch("/kitchen/orders/ko-1/items/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                new UpdateItemsStatusRequest(List.of("order-item-1"), OrderItemStatus.READY))))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "CUSTOMER")
+    void updateItemsStatus_forbiddenForCustomer() throws Exception {
+        mockMvc.perform(patch("/kitchen/orders/ko-1/items/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                new UpdateItemsStatusRequest(List.of("order-item-1"), OrderItemStatus.READY))))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void updateItemsStatus_unauthenticatedReturns401() throws Exception {
+        mockMvc.perform(patch("/kitchen/orders/ko-1/items/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                new UpdateItemsStatusRequest(List.of("order-item-1"), OrderItemStatus.READY))))
                 .andExpect(status().isUnauthorized());
     }
 

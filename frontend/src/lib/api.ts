@@ -563,6 +563,13 @@ export const kitchenServices = {
       { status }
     )
     return data
+  },
+  updateItemsStatus: async (orderId: string, itemIds: string[], status: OrderItemStatus): Promise<kitchenOrders> => {
+    const { data } = await api.patch<kitchenOrders>(
+      `/kitchen/orders/${orderId}/items/status`,
+      { itemIds, status }
+    )
+    return data
   }
 
 }
@@ -809,6 +816,14 @@ export const printingService = {
   ): Promise<{ jobId: string; status: string }> => {
     const { data } = await api.post<{ jobId: string; status: string }>(
       `/printing/bills/${billId}/receipt`
+    )
+    return data
+  },
+  printKitchenTicket: async (
+    orderId: string
+  ): Promise<{ jobId: string; status: string }> => {
+    const { data } = await api.post<{ jobId: string; status: string }>(
+      `/printing/kitchen-orders/${orderId}/ticket`
     )
     return data
   },

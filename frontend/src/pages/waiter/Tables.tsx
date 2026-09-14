@@ -112,7 +112,7 @@ export const Tables = () => {
                   M{table.tableNumber}
                 </span>
                 <div
-                  className={`flex items-center justify-center gap-1 rounded-full h-6 w-11 ${table.isOccupied ? 'border-2 bg-[#8b0000] text-white' : 'bg-[#f3f4f6] text-black'}}`}
+                  className={`flex items-center justify-center gap-1 rounded-full h-6 w-11 bg-white text-black ${table.isOccupied ? 'border-2 border-[#8b0000]' : ''}`}
                 >
                   <Users className="h-4 w-4" />
                   {table.isOccupied
@@ -187,25 +187,15 @@ export const Tables = () => {
                 )}
               </div>
               <div className="flex flex-col gap-4 mt-6">
-                <Button id="waiter-tour-action" className="w-full text-md">
-                  {tableDetails.isOccupied ? t('chargeTableButton') : t('openTableButton')}
-                </Button>
-                {tableDetails.isOccupied ? (
+                {tableDetails.isOccupied && (
                   <Link to={tableDetails.currentSession?.sessionId + ''}>
                     <Button className="w-full text-md">{t('viewInfoButton')}</Button>
                   </Link>
-                ) : (
-                  ' '
                 )}
-                <Button variant={'outline'} className="w-full text-md">
-                  {t('printBillButton')}
-                </Button>
-
                 <Button
                   id="waiter-tour-assign"
-                  variant={'outline'}
                   className="w-full text-md"
-                  disabled={!isCajaOpen}
+                  disabled={!isCajaOpen || tableDetails.isOccupied}
                   onClick={(e) => {
                     openModal('PARTICIPANTS_QR', tableDetails)
                     e.preventDefault()

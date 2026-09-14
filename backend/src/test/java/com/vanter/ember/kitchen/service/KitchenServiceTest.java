@@ -230,6 +230,126 @@ class KitchenServiceTest {
         assertThat(captor.getValue().newStatus()).isEqualTo(OrderItemStatus.PREPARING);
     }
 
+    // --- updateItemsStatus (bulk) tests ---
+
+    private KitchenItem itemWithStatus(String itemId, OrderItemStatus status) {
+        return KitchenItem.builder()
+                .itemId(itemId).name("Tacos").participantName("Alice")
+                .status(status).updatedAt(LocalDateTime.now()).build();
+    }
+
+    private KitchenOrder orderWithItems(KitchenItem... items) {
+        return KitchenOrder.builder()
+                .id("ko-1").tenantId(TENANT_ID).sessionId("sess-1").tableNumber(5)
+                .active(true).items(new ArrayList<>(List.of(items))).build();
+    }
+
+    @Test
+    void updateItemsStatus_walksForwardThroughEveryIntermediateStep() {
+        when(kitchenOrderRepository.findByIdAndTenantId("ko-1", TENANT_ID))
+                .thenReturn(Optional.of(orderWithItems(itemWithStatus("order-item-1", OrderItemStatus.PENDING))));
+        when(kitchenOrderRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        KitchenOrder result = kitchenService.updateItemsStatus(
+                "ko-1", List.of("order-item-1"), OrderItemStatus.DELIVERED);
+
+        assertThat(result.getItems().get(0).getStatus()).isEqualTo(OrderItemStatus.DELIVERED);
+
+        ArgumentCaptor<KitchenItemUpdated> captor = ArgumentCaptor.forClass(KitchenItemUpdated.class);
+        verify(eventPublisher, org.mockito.Mockito.times(3)).publishEvent(captor.capture());
+        assertThat(captor.getAllValues().stream().map(KitchenItemUpdated::newStatus))
+                .containsExactly(OrderItemStatus.PREPARING, OrderItemStatus.READY, OrderItemStatus.DELIVERED);
+    }
+
+    @Test
+    void updateItemsStatus_walksBackwardThroughEveryIntermediateStep() {
+        when(kitchenOrderRepository.findByIdAndTenantId("ko-1", TENANT_ID))
+                .thenReturn(Optional.of(orderWithItems(itemWithStatus("order-item-1", OrderItemStatus.READY))));
+        when(kitchenOrderRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        KitchenOrder result = kitchenService.updateItemsStatus(
+                "ko-1", List.of("order-item-1"), OrderItemStatus.PENDING);
+
+        assertThat(result.getItems().get(0).getStatus()).isEqualTo(OrderItemStatus.PENDING);
+
+        ArgumentCaptor<KitchenItemUpdated> captor = ArgumentCaptor.forClass(KitchenItemUpdated.class);
+        verify(eventPublisher, org.mockito.Mockito.times(2)).publishEvent(captor.capture());
+        assertThat(captor.getAllValues().stream().map(KitchenItemUpdated::newStatus))
+                .containsExactly(OrderItemStatus.PREPARING, OrderItemStatus.PENDING);
+    }
+
+    @Test
+    void updateItemsStatus_advancesSeveralItemsIndependentlyFromWhereverTheyAre() {
+        when(kitchenOrderRepository.findByIdAndTenantId("ko-1", TENANT_ID))
+                .thenReturn(Optional.of(orderWithItems(
+                        itemWithStatus("order-item-1", OrderItemStatus.PENDING),
+                        itemWithStatus("order-item-2", OrderItemStatus.PREPARING))));
+        when(kitchenOrderRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        KitchenOrder result = kitchenService.updateItemsStatus(
+                "ko-1", List.of("order-item-1", "order-item-2"), OrderItemStatus.READY);
+
+        assertThat(result.getItems()).extracting(KitchenItem::getStatus)
+                .containsExactly(OrderItemStatus.READY, OrderItemStatus.READY);
+    }
+
+    @Test
+    void updateItemsStatus_isANoOpWhenItemAlreadyAtTargetStatus() {
+        when(kitchenOrderRepository.findByIdAndTenantId("ko-1", TENANT_ID))
+                .thenReturn(Optional.of(orderWithItems(itemWithStatus("order-item-1", OrderItemStatus.READY))));
+        when(kitchenOrderRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        kitchenService.updateItemsStatus("ko-1", List.of("order-item-1"), OrderItemStatus.READY);
+
+        verify(eventPublisher, org.mockito.Mockito.never()).publishEvent(any(KitchenItemUpdated.class));
+    }
+
+    @Test
+    void updateItemsStatus_retiresOrderWhenAllItemsReachDelivered() {
+        when(kitchenOrderRepository.findByIdAndTenantId("ko-1", TENANT_ID))
+                .thenReturn(Optional.of(orderWithItems(itemWithStatus("order-item-1", OrderItemStatus.READY))));
+        when(kitchenOrderRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        KitchenOrder result = kitchenService.updateItemsStatus(
+                "ko-1", List.of("order-item-1"), OrderItemStatus.DELIVERED);
+
+        assertThat(result.isActive()).isFalse();
+        verify(eventPublisher).publishEvent(any(KitchenOrderRetired.class));
+    }
+
+    @Test
+    void updateItemsStatus_reactivatesOrderWhenMovedAwayFromAllDelivered() {
+        KitchenOrder order = orderWithItems(itemWithStatus("order-item-1", OrderItemStatus.DELIVERED));
+        order.setActive(false);
+        when(kitchenOrderRepository.findByIdAndTenantId("ko-1", TENANT_ID)).thenReturn(Optional.of(order));
+        when(kitchenOrderRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        KitchenOrder result = kitchenService.updateItemsStatus(
+                "ko-1", List.of("order-item-1"), OrderItemStatus.READY);
+
+        assertThat(result.isActive()).isTrue();
+        verify(eventPublisher, org.mockito.Mockito.never()).publishEvent(any(KitchenOrderRetired.class));
+    }
+
+    @Test
+    void updateItemsStatus_throwsWhenOrderNotFound() {
+        when(kitchenOrderRepository.findByIdAndTenantId("ko-999", TENANT_ID)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> kitchenService.updateItemsStatus(
+                "ko-999", List.of("order-item-1"), OrderItemStatus.READY))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void updateItemsStatus_throwsWhenAnyItemNotFound() {
+        when(kitchenOrderRepository.findByIdAndTenantId("ko-1", TENANT_ID))
+                .thenReturn(Optional.of(orderWithItems(itemWithStatus("order-item-1", OrderItemStatus.PENDING))));
+
+        assertThatThrownBy(() -> kitchenService.updateItemsStatus(
+                "ko-1", List.of("order-item-1", "nonexistent-item"), OrderItemStatus.READY))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
     // --- handleSessionClosed tests ---
 
     @Test
