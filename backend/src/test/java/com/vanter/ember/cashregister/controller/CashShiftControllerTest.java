@@ -61,7 +61,7 @@ class CashShiftControllerTest {
     }
 
     private User sampleUser(String email) {
-        return User.builder().id("user-1").email(email).name("Alice").role(Role.WAITER).build();
+        return User.builder().id("user-1").email(email).name("Alice").role(Role.ACCOUNTANT).build();
     }
 
     private CashShift sampleShift() {
@@ -71,11 +71,11 @@ class CashShiftControllerTest {
     }
 
     @Test
-    @WithMockUser(username = "waiter@ember.local", roles = "WAITER")
-    void open_returnsCreatedForWaiter() throws Exception {
+    @WithMockUser(username = "accountant@ember.local", roles = "ACCOUNTANT")
+    void open_returnsCreatedForAccountant() throws Exception {
         TenantContextHolder.setTenantId(TENANT_ID);
-        when(userRepository.findByEmail("waiter@ember.local"))
-                .thenReturn(Optional.of(sampleUser("waiter@ember.local")));
+        when(userRepository.findByEmail("accountant@ember.local"))
+                .thenReturn(Optional.of(sampleUser("accountant@ember.local")));
         when(cashShiftService.openShift(any(), eq("user-1"), any(BigDecimal.class)))
                 .thenReturn(sampleShift());
         when(cashShiftService.toResponse(any())).thenReturn(new CashShiftResponse(
@@ -92,7 +92,17 @@ class CashShiftControllerTest {
     }
 
     @Test
-    @WithMockUser(username = "waiter@ember.local", roles = "WAITER")
+    @WithMockUser(roles = "WAITER")
+    void open_forbiddenForWaiter() throws Exception {
+        OpenShiftRequest request = new OpenShiftRequest(new BigDecimal("100.00"));
+        mockMvc.perform(post("/cash-shifts/open")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(username = "accountant@ember.local", roles = "ACCOUNTANT")
     void current_returnsEmpty200WhenNoShiftOpen() throws Exception {
         TenantContextHolder.setTenantId(TENANT_ID);
         when(cashShiftService.findCurrentOpenShift(TENANT_ID)).thenReturn(Optional.empty());
@@ -103,7 +113,7 @@ class CashShiftControllerTest {
     }
 
     @Test
-    @WithMockUser(username = "waiter@ember.local", roles = "WAITER")
+    @WithMockUser(username = "accountant@ember.local", roles = "ACCOUNTANT")
     void current_returnsTheOpenShiftWhenOneExists() throws Exception {
         TenantContextHolder.setTenantId(TENANT_ID);
         when(cashShiftService.findCurrentOpenShift(TENANT_ID)).thenReturn(Optional.of(sampleShift()));
@@ -118,6 +128,20 @@ class CashShiftControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = "WAITER")
+    void current_forbiddenForWaiter() throws Exception {
+        mockMvc.perform(get("/cash-shifts/current"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void current_forbiddenForAdmin() throws Exception {
+        mockMvc.perform(get("/cash-shifts/current"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     @WithMockUser(roles = "ADMIN")
     void open_forbiddenForAdmin() throws Exception {
         OpenShiftRequest request = new OpenShiftRequest(new BigDecimal("100.00"));
@@ -125,6 +149,25 @@ class CashShiftControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(username = "accountant@ember.local", roles = "ACCOUNTANT")
+    void recordMovement_returnsCreatedForAccountant() throws Exception {
+        when(userRepository.findByEmail("accountant@ember.local"))
+                .thenReturn(Optional.of(sampleUser("accountant@ember.local")));
+        when(cashShiftService.recordMovement(eq(1L), eq("user-1"), eq(CashMovementType.CASH_OUT),
+                any(BigDecimal.class), eq("safe drop")))
+                .thenReturn(com.vanter.ember.cashregister.model.CashMovement.builder()
+                        .id(1L).type(CashMovementType.CASH_OUT).amount(new BigDecimal("10.00"))
+                        .reason("safe drop").build());
+
+        RecordMovementRequest request =
+                new RecordMovementRequest(CashMovementType.CASH_OUT, new BigDecimal("10.00"), "safe drop");
+        mockMvc.perform(post("/cash-shifts/1/movements")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated());
     }
 
     @Test
@@ -139,10 +182,21 @@ class CashShiftControllerTest {
     }
 
     @Test
-    @WithMockUser(username = "waiter@ember.local", roles = "WAITER")
-    void close_returnsOkAndRevealsVarianceForWaiter() throws Exception {
-        when(userRepository.findByEmail("waiter@ember.local"))
-                .thenReturn(Optional.of(sampleUser("waiter@ember.local")));
+    @WithMockUser(roles = "WAITER")
+    void recordMovement_forbiddenForWaiter() throws Exception {
+        RecordMovementRequest request =
+                new RecordMovementRequest(CashMovementType.CASH_OUT, new BigDecimal("10.00"), "safe drop");
+        mockMvc.perform(post("/cash-shifts/1/movements")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(username = "accountant@ember.local", roles = "ACCOUNTANT")
+    void close_returnsOkAndRevealsVarianceForAccountant() throws Exception {
+        when(userRepository.findByEmail("accountant@ember.local"))
+                .thenReturn(Optional.of(sampleUser("accountant@ember.local")));
         CashShift closed = sampleShift();
         closed.setStatus(CashShiftStatus.CLOSED);
         when(cashShiftService.closeShift(eq(1L), eq("user-1"), any(BigDecimal.class))).thenReturn(closed);
@@ -164,8 +218,32 @@ class CashShiftControllerTest {
 
     @Test
     @WithMockUser(roles = "WAITER")
+    void close_forbiddenForWaiter() throws Exception {
+        CloseShiftRequest request = new CloseShiftRequest(new BigDecimal("260.00"));
+        mockMvc.perform(post("/cash-shifts/1/close")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "WAITER")
     void dailyReport_forbiddenForWaiter() throws Exception {
         mockMvc.perform(get("/cash-shifts/daily-report").param("date", "2026-08-16"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "WAITER")
+    void history_forbiddenForWaiter() throws Exception {
+        mockMvc.perform(get("/cash-shifts"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "WAITER")
+    void detail_forbiddenForWaiter() throws Exception {
+        mockMvc.perform(get("/cash-shifts/1"))
                 .andExpect(status().isForbidden());
     }
 }

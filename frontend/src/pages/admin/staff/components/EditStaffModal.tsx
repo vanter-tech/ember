@@ -39,7 +39,7 @@ const editStaffSchemaFactory = (t: ReturnType<typeof useTranslation<'admin'>>['t
   z.object({
     name: z.string().min(2, t('staffNameMinLengthError')),
     email: z.string().email(t('staffEmailInvalidError')),
-    role: z.enum(['WAITER', 'KITCHEN', 'ADMIN']),
+    role: z.enum(['WAITER', 'KITCHEN', 'ADMIN', 'ACCOUNTANT']),
     jobTitle: z.string(),
     shift: z.string(),
     contractType: z.string(),
@@ -283,6 +283,7 @@ export const EditStaffModal = () => {
                     <SelectContent>
                       <SelectItem value="WAITER">{ROLE_LABELS.WAITER}</SelectItem>
                       <SelectItem value="KITCHEN">{ROLE_LABELS.KITCHEN}</SelectItem>
+                      <SelectItem value="ACCOUNTANT">{ROLE_LABELS.ACCOUNTANT}</SelectItem>
                       <SelectItem value="ADMIN">{ROLE_LABELS.ADMIN}</SelectItem>
                     </SelectContent>
                   </Select>

@@ -15,8 +15,9 @@ import { ListMenuItem } from './pages/admin/ListMenuItem'
 import { ModifierGroups } from './pages/admin/ModifierGroups'
 import { Inventory } from './pages/admin/Inventory'
 import { Tables } from '@/pages/waiter/Tables'
-import { CashRegister as WaiterCashRegister } from '@/pages/waiter/cashRegister/CashRegister'
 import { WaiterLayout } from '@/layouts/WaiterLayout'
+import { AccountantLayout } from '@/layouts/AccountantLayout'
+import { CashRegister as AccountantCashRegister } from '@/pages/accountant/cashRegister/CashRegister'
 import { Settings } from './pages/admin/Settings'
 import { Analytics } from './pages/admin/analytics/Analytics'
 import { Staff } from './pages/admin/staff/Staff'
@@ -52,6 +53,7 @@ const RoleRedirect = () => {
   if (role === 'CUSTOMER') return <Navigate to="/customer" replace />
   if (role === 'WAITER') return <Navigate to="/waiter" replace />
   if (role === 'KITCHEN') return <Navigate to="/kitchen" replace />
+  if (role === 'ACCOUNTANT') return <Navigate to="/accountant" replace />
 
   return <Navigate to="/login" replace />
 }
@@ -163,7 +165,13 @@ export default function App() {
             <Route index element={<Navigate to="tables" replace />} />
             <Route path="tables" element={<Tables />} />
             <Route path="tables/:id" element={<TableInformation />} />
-            <Route path="cash-register" element={<WaiterCashRegister />} />
+          </Route>
+        </Route>
+
+        <Route element={<ProtectedRoute allowedRoles={['ACCOUNTANT']} />}>
+          <Route path="/accountant" element={<AccountantLayout />}>
+            <Route index element={<Navigate to="cash-register" replace />} />
+            <Route path="cash-register" element={<AccountantCashRegister />} />
           </Route>
         </Route>
 

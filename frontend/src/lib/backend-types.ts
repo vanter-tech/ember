@@ -1960,7 +1960,7 @@ export interface components {
             email: string;
             password: string;
             /** @enum {string} */
-            role: "CUSTOMER" | "WAITER" | "KITCHEN" | "ADMIN";
+            role: "CUSTOMER" | "WAITER" | "KITCHEN" | "ADMIN" | "ACCOUNTANT";
             jobTitle: string;
             shift: string;
             contractType: string;
@@ -1971,7 +1971,7 @@ export interface components {
             name?: string;
             email?: string;
             /** @enum {string} */
-            role?: "CUSTOMER" | "WAITER" | "KITCHEN" | "ADMIN";
+            role?: "CUSTOMER" | "WAITER" | "KITCHEN" | "ADMIN" | "ACCOUNTANT";
             /** Format: date-time */
             createdAt?: string;
             active?: boolean;
@@ -2072,7 +2072,7 @@ export interface components {
         };
         UpdateUserRoleRequest: {
             /** @enum {string} */
-            role: "CUSTOMER" | "WAITER" | "KITCHEN" | "ADMIN";
+            role: "CUSTOMER" | "WAITER" | "KITCHEN" | "ADMIN" | "ACCOUNTANT";
         };
         Restaurant: {
             /** Format: uuid */
@@ -2094,7 +2094,7 @@ export interface components {
             name?: string;
             email?: string;
             /** @enum {string} */
-            role?: "CUSTOMER" | "WAITER" | "KITCHEN" | "ADMIN";
+            role?: "CUSTOMER" | "WAITER" | "KITCHEN" | "ADMIN" | "ACCOUNTANT";
             active?: boolean;
             jobTitle?: string;
             shift?: string;

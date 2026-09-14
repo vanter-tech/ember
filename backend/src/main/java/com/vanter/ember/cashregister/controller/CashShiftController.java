@@ -46,19 +46,19 @@ public class CashShiftController {
     private final CashShiftService cashShiftService;
     private final UserRepository userRepository;
 
-    @Operation(summary = "Open a new cash shift — Apertura de Caja (WAITER)")
+    @Operation(summary = "Open a new cash shift — Apertura de Caja (ACCOUNTANT)")
     @PostMapping("/open")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('WAITER')")
+    @PreAuthorize("hasRole('ACCOUNTANT')")
     public CashShiftResponse open(@Valid @RequestBody OpenShiftRequest request, Authentication authentication) {
         CashShift shift = cashShiftService.openShift(
                 TenantContextHolder.requireTenantId(), resolveUserId(authentication), request.openingFloat());
         return cashShiftService.toResponse(shift);
     }
 
-    @Operation(summary = "Get the tenant's currently open shift, or an empty 200 if none (WAITER/ADMIN)")
+    @Operation(summary = "Get the tenant's currently open shift, or an empty 200 if none (ACCOUNTANT)")
     @GetMapping("/current")
-    @PreAuthorize("hasAnyRole('WAITER','ADMIN')")
+    @PreAuthorize("hasRole('ACCOUNTANT')")
     public CashShiftResponse current() {
         // No open shift is a normal state (register not opened yet) — return an empty 200
         // rather than a 404 so it doesn't show up as an error in the browser console.
@@ -67,9 +67,9 @@ public class CashShiftController {
                 .orElse(null);
     }
 
-    @Operation(summary = "List cash shift history (WAITER/ADMIN)")
+    @Operation(summary = "List cash shift history (ACCOUNTANT/ADMIN)")
     @GetMapping
-    @PreAuthorize("hasAnyRole('WAITER','ADMIN')")
+    @PreAuthorize("hasAnyRole('ACCOUNTANT','ADMIN')")
     public Page<CashShiftResponse> history(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to,
@@ -79,17 +79,17 @@ public class CashShiftController {
                 .map(cashShiftService::toResponse);
     }
 
-    @Operation(summary = "Get one shift's detail including its movements (WAITER/ADMIN)")
+    @Operation(summary = "Get one shift's detail including its movements (ACCOUNTANT/ADMIN)")
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('WAITER','ADMIN')")
+    @PreAuthorize("hasAnyRole('ACCOUNTANT','ADMIN')")
     public CashShiftDetailResponse detail(@PathVariable Long id) {
         return cashShiftService.getDetail(id);
     }
 
-    @Operation(summary = "Record a manual cash movement on an open shift (WAITER)")
+    @Operation(summary = "Record a manual cash movement on an open shift (ACCOUNTANT)")
     @PostMapping("/{id}/movements")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('WAITER')")
+    @PreAuthorize("hasRole('ACCOUNTANT')")
     public CashMovementResponse recordMovement(
             @PathVariable Long id,
             @Valid @RequestBody RecordMovementRequest request,
@@ -99,17 +99,17 @@ public class CashShiftController {
         return cashShiftService.toMovementResponse(movement);
     }
 
-    @Operation(summary = "Prolong an open shift's deadline by one hour (WAITER/ADMIN)")
+    @Operation(summary = "Prolong an open shift's deadline by one hour (ACCOUNTANT)")
     @PostMapping("/{id}/prolong")
-    @PreAuthorize("hasAnyRole('WAITER','ADMIN')")
+    @PreAuthorize("hasRole('ACCOUNTANT')")
     public CashShiftResponse prolong(@PathVariable Long id, Authentication authentication) {
         CashShift shift = cashShiftService.prolongShift(id, resolveUserId(authentication));
         return cashShiftService.toResponse(shift);
     }
 
-    @Operation(summary = "Close a shift with a blind cash count — Arqueo de Turno (WAITER)")
+    @Operation(summary = "Close a shift with a blind cash count — Arqueo de Turno (ACCOUNTANT)")
     @PostMapping("/{id}/close")
-    @PreAuthorize("hasRole('WAITER')")
+    @PreAuthorize("hasRole('ACCOUNTANT')")
     public CashShiftResponse close(
             @PathVariable Long id,
             @Valid @RequestBody CloseShiftRequest request,

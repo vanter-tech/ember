@@ -70,6 +70,7 @@ class E2EOrderFlowTest {
     private String waiterToken;
     private String customerToken;
     private String kitchenToken;
+    private String accountantToken;
     private String customerId;
     private UUID restaurantId;
     private UUID tableId;
@@ -107,11 +108,15 @@ class E2EOrderFlowTest {
         userRepository.save(User.builder()
                 .name("Kitchen").email("kitchen@e2e.com").restaurantId(restaurant)
                 .passwordHash(passwordEncoder.encode(password)).role(Role.KITCHEN).build());
+        userRepository.save(User.builder()
+                .name("Accountant").email("accountant@e2e.com").restaurantId(restaurant)
+                .passwordHash(passwordEncoder.encode(password)).role(Role.ACCOUNTANT).build());
         customerId = customer.getId();
 
         waiterToken = login("waiter@e2e.com", password);
         customerToken = login("customer@e2e.com", password);
         kitchenToken = login("kitchen@e2e.com", password);
+        accountantToken = login("accountant@e2e.com", password);
 
         DiningTables table = diningTableRepository.save(DiningTables.builder()
                 .restaurantId(restaurant.getId())
@@ -253,9 +258,9 @@ class E2EOrderFlowTest {
                                 new SplitBillRequest(SplitMethod.BY_CONSUMPTION, null))))
                 .andExpect(status().isOk());
 
-        // 7b — Waiter opens a cash shift (physical payments now require one open)
+        // 7b — Accountant opens a cash shift (physical payments now require one open)
         mockMvc.perform(post("/cash-shifts/open")
-                        .header("Authorization", bearer(waiterToken))
+                        .header("Authorization", bearer(accountantToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
                                 new OpenShiftRequest(new BigDecimal("100.00")))))

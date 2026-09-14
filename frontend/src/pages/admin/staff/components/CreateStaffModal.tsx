@@ -43,7 +43,7 @@ const createStaffSchemaFactory = (t: ReturnType<typeof useTranslation<'admin'>>[
       .string()
       .min(8, t('staffPasswordMinLengthError'))
       .regex(PASSWORD_REGEX, t('staffPasswordComplexityError')),
-    role: z.enum(['WAITER', 'KITCHEN', 'ADMIN']),
+    role: z.enum(['WAITER', 'KITCHEN', 'ADMIN', 'ACCOUNTANT']),
     jobTitle: z.string().min(1, t('staffJobTitleRequiredError')),
     shift: z.string().min(1, t('staffShiftRequiredError')),
     contractType: z.string().min(1, t('staffContractTypeRequiredError')),
@@ -173,6 +173,7 @@ export const CreateStaffModal = () => {
                     <SelectContent>
                       <SelectItem value="WAITER">{ROLE_LABELS.WAITER}</SelectItem>
                       <SelectItem value="KITCHEN">{ROLE_LABELS.KITCHEN}</SelectItem>
+                      <SelectItem value="ACCOUNTANT">{ROLE_LABELS.ACCOUNTANT}</SelectItem>
                       <SelectItem value="ADMIN">{ROLE_LABELS.ADMIN}</SelectItem>
                     </SelectContent>
                   </Select>
