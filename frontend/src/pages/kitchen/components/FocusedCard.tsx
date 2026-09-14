@@ -87,7 +87,32 @@ export const FocusedCard = ({ order }: { order: kitchenOrders }) => {
                 </span>
               </div>
 
-              <div className="flex flex-row gap-3">
+              <div className="flex flex-row items-center gap-3">
+                {selectedIds.size > 0 && (
+                  <Select
+                    disabled={bulkUpdateMutation.isPending}
+                    onValueChange={(value) => bulkUpdateMutation.mutate(value as OrderItemStatus)}
+                  >
+                    <SelectTrigger className="rounded-xl">
+                      <SelectValue placeholder={t('kdsBulkStatusPlaceholder')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {BULK_TARGET_STATUSES.map((status) => (
+                        <SelectItem key={status} value={status}>
+                          {STATUS_LABEL[status]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={toggleSelectAll}
+                  disabled={visibleItems.length === 0}
+                >
+                  {allSelected ? t('kdsDeselectAll') : t('kdsSelectAll')}
+                </Button>
                 <Button
                   className="p-6 "
                   disabled={printTicketMutation.isPending}
@@ -96,33 +121,6 @@ export const FocusedCard = ({ order }: { order: kitchenOrders }) => {
                   {t('printButton')}
                 </Button>
               </div>
-            </div>
-            <div className="w-full flex items-center gap-3">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={toggleSelectAll}
-                disabled={visibleItems.length === 0}
-              >
-                {allSelected ? t('kdsDeselectAll') : t('kdsSelectAll')}
-              </Button>
-              {selectedIds.size > 0 && (
-                <Select
-                  disabled={bulkUpdateMutation.isPending}
-                  onValueChange={(value) => bulkUpdateMutation.mutate(value as OrderItemStatus)}
-                >
-                  <SelectTrigger className="rounded-xl">
-                    <SelectValue placeholder={t('kdsBulkStatusPlaceholder')} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {BULK_TARGET_STATUSES.map((status) => (
-                      <SelectItem key={status} value={status}>
-                        {STATUS_LABEL[status]}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
             </div>
           </CardHeader>
           <CardContent>
