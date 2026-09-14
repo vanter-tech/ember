@@ -14,11 +14,14 @@ import com.vanter.ember.config.ResourceNotFoundException;
 import com.vanter.ember.config.TenantContextHolder;
 import com.vanter.ember.identity.model.User;
 import com.vanter.ember.identity.repository.UserRepository;
+import com.vanter.ember.restaurant.model.RestaurantPlan;
+import com.vanter.ember.restaurant.service.PlanGateService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -45,14 +48,17 @@ public class CashShiftController {
 
     private final CashShiftService cashShiftService;
     private final UserRepository userRepository;
+    private final PlanGateService planGateService;
 
     @Operation(summary = "Open a new cash shift — Apertura de Caja (ACCOUNTANT)")
     @PostMapping("/open")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('ACCOUNTANT')")
     public CashShiftResponse open(@Valid @RequestBody OpenShiftRequest request, Authentication authentication) {
+        UUID tenantId = TenantContextHolder.requireTenantId();
+        planGateService.requirePlanAtLeast(tenantId, RestaurantPlan.STARTER, "cashclose");
         CashShift shift = cashShiftService.openShift(
-                TenantContextHolder.requireTenantId(), resolveUserId(authentication), request.openingFloat());
+                tenantId, resolveUserId(authentication), request.openingFloat());
         return cashShiftService.toResponse(shift);
     }
 

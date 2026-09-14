@@ -17,6 +17,7 @@ import { useUIStore } from '@/store/uiStore'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { cashShiftService } from '@/lib/api'
 import { useTranslation } from '@/lib/i18n'
+import { extractPlanGateError } from '@/lib/planGate'
 
 const createOpenShiftSchema = (t: ReturnType<typeof useTranslation<'waiter'>>['t']) =>
   z.object({
@@ -27,6 +28,7 @@ type OpenShiftInputs = z.infer<ReturnType<typeof createOpenShiftSchema>>
 
 export const OpenShiftDialog = () => {
   const { t } = useTranslation('waiter')
+  const { t: tCommon } = useTranslation('common')
   const { activeModal, closeModal } = useUIStore()
   const queryClient = useQueryClient()
   const openShiftSchema = useMemo(() => createOpenShiftSchema(t), [t])
@@ -44,8 +46,13 @@ export const OpenShiftDialog = () => {
       form.reset()
       closeModal()
     },
-    onError: () => {
-      toast.error(t('shiftOpenErrorToast'))
+    onError: (error) => {
+      const gate = extractPlanGateError(error)
+      toast.error(
+        gate
+          ? tCommon('planGateUpgradeToast', { plan: gate.requiredPlan ?? '' })
+          : t('shiftOpenErrorToast'),
+      )
     },
   })
 

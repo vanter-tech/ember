@@ -52,6 +52,7 @@ class CashShiftControllerTest {
     @MockBean JwtService jwtService;
     @MockBean UserDetailsService userDetailsService;
     @MockBean RestaurantRepository restaurantRepository;
+    @MockBean com.vanter.ember.restaurant.service.PlanGateService planGateService;
 
     private static final UUID TENANT_ID = UUID.randomUUID();
 
@@ -89,6 +90,24 @@ class CashShiftControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.status").value("OPEN"));
+    }
+
+    @Test
+    @WithMockUser(roles = "ACCOUNTANT")
+    void open_blockedWhenPlanBelowStarter() throws Exception {
+        TenantContextHolder.setTenantId(TENANT_ID);
+        org.mockito.Mockito.doThrow(new com.vanter.ember.restaurant.exception.PlanLimitExceededException(
+                        "cashclose", com.vanter.ember.restaurant.model.RestaurantPlan.STARTER,
+                        com.vanter.ember.restaurant.model.RestaurantPlan.FREE))
+                .when(planGateService).requirePlanAtLeast(
+                        TENANT_ID, com.vanter.ember.restaurant.model.RestaurantPlan.STARTER, "cashclose");
+
+        OpenShiftRequest request = new OpenShiftRequest(new BigDecimal("100.00"));
+        mockMvc.perform(post("/cash-shifts/open")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isPaymentRequired())
+                .andExpect(jsonPath("$.code").value("PLAN_LIMIT_EXCEEDED"));
     }
 
     @Test

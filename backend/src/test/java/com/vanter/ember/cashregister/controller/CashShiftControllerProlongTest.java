@@ -43,6 +43,7 @@ class CashShiftControllerProlongTest {
     @MockBean JwtService jwtService;
     @MockBean UserDetailsService userDetailsService;
     @MockBean RestaurantRepository restaurantRepository;
+    @MockBean com.vanter.ember.restaurant.service.PlanGateService planGateService;
 
     @AfterEach
     void clearTenant() {

@@ -91,6 +91,7 @@ class E2EOrderFlowTest {
 
         Restaurant restaurant = restaurantRepository.save(Restaurant.builder()
                 .name("E2E Restaurant").slug("e2e-restaurant-" + UUID.randomUUID())
+                .plan(com.vanter.ember.restaurant.model.RestaurantPlan.STARTER)
                 .build());
         restaurantId = restaurant.getId();
 
