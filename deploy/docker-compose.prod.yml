@@ -72,7 +72,7 @@ services:
       PGPASSWORD: ${SPRING_DATASOURCE_PASSWORD:?set in /opt/ember/.env}
       PGDATABASE: ember
       GCS_BUCKET: ${BACKUP_GCS_BUCKET:?set in /opt/ember/.env}
-      DAILY_RETENTION: "14"
+      HOURLY_RETENTION: "72"
       WEEKLY_RETENTION: "8"
     depends_on:
       postgres:

@@ -47,7 +47,7 @@ executed.
                         │         origin.pem + origin.key)     │
                         │    · app  (Spring, profile=prod)     │
                         │    · postgres  (never exposed)       │
-                        │    · backup  (nightly pg_dump → GCS) │
+                        │    · backup  (hourly pg_dump → GCS)  │
                         │  + GCP Ops Agent (metrics + logs)    │
                         └──────────────────────────────────────┘
 ```
@@ -222,7 +222,7 @@ gcloud compute ssh ember-prod --zone us-central1-a --tunnel-through-iap --comman
 gcloud compute ssh ember-prod --zone us-central1-a --tunnel-through-iap --command \
   "sudo docker compose -f /opt/ember/docker-compose.prod.yml exec -T backup /usr/local/bin/backup.sh"
 gcloud storage ls gs://ember-backups-ember-prod-vanter/postgres/
-# -> gs://ember-backups-ember-prod-vanter/postgres/YYYY-MM-DD.dump.gz
+# -> gs://ember-backups-ember-prod-vanter/postgres/YYYY-MM-DDTHH.dump.gz
 ```
 
 **FIX shipped with this task.** `deploy/docker-compose.prod.yml` (healthcheck) and
@@ -644,6 +644,23 @@ The script pushes the current `/opt/ember/.env` from Secret Manager
 Overridable via env: `EMBER_VM` (default `ember-prod`), `EMBER_ZONE` (default
 `us-central1-a`), `EMBER_ENV_SECRET` (default `ember-prod-env`).
 
+### Updating the `backup` service
+
+`deploy.sh` only pulls/restarts `app` — the `backup` container is built on the VM
+from `deploy/backup/{Dockerfile,backup.sh}`, so a change to those (or to its env
+in `docker-compose.prod.yml`) needs its own push + rebuild, same scp pattern as
+HPD-11:
+
+```bash
+gcloud compute scp deploy/docker-compose.prod.yml deploy/backup/Dockerfile deploy/backup/backup.sh \
+  ember-prod:/tmp/ --zone us-central1-a --tunnel-through-iap
+gcloud compute ssh ember-prod --zone us-central1-a --tunnel-through-iap --command '
+  sudo mv /tmp/docker-compose.prod.yml /opt/ember/
+  sudo mv /tmp/Dockerfile /tmp/backup.sh /opt/ember/backup/
+  cd /opt/ember && sudo docker compose up -d --build backup
+'
+```
+
 ## Recovery
 
 ### App container unhealthy
@@ -658,7 +675,7 @@ Overridable via env: `EMBER_VM` (default `ember-prod`), `EMBER_ZONE` (default
 ### Postgres data corruption — restore latest dump
 
 (filled in by HPD-21 — restore test) Pull the newest
-`gs://ember-backups-<project>/postgres/YYYY-MM-DD.dump.gz`, `gunzip`, and
+`gs://ember-backups-<project>/postgres/YYYY-MM-DDTHH.dump.gz`, `gunzip`, and
 `pg_restore` into a fresh volume; see "Restore test" for the verified procedure.
 
 ### VM lost
