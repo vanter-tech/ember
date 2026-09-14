@@ -1,6 +1,7 @@
 import type { common as esCommon } from '../es/common'
 
 export const common = {
+  planGateUpgradeToast: 'This feature requires the {{plan}} plan or higher.',
   languageSwitcherLabel: 'Language',
   languageSpanish: 'Español',
   languageEnglish: 'English',
