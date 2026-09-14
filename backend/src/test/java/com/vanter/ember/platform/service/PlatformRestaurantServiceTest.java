@@ -405,6 +405,46 @@ class PlatformRestaurantServiceTest {
     }
 
     @Test
+    void create_defaultsToFreeWhenPlanOmitted() {
+        PlatformOperator operator = PlatformOperator.builder()
+                .id(UUID.randomUUID())
+                .email("operator@ember.local")
+                .build();
+        when(platformOperatorRepository.findByEmail("operator@ember.local")).thenReturn(Optional.of(operator));
+        when(restaurantRepository.existsBySlug("tenant-grill")).thenReturn(false);
+        when(userRepository.existsByEmail("owner@tenant-grill.local")).thenReturn(false);
+        when(passwordEncoder.encode("Str0ng!Pass")).thenReturn("hashed");
+        ArgumentCaptor<Restaurant> captor = ArgumentCaptor.forClass(Restaurant.class);
+        when(restaurantRepository.save(captor.capture())).thenReturn(restaurant());
+
+        PlatformRestaurantCreateRequest request = createRequest();
+        request.setPlan(null);
+        platformRestaurantService.create(request, "operator@ember.local");
+
+        assertThat(captor.getValue().getPlan()).isEqualTo(RestaurantPlan.FREE);
+    }
+
+    @Test
+    void create_usesRequestedPlanWhenProvided() {
+        PlatformOperator operator = PlatformOperator.builder()
+                .id(UUID.randomUUID())
+                .email("operator@ember.local")
+                .build();
+        when(platformOperatorRepository.findByEmail("operator@ember.local")).thenReturn(Optional.of(operator));
+        when(restaurantRepository.existsBySlug("tenant-grill")).thenReturn(false);
+        when(userRepository.existsByEmail("owner@tenant-grill.local")).thenReturn(false);
+        when(passwordEncoder.encode("Str0ng!Pass")).thenReturn("hashed");
+        ArgumentCaptor<Restaurant> captor = ArgumentCaptor.forClass(Restaurant.class);
+        when(restaurantRepository.save(captor.capture())).thenReturn(restaurant());
+
+        PlatformRestaurantCreateRequest request = createRequest();
+        request.setPlan(RestaurantPlan.PRO);
+        platformRestaurantService.create(request, "operator@ember.local");
+
+        assertThat(captor.getValue().getPlan()).isEqualTo(RestaurantPlan.PRO);
+    }
+
+    @Test
     void create_throwsWhenOperatorNotFound() {
         when(platformOperatorRepository.findByEmail("ghost@ember.local")).thenReturn(Optional.empty());
 

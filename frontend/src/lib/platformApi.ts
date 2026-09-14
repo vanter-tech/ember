@@ -71,6 +71,7 @@ export interface PlatformRestaurantDetail {
 export interface PlatformRestaurantCreateRequest {
   name: string
   slug: string
+  plan?: 'FREE' | 'STARTER' | 'PRO' | 'ENTERPRISE'
   adminName: string
   adminEmail: string
   adminPassword: string

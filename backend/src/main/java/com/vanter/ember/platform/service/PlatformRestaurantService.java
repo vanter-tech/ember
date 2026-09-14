@@ -15,6 +15,7 @@ import com.vanter.ember.platform.model.dto.PlatformRestaurantSummaryResponse;
 import com.vanter.ember.platform.repository.PlatformAuditLogRepository;
 import com.vanter.ember.platform.repository.PlatformOperatorRepository;
 import com.vanter.ember.restaurant.model.Restaurant;
+import com.vanter.ember.restaurant.model.RestaurantPlan;
 import com.vanter.ember.restaurant.model.RestaurantStatus;
 import com.vanter.ember.restaurant.repository.RestaurantRepository;
 import com.vanter.ember.restaurant.service.RestaurantService;
@@ -223,6 +224,7 @@ public class PlatformRestaurantService {
         Restaurant restaurant = restaurantRepository.save(Restaurant.builder()
                 .name(request.getName())
                 .slug(request.getSlug())
+                .plan(request.getPlan() != null ? request.getPlan() : RestaurantPlan.FREE)
                 .build());
 
         userRepository.save(User.builder()
