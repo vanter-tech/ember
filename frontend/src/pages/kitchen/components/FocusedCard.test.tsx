@@ -2,8 +2,13 @@ import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import toast from 'react-hot-toast'
 import { FocusedCard } from './FocusedCard'
-import { kitchenServices, type kitchenOrders } from '@/lib/api'
+import { kitchenServices, printingService, type kitchenOrders } from '@/lib/api'
+
+vi.mock('react-hot-toast', () => ({
+  default: Object.assign(vi.fn(), { success: vi.fn(), error: vi.fn() }),
+}))
 
 vi.mock('@/lib/api', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/api')>()
@@ -13,6 +18,10 @@ vi.mock('@/lib/api', async (importOriginal) => {
       ...actual.kitchenServices,
       updateItemStatus: vi.fn(),
       updateItemsStatus: vi.fn(),
+    },
+    printingService: {
+      ...actual.printingService,
+      printKitchenTicket: vi.fn(),
     },
   }
 })
@@ -90,5 +99,47 @@ describe('FocusedCard bulk status selection', () => {
 
     await waitFor(() => expect(screen.queryByText('Cambiar estado a...')).not.toBeInTheDocument())
     expect(screen.getByText('Seleccionar todo')).toBeInTheDocument()
+  })
+})
+
+describe('FocusedCard manual ticket reprint', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  test('clicking Imprimir reprints the ticket and toasts on send', async () => {
+    vi.mocked(printingService.printKitchenTicket).mockResolvedValue({
+      jobId: 'j1',
+      status: 'SENT',
+    })
+    wrap(sampleOrder)
+
+    await userEvent.click(screen.getByText('Imprimir'))
+
+    await waitFor(() => expect(printingService.printKitchenTicket).toHaveBeenCalledWith('ko-1'))
+    await waitFor(() =>
+      expect(toast.success).toHaveBeenCalledWith('Ticket enviado a la impresora'),
+    )
+  })
+
+  test('a PENDING reprint job toasts the no-printer message', async () => {
+    vi.mocked(printingService.printKitchenTicket).mockResolvedValue({
+      jobId: 'j1',
+      status: 'PENDING',
+    })
+    wrap(sampleOrder)
+
+    await userEvent.click(screen.getByText('Imprimir'))
+
+    await waitFor(() =>
+      expect(toast.success).toHaveBeenCalledWith('Ticket en cola (sin impresora conectada)'),
+    )
+  })
+
+  test('does not render the removed Cliente placeholder or Anular button', () => {
+    wrap(sampleOrder)
+
+    expect(screen.queryByText(/Por-iterar/)).not.toBeInTheDocument()
+    expect(screen.queryByText('Anular')).not.toBeInTheDocument()
   })
 })

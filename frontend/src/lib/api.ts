@@ -819,6 +819,14 @@ export const printingService = {
     )
     return data
   },
+  printKitchenTicket: async (
+    orderId: string
+  ): Promise<{ jobId: string; status: string }> => {
+    const { data } = await api.post<{ jobId: string; status: string }>(
+      `/printing/kitchen-orders/${orderId}/ticket`
+    )
+    return data
+  },
 }
 
 export const billingService = {

@@ -1,12 +1,12 @@
 import { useState } from 'react'
-import { kitchenServices, type kitchenOrders, type OrderItemStatus } from '@/lib/api'
+import { kitchenServices, printingService, type kitchenOrders, type OrderItemStatus } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { getColorForTable } from '@/components/AvatarInitials'
-import { Clock, TicketCheck, UserCheck } from 'lucide-react'
+import { Clock, TicketCheck } from 'lucide-react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import { NEXT_ACTION_LABEL, NEXT_STATUS, STATUS_LABEL } from '../lib/itemStatus'
@@ -30,6 +30,13 @@ export const FocusedCard = ({ order }: { order: kitchenOrders }) => {
     onError: () => {
       toast.error(t('itemStatusUpdateErrorToast'))
     },
+  })
+
+  const printTicketMutation = useMutation({
+    mutationFn: () => printingService.printKitchenTicket(order.id!),
+    onSuccess: (res) =>
+      toast.success(res.status === 'PENDING' ? t('printQueuedNoAgentToast') : t('printSentToast')),
+    onError: () => toast.error(t('printFailedToast')),
   })
 
   const bulkUpdateMutation = useMutation({
@@ -76,17 +83,17 @@ export const FocusedCard = ({ order }: { order: kitchenOrders }) => {
                   {t('ticketLabel', { code: order.id!.substring(0, 6).toUpperCase() })}
                 </span>
                 <span className="flex items-center gap-2 text-xs text-gray-500 mt-1">
-                  <UserCheck /> {t('clientPlaceholder')}
-                </span>
-                <span className="flex items-center gap-2 text-xs text-gray-500 mt-1">
                   <Clock /> {t('entryTimeLabel', { time: order.createdAt ?? '' })}
                 </span>
               </div>
 
               <div className="flex flex-row gap-3">
-                <Button className="p-6 ">{t('printButton')}</Button>
-                <Button className="p-6 " variant={'destructive'}>
-                  {t('voidButton')}
+                <Button
+                  className="p-6 "
+                  disabled={printTicketMutation.isPending}
+                  onClick={() => printTicketMutation.mutate()}
+                >
+                  {t('printButton')}
                 </Button>
               </div>
             </div>
