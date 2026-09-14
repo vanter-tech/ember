@@ -1,4 +1,5 @@
 package com.vanter.ember.settings.service;
+import com.vanter.ember.restaurant.model.RestaurantPlan;
 import com.vanter.ember.restaurant.service.PlanGateService;
 import com.vanter.ember.settings.model.DiningTables;
 import com.vanter.ember.settings.model.RestaurantSettings;
@@ -45,6 +46,11 @@ public class SettingService {
         planGateService.requireTableCapacity(restaurantId, payload.getSpace().getTotalTables());
 
         RestaurantSettings currentSettings = getSettings(restaurantId);
+
+        if (!payload.getBranding().equals(currentSettings.getPayload().getBranding())) {
+            planGateService.requirePlanAtLeast(restaurantId, RestaurantPlan.STARTER, "branding");
+        }
+
         currentSettings.setPayload(payload);
         settingsRepository.save(currentSettings);
 

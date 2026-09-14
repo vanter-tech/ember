@@ -63,4 +63,36 @@ class SettingServiceTest {
 
         verify(settingsRepository).save(current);
     }
+
+    @Test
+    void updateSettings_blockedWhenBrandingChangedAndPlanBelowStarter() {
+        SettingsPayload newPayload = payloadWithTables(1);
+        newPayload.getBranding().setBusinessName("New Name");
+        RestaurantSettings current = new RestaurantSettings();
+        current.setRestaurantId(TENANT_ID);
+        current.setPayload(new SettingsPayload());
+        when(settingsRepository.findByRestaurantId(TENANT_ID)).thenReturn(Optional.of(current));
+        doThrow(new PlanLimitExceededException("branding", RestaurantPlan.STARTER, RestaurantPlan.FREE))
+                .when(planGateService).requirePlanAtLeast(TENANT_ID, RestaurantPlan.STARTER, "branding");
+
+        assertThatThrownBy(() -> settingService.updateSettings(TENANT_ID, newPayload))
+                .isInstanceOf(PlanLimitExceededException.class);
+
+        verify(settingsRepository, never()).save(any());
+    }
+
+    @Test
+    void updateSettings_allowedWhenBrandingUnchanged() {
+        SettingsPayload newPayload = payloadWithTables(1);
+        RestaurantSettings current = new RestaurantSettings();
+        current.setRestaurantId(TENANT_ID);
+        current.setPayload(payloadWithTables(1));
+        when(settingsRepository.findByRestaurantId(TENANT_ID)).thenReturn(Optional.of(current));
+        when(diningTableRepository.countByRestaurantIdAndIsActiveTrue(TENANT_ID)).thenReturn(1L);
+
+        settingService.updateSettings(TENANT_ID, newPayload);
+
+        verify(planGateService, never()).requirePlanAtLeast(TENANT_ID, RestaurantPlan.STARTER, "branding");
+        verify(settingsRepository).save(current);
+    }
 }
