@@ -32,6 +32,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { staffService } from '@/lib/api'
 import { ROLE_LABELS } from '../types'
 import { useTranslation } from '@/lib/i18n'
+import { extractPlanGateError } from '@/lib/planGate'
 
 const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).+$/
 
@@ -56,6 +57,7 @@ export const CreateStaffModal = () => {
   const { activeModal, closeModal } = useUIStore()
   const queryClient = useQueryClient()
   const { t } = useTranslation('admin')
+  const { t: tCommon } = useTranslation('common')
   const createStaffSchema = useMemo(() => createStaffSchemaFactory(t), [t])
 
   const form = useForm<CreateStaffInputs>({
@@ -80,8 +82,13 @@ export const CreateStaffModal = () => {
       form.reset()
       closeModal()
     },
-    onError: () => {
-      toast.error(t('staffCreateErrorToast'))
+    onError: (error) => {
+      const gate = extractPlanGateError(error)
+      toast.error(
+        gate
+          ? tCommon('planGateUpgradeToast', { plan: gate.requiredPlan ?? '' })
+          : t('staffCreateErrorToast'),
+      )
     },
   })
 

@@ -37,6 +37,7 @@ class UserAdminServiceTest {
     @Mock UserRepository userRepository;
     @Mock RestaurantRepository restaurantRepository;
     @Mock PasswordEncoder passwordEncoder;
+    @Mock com.vanter.ember.restaurant.service.PlanGateService planGateService;
     @InjectMocks UserAdminService userAdminService;
 
     private static final UUID TENANT_A = UUID.randomUUID();
@@ -127,6 +128,50 @@ class UserAdminServiceTest {
                         "Ana", "ana@test.com", "Sup3r$ecret", Role.WAITER,
                         "Mesera", "Mañana", "Tiempo completo", "Sucursal Centro")))
                 .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void create_blockedForKitchenRoleWhenPlanBelowStarter() {
+        org.mockito.Mockito.doThrow(new com.vanter.ember.restaurant.exception.PlanLimitExceededException(
+                        "roles", com.vanter.ember.restaurant.model.RestaurantPlan.STARTER,
+                        com.vanter.ember.restaurant.model.RestaurantPlan.FREE))
+                .when(planGateService).requirePlanAtLeast(
+                        TENANT_A, com.vanter.ember.restaurant.model.RestaurantPlan.STARTER, "roles");
+
+        assertThatThrownBy(() -> userAdminService.create(
+                TENANT_A, new CreateStaffRequest(
+                        "Cook", "cook@test.com", "Sup3r$ecret", Role.KITCHEN,
+                        "Cocinero", "Mañana", "Tiempo completo", "Sucursal Centro")))
+                .isInstanceOf(com.vanter.ember.restaurant.exception.PlanLimitExceededException.class);
+    }
+
+    @Test
+    void create_blockedForAccountantRoleWhenPlanBelowStarter() {
+        org.mockito.Mockito.doThrow(new com.vanter.ember.restaurant.exception.PlanLimitExceededException(
+                        "roles", com.vanter.ember.restaurant.model.RestaurantPlan.STARTER,
+                        com.vanter.ember.restaurant.model.RestaurantPlan.FREE))
+                .when(planGateService).requirePlanAtLeast(
+                        TENANT_A, com.vanter.ember.restaurant.model.RestaurantPlan.STARTER, "roles");
+
+        assertThatThrownBy(() -> userAdminService.create(
+                TENANT_A, new CreateStaffRequest(
+                        "Acc", "acc@test.com", "Sup3r$ecret", Role.ACCOUNTANT,
+                        "Contador", "Mañana", "Tiempo completo", "Sucursal Centro")))
+                .isInstanceOf(com.vanter.ember.restaurant.exception.PlanLimitExceededException.class);
+    }
+
+    @Test
+    void create_allowsWaiterRoleWithoutTouchingThePlanGate() {
+        Restaurant restaurant = restaurantFor(TENANT_A);
+        when(userRepository.existsByEmail("w@test.com")).thenReturn(false);
+        when(restaurantRepository.findById(TENANT_A)).thenReturn(Optional.of(restaurant));
+        when(userRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        userAdminService.create(TENANT_A, new CreateStaffRequest(
+                "Wai", "w@test.com", "Sup3r$ecret", Role.WAITER,
+                "Mesera", "Mañana", "Tiempo completo", "Sucursal Centro"));
+
+        verify(planGateService, org.mockito.Mockito.never()).requirePlanAtLeast(any(), any(), any());
     }
 
     @Test

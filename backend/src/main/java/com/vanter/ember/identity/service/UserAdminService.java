@@ -8,7 +8,9 @@ import com.vanter.ember.identity.model.Role;
 import com.vanter.ember.identity.model.User;
 import com.vanter.ember.identity.repository.UserRepository;
 import com.vanter.ember.restaurant.model.Restaurant;
+import com.vanter.ember.restaurant.model.RestaurantPlan;
 import com.vanter.ember.restaurant.repository.RestaurantRepository;
+import com.vanter.ember.restaurant.service.PlanGateService;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -23,6 +25,7 @@ public class UserAdminService {
     private final UserRepository userRepository;
     private final RestaurantRepository restaurantRepository;
     private final PasswordEncoder passwordEncoder;
+    private final PlanGateService planGateService;
 
     /**
      * Tenant-scoped: the target must belong to the caller's own restaurant (a bare id from
@@ -53,6 +56,9 @@ public class UserAdminService {
     public StaffMemberResponse create(UUID tenantId, CreateStaffRequest request) {
         if (request.role() == Role.CUSTOMER) {
             throw new IllegalArgumentException("Cannot create a CUSTOMER account as staff");
+        }
+        if (request.role() == Role.KITCHEN || request.role() == Role.ACCOUNTANT) {
+            planGateService.requirePlanAtLeast(tenantId, RestaurantPlan.STARTER, "roles");
         }
         if (userRepository.existsByEmail(request.email())) {
             throw new IllegalArgumentException("Email already in use: " + request.email());
