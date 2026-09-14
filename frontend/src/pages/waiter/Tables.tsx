@@ -187,20 +187,11 @@ export const Tables = () => {
                 )}
               </div>
               <div className="flex flex-col gap-4 mt-6">
-                <Button id="waiter-tour-action" className="w-full text-md">
-                  {tableDetails.isOccupied ? t('chargeTableButton') : t('openTableButton')}
-                </Button>
-                {tableDetails.isOccupied ? (
+                {tableDetails.isOccupied && (
                   <Link to={tableDetails.currentSession?.sessionId + ''}>
                     <Button className="w-full text-md">{t('viewInfoButton')}</Button>
                   </Link>
-                ) : (
-                  ' '
                 )}
-                <Button variant={'outline'} className="w-full text-md">
-                  {t('printBillButton')}
-                </Button>
-
                 <Button
                   id="waiter-tour-assign"
                   variant={'outline'}
