@@ -75,6 +75,7 @@ export const admin = {
   manualCashOutLabel: 'Manual cash-outs',
   loadingDailyReport: 'Loading daily close-out...',
   loadingDailyReportError: 'Failed to load the daily close-out.',
+  dailyReportShiftsTitle: 'Shifts for this day',
   loadingShifts: 'Loading shifts...',
   loadingShiftsError: 'Failed to load the history.',
   shiftColumnLabel: 'Shift',
