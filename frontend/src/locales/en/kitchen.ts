@@ -14,4 +14,8 @@ export const kitchen = {
   printButton: 'Print',
   voidButton: 'Void',
   itemStatusUpdateErrorToast: 'Could not update the dish status',
+  kdsSelectAll: 'Select all',
+  kdsDeselectAll: 'Deselect all',
+  kdsBulkStatusPlaceholder: 'Change status to...',
+  kdsSelectItemAriaLabel: 'Select {{name}}',
 } satisfies typeof esKitchen

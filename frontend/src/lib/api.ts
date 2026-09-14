@@ -563,6 +563,13 @@ export const kitchenServices = {
       { status }
     )
     return data
+  },
+  updateItemsStatus: async (orderId: string, itemIds: string[], status: OrderItemStatus): Promise<kitchenOrders> => {
+    const { data } = await api.patch<kitchenOrders>(
+      `/kitchen/orders/${orderId}/items/status`,
+      { itemIds, status }
+    )
+    return data
   }
 
 }

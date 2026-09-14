@@ -12,4 +12,8 @@ export const kitchen = {
   printButton: 'Imprimir',
   voidButton: 'Anular',
   itemStatusUpdateErrorToast: 'No se pudo actualizar el estado del plato',
+  kdsSelectAll: 'Seleccionar todo',
+  kdsDeselectAll: 'Deseleccionar todo',
+  kdsBulkStatusPlaceholder: 'Cambiar estado a...',
+  kdsSelectItemAriaLabel: 'Seleccionar {{name}}',
 }
