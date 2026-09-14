@@ -132,6 +132,49 @@ public class KitchenService {
     }
 
     /**
+     * Bulk-moves several items on the same order straight to {@code targetStatus} — forward or
+     * backward — walking each one through every intermediate {@link OrderItemStatus} one step at
+     * a time (never skipping a step in the persisted history/events) instead of requiring one
+     * click per step per item. This is what backs the KDS's "select several dishes, pick a
+     * status" action; {@link #updateItemStatus} (one click, one step, forward only) is untouched
+     * and still the only path the individual per-item buttons use.
+     */
+    public KitchenOrder updateItemsStatus(String orderId, List<String> itemIds, OrderItemStatus targetStatus) {
+        KitchenOrder order = kitchenOrderRepository
+                .findByIdAndTenantId(orderId, TenantContextHolder.requireTenantId())
+                .orElseThrow(() -> new ResourceNotFoundException("Kitchen order not found: " + orderId));
+
+        OrderItemStatus[] allStatuses = OrderItemStatus.values();
+        List<KitchenItemUpdated> events = new ArrayList<>();
+        for (String itemId : itemIds) {
+            KitchenItem item = order.getItems().stream()
+                    .filter(i -> itemId.equals(i.getItemId()))
+                    .findFirst()
+                    .orElseThrow(() -> new ResourceNotFoundException("Item not found: " + itemId));
+
+            int direction = Integer.signum(targetStatus.ordinal() - item.getStatus().ordinal());
+            while (item.getStatus() != targetStatus) {
+                OrderItemStatus nextStep = allStatuses[item.getStatus().ordinal() + direction];
+                item.setStatus(nextStep);
+                item.setUpdatedAt(LocalDateTime.now());
+                events.add(new KitchenItemUpdated(
+                        TenantContextHolder.requireTenantId(), order.getSessionId(), itemId, nextStep));
+            }
+        }
+
+        boolean allDelivered = order.getItems().stream()
+                .allMatch(i -> i.getStatus() == OrderItemStatus.DELIVERED);
+        order.setActive(!allDelivered);
+
+        KitchenOrder saved = kitchenOrderRepository.save(order);
+        events.forEach(eventPublisher::publishEvent);
+        if (allDelivered) {
+            eventPublisher.publishEvent(new KitchenOrderRetired(saved.getTenantId(), saved.getSessionId()));
+        }
+        return saved;
+    }
+
+    /**
      * Mirrors a waiter/customer item removal into the kitchen's own copy of the order — otherwise
      * a deleted item disappears from the session view but keeps showing on the live KDS forever.
      */
