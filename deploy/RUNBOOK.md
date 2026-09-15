@@ -657,7 +657,7 @@ gcloud compute scp deploy/docker-compose.prod.yml deploy/backup/Dockerfile deplo
 gcloud compute ssh ember-prod --zone us-central1-a --tunnel-through-iap --command '
   sudo mv /tmp/docker-compose.prod.yml /opt/ember/
   sudo mv /tmp/Dockerfile /tmp/backup.sh /opt/ember/backup/
-  cd /opt/ember && sudo docker compose up -d --build backup
+  cd /opt/ember && sudo docker compose -f docker-compose.prod.yml up -d --build backup
 '
 ```
 
