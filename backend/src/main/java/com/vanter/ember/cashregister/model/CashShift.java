@@ -11,12 +11,15 @@ import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.TenantId;
+import org.hibernate.type.SqlTypes;
 
 /**
  * A single shared till's lifecycle for one tenant: {@code OPEN} while trading, {@code CLOSED}
@@ -96,6 +99,21 @@ public class CashShift {
     @Column(name = "prolong_count", nullable = false)
     @Builder.Default
     private int prolongCount = 0;
+
+    // SqlTypes.JSON resolves to the dialect's JSON type on both PostgreSQL and H2 — same pattern
+    // as PrintAgent.discoveredPrinters / Session.participants. Null until a count with a
+    // denomination breakdown has actually been submitted (older shifts, or a client that omits
+    // it, simply have no breakdown — not an error).
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "opening_breakdown")
+    private List<DenominationCount> openingBreakdown;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "closing_breakdown")
+    private List<DenominationCount> closingBreakdown;
+
+    @Column(name = "close_notes")
+    private String closeNotes;
 
     /** The deadline in force right now: the last prolong if any, else the base expiry. */
     public LocalDateTime effectiveDeadline() {
