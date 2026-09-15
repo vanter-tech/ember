@@ -39,8 +39,8 @@
 Live user bug report: the ACCOUNTANT's open/close cash-shift flow accepted one hand-typed amount instead of counting bills/coins by denomination, which is how a real arqueo is done. 14 denominations (7 bills + 7 coins) per the Banco Central de Nicaragua — the C$10 bill and C$10 coin are distinct rows, same value. Breakdown stored as JSON on `CashShift` (matches `PrintAgent.discoveredPrinters`'s existing pattern), backend re-validates sum + legal denominations, close gains an optional notes field. Branch `feat/cash-shift-denomination-count` off `main`. **Execution not started.**
 - [x] Task 1 — backend: `Denomination`/`DenominationKind`/`NicaraguaDenominations`/`DenominationCount` model types
 - [x] Task 2 — backend: `CashShift` breakdown columns (`opening_breakdown`/`closing_breakdown`/`close_notes`) + migration `V12`
-- [ ] Task 3 — backend: DTOs + `CashShiftService.openShift`/`closeShift` breakdown validation (sum must match, denomination must be legal)
-- [ ] Task 4 — backend: `CashShiftController` wiring
+- [x] Task 3 — backend: DTOs + `CashShiftService.openShift`/`closeShift` breakdown validation (sum must match, denomination must be legal). Controller call sites had to be updated too (Maven compiles the whole module at once) — Task 4 now just needs its own new coverage test.
+- [ ] Task 4 — backend: `CashShiftController` wiring (mostly done already, see Task 3) + `open_passesTheBreakdownThrough` test
 - [ ] Task 5 — frontend: `lib/denominations.ts` (14-entry catalog + `sumBreakdown`) + `backend-types.ts` patch
 - [ ] Task 6 — frontend: `DenominationCounter.tsx` shared grid component
 - [ ] Task 7 — frontend: `OpenShiftDialog.tsx` uses the counter
