@@ -77,14 +77,14 @@ class CashShiftControllerTest {
         TenantContextHolder.setTenantId(TENANT_ID);
         when(userRepository.findByEmail("accountant@ember.local"))
                 .thenReturn(Optional.of(sampleUser("accountant@ember.local")));
-        when(cashShiftService.openShift(any(), eq("user-1"), any(BigDecimal.class)))
+        when(cashShiftService.openShift(any(), eq("user-1"), any(BigDecimal.class), any()))
                 .thenReturn(sampleShift());
         when(cashShiftService.toResponse(any())).thenReturn(new CashShiftResponse(
                 1L, 1, "OPEN", new BigDecimal("100.00"), "Alice", LocalDateTime.now(),
                 null, null, null, null, null, null, null, null, null,
-                null, null, false, null, 0));
+                null, null, false, null, 0, null, null, null));
 
-        OpenShiftRequest request = new OpenShiftRequest(new BigDecimal("100.00"));
+        OpenShiftRequest request = new OpenShiftRequest(new BigDecimal("100.00"), null);
         mockMvc.perform(post("/cash-shifts/open")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -102,7 +102,7 @@ class CashShiftControllerTest {
                 .when(planGateService).requirePlanAtLeast(
                         TENANT_ID, com.vanter.ember.restaurant.model.RestaurantPlan.STARTER, "cashclose");
 
-        OpenShiftRequest request = new OpenShiftRequest(new BigDecimal("100.00"));
+        OpenShiftRequest request = new OpenShiftRequest(new BigDecimal("100.00"), null);
         mockMvc.perform(post("/cash-shifts/open")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -113,7 +113,7 @@ class CashShiftControllerTest {
     @Test
     @WithMockUser(roles = "WAITER")
     void open_forbiddenForWaiter() throws Exception {
-        OpenShiftRequest request = new OpenShiftRequest(new BigDecimal("100.00"));
+        OpenShiftRequest request = new OpenShiftRequest(new BigDecimal("100.00"), null);
         mockMvc.perform(post("/cash-shifts/open")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -139,7 +139,7 @@ class CashShiftControllerTest {
         when(cashShiftService.toResponse(any())).thenReturn(new CashShiftResponse(
                 1L, 1, "OPEN", new BigDecimal("100.00"), "Alice", LocalDateTime.now(),
                 null, null, null, null, null, null, null, null, null,
-                null, null, false, null, 0));
+                null, null, false, null, 0, null, null, null));
 
         mockMvc.perform(get("/cash-shifts/current"))
                 .andExpect(status().isOk())
@@ -166,7 +166,7 @@ class CashShiftControllerTest {
     @Test
     @WithMockUser(roles = "ADMIN")
     void open_forbiddenForAdmin() throws Exception {
-        OpenShiftRequest request = new OpenShiftRequest(new BigDecimal("100.00"));
+        OpenShiftRequest request = new OpenShiftRequest(new BigDecimal("100.00"), null);
         mockMvc.perform(post("/cash-shifts/open")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -221,15 +221,15 @@ class CashShiftControllerTest {
                 .thenReturn(Optional.of(sampleUser("accountant@ember.local")));
         CashShift closed = sampleShift();
         closed.setStatus(CashShiftStatus.CLOSED);
-        when(cashShiftService.closeShift(eq(1L), eq("user-1"), any(BigDecimal.class))).thenReturn(closed);
+        when(cashShiftService.closeShift(eq(1L), eq("user-1"), any(BigDecimal.class), any(), any())).thenReturn(closed);
         when(cashShiftService.toResponse(any())).thenReturn(new CashShiftResponse(
                 1L, 1, "CLOSED", new BigDecimal("100.00"), "Alice", LocalDateTime.now(), "Alice",
                 LocalDateTime.now(), new BigDecimal("265.00"), new BigDecimal("260.00"),
                 new BigDecimal("-5.00"), new BigDecimal("150.00"), new BigDecimal("0.00"),
                 new BigDecimal("20.00"), new BigDecimal("5.00"),
-                null, null, false, null, 0));
+                null, null, false, null, 0, null, null, null));
 
-        CloseShiftRequest request = new CloseShiftRequest(new BigDecimal("260.00"));
+        CloseShiftRequest request = new CloseShiftRequest(new BigDecimal("260.00"), null, null);
         mockMvc.perform(post("/cash-shifts/1/close")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -241,7 +241,7 @@ class CashShiftControllerTest {
     @Test
     @WithMockUser(roles = "WAITER")
     void close_forbiddenForWaiter() throws Exception {
-        CloseShiftRequest request = new CloseShiftRequest(new BigDecimal("260.00"));
+        CloseShiftRequest request = new CloseShiftRequest(new BigDecimal("260.00"), null, null);
         mockMvc.perform(post("/cash-shifts/1/close")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))

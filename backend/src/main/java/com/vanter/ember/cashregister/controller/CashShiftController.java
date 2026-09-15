@@ -58,7 +58,7 @@ public class CashShiftController {
         UUID tenantId = TenantContextHolder.requireTenantId();
         planGateService.requirePlanAtLeast(tenantId, RestaurantPlan.STARTER, "cashclose");
         CashShift shift = cashShiftService.openShift(
-                tenantId, resolveUserId(authentication), request.openingFloat());
+                tenantId, resolveUserId(authentication), request.openingFloat(), request.breakdown());
         return cashShiftService.toResponse(shift);
     }
 
@@ -120,7 +120,8 @@ public class CashShiftController {
             @PathVariable Long id,
             @Valid @RequestBody CloseShiftRequest request,
             Authentication authentication) {
-        CashShift shift = cashShiftService.closeShift(id, resolveUserId(authentication), request.countedCash());
+        CashShift shift = cashShiftService.closeShift(
+                id, resolveUserId(authentication), request.countedCash(), request.breakdown(), request.notes());
         return cashShiftService.toResponse(shift);
     }
 

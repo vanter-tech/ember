@@ -71,7 +71,7 @@ class CashShiftControllerProlongTest {
                 LocalDateTime.now().minusHours(2), null, null, null, null, null,
                 null, null, null, null,
                 LocalDateTime.now().plusHours(1), LocalDateTime.now().plusHours(1),
-                false, LocalDate.now(), 1));
+                false, LocalDate.now(), 1, null, null, null));
 
         mockMvc.perform(post("/cash-shifts/5/prolong"))
                 .andExpect(status().isOk())
