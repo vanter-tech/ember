@@ -152,7 +152,7 @@ Rationale: architecture is sound but prod infra is early (single VM, no HA, manu
 
 ### Open / deferred
 - [ ] **EMB-GATEWAY** — real payment gateway. Blocked on GATEWAY-01 (certified provider for Nicaragua) — real blocker is **user lacks persona jurídica**, which every bank gateway requires; on hold indefinitely. GATEWAY-02..06 open.
-- [ ] **Ember Hub backup feature** (new, flagged this session) — on-premise Hub tenants have **zero backup mechanism** for their local Postgres today; a PC failure loses everything. Needs its own design (backup/restore section in the Hub UI, upload target e.g. GCS). Not scoped yet.
+- [ ] **HUB-BACKUP-RESTORE** — on-premise Hub tenants have **zero backup mechanism** today; a PC failure loses everything. Spec written and approved `docs/superpowers/specs/2026-09-14-hub-backup-restore-design.md` (local/removable destination, daily auto + manual, Postgres+MinIO, restore included with a pre-restore safety snapshot, 7-day retention, version-compatibility check). Awaiting `writing-plans` → implementation.
 - [ ] **HUB-03 T10** — manual Windows verification (clean install, LAN 2nd PC, license picker, upgrade-in-place, uninstall-keep, boot errors) → `reports/382-…`. Spec/plan `…/2026-09-05-hub-installer*`.
 - [ ] **EMBER-HUB-V2 / PRINT-AGENT-V2 clean-machine `VERIFY.md` runs** — both Tauri shells are code-complete; only the manual clean-Windows-machine/VM checklist runs (ops action) remain open for each.
 - [ ] **HPD-21** restore test (GCS dump → throwaway `pg_restore`, document in `deploy/RUNBOOK.md`); **HPD-22** E2E prod walkthrough (2 devices).
