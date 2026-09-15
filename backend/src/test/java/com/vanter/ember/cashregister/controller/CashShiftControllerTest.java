@@ -148,9 +148,12 @@ class CashShiftControllerTest {
 
     @Test
     @WithMockUser(roles = "WAITER")
-    void current_forbiddenForWaiter() throws Exception {
+    void current_allowedForWaiter() throws Exception {
+        TenantContextHolder.setTenantId(TENANT_ID);
+        when(cashShiftService.findCurrentOpenShift(TENANT_ID)).thenReturn(Optional.empty());
+
         mockMvc.perform(get("/cash-shifts/current"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isOk());
     }
 
     @Test
