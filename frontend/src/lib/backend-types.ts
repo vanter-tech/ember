@@ -1807,8 +1807,15 @@ export interface components {
             /** Format: date-time */
             createdAt?: string;
         };
+        DenominationCount: {
+            denominationId?: string;
+            /** Format: int32 */
+            quantity?: number;
+        };
         CloseShiftRequest: {
             countedCash: number;
+            breakdown?: components["schemas"]["DenominationCount"][];
+            notes?: string;
         };
         CashShiftResponse: {
             /** Format: int64 */
@@ -1839,9 +1846,13 @@ export interface components {
             businessDay?: string;
             /** Format: int32 */
             prolongCount?: number;
+            openingBreakdown?: components["schemas"]["DenominationCount"][];
+            closingBreakdown?: components["schemas"]["DenominationCount"][];
+            closeNotes?: string;
         };
         OpenShiftRequest: {
             openingFloat: number;
+            breakdown?: components["schemas"]["DenominationCount"][];
         };
         RequestBillingRequest: {
             /** @enum {string} */

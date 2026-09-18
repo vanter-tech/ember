@@ -18,6 +18,7 @@ import com.vanter.ember.cashregister.model.CashMovement;
 import com.vanter.ember.cashregister.model.CashMovementType;
 import com.vanter.ember.cashregister.model.CashShift;
 import com.vanter.ember.cashregister.model.CashShiftStatus;
+import com.vanter.ember.cashregister.model.DenominationCount;
 import com.vanter.ember.cashregister.repository.CashMovementRepository;
 import com.vanter.ember.cashregister.repository.CashShiftRepository;
 import com.vanter.ember.billing.repository.PaymentRepository;
@@ -81,7 +82,7 @@ class CashShiftServiceTest {
             return toSave;
         });
 
-        CashShift shift = cashShiftService.openShift(TENANT_ID, "user-1", new BigDecimal("50.00"));
+        CashShift shift = cashShiftService.openShift(TENANT_ID, "user-1", new BigDecimal("50.00"), null);
 
         assertThat(shift.getShiftNumber()).isEqualTo(5);
         assertThat(shift.getStatus()).isEqualTo(CashShiftStatus.OPEN);
@@ -93,8 +94,56 @@ class CashShiftServiceTest {
         when(cashShiftRepository.findByTenantIdAndStatus(TENANT_ID, CashShiftStatus.OPEN))
                 .thenReturn(Optional.of(openShift()));
 
-        assertThatThrownBy(() -> cashShiftService.openShift(TENANT_ID, "user-1", new BigDecimal("50.00")))
+        assertThatThrownBy(() -> cashShiftService.openShift(TENANT_ID, "user-1", new BigDecimal("50.00"), null))
                 .isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    void openShift_acceptsAMatchingBreakdownAndPersistsIt() {
+        when(cashShiftRepository.findByTenantIdAndStatus(TENANT_ID, CashShiftStatus.OPEN))
+                .thenReturn(Optional.empty());
+        when(cashShiftRepository.findMaxShiftNumber(TENANT_ID)).thenReturn(0);
+        when(settingService.getSettings(TENANT_ID)).thenReturn(settingsWithPayload());
+        when(cashShiftRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        List<DenominationCount> breakdown = List.of(new DenominationCount("bill_100", 1));
+        CashShift shift = cashShiftService.openShift(
+                TENANT_ID, "user-1", new BigDecimal("100.00"), breakdown);
+
+        assertThat(shift.getOpeningBreakdown()).isEqualTo(breakdown);
+    }
+
+    @Test
+    void openShift_rejectsABreakdownThatDoesNotSumToTheTotal() {
+        List<DenominationCount> breakdown = List.of(new DenominationCount("bill_100", 1));
+
+        assertThatThrownBy(() -> cashShiftService.openShift(
+                        TENANT_ID, "user-1", new BigDecimal("50.00"), breakdown))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("sums to");
+    }
+
+    @Test
+    void openShift_rejectsAnUnknownDenominationId() {
+        List<DenominationCount> breakdown = List.of(new DenominationCount("bill_777", 1));
+
+        assertThatThrownBy(() -> cashShiftService.openShift(
+                        TENANT_ID, "user-1", new BigDecimal("777.00"), breakdown))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("unknown denomination");
+    }
+
+    @Test
+    void openShift_allowsNoBreakdownAtAllForBackwardCompatibility() {
+        when(cashShiftRepository.findByTenantIdAndStatus(TENANT_ID, CashShiftStatus.OPEN))
+                .thenReturn(Optional.empty());
+        when(cashShiftRepository.findMaxShiftNumber(TENANT_ID)).thenReturn(0);
+        when(settingService.getSettings(TENANT_ID)).thenReturn(settingsWithPayload());
+        when(cashShiftRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        CashShift shift = cashShiftService.openShift(TENANT_ID, "user-1", new BigDecimal("100.00"), null);
+
+        assertThat(shift.getOpeningBreakdown()).isNull();
     }
 
     @Test
@@ -134,7 +183,7 @@ class CashShiftServiceTest {
                 .thenReturn(new BigDecimal("40.00"));
         when(cashShiftRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        CashShift closed = cashShiftService.closeShift(1L, "user-2", new BigDecimal("260.00"));
+        CashShift closed = cashShiftService.closeShift(1L, "user-2", new BigDecimal("260.00"), null, null);
 
         // expected = 100 (float) + 20 (in) - 5 (out) + 150 (cash sales) = 265
         assertThat(closed.getExpectedCash()).isEqualByComparingTo("265.00");
@@ -146,12 +195,44 @@ class CashShiftServiceTest {
     }
 
     @Test
+    void closeShift_acceptsAMatchingBreakdownAndNotes() {
+        CashShift shift = openShift();
+        when(cashShiftRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(shift));
+        when(sessionRepository.countByTenantIdAndStatus(TENANT_ID, SessionStatus.OPEN)).thenReturn(0L);
+        when(cashMovementRepository.sumCashIn(1L)).thenReturn(BigDecimal.ZERO);
+        when(cashMovementRepository.sumCashOut(1L)).thenReturn(BigDecimal.ZERO);
+        when(paymentRepository.sumConfirmedPhysicalForShift(any(), any())).thenReturn(BigDecimal.ZERO);
+        when(paymentRepository.sumConfirmedDigitalInWindow(any(), any(), any())).thenReturn(BigDecimal.ZERO);
+        when(cashShiftRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        List<DenominationCount> breakdown = List.of(new DenominationCount("bill_100", 1));
+        CashShift closed = cashShiftService.closeShift(
+                1L, "user-1", new BigDecimal("100.00"), breakdown, "todo cuadró");
+
+        assertThat(closed.getClosingBreakdown()).isEqualTo(breakdown);
+        assertThat(closed.getCloseNotes()).isEqualTo("todo cuadró");
+    }
+
+    @Test
+    void closeShift_rejectsABreakdownThatDoesNotSumToTheCountedCash() {
+        CashShift shift = openShift();
+        when(cashShiftRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(shift));
+        when(sessionRepository.countByTenantIdAndStatus(TENANT_ID, SessionStatus.OPEN)).thenReturn(0L);
+
+        List<DenominationCount> breakdown = List.of(new DenominationCount("bill_100", 1));
+        assertThatThrownBy(() -> cashShiftService.closeShift(
+                        1L, "user-1", new BigDecimal("50.00"), breakdown, null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("sums to");
+    }
+
+    @Test
     void closeShift_throwsWhenTablesStillHaveOpenSessions() {
         CashShift shift = openShift();
         when(cashShiftRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(shift));
         when(sessionRepository.countByTenantIdAndStatus(TENANT_ID, SessionStatus.OPEN)).thenReturn(3L);
 
-        assertThatThrownBy(() -> cashShiftService.closeShift(1L, "user-2", new BigDecimal("260.00")))
+        assertThatThrownBy(() -> cashShiftService.closeShift(1L, "user-2", new BigDecimal("260.00"), null, null))
                 .isInstanceOf(IllegalStateException.class);
     }
 
@@ -161,7 +242,7 @@ class CashShiftServiceTest {
         closed.setStatus(CashShiftStatus.CLOSED);
         when(cashShiftRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(closed));
 
-        assertThatThrownBy(() -> cashShiftService.closeShift(1L, "user-2", new BigDecimal("0.00")))
+        assertThatThrownBy(() -> cashShiftService.closeShift(1L, "user-2", new BigDecimal("0.00"), null, null))
                 .isInstanceOf(IllegalStateException.class);
     }
 
@@ -210,7 +291,7 @@ class CashShiftServiceTest {
         when(deadlineService.computeExpiresAt(any(), any())).thenReturn(stamped);
         when(cashShiftRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        CashShift shift = cashShiftService.openShift(TENANT_ID, "user-1", new BigDecimal("50.00"));
+        CashShift shift = cashShiftService.openShift(TENANT_ID, "user-1", new BigDecimal("50.00"), null);
 
         assertThat(shift.getExpiresAt()).isEqualTo(stamped);
     }

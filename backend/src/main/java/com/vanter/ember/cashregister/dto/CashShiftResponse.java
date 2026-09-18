@@ -1,8 +1,10 @@
 package com.vanter.ember.cashregister.dto;
 
+import com.vanter.ember.cashregister.model.DenominationCount;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 public record CashShiftResponse(
         Long id,
@@ -24,4 +26,7 @@ public record CashShiftResponse(
         LocalDateTime effectiveDeadline,
         boolean overdue,
         LocalDate businessDay,
-        int prolongCount) {}
+        int prolongCount,
+        List<DenominationCount> openingBreakdown,
+        List<DenominationCount> closingBreakdown,
+        String closeNotes) {}
