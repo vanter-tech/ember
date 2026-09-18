@@ -124,7 +124,6 @@ export const waiter = {
   voidBillDescription: 'The calculated bill is voided and the table becomes free to recalculate.',
   voidReasonPlaceholder: 'Void reason',
   voidButton: 'Void',
-  openingFloatNegativeError: 'Opening float cannot be negative',
   shiftOpenedToast: 'Shift opened successfully.',
   shiftOpenErrorToast: 'Could not open the shift.',
   movementAmountPositiveError: 'Amount must be greater than zero',

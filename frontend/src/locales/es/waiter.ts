@@ -123,7 +123,6 @@ export const waiter = {
   voidBillDescription: 'La cuenta calculada se anula y la mesa queda libre para recalcularla.',
   voidReasonPlaceholder: 'Motivo de la anulación',
   voidButton: 'Anular',
-  openingFloatNegativeError: 'El fondo inicial no puede ser negativo',
   shiftOpenedToast: 'Caja abierta correctamente.',
   shiftOpenErrorToast: 'No se pudo abrir la caja.',
   movementAmountPositiveError: 'El monto debe ser mayor a cero',

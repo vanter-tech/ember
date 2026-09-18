@@ -1,4 +1,5 @@
 import type { components } from '@/lib/backend-types'
+import type { DenominationCount } from '@/lib/denominations'
 import axios from 'axios'
 import { useAuthStore } from '@/store/authStore'
 import { useUIStore } from '@/store/uiStore'
@@ -681,8 +682,11 @@ export type CashShiftDetailResponse = components['schemas']['CashShiftDetailResp
 export type DailyReportResponse = components['schemas']['DailyReportResponse']
 
 export const cashShiftService = {
-  open: async (openingFloat: number): Promise<CashShiftResponse> => {
-    const { data } = await api.post<CashShiftResponse>('/cash-shifts/open', { openingFloat })
+  open: async (
+    openingFloat: number,
+    breakdown?: DenominationCount[]
+  ): Promise<CashShiftResponse> => {
+    const { data } = await api.post<CashShiftResponse>('/cash-shifts/open', { openingFloat, breakdown })
     return data
   },
   current: async (): Promise<CashShiftResponse | null> => {

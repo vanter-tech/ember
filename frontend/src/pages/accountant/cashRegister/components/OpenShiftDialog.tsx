@@ -1,9 +1,5 @@
-import { useMemo } from 'react'
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { z } from 'zod'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
 import toast from 'react-hot-toast'
 import {
   Dialog,
@@ -12,38 +8,34 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog'
-import { Form, FormControl, FormField, FormItem, FormLabel } from '@/components/ui/form'
 import { useUIStore } from '@/store/uiStore'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { cashShiftService } from '@/lib/api'
 import { useTranslation } from '@/lib/i18n'
 import { extractPlanGateError } from '@/lib/planGate'
-
-const createOpenShiftSchema = (t: ReturnType<typeof useTranslation<'waiter'>>['t']) =>
-  z.object({
-    openingFloat: z.coerce.number().min(0, t('openingFloatNegativeError')),
-  })
-
-type OpenShiftInputs = z.infer<ReturnType<typeof createOpenShiftSchema>>
+import { DenominationCounter } from './DenominationCounter'
+import type { DenominationCount } from '@/lib/denominations'
 
 export const OpenShiftDialog = () => {
   const { t } = useTranslation('waiter')
   const { t: tCommon } = useTranslation('common')
   const { activeModal, closeModal } = useUIStore()
   const queryClient = useQueryClient()
-  const openShiftSchema = useMemo(() => createOpenShiftSchema(t), [t])
+  const [breakdown, setBreakdown] = useState<DenominationCount[]>([])
+  const [total, setTotal] = useState(0)
 
-  const form = useForm({
-    resolver: zodResolver(openShiftSchema),
-    defaultValues: { openingFloat: 0 },
-  })
+  const handleCounterChange = (nextBreakdown: DenominationCount[], nextTotal: number) => {
+    setBreakdown(nextBreakdown)
+    setTotal(nextTotal)
+  }
 
   const mutation = useMutation({
-    mutationFn: (data: OpenShiftInputs) => cashShiftService.open(data.openingFloat),
+    mutationFn: () => cashShiftService.open(total, breakdown),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cashShiftCurrent'] })
       toast.success(t('shiftOpenedToast'))
-      form.reset()
+      setBreakdown([])
+      setTotal(0)
       closeModal()
     },
     onError: (error) => {
@@ -58,43 +50,21 @@ export const OpenShiftDialog = () => {
 
   return (
     <Dialog open={activeModal === 'OPEN_SHIFT'} onOpenChange={(isOpen) => !isOpen && closeModal()}>
-      <DialogContent className="sm:max-w-md rounded-3xl p-6">
+      <DialogContent className="sm:max-w-lg rounded-3xl p-6">
         <DialogHeader className="mb-4">
           <DialogTitle className="text-2xl font-bold text-zinc-800">{t('openShiftTitle')}</DialogTitle>
         </DialogHeader>
 
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit((data) => mutation.mutate(data))} className="space-y-5">
-            <FormField
-              control={form.control}
-              name="openingFloat"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t('openingFloatLabel')}</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      className="rounded-xl"
-                      {...field}
-                      value={field.value as number}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
+        <DenominationCounter onChange={handleCounterChange} />
 
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={closeModal} disabled={mutation.isPending}>
-                {t('cancelButton')}
-              </Button>
-              <Button type="submit" disabled={mutation.isPending}>
-                {mutation.isPending ? t('openingLabel') : t('openCajaButton')}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
+        <DialogFooter className="mt-5">
+          <Button type="button" variant="outline" onClick={closeModal} disabled={mutation.isPending}>
+            {t('cancelButton')}
+          </Button>
+          <Button onClick={() => mutation.mutate()} disabled={mutation.isPending}>
+            {mutation.isPending ? t('openingLabel') : t('openCajaButton')}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )
