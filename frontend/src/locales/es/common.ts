@@ -53,6 +53,7 @@ export const common = {
   leaveTableConfirmTitle: '¿Abandonar la mesa?',
   leaveTableConfirmBody:
     'Se descartarán tus platillos sin enviar. Lo que ya pediste queda en la cuenta de la mesa.',
+  leaveTableWillFreeTableWarning: 'Eres el único en la mesa y no se ha hecho ningún pedido: la mesa quedará libre al salir.',
   leaveTableConfirmButton: 'Abandonar mesa',
   leaveTableCancelButton: 'Volver',
   leaveTableDoneToast: 'Saliste de la mesa.',

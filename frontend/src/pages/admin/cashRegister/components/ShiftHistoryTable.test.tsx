@@ -25,6 +25,37 @@ describe('ShiftHistoryTable', () => {
     vi.clearAllMocks()
   })
 
+  test('expanding a closed shift shows a payments table with the table number, not the participant name', async () => {
+    vi.mocked(cashShiftService.history).mockResolvedValue({
+      content: [
+        {
+          id: 3, shiftNumber: 3, status: 'CLOSED', openedByName: 'Ana', closedByName: 'Ana',
+          expectedCash: 200, countedCash: 200, variance: 0,
+        },
+      ],
+      totalPages: 1,
+    } as never)
+    vi.mocked(cashShiftService.detail).mockResolvedValue({
+      shift: { id: 3, shiftNumber: 3, status: 'CLOSED' },
+      movements: [],
+      payments: [
+        {
+          id: 1, tableNumber: 5, amount: 100, method: 'PHYSICAL', status: 'CONFIRMED',
+          remaining: 100, refundedAmount: 0, participantName: 'Carla',
+        },
+      ],
+    } as never)
+
+    wrap(<ShiftHistoryTable />)
+    fireEvent.click(await screen.findByText('#3'))
+
+    expect(await screen.findByText('#5')).toBeVisible()
+    expect(screen.queryByText('Carla')).not.toBeInTheDocument()
+    expect(screen.getByText('$100.00')).toBeVisible()
+    expect(screen.getByText('Efectivo')).toBeVisible()
+    expect(screen.getByText('Confirmado')).toBeVisible()
+  })
+
   test('expanding a closed shift shows its denomination breakdown and notes', async () => {
     vi.mocked(cashShiftService.history).mockResolvedValue({
       content: [

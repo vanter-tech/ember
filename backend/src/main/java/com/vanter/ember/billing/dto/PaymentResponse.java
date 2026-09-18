@@ -12,4 +12,5 @@ public record PaymentResponse(
         String status,
         LocalDateTime createdAt,
         BigDecimal refundedAmount,
-        BigDecimal remaining) {}
+        BigDecimal remaining,
+        Integer tableNumber) {}

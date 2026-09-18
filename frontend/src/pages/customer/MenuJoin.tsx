@@ -17,8 +17,9 @@ import { useTranslation } from '@/lib/i18n'
  *
  * - Not authenticated as CUSTOMER → park the token and bounce to /login; navigateForRole brings
  *   them back here once they're in.
- * - Authenticated → ask for a display name, then POST /sessions/{id}/join with the token and
- *   swap in the tenant-scoped token it returns, exactly like the 5-digit code flow.
+ * - Authenticated as CUSTOMER → join immediately using the account's own name (no name-entry
+ *   screen — that's guest-only territory), via POST /sessions/{id}/join with the token, swapping
+ *   in the tenant-scoped token it returns, exactly like the 5-digit code flow.
  */
 export const MenuJoin = () => {
   const { t } = useTranslation('customer')
@@ -39,25 +40,9 @@ export const MenuJoin = () => {
   const [name, setName] = useState(accountName ?? '')
   const [submitting, setSubmitting] = useState(false)
   const [guestMode, setGuestMode] = useState(false)
+  const [joinFailed, setJoinFailed] = useState(false)
 
-  useEffect(() => {
-    if (qrToken) sessionStorage.setItem(PENDING_QR_TOKEN_KEY, qrToken)
-  }, [qrToken])
-
-  if (!qrToken || !sessionId) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
-        <Card className="w-full max-w-sm rounded-3xl">
-          <CardContent className="flex flex-col items-center gap-4 py-10 text-center">
-            <p className="text-gray-500">{t('qrJoinInvalidLink')}</p>
-            <Button asChild variant="outline" className="rounded-2xl">
-              <Link to="/customer">{t('qrJoinBackHome')}</Link>
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
+  const isAuthenticatedCustomer = !!token && role === 'CUSTOMER'
 
   const finishJoin = (data: { token?: string; session?: unknown }) => {
     if (data.token) setAuth({ token: data.token })
@@ -74,7 +59,84 @@ export const MenuJoin = () => {
     else toast.error(t('qrJoinGenericErrorToast'))
   }
 
-  if (!token || role !== 'CUSTOMER') {
+  const submit = async (submittedName: string) => {
+    if (!sessionId || !qrToken || submittedName.trim().length === 0 || submitting) return
+    setSubmitting(true)
+    setJoinFailed(false)
+    try {
+      finishJoin(await SessionTableService.joinSessionViaQr(sessionId, qrToken, submittedName.trim()))
+    } catch (error) {
+      reportJoinError(error)
+      // Only a genuinely dead QR (404) has nothing left to retry — anything else (already seated
+      // elsewhere, full table, a transient network blip) should keep the user on this screen so
+      // they can just try again, instead of silently dropping the join and bouncing them to the
+      // account home with no menu and no explanation.
+      if (isAxiosError(error) && error.response?.status === 404) {
+        sessionStorage.removeItem(PENDING_QR_TOKEN_KEY)
+        navigate('/customer', { replace: true })
+      } else {
+        setJoinFailed(true)
+      }
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  useEffect(() => {
+    if (qrToken) sessionStorage.setItem(PENDING_QR_TOKEN_KEY, qrToken)
+  }, [qrToken])
+
+  useEffect(() => {
+    // A real account already has a name — join immediately instead of asking, matching the bug
+    // report's expectation that the name-entry screen only ever appears for a guest.
+    if (isAuthenticatedCustomer && accountName) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- kicks off the one-time auto-join on mount
+      submit(accountName)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticatedCustomer, accountName])
+
+  if (!qrToken || !sessionId) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
+        <Card className="w-full max-w-sm rounded-3xl">
+          <CardContent className="flex flex-col items-center gap-4 py-10 text-center">
+            <p className="text-gray-500">{t('qrJoinInvalidLink')}</p>
+            <Button asChild variant="outline" className="rounded-2xl">
+              <Link to="/customer">{t('qrJoinBackHome')}</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  if (isAuthenticatedCustomer && accountName) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
+        <Card className="w-full max-w-sm rounded-3xl">
+          <CardContent className="flex flex-col items-center gap-4 py-10 text-center">
+            {joinFailed ? (
+              <>
+                <p className="text-gray-500">{t('qrJoinGenericErrorToast')}</p>
+                <Button
+                  className="h-12 w-full text-lg font-bold hover:bg-[#6a1111]"
+                  disabled={submitting}
+                  onClick={() => submit(accountName)}
+                >
+                  {submitting ? t('qrJoinSubmitting') : t('qrJoinSubmit')}
+                </Button>
+              </>
+            ) : (
+              <p className="text-gray-500">{t('qrJoinSubmitting')}</p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  if (!isAuthenticatedCustomer) {
     const guestSubmit = async () => {
       if (submitting) return
       setSubmitting(true)
@@ -143,26 +205,8 @@ export const MenuJoin = () => {
     )
   }
 
-  const submit = async () => {
-    if (name.trim().length === 0 || submitting) return
-    setSubmitting(true)
-    try {
-      finishJoin(await SessionTableService.joinSessionViaQr(sessionId, qrToken, name.trim()))
-    } catch (error) {
-      reportJoinError(error)
-      // Only a genuinely dead QR (404) has nothing left to retry — anything else (already seated
-      // elsewhere, full table, a transient network blip) should keep the user on this screen so
-      // they can just try again, instead of silently dropping the join and bouncing them to the
-      // account home with no menu and no explanation.
-      if (isAxiosError(error) && error.response?.status === 404) {
-        sessionStorage.removeItem(PENDING_QR_TOKEN_KEY)
-        navigate('/customer', { replace: true })
-      }
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
+  // Rare edge case: authenticated as CUSTOMER but the account has no name on file — the only
+  // remaining path that still needs to ask, since the backend requires a non-blank userName.
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
       <Card className="w-full max-w-sm rounded-3xl">
@@ -181,13 +225,13 @@ export const MenuJoin = () => {
               maxLength={50}
               placeholder={t('qrJoinNamePlaceholder')}
               onChange={(e) => setName(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && submit()}
+              onKeyDown={(e) => e.key === 'Enter' && submit(name)}
             />
           </label>
           <Button
             className="h-12 w-full text-lg font-bold hover:bg-[#6a1111]"
             disabled={name.trim().length === 0 || submitting}
-            onClick={submit}
+            onClick={() => submit(name)}
           >
             {submitting ? t('qrJoinSubmitting') : t('qrJoinSubmit')}
           </Button>

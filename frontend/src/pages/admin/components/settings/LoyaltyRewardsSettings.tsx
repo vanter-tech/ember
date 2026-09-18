@@ -37,6 +37,7 @@ export const LoyaltyRewardsSettings = () => {
             {t('newRewardButton')}
           </Button>
         </CardHeader>
+        <div className="border-t w-full m-auto border-[#7a1315]/20"></div>
 
         <CardContent>
           {isLoadingRewards ? (

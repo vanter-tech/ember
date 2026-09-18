@@ -1245,6 +1245,21 @@ class SessionServiceTest {
     }
 
     @Test
+    void leaveSession_appendsAParticipantLeftActivityLogEntry() {
+        Session session = openSessionWithTwoParticipants();
+        when(sessionRepository.findByIdAndTenantId("sess-1", RESTAURANT_ID)).thenReturn(Optional.of(session));
+        when(userRepository.findByEmail("user-1")).thenReturn(Optional.of(user("user-1")));
+        when(sessionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        Session result = sessionService.leaveSession("sess-1", "user-1");
+
+        assertThat(result.getActivityLog()).singleElement().satisfies(activity -> {
+            assertThat(activity.getType()).isEqualTo(SessionActivity.Type.PARTICIPANT_LEFT);
+            assertThat(activity.getParticipantName()).isEqualTo("Alice");
+        });
+    }
+
+    @Test
     void leaveSession_closesSessionWhenLastParticipantLeavesWithNoBillableItems() {
         Session session = openSessionWithParticipant("user-1");
         session.getItems().add(itemFor("user-1", "draft-1", OrderItemStatus.DRAFT));

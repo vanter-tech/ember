@@ -119,81 +119,86 @@ export const TicketSettings = () => {
           <CardDescription>{t('ticketCardDescription')}</CardDescription>
         </div>
       </CardHeader>
+      <div className="border-t w-full m-auto border-[#7a1315]/20"></div>
 
-      <CardContent className="space-y-6">
-        <div className="max-w-md space-y-2">
-          <Label htmlFor="headerMessage">{t('headerMessageLabel')}</Label>
-          <Input
-            id="headerMessage"
-            value={currentHeaderMessage}
-            placeholder={t('headerMessagePlaceholder')}
-            onChange={(e) => updateDraft({ headerMessage: e.target.value })}
-            className="focus-visible:ring-[#7a1315]"
-          />
-        </div>
-
-        <div className="max-w-md space-y-2">
-          <Label htmlFor="footerMessage">{t('footerMessageLabel')}</Label>
-          <Input
-            id="footerMessage"
-            value={currentFooterMessage}
-            placeholder={t('footerMessagePlaceholder')}
-            onChange={(e) => updateDraft({ footerMessage: e.target.value })}
-            className="focus-visible:ring-[#7a1315]"
-          />
-        </div>
-
-        <div className="max-w-md space-y-2">
-          <Label htmlFor="paperWidth">{t('paperWidthLabel')}</Label>
-          <Select
-            value={currentPaperWidth}
-            onValueChange={(value) => updateDraft({ paperWidth: value as PaperWidth })}
-          >
-            <SelectTrigger id="paperWidth" className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="MM_58">{t('paperWidth58Label')}</SelectItem>
-              <SelectItem value="MM_80">{t('paperWidth80Label')}</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="flex items-center justify-between max-w-md">
-          <div className="space-y-0.5">
-            <Label htmlFor="showTaxBreakdown">{t('showTaxBreakdownLabel')}</Label>
-            <p className="text-xs text-muted-foreground">{t('showTaxBreakdownDescription')}</p>
+      <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6 p-6">
+        <div className="flex flex-col space-y-6">
+          <div className="space-y-2">
+            <Label htmlFor="headerMessage">{t('headerMessageLabel')}</Label>
+            <Input
+              id="headerMessage"
+              value={currentHeaderMessage}
+              placeholder={t('headerMessagePlaceholder')}
+              onChange={(e) => updateDraft({ headerMessage: e.target.value })}
+              className="focus-visible:ring-[#7a1315]"
+            />
           </div>
-          <Switch
-            id="showTaxBreakdown"
-            checked={currentShowTaxBreakdown}
-            onCheckedChange={(checked) => updateDraft({ showTaxBreakdown: checked })}
-          />
-        </div>
 
-        <div className="flex items-center justify-between max-w-md">
-          <div className="space-y-0.5">
-            <Label htmlFor="showTip">{t('showTipLabel')}</Label>
-            <p className="text-xs text-muted-foreground">{t('showTipDescription')}</p>
+          <div className="space-y-2">
+            <Label htmlFor="footerMessage">{t('footerMessageLabel')}</Label>
+            <Input
+              id="footerMessage"
+              value={currentFooterMessage}
+              placeholder={t('footerMessagePlaceholder')}
+              onChange={(e) => updateDraft({ footerMessage: e.target.value })}
+              className="focus-visible:ring-[#7a1315]"
+            />
           </div>
-          <Switch
-            id="showTip"
-            checked={currentShowTip}
-            onCheckedChange={(checked) => updateDraft({ showTip: checked })}
-          />
+
+          <div className="space-y-2">
+            <Label htmlFor="paperWidth">{t('paperWidthLabel')}</Label>
+            <Select
+              value={currentPaperWidth}
+              onValueChange={(value) => updateDraft({ paperWidth: value as PaperWidth })}
+            >
+              <SelectTrigger id="paperWidth" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="MM_58">{t('paperWidth58Label')}</SelectItem>
+                <SelectItem value="MM_80">{t('paperWidth80Label')}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
-        <div className="max-w-md space-y-2">
-          <Label>{t('ticketPreviewLabel')}</Label>
-          <div className="flex flex-wrap gap-3">
-            <Button type="button" variant="outline" onClick={() => setPreviewOpen('customer')}>
-              <Receipt className="mr-2 h-4 w-4" />
-              {t('previewCustomerReceiptTab')}
-            </Button>
-            <Button type="button" variant="outline" onClick={() => setPreviewOpen('kitchen')}>
-              <ChefHat className="mr-2 h-4 w-4" />
-              {t('previewKitchenTicketTab')}
-            </Button>
+        <div className="flex flex-col space-y-6">
+          <div className="flex items-center justify-between rounded-xl border border-zinc-200 p-4">
+            <div className="space-y-0.5">
+              <Label htmlFor="showTaxBreakdown">{t('showTaxBreakdownLabel')}</Label>
+              <p className="text-xs text-muted-foreground">{t('showTaxBreakdownDescription')}</p>
+            </div>
+            <Switch
+              id="showTaxBreakdown"
+              checked={currentShowTaxBreakdown}
+              onCheckedChange={(checked) => updateDraft({ showTaxBreakdown: checked })}
+            />
+          </div>
+
+          <div className="flex items-center justify-between rounded-xl border border-zinc-200 p-4">
+            <div className="space-y-0.5">
+              <Label htmlFor="showTip">{t('showTipLabel')}</Label>
+              <p className="text-xs text-muted-foreground">{t('showTipDescription')}</p>
+            </div>
+            <Switch
+              id="showTip"
+              checked={currentShowTip}
+              onCheckedChange={(checked) => updateDraft({ showTip: checked })}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>{t('ticketPreviewLabel')}</Label>
+            <div className="flex flex-wrap gap-3">
+              <Button type="button" variant="outline" onClick={() => setPreviewOpen('customer')}>
+                <Receipt className="mr-2 h-4 w-4" />
+                {t('previewCustomerReceiptTab')}
+              </Button>
+              <Button type="button" variant="outline" onClick={() => setPreviewOpen('kitchen')}>
+                <ChefHat className="mr-2 h-4 w-4" />
+                {t('previewKitchenTicketTab')}
+              </Button>
+            </div>
           </div>
         </div>
       </CardContent>

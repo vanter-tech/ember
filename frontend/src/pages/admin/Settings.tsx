@@ -114,8 +114,10 @@ export const Settings = () => {
                     onToggleCollapsed={() => setSidebarCollapsed((prev) => !prev)}
                 />
             </div>
-            <div id="settings-tour-content" className="flex-1 bg-white rounded-xl
-            shadow-sm border border-zinc-200">
+            {/* No border/shadow/bg here — each tab renders its own <Card>, which already
+                provides that frame. Adding one here too doubled it (a second boxed region
+                visible below the tab's own CardFooter). */}
+            <div id="settings-tour-content" className="flex-1">
                 {renderContent()}
             </div>
             {activeSettings && tourSteps.length > 0 && (

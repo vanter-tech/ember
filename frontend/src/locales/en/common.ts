@@ -55,6 +55,7 @@ export const common = {
   leaveTableConfirmTitle: 'Leave the table?',
   leaveTableConfirmBody:
     'Your unsent items will be discarded. Anything you already ordered stays on the table bill.',
+  leaveTableWillFreeTableWarning: "You're the only one at the table and nothing has been ordered: the table will be freed up once you leave.",
   leaveTableConfirmButton: 'Leave table',
   leaveTableCancelButton: 'Back',
   leaveTableDoneToast: 'You left the table.',

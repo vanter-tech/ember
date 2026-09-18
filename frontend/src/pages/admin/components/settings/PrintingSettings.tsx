@@ -238,6 +238,7 @@ export const PrintingSettings = () => {
             </Button>
           </div>
         </CardHeader>
+        <div className="border-t w-full m-auto border-[#7a1315]/20"></div>
         <CardContent className="space-y-2">
           {agents.length === 0 && (
             <p className="text-sm text-zinc-500">{t('printingNoAgentsMessage')}</p>
@@ -305,6 +306,7 @@ export const PrintingSettings = () => {
             </Button>
           )}
         </CardHeader>
+        <div className="border-t w-full m-auto border-[#7a1315]/20"></div>
         <CardContent className="space-y-2">
           {jobs.map((job) => {
             const canceled = job.status === 'CANCELED'

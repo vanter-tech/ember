@@ -81,36 +81,35 @@ export const HardwareSettings = () => {
           <CardDescription>{t('hardwareCardDescription')}</CardDescription>
         </div>
       </CardHeader>
+      <div className="border-t w-full m-auto border-[#7a1315]/20"></div>
 
-      <CardContent>
-        <div className="max-w-md space-y-6">
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label htmlFor="autoPrintTickets">{t('autoPrintTicketsLabel')}</Label>
-              <p className="text-xs text-muted-foreground">
-                {t('autoPrintTicketsDescription')}
-              </p>
-            </div>
-            <Switch
-              id="autoPrintTickets"
-              checked={currentAutoPrintTickets}
-              onCheckedChange={(checked) => handleToggle('autoPrintTickets', checked)}
-            />
+      <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6 p-6">
+        <div className="flex items-center justify-between rounded-xl border border-zinc-200 p-4">
+          <div className="space-y-0.5">
+            <Label htmlFor="autoPrintTickets">{t('autoPrintTicketsLabel')}</Label>
+            <p className="text-xs text-muted-foreground">
+              {t('autoPrintTicketsDescription')}
+            </p>
           </div>
+          <Switch
+            id="autoPrintTickets"
+            checked={currentAutoPrintTickets}
+            onCheckedChange={(checked) => handleToggle('autoPrintTickets', checked)}
+          />
+        </div>
 
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label htmlFor="printCustomerReceipt">{t('printCustomerReceiptLabel')}</Label>
-              <p className="text-xs text-muted-foreground">
-                {t('printCustomerReceiptDescription')}
-              </p>
-            </div>
-            <Switch
-              id="printCustomerReceipt"
-              checked={currentPrintCustomerReceipt}
-              onCheckedChange={(checked) => handleToggle('printCustomerReceipt', checked)}
-            />
+        <div className="flex items-center justify-between rounded-xl border border-zinc-200 p-4">
+          <div className="space-y-0.5">
+            <Label htmlFor="printCustomerReceipt">{t('printCustomerReceiptLabel')}</Label>
+            <p className="text-xs text-muted-foreground">
+              {t('printCustomerReceiptDescription')}
+            </p>
           </div>
+          <Switch
+            id="printCustomerReceipt"
+            checked={currentPrintCustomerReceipt}
+            onCheckedChange={(checked) => handleToggle('printCustomerReceipt', checked)}
+          />
         </div>
       </CardContent>
 

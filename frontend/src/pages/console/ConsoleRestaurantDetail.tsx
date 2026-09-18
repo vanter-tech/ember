@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import axios from 'axios'
+import toast from 'react-hot-toast'
 import {
   platformAuditLogService,
   platformRestaurantService,
@@ -102,6 +104,17 @@ export default function ConsoleRestaurantDetail() {
       setShowDeleteConfirm(false)
       setSlugInput('')
       invalidateAll()
+    },
+    onError: (error) => {
+      const detail =
+        axios.isAxiosError(error) &&
+        typeof (error.response?.data as { detail?: unknown })?.detail === 'string'
+          ? (error.response!.data as { detail: string }).detail
+          : undefined
+      toast.error(detail ?? 'No se pudo eliminar el restaurante', {
+        id: 'console-delete-error',
+        duration: 5000,
+      })
     },
   })
 

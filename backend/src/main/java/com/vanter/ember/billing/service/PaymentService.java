@@ -34,6 +34,8 @@ import com.vanter.ember.config.TenantContextHolder;
 import com.vanter.ember.identity.model.User;
 import com.vanter.ember.identity.repository.UserRepository;
 import com.vanter.ember.session.service.SessionService;
+import com.vanter.ember.settings.model.DiningTables;
+import com.vanter.ember.settings.repository.DiningTableRepository;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
@@ -63,6 +65,7 @@ public class PaymentService {
     private final RefundRepository refundRepository;
     private final CashMovementRepository cashMovementRepository;
     private final CashShiftDeadlineService deadlineService;
+    private final DiningTableRepository diningTableRepository;
 
     @Transactional
     public Payment registerPhysicalPayment(
@@ -442,13 +445,38 @@ public class PaymentService {
     }
 
     public List<PaymentResponse> toResponses(List<Payment> payments) {
+        Map<String, Integer> tableNumberBySessionId = resolveTableNumbers(payments);
         return payments.stream().map(p -> {
             BigDecimal refunded = refundRepository.sumByPaymentId(p.getId());
             return new PaymentResponse(
                     p.getId(), p.getBill().getId(), p.getParticipantName(), p.getAmount(),
                     p.getMethod().name(), p.getStatus().name(), p.getCreatedAt(),
-                    refunded, p.getAmount().subtract(refunded));
+                    refunded, p.getAmount().subtract(refunded),
+                    tableNumberBySessionId.get(p.getBill().getSessionId()));
         }).toList();
+    }
+
+    /**
+     * A shift's payment list spans many tables — the admin Corte Z view wants to show which table
+     * each payment was for, not just who paid it. Resolved via each bill's session (for its table
+     * id) then a single batch lookup of table numbers, rather than a query per payment.
+     */
+    private Map<String, Integer> resolveTableNumbers(List<Payment> payments) {
+        if (payments.isEmpty()) {
+            return Map.of();
+        }
+        UUID tenantId = payments.get(0).getBill().getTenantId();
+        Map<String, UUID> tableIdBySessionId = payments.stream()
+                .map(p -> p.getBill().getSessionId())
+                .distinct()
+                .collect(Collectors.toMap(
+                        sessionId -> sessionId, sessionId -> sessionService.findById(sessionId).getTableId()));
+        Set<UUID> tableIds = Set.copyOf(tableIdBySessionId.values());
+        Map<UUID, Integer> tableNumberByTableId = diningTableRepository
+                .findByRestaurantIdAndIdIn(tenantId, tableIds).stream()
+                .collect(Collectors.toMap(DiningTables::getId, DiningTables::getTableNumber));
+        return tableIdBySessionId.entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, e -> tableNumberByTableId.get(e.getValue())));
     }
 
     public List<RefundResponse> listRefunds(Long paymentId) {

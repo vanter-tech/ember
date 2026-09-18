@@ -271,7 +271,7 @@ class CashShiftServiceTest {
         when(paymentRepository.findByCashShiftId(1L)).thenReturn(List.of(mock(Payment.class)));
         PaymentResponse response = new PaymentResponse(
                 20L, 1L, "Alice", new BigDecimal("25.00"), "PHYSICAL", "CONFIRMED",
-                LocalDateTime.now(), BigDecimal.ZERO, new BigDecimal("25.00"));
+                LocalDateTime.now(), BigDecimal.ZERO, new BigDecimal("25.00"), 5);
         when(paymentService.toResponses(anyList())).thenReturn(List.of(response));
         when(userRepository.findAllById(any())).thenReturn(List.of());
 
