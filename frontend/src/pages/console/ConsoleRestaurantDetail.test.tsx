@@ -3,8 +3,13 @@ import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import toast from 'react-hot-toast'
 import ConsoleRestaurantDetail from '@/pages/console/ConsoleRestaurantDetail'
 import { platformRestaurantService, platformAuditLogService } from '@/lib/platformApi'
+
+vi.mock('react-hot-toast', () => ({
+  default: Object.assign(vi.fn(), { success: vi.fn(), error: vi.fn() }),
+}))
 
 vi.mock('@/lib/platformApi', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/platformApi')>()
@@ -79,6 +84,27 @@ describe('ConsoleRestaurantDetail', () => {
 
     await waitFor(() =>
       expect(platformRestaurantService.deleteRestaurant).toHaveBeenCalledWith('r-1')
+    )
+  })
+
+  test('a failed delete surfaces the backend error instead of failing silently', async () => {
+    vi.mocked(platformRestaurantService.getById).mockResolvedValue(detail() as never)
+    vi.mocked(platformRestaurantService.deleteRestaurant).mockRejectedValue({
+      isAxiosError: true,
+      response: { status: 500, data: { detail: 'An unexpected error occurred.' } },
+    })
+    wrap(<ConsoleRestaurantDetail />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Eliminar restaurante' }))
+    fireEvent.change(screen.getByLabelText('Escribe el slug para confirmar'), {
+      target: { value: 'tenant-grill' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmar eliminación' }))
+
+    await waitFor(() =>
+      expect(toast.error).toHaveBeenCalledWith(
+        'An unexpected error occurred.',
+        expect.objectContaining({ id: 'console-delete-error' }),
+      ),
     )
   })
 
