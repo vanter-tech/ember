@@ -1,7 +1,7 @@
-# Report 488
+# Report 495
 
 ## 1. Identification
-- **Report number:** 488
+- **Report number:** 495
 - **Task ID:** LIVE-BUG-BATCH 1/7 — QR join forces the name-entry screen even for a real account
 - **Predecessor task:** report 487 (hotfix: waiter can't see the open cash shift)
 

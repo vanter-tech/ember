@@ -1,9 +1,9 @@
-# Report 492
+# Report 499
 
 ## 1. Identification
-- **Report number:** 492
+- **Report number:** 499
 - **Task ID:** LIVE-BUG-BATCH 5/7 — cash-shift payments should show the table, not the person
-- **Predecessor task:** report 491 (bug 4 — Settings tab cards grid layout)
+- **Predecessor task:** report 498 (bug 4 — Settings tab cards grid layout)
 
 ## 2. Objective
 Live user bug report: expanding a closed shift in admin Corte Z shows its payments as a plain list

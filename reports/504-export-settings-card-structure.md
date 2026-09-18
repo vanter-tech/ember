@@ -1,9 +1,9 @@
-# Report 497
+# Report 504
 
 ## 1. Identification
-- **Report number:** 497
+- **Report number:** 504
 - **Task ID:** LIVE-BUG-BATCH follow-up 3 — give "Exportar datos" the same Card structure as every other tab
-- **Predecessor task:** report 496 (header/content divider on every other tab)
+- **Predecessor task:** report 503 (header/content divider on every other tab)
 
 ## 2. Objective
 Live follow-up: `ExportSettings.tsx` was left as a plain `<div>` with a hand-rolled frame (from

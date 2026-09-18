@@ -1,9 +1,9 @@
-# Report 489
+# Report 496
 
 ## 1. Identification
-- **Report number:** 489
+- **Report number:** 496
 - **Task ID:** LIVE-BUG-BATCH 2/7 — activity log missing "X left the table"
-- **Predecessor task:** report 488 (bug 1 — QR join skips the name form for real accounts)
+- **Predecessor task:** report 495 (bug 1 — QR join skips the name form for real accounts)
 
 ## 2. Objective
 Live user bug report: when a participant leaves a table, the waiter's per-table activity feed never

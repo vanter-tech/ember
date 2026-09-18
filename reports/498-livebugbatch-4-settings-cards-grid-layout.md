@@ -1,9 +1,9 @@
-# Report 491
+# Report 498
 
 ## 1. Identification
-- **Report number:** 491
+- **Report number:** 498
 - **Task ID:** LIVE-BUG-BATCH 4/7 — Settings tab cards should use a grid layout
-- **Predecessor task:** report 490 (bug 3 — misleading "paid and closed" banner + leave warning)
+- **Predecessor task:** report 497 (bug 3 — misleading "paid and closed" banner + leave warning)
 
 ## 2. Objective
 Live user bug report: most Settings tabs render their fields in a single narrow (`max-w-md`)

@@ -1,9 +1,9 @@
-# Report 490
+# Report 497
 
 ## 1. Identification
-- **Report number:** 490
+- **Report number:** 497
 - **Task ID:** LIVE-BUG-BATCH 3/7 — misleading "paid and closed" banner + smarter leave-confirmation
-- **Predecessor task:** report 489 (bug 2 — activity log missing "X left the table")
+- **Predecessor task:** report 496 (bug 2 — activity log missing "X left the table")
 
 ## 2. Objective
 Live user bug report: if a table has one participant and they leave (possibly by mistake) before

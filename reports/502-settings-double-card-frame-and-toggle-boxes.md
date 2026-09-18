@@ -1,9 +1,9 @@
-# Report 495
+# Report 502
 
 ## 1. Identification
-- **Report number:** 495
+- **Report number:** 502
 - **Task ID:** LIVE-BUG-BATCH follow-up — Settings tabs' double-card frame + toggle sections need a bordered box
-- **Predecessor task:** report 494 (LIVE-BUG-BATCH complete, all 7 original bugs)
+- **Predecessor task:** report 501 (LIVE-BUG-BATCH complete, all 7 original bugs)
 
 ## 2. Objective
 Live follow-up to bug 4 (Settings cards grid layout): the user reported that every Settings tab

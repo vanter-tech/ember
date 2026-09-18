@@ -1,9 +1,9 @@
-# Report 493
+# Report 500
 
 ## 1. Identification
-- **Report number:** 493
+- **Report number:** 500
 - **Task ID:** LIVE-BUG-BATCH 6/7 — ADMIN sees "no open shift" in `/waiter/tables`
-- **Predecessor task:** report 492 (bug 5 — cash-shift payments show the table, not the person)
+- **Predecessor task:** report 499 (bug 5 — cash-shift payments show the table, not the person)
 
 ## 2. Objective
 Live user bug report: an ADMIN visiting `/waiter/tables` sees the floor as if no cash shift is

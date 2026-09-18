@@ -1,9 +1,9 @@
-# Report 496
+# Report 503
 
 ## 1. Identification
-- **Report number:** 496
+- **Report number:** 503
 - **Task ID:** LIVE-BUG-BATCH follow-up 2 — Settings tabs missing the header/content divider line
-- **Predecessor task:** report 495 (double-card frame + toggle boxes)
+- **Predecessor task:** report 502 (double-card frame + toggle boxes)
 
 ## 2. Objective
 Live follow-up: `BrandingSettings.tsx` has a thin divider line between its `CardHeader` (icon +

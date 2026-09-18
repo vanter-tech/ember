@@ -17,6 +17,9 @@ import com.vanter.ember.cashregister.model.CashMovement;
 import com.vanter.ember.cashregister.model.CashMovementType;
 import com.vanter.ember.cashregister.model.CashShift;
 import com.vanter.ember.cashregister.model.CashShiftStatus;
+import com.vanter.ember.cashregister.model.Denomination;
+import com.vanter.ember.cashregister.model.DenominationCount;
+import com.vanter.ember.cashregister.model.NicaraguaDenominations;
 import com.vanter.ember.cashregister.repository.CashMovementRepository;
 import com.vanter.ember.cashregister.repository.CashShiftRepository;
 import com.vanter.ember.config.ResourceNotFoundException;
@@ -62,10 +65,12 @@ public class CashShiftService {
     private final CashShiftDeadlineService deadlineService;
 
     @Transactional
-    public CashShift openShift(UUID tenantId, String openedByUserId, BigDecimal openingFloat) {
+    public CashShift openShift(
+            UUID tenantId, String openedByUserId, BigDecimal openingFloat, List<DenominationCount> breakdown) {
         if (cashShiftRepository.findByTenantIdAndStatus(tenantId, CashShiftStatus.OPEN).isPresent()) {
             throw new IllegalStateException("A cash shift is already open for this tenant");
         }
+        validateBreakdown(breakdown, openingFloat, "Opening float");
 
         int nextShiftNumber = cashShiftRepository.findMaxShiftNumber(tenantId) + 1;
 
@@ -79,6 +84,7 @@ public class CashShiftService {
                     .shiftNumber(nextShiftNumber)
                     .status(CashShiftStatus.OPEN)
                     .openingFloat(openingFloat)
+                    .openingBreakdown(breakdown)
                     .openedBy(openedByUserId)
                     .openedAt(openedAt)
                     .expiresAt(expiresAt)
@@ -133,7 +139,9 @@ public class CashShiftService {
     }
 
     @Transactional
-    public CashShift closeShift(Long shiftId, String closedByUserId, BigDecimal countedCash) {
+    public CashShift closeShift(
+            Long shiftId, String closedByUserId, BigDecimal countedCash,
+            List<DenominationCount> breakdown, String notes) {
         CashShift shift = cashShiftRepository.findByIdForUpdate(shiftId)
                 .orElseThrow(() -> new ResourceNotFoundException("Cash shift not found: " + shiftId));
         if (shift.getStatus() != CashShiftStatus.OPEN) {
@@ -145,6 +153,7 @@ public class CashShiftService {
             throw new IllegalStateException(
                     "Cannot close cash shift: " + activeTables + " table(s) still have an open session");
         }
+        validateBreakdown(breakdown, countedCash, "Counted cash");
 
         BigDecimal cashIn = cashMovementRepository.sumCashIn(shiftId);
         BigDecimal cashOut = cashMovementRepository.sumCashOut(shiftId);
@@ -161,6 +170,8 @@ public class CashShiftService {
         shift.setClosedAt(closedAt);
         shift.setExpectedCash(expectedCash);
         shift.setCountedCash(countedCash);
+        shift.setClosingBreakdown(breakdown);
+        shift.setCloseNotes(notes);
         shift.setVariance(variance);
         shift.setTotalCashSales(cashSales);
         shift.setTotalDigitalSales(digitalSales);
@@ -170,6 +181,32 @@ public class CashShiftService {
         CashShift saved = cashShiftRepository.save(shift);
         eventPublisher.publishEvent(new CashShiftClosed(shift.getTenantId(), shiftId));
         return saved;
+    }
+
+    /**
+     * A breakdown is optional (older clients, or the API used directly, may omit it) — but when
+     * present, every denomination must be real and the counted total must match exactly. Never
+     * trusts the caller's arithmetic even though today's only caller (the frontend grid) always
+     * derives the total from the same rows.
+     */
+    private void validateBreakdown(List<DenominationCount> breakdown, BigDecimal total, String label) {
+        if (breakdown == null) {
+            return;
+        }
+        BigDecimal sum = BigDecimal.ZERO;
+        for (DenominationCount count : breakdown) {
+            if (count.quantity() < 0) {
+                throw new IllegalArgumentException(label + " breakdown has a negative quantity");
+            }
+            Denomination denomination = NicaraguaDenominations.byId(count.denominationId())
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            label + " breakdown references an unknown denomination: " + count.denominationId()));
+            sum = sum.add(denomination.value().multiply(BigDecimal.valueOf(count.quantity())));
+        }
+        if (sum.compareTo(total) != 0) {
+            throw new IllegalArgumentException(
+                    label + " breakdown sums to " + sum + " but the submitted total is " + total);
+        }
     }
 
     public CashShift getCurrentOpenShift(UUID tenantId) {
@@ -252,7 +289,8 @@ public class CashShiftService {
                 shift.getTotalCashOut(),
                 shift.getExpiresAt(), shift.effectiveDeadline(),
                 deadlineService.isOverdue(shift, LocalDateTime.now()),
-                shift.businessDay(), shift.getProlongCount());
+                shift.businessDay(), shift.getProlongCount(),
+                shift.getOpeningBreakdown(), shift.getClosingBreakdown(), shift.getCloseNotes());
     }
 
     private CashMovementResponse toMovementResponse(CashMovement movement, Map<String, String> names) {

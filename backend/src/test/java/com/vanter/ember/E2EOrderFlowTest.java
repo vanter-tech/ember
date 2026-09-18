@@ -264,7 +264,7 @@ class E2EOrderFlowTest {
                         .header("Authorization", bearer(accountantToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
-                                new OpenShiftRequest(new BigDecimal("100.00")))))
+                                new OpenShiftRequest(new BigDecimal("100.00"), null))))
                 .andExpect(status().isCreated());
 
         // 8 — Waiter registers Alice's physical payment
