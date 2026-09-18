@@ -162,7 +162,7 @@ export const TicketSettings = () => {
         </div>
 
         <div className="flex flex-col space-y-6">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between rounded-xl border border-zinc-200 p-4">
             <div className="space-y-0.5">
               <Label htmlFor="showTaxBreakdown">{t('showTaxBreakdownLabel')}</Label>
               <p className="text-xs text-muted-foreground">{t('showTaxBreakdownDescription')}</p>
@@ -174,7 +174,7 @@ export const TicketSettings = () => {
             />
           </div>
 
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between rounded-xl border border-zinc-200 p-4">
             <div className="space-y-0.5">
               <Label htmlFor="showTip">{t('showTipLabel')}</Label>
               <p className="text-xs text-muted-foreground">{t('showTipDescription')}</p>

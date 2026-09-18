@@ -8,9 +8,11 @@ export const InfoSettings = () => {
   const year = new Date().getFullYear()
 
   return (
-    <div className="h-full flex flex-col justify-center gap-8 p-6 md:p-10">
-      {/* Vanter (builds & distributes) on the left, a hair-line divider, Ember (the product)
-          on the right. */}
+    <div className="h-full flex flex-col justify-center gap-8 rounded-xl border border-zinc-100 bg-card p-6 shadow-sm ring-1 ring-foreground/10 md:p-10">
+      {/* Settings.tsx's outer container no longer draws its own frame (every tab owns one now),
+          so this tab needs its own — same visual weight as every other tab's <Card>. Vanter
+          (builds & distributes) on the left, a hair-line divider, Ember (the product) on the
+          right. */}
       <div className="flex items-center justify-center gap-6 sm:gap-10">
         <a
           href={VANTER_URL}

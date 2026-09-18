@@ -148,7 +148,7 @@ export const BillingSettings = () => {
               </div>
             </div>
 
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between rounded-xl border border-zinc-200 p-4">
               <div className="space-y-0.5">
                 <Label htmlFor="taxIncludeInMenuPrice">{t('taxIncludedLabel')}</Label>
                 <p className="text-xs text-muted-foreground">

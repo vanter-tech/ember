@@ -45,10 +45,9 @@ export const ExportSettings = () => {
   })
 
   return (
-    <div className="h-full flex flex-col gap-8 p-6 md:p-10">
-      {/* No inner Card here — #settings-tour-content (Settings.tsx) already renders a bordered,
-          shadowed panel, so wrapping this in a second Card drew a redundant nested border
-          (the same "double frame" InfoSettings.tsx was fixed for). */}
+    <div className="h-full flex flex-col gap-8 rounded-xl border border-zinc-100 bg-card p-6 shadow-sm ring-1 ring-foreground/10 md:p-10">
+      {/* Settings.tsx's outer container no longer draws its own frame (every tab owns one now),
+          so this tab needs its own — same visual weight as every other tab's <Card>. */}
       <div className="flex items-center gap-4">
         <div className="w-12 h-12 bg-red-50 text-[#7a1315] rounded-full flex items-center justify-center shrink-0">
           <Download className="w-6 h-6" />
