@@ -77,12 +77,35 @@ describe('MenuJoin (QR landing)', () => {
     expect(sessionStorage.getItem(PENDING_QR_TOKEN_KEY)).toBeNull()
   })
 
-  test('authenticated: pre-fills the name field with the account name', () => {
+  test('authenticated with an account name: joins immediately, no name form shown', async () => {
     useAuthStore.setState({ token: 'login-token', role: 'CUSTOMER', name: 'Ana' })
+    const spy = vi
+      .spyOn(SessionTableService, 'joinSessionViaQr')
+      .mockResolvedValue({ session: { id: 'sess-42' }, token: 'scoped-token' } as never)
 
     renderAt(`/menu/join?token=${QR_TOKEN}`)
 
-    expect(screen.getByPlaceholderText('Ej. Ana')).toHaveValue('Ana')
+    expect(screen.queryByPlaceholderText('Ej. Ana')).not.toBeInTheDocument()
+    await waitFor(() => expect(spy).toHaveBeenCalledWith('sess-42', QR_TOKEN, 'Ana'))
+    await waitFor(() => expect(screen.getByText('MENU PAGE')).toBeInTheDocument())
+  })
+
+  test('authenticated with an account name: a recoverable failure offers a retry, not an eternal spinner', async () => {
+    useAuthStore.setState({ token: 'login-token', role: 'CUSTOMER', name: 'Ana' })
+    const spy = vi.spyOn(SessionTableService, 'joinSessionViaQr').mockRejectedValue({
+      isAxiosError: true,
+      response: { status: 409 },
+    })
+
+    renderAt(`/menu/join?token=${QR_TOKEN}`)
+    await waitFor(() => expect(spy).toHaveBeenCalledTimes(1))
+
+    const retryButton = await screen.findByRole('button', { name: 'Entrar' })
+    spy.mockResolvedValueOnce({ session: { id: 'sess-42' }, token: 'scoped-token' } as never)
+    await userEvent.click(retryButton)
+
+    await waitFor(() => expect(spy).toHaveBeenCalledTimes(2))
+    expect(spy).toHaveBeenLastCalledWith('sess-42', QR_TOKEN, 'Ana')
   })
 
   test('authenticated: a recoverable join error (409) keeps the user on the join screen', async () => {
