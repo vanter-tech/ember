@@ -1,6 +1,7 @@
 package com.vanter.ember.cashregister.controller;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -17,6 +18,7 @@ import com.vanter.ember.cashregister.dto.RecordMovementRequest;
 import com.vanter.ember.cashregister.model.CashMovementType;
 import com.vanter.ember.cashregister.model.CashShift;
 import com.vanter.ember.cashregister.model.CashShiftStatus;
+import com.vanter.ember.cashregister.model.DenominationCount;
 import com.vanter.ember.cashregister.service.CashShiftService;
 import com.vanter.ember.config.CorsConfig;
 import com.vanter.ember.config.SecurityConfig;
@@ -28,6 +30,7 @@ import com.vanter.ember.identity.service.JwtService;
 import com.vanter.ember.restaurant.repository.RestaurantRepository;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
@@ -90,6 +93,32 @@ class CashShiftControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.status").value("OPEN"));
+    }
+
+    @Test
+    @WithMockUser(username = "accountant@ember.local", roles = "ACCOUNTANT")
+    void open_passesTheBreakdownThrough() throws Exception {
+        TenantContextHolder.setTenantId(TENANT_ID);
+        when(userRepository.findByEmail("accountant@ember.local"))
+                .thenReturn(Optional.of(sampleUser("accountant@ember.local")));
+        when(cashShiftService.openShift(any(), eq("user-1"), any(BigDecimal.class), anyList()))
+                .thenReturn(sampleShift());
+        when(cashShiftService.toResponse(any())).thenReturn(new CashShiftResponse(
+                1L, 1, "OPEN", new BigDecimal("100.00"), "Alice", LocalDateTime.now(),
+                null, null, null, null, null, null, null, null, null,
+                null, null, false, null, 0, null, null, null));
+
+        String body = """
+                {"openingFloat": 100.00, "breakdown": [{"denominationId": "bill_100", "quantity": 1}]}
+                """;
+        mockMvc.perform(post("/cash-shifts/open")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isCreated());
+
+        org.mockito.Mockito.verify(cashShiftService).openShift(
+                any(), eq("user-1"), any(BigDecimal.class),
+                eq(List.of(new DenominationCount("bill_100", 1))));
     }
 
     @Test
