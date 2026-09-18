@@ -119,6 +119,7 @@ export const BillingSettings = () => {
           <CardDescription>{t('billingCardDescription')}</CardDescription>
         </div>
       </CardHeader>
+      <div className="border-t w-full m-auto border-[#7a1315]/20"></div>
 
       <CardContent className="flex flex-col gap-8 p-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6">

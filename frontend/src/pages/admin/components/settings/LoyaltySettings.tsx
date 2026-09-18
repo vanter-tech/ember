@@ -105,6 +105,7 @@ export const LoyaltySettings = () => {
           <CardDescription>{t('loyaltyCardDescription')}</CardDescription>
         </div>
       </CardHeader>
+      <div className="border-t w-full m-auto border-[#7a1315]/20"></div>
 
       <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6 p-6">
         <div className="flex flex-col space-y-6">

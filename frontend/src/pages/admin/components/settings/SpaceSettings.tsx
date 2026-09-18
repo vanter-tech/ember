@@ -79,6 +79,7 @@ export const SpacesSettings = () => {
           <CardDescription>{t('spaceCardDescription')}</CardDescription>
         </div>
       </CardHeader>
+      <div className="border-t w-full m-auto border-[#7a1315]/20"></div>
 
       <CardContent>
         <div className="max-w-md space-y-3">
