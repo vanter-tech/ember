@@ -2138,7 +2138,7 @@ export interface components {
         };
         SessionActivityDto: {
             /** @enum {string} */
-            type?: "ITEM_SENT" | "ITEM_DELETED";
+            type?: "ITEM_SENT" | "ITEM_DELETED" | "TABLE_TRANSFERRED" | "PARTICIPANT_LEFT";
             itemName?: string;
             participantName?: string;
             /** Format: date-time */

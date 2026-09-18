@@ -27,6 +27,7 @@ export const waiter = {
   itemDeletedLabel: '{{itemName}} was deleted',
   deletedLabel: 'Deleted',
   orderPlacedLabel: 'Order placed',
+  participantLeftLabel: '{{name}} left the table',
   tableOpenedAtLabel: 'Table opened: {{timestamp}}',
   waiterIdLabel: 'Waiter: {{waiterId}}',
   billTitle: 'Bill',

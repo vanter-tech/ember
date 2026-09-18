@@ -469,7 +469,7 @@ export const TableInformation = () => {
                       <div key={index} className="relative">
                         <div
                           className={`absolute -left-6.25 top-1.5 w-2.5 h-2.5 rounded-full ${
-                            activity.type === 'ITEM_DELETED'
+                            activity.type === 'ITEM_DELETED' || activity.type === 'PARTICIPANT_LEFT'
                               ? 'bg-gray-400'
                               : 'bg-[#8B0000]'
                           }`}
@@ -478,13 +478,16 @@ export const TableInformation = () => {
                           <span className="text-xs text-gray-700 font-medium">
                             {activity.type === 'ITEM_DELETED'
                               ? t('itemDeletedLabel', { itemName: activity.itemName ?? '' })
-                              : activity.itemName}
+                              : activity.type === 'PARTICIPANT_LEFT'
+                                ? t('participantLeftLabel', { name: activity.participantName ?? '' })
+                                : activity.itemName}
                           </span>
                           <span className="text-xs text-gray-400">
                             {activity.type === 'ITEM_DELETED'
-                              ? t('deletedLabel')
-                              : t('orderPlacedLabel')}
-                            : {activity.timestamp}
+                              ? `${t('deletedLabel')}: ${activity.timestamp}`
+                              : activity.type === 'PARTICIPANT_LEFT'
+                                ? activity.timestamp
+                                : `${t('orderPlacedLabel')}: ${activity.timestamp}`}
                           </span>
                         </div>
                       </div>

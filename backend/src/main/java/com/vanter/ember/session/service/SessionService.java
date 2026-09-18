@@ -848,6 +848,12 @@ public class SessionService {
             return closed;
         }
 
+        session.getActivityLog().add(SessionActivity.builder()
+                .type(SessionActivity.Type.PARTICIPANT_LEFT)
+                .participantName(leaver.getName())
+                .timestamp(LocalDateTime.now())
+                .build());
+
         Session saved = sessionRepository.save(session);
         discardedDrafts.forEach(d -> eventPublisher.publishEvent(new DeleteItem(saved.getId(), d.getId())));
         eventPublisher.publishEvent(new ParticipantLeft(
