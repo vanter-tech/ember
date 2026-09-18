@@ -209,7 +209,7 @@ export const TableInformation = () => {
       <SectionTour sectionId="waiter-table-detail" steps={tourSteps} ready={!!sessionData} />
       {isClosedStayState && (
         <div className="mb-4 rounded-2xl bg-amber-50 border border-amber-200 px-5 py-3 text-amber-800 font-medium">
-          {t('tablePaidClosedBanner')}
+          {billData ? t('tablePaidClosedBanner') : t('tableClosedNoOrderBanner')}
         </div>
       )}
       <div className="flex justify-between items-start mb-6">

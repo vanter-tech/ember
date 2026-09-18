@@ -137,6 +137,7 @@ export const waiter = {
   cannotRemoveSentItem: 'No se puede quitar: el artículo ya fue enviado a cocina.',
   tableClosedPaidToast: 'Mesa pagada y cerrada.',
   tablePaidClosedBanner: 'Mesa pagada y cerrada. Puedes imprimir la cuenta antes de salir.',
+  tableClosedNoOrderBanner: 'Mesa liberada: no se realizó ningún pedido.',
   printSentToast: 'Cuenta enviada a la impresora',
   printQueuedNoAgentToast: 'Cuenta en cola (sin impresora conectada)',
   printFailedToast: 'No se pudo imprimir la cuenta',

@@ -40,11 +40,17 @@ export const FloatingNav = () => {
   const location = useLocation()
   const queryClient = useQueryClient()
   const { userId } = useAuthStore()
-  const { participants, id: sessionId, clearSession } = useSessionStore()
+  const { participants, items, id: sessionId, clearSession } = useSessionStore()
   const [confirmLogout, setConfirmLogout] = useState(false)
   const [confirmLeave, setConfirmLeave] = useState(false)
 
   const amiIn = participants?.find((data) => data.userId === userId)
+  // Mirrors SessionService.leaveSession's own close condition: the last participant leaving a
+  // table with nothing billable frees it outright instead of just leaving the split — worth a
+  // clearer warning than the generic "leave the table?" copy so it isn't triggered by mistake.
+  const isLastParticipant = (participants?.length ?? 0) <= 1
+  const hasBillableItems = (items ?? []).some((item) => item.status !== 'DRAFT')
+  const leavingWillFreeTable = isLastParticipant && !hasBillableItems
 
   const leaveMutation = useMutation({
     mutationFn: () => SessionTableService.leaveSession(sessionId!),
@@ -252,6 +258,7 @@ export const FloatingNav = () => {
             <AlertDialogTitle>{t('leaveTableConfirmTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
               {t('leaveTableConfirmBody')}
+              {leavingWillFreeTable && ' ' + t('leaveTableWillFreeTableWarning')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

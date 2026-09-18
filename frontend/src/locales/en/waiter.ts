@@ -138,6 +138,7 @@ export const waiter = {
   cannotRemoveSentItem: 'Cannot remove: this item has already been sent to the kitchen.',
   tableClosedPaidToast: 'Table paid and closed.',
   tablePaidClosedBanner: 'Table paid and closed. You can print the bill before leaving.',
+  tableClosedNoOrderBanner: 'Table freed up: no order was placed.',
   printSentToast: 'Bill sent to the printer',
   printQueuedNoAgentToast: 'Bill queued (no printer connected)',
   printFailedToast: 'Could not print the bill',

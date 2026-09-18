@@ -66,14 +66,37 @@ describe('TableInformation closed stay-state', () => {
       expect(navigateSpy).toHaveBeenCalledWith('/waiter/tables', { replace: true }),
     )
     expect(
-      screen.queryByText('Mesa pagada y cerrada. Puedes imprimir la cuenta antes de salir.'),
+      screen.queryByText('Mesa liberada: no se realizó ningún pedido.'),
     ).not.toBeInTheDocument()
   })
 
-  test('shows the paid-and-closed banner on an OPEN -> CLOSED transition while mounted', async () => {
+  test('shows the no-order banner on an OPEN -> CLOSED transition with no bill (table just freed up)', async () => {
     vi.mocked(SessionTableService.sessionInformation).mockResolvedValue(
       sessionFixture('OPEN') as never,
     )
+    const qc = wrap(<TableInformation />)
+
+    expect(await screen.findByRole('button', { name: /Agregar platillo/i })).toBeEnabled()
+
+    qc.setQueryData(['sessionDetails', 's1'], sessionFixture('CLOSED'))
+
+    expect(
+      await screen.findByText('Mesa liberada: no se realizó ningún pedido.'),
+    ).toBeVisible()
+    expect(navigateSpy).not.toHaveBeenCalled()
+    expect(screen.getByRole('button', { name: /Agregar platillo/i })).toBeDisabled()
+    expect(screen.getByRole('button', { name: /Transferir/i })).toBeDisabled()
+  })
+
+  test('shows the paid-and-closed banner on an OPEN -> CLOSED transition when a real bill exists', async () => {
+    vi.mocked(SessionTableService.sessionInformation).mockResolvedValue(
+      sessionFixture('OPEN') as never,
+    )
+    vi.mocked(billingService.getBillState).mockResolvedValue({
+      id: 1,
+      total: 100,
+      splits: [],
+    } as never)
     const qc = wrap(<TableInformation />)
 
     expect(await screen.findByRole('button', { name: /Agregar platillo/i })).toBeEnabled()
@@ -85,8 +108,5 @@ describe('TableInformation closed stay-state', () => {
         'Mesa pagada y cerrada. Puedes imprimir la cuenta antes de salir.',
       ),
     ).toBeVisible()
-    expect(navigateSpy).not.toHaveBeenCalled()
-    expect(screen.getByRole('button', { name: /Agregar platillo/i })).toBeDisabled()
-    expect(screen.getByRole('button', { name: /Transferir/i })).toBeDisabled()
   })
 })
