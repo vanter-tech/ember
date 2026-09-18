@@ -2444,6 +2444,8 @@ export interface components {
             createdAt?: string;
             refundedAmount?: number;
             remaining?: number;
+            /** Format: int32 */
+            tableNumber?: number;
         };
         DailyReportResponse: {
             /** Format: date */

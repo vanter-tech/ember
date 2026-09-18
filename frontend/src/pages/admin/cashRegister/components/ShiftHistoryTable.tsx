@@ -82,28 +82,50 @@ export const ShiftHistoryTable = () => {
                           ) : (detail.payments ?? []).length === 0 ? (
                             <div className="py-3 text-sm text-muted-foreground">{t('noPaymentsInShift')}</div>
                           ) : (
-                            <div className="flex flex-col gap-2 py-2">
-                              {(detail.payments ?? []).map((payment) => (
-                                <div
-                                  key={payment.id}
-                                  className="flex items-center justify-between px-2 py-1"
-                                >
-                                  <span className="text-sm">
-                                    {payment.participantName} — {formatCurrency(payment.amount ?? 0)}
-                                    {payment.refundedAmount && payment.refundedAmount > 0
-                                      ? t('refundedAmountSuffix', { amount: formatCurrency(payment.refundedAmount) })
-                                      : ''}
-                                  </span>
-                                  {/* ADMIN oversees billing here but never executes it — refunds are
-                                      WAITER-only (POST /billing/payments/{id}/refund is
-                                      @PreAuthorize("hasRole('WAITER')")), so this row is read-only.
-                                      A WAITER refunds from the waiter cash-register page instead. */}
-                                  <span className="text-xs text-muted-foreground">
-                                    {!payment.remaining || payment.remaining <= 0 ? t('refundedLabel') : '—'}
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
+                            <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead>{t('paymentTableColumnLabel')}</TableHead>
+                                  <TableHead>{t('paymentAmountColumnLabel')}</TableHead>
+                                  <TableHead>{t('paymentMethodColumnLabel')}</TableHead>
+                                  <TableHead>{t('statusColumnLabel')}</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {/* ADMIN oversees billing here but never executes it — refunds are
+                                    WAITER-only (POST /billing/payments/{id}/refund is
+                                    @PreAuthorize("hasRole('WAITER')")), so this table is read-only.
+                                    A WAITER refunds from the waiter cash-register page instead. */}
+                                {(detail.payments ?? []).map((payment) => {
+                                  const isRefunded = !payment.remaining || payment.remaining <= 0
+                                  return (
+                                    <TableRow key={payment.id}>
+                                      <TableCell>
+                                        {payment.tableNumber != null ? `#${payment.tableNumber}` : '—'}
+                                      </TableCell>
+                                      <TableCell>
+                                        {formatCurrency(payment.amount ?? 0)}
+                                        {payment.refundedAmount && payment.refundedAmount > 0
+                                          ? t('refundedAmountSuffix', { amount: formatCurrency(payment.refundedAmount) })
+                                          : ''}
+                                      </TableCell>
+                                      <TableCell>
+                                        {payment.method === 'DIGITAL'
+                                          ? t('paymentMethodDigitalLabel')
+                                          : t('paymentMethodPhysicalLabel')}
+                                      </TableCell>
+                                      <TableCell>
+                                        {isRefunded
+                                          ? t('refundedLabel')
+                                          : payment.status === 'CONFIRMED'
+                                            ? t('paymentStatusConfirmedLabel')
+                                            : t('paymentStatusPendingLabel')}
+                                      </TableCell>
+                                    </TableRow>
+                                  )
+                                })}
+                              </TableBody>
+                            </Table>
                           )}
                         </TableCell>
                       </TableRow>
