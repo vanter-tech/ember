@@ -74,7 +74,8 @@ export const waiter = {
   closeShiftTitle: 'Arqueo de turno',
   closeShiftDescription:
     'Cuenta el efectivo en caja y escribe el total. El sistema mostrará la diferencia después de registrar el conteo.',
-  countedCashLabel: 'Efectivo contado',
+  closeNotesLabel: 'Notas (opcional)',
+  closeNotesPlaceholder: 'Explica la diferencia, si la hay',
   cancelButton: 'Cancelar',
   closingShiftLabel: 'Cerrando...',
   confirmCountButton: 'Confirmar conteo',
@@ -129,7 +130,6 @@ export const waiter = {
   movementReasonRequiredError: 'Escribe un motivo',
   movementRegisteredToast: 'Movimiento registrado.',
   movementErrorToast: 'No se pudo registrar el movimiento.',
-  countedCashNegativeError: 'El monto contado no puede ser negativo',
   shiftCloseErrorToast: 'No se pudo cerrar la caja.',
   shiftCloseTablesOpenToast: 'No se puede cerrar la caja: {{count}} mesa(s) aún tienen una sesión abierta.',
   cannotRemoveSentItem: 'No se puede quitar: el artículo ya fue enviado a cocina.',

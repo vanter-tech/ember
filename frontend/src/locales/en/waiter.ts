@@ -75,7 +75,8 @@ export const waiter = {
   closeShiftTitle: 'Shift reconciliation',
   closeShiftDescription:
     'Count the cash in the register and enter the total. The system will show the difference after recording the count.',
-  countedCashLabel: 'Counted cash',
+  closeNotesLabel: 'Notes (optional)',
+  closeNotesPlaceholder: 'Explain the difference, if any',
   cancelButton: 'Cancel',
   closingShiftLabel: 'Closing...',
   confirmCountButton: 'Confirm count',
@@ -130,7 +131,6 @@ export const waiter = {
   movementReasonRequiredError: 'Enter a reason',
   movementRegisteredToast: 'Movement recorded.',
   movementErrorToast: 'Could not record the movement.',
-  countedCashNegativeError: 'Counted cash cannot be negative',
   shiftCloseErrorToast: 'Could not close the shift.',
   shiftCloseTablesOpenToast: 'Cannot close the shift: {{count}} table(s) still have an open session.',
   cannotRemoveSentItem: 'Cannot remove: this item has already been sent to the kitchen.',

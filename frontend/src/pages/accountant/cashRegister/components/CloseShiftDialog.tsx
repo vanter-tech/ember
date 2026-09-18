@@ -1,9 +1,6 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { z } from 'zod'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
+import { Textarea } from '@/components/ui/textarea'
 import toast from 'react-hot-toast'
 import axios from 'axios'
 import {
@@ -14,19 +11,13 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog'
-import { Form, FormControl, FormField, FormItem, FormLabel } from '@/components/ui/form'
 import { useUIStore } from '@/store/uiStore'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { cashShiftService, type CashShiftResponse } from '@/lib/api'
 import { formatCurrency } from '@/lib/format'
 import { useTranslation } from '@/lib/i18n'
-
-const createCloseShiftSchema = (t: ReturnType<typeof useTranslation<'waiter'>>['t']) =>
-  z.object({
-    countedCash: z.coerce.number().min(0, t('countedCashNegativeError')),
-  })
-
-type CloseShiftInputs = z.infer<ReturnType<typeof createCloseShiftSchema>>
+import { DenominationCounter } from './DenominationCounter'
+import type { DenominationCount } from '@/lib/denominations'
 
 // Matches CashShiftService.closeShift's "Cannot close cash shift: N table(s) still have an
 // open session" detail (backend) so the toast can surface the open-table count without
@@ -42,24 +33,28 @@ export const CloseShiftDialog = () => {
   const { activeModal, modalPayload, closeModal } = useUIStore()
   const queryClient = useQueryClient()
   const shiftId = modalPayload?.shiftId as number | undefined
+  const [breakdown, setBreakdown] = useState<DenominationCount[]>([])
+  const [total, setTotal] = useState(0)
+  const [notes, setNotes] = useState('')
   const [result, setResult] = useState<CashShiftResponse | null>(null)
-  const closeShiftSchema = useMemo(() => createCloseShiftSchema(t), [t])
 
-  const form = useForm({
-    resolver: zodResolver(closeShiftSchema),
-    defaultValues: { countedCash: 0 },
-  })
+  const handleCounterChange = (nextBreakdown: DenominationCount[], nextTotal: number) => {
+    setBreakdown(nextBreakdown)
+    setTotal(nextTotal)
+  }
 
   const handleOpenChange = (isOpen: boolean) => {
     if (!isOpen) {
-      form.reset()
+      setBreakdown([])
+      setTotal(0)
+      setNotes('')
       setResult(null)
       closeModal()
     }
   }
 
   const mutation = useMutation({
-    mutationFn: (data: CloseShiftInputs) => cashShiftService.close(shiftId!, data.countedCash),
+    mutationFn: () => cashShiftService.close(shiftId!, total, breakdown, notes.trim() || undefined),
     onSuccess: (closed) => {
       queryClient.invalidateQueries({ queryKey: ['cashShiftCurrent'] })
       setResult(closed)
@@ -82,45 +77,36 @@ export const CloseShiftDialog = () => {
 
   return (
     <Dialog open={activeModal === 'CLOSE_SHIFT'} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-md rounded-3xl p-6">
+      <DialogContent className="sm:max-w-lg rounded-3xl p-6">
         <DialogHeader className="mb-4">
           <DialogTitle className="text-2xl font-bold text-zinc-800">{t('closeShiftTitle')}</DialogTitle>
         </DialogHeader>
 
         {!result ? (
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit((data) => mutation.mutate(data))} className="space-y-5">
-              <DialogDescription>{t('closeShiftDescription')}</DialogDescription>
-              <FormField
-                control={form.control}
-                name="countedCash"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t('countedCashLabel')}</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        className="rounded-xl"
-                        {...field}
-                        value={field.value as number}
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
+          <div className="flex flex-col gap-5">
+            <DialogDescription>{t('closeShiftDescription')}</DialogDescription>
+            <DenominationCounter onChange={handleCounterChange} />
+            <div className="flex flex-col gap-2">
+              <label htmlFor="close-shift-notes" className="text-sm font-medium">
+                {t('closeNotesLabel')}
+              </label>
+              <Textarea
+                id="close-shift-notes"
+                className="rounded-xl"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder={t('closeNotesPlaceholder')}
               />
-
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={closeModal} disabled={mutation.isPending}>
-                  {t('cancelButton')}
-                </Button>
-                <Button type="submit" disabled={mutation.isPending || !shiftId}>
-                  {mutation.isPending ? t('closingShiftLabel') : t('confirmCountButton')}
-                </Button>
-              </DialogFooter>
-            </form>
-          </Form>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={closeModal} disabled={mutation.isPending}>
+                {t('cancelButton')}
+              </Button>
+              <Button onClick={() => mutation.mutate()} disabled={mutation.isPending || !shiftId}>
+                {mutation.isPending ? t('closingShiftLabel') : t('confirmCountButton')}
+              </Button>
+            </DialogFooter>
+          </div>
         ) : (
           <div className="flex flex-col gap-4">
             <div className="grid grid-cols-2 gap-4">

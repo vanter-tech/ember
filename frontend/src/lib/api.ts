@@ -717,8 +717,17 @@ export const cashShiftService = {
     const { data } = await api.post<CashMovementResponse>(`/cash-shifts/${id}/movements`, movement)
     return data
   },
-  close: async (id: number, countedCash: number): Promise<CashShiftResponse> => {
-    const { data } = await api.post<CashShiftResponse>(`/cash-shifts/${id}/close`, { countedCash })
+  close: async (
+    id: number,
+    countedCash: number,
+    breakdown?: DenominationCount[],
+    notes?: string
+  ): Promise<CashShiftResponse> => {
+    const { data } = await api.post<CashShiftResponse>(`/cash-shifts/${id}/close`, {
+      countedCash,
+      breakdown,
+      notes,
+    })
     return data
   },
   prolong: async (id: number): Promise<CashShiftResponse> => {
