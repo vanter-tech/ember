@@ -213,4 +213,9 @@ export const waiter = {
   transferSubmit: 'Transferir',
   transferSuccessToast: 'Mesa transferida a {{name}}',
   transferErrorToast: 'No se pudo transferir la mesa',
+  billsLabel: 'Billetes',
+  coinsLabel: 'Monedas',
+  totalCountedLabel: 'Total contado',
+  billDenominationLabel: 'Billete {{amount}}',
+  coinDenominationLabel: 'Moneda {{amount}}',
 }

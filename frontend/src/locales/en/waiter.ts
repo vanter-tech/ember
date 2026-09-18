@@ -213,4 +213,9 @@ export const waiter = {
   transferSubmit: 'Transfer',
   transferSuccessToast: 'Table transferred to {{name}}',
   transferErrorToast: 'Could not transfer the table',
+  billsLabel: 'Bills',
+  coinsLabel: 'Coins',
+  totalCountedLabel: 'Total counted',
+  billDenominationLabel: 'Bill {{amount}}',
+  coinDenominationLabel: 'Coin {{amount}}',
 } satisfies typeof esWaiter
