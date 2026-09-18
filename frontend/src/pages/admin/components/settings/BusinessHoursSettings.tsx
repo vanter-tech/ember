@@ -103,9 +103,8 @@ export const BusinessHoursSettings = () => {
         </div>
       </CardHeader>
 
-      <CardContent>
-        <div className="max-w-2xl space-y-4">
-          {currentSchedule.map((entry) => {
+      <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-4 p-6">
+        {currentSchedule.map((entry) => {
             const day = entry.day as DayOfWeek;
             const labelKey = DAYS.find((d) => d.value === day)?.labelKey;
             const label = labelKey ? t(labelKey) : day;
@@ -149,7 +148,6 @@ export const BusinessHoursSettings = () => {
               </div>
             );
           })}
-        </div>
       </CardContent>
 
       <CardFooter className="flex justify-end gap-3 pt-6 border-t">

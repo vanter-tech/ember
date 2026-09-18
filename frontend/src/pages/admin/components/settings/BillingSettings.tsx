@@ -120,80 +120,86 @@ export const BillingSettings = () => {
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-8">
-        <div className="max-w-md grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="currencySymbol">{t('currencySymbolLabel')}</Label>
-            <Input
-              id="currencySymbol"
-              value={currentCurrencySymbol}
-              onChange={(e) => updateDraft({ currencySymbol: e.target.value })}
-              className="focus-visible:ring-[#7a1315]"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="taxRate">{t('taxRateLabel')}</Label>
-            <Input
-              id="taxRate"
-              type="number"
-              min="0"
-              max="100"
-              step="0.01"
-              value={currentTaxRate}
-              onChange={(e) => updateDraft({ taxRate: Number(e.target.value) })}
-              className="focus-visible:ring-[#7a1315]"
-            />
-          </div>
-        </div>
+      <CardContent className="flex flex-col gap-8 p-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6">
+          <div className="flex flex-col space-y-6">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="currencySymbol">{t('currencySymbolLabel')}</Label>
+                <Input
+                  id="currencySymbol"
+                  value={currentCurrencySymbol}
+                  onChange={(e) => updateDraft({ currencySymbol: e.target.value })}
+                  className="focus-visible:ring-[#7a1315]"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="taxRate">{t('taxRateLabel')}</Label>
+                <Input
+                  id="taxRate"
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.01"
+                  value={currentTaxRate}
+                  onChange={(e) => updateDraft({ taxRate: Number(e.target.value) })}
+                  className="focus-visible:ring-[#7a1315]"
+                />
+              </div>
+            </div>
 
-        <div className="flex items-center justify-between max-w-md">
-          <div className="space-y-0.5">
-            <Label htmlFor="taxIncludeInMenuPrice">{t('taxIncludedLabel')}</Label>
-            <p className="text-xs text-muted-foreground">
-              {t('taxIncludedDescription')}
-            </p>
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label htmlFor="taxIncludeInMenuPrice">{t('taxIncludedLabel')}</Label>
+                <p className="text-xs text-muted-foreground">
+                  {t('taxIncludedDescription')}
+                </p>
+              </div>
+              <Switch
+                id="taxIncludeInMenuPrice"
+                checked={currentTaxIncluded}
+                onCheckedChange={(checked) => updateDraft({ taxIncludeInMenuPrice: checked })}
+              />
+            </div>
           </div>
-          <Switch
-            id="taxIncludeInMenuPrice"
-            checked={currentTaxIncluded}
-            onCheckedChange={(checked) => updateDraft({ taxIncludeInMenuPrice: checked })}
-          />
-        </div>
 
-        <div className="max-w-md space-y-3">
-          <Label>{t('suggestedTipsLabel')}</Label>
-          <div className="flex flex-wrap gap-2">
-            {currentTipPercentages.map((tip, index) => (
-              <span
-                key={index}
-                className="flex items-center gap-1 bg-zinc-100 text-zinc-700 text-sm rounded-full px-3 py-1"
-              >
-                {tip}%
-                <button
-                  type="button"
-                  onClick={() => handleRemoveTip(index)}
-                  className="text-zinc-400 hover:text-zinc-700"
-                  aria-label={t('removeTipAriaLabel', { tip })}
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              </span>
-            ))}
-          </div>
-          <div className="flex gap-2">
-            <Input
-              type="number"
-              min="0"
-              max="100"
-              placeholder={t('tipPlaceholderExample')}
-              value={newTipValue}
-              onChange={(e) => setNewTipValue(e.target.value)}
-              className="focus-visible:ring-[#7a1315]"
-            />
-            <Button type="button" variant="outline" onClick={handleAddTip}>
-              <Plus className="w-4 h-4 mr-1" />
-              {t('addButton')}
-            </Button>
+          <div className="flex flex-col space-y-6">
+            <div className="space-y-3">
+              <Label>{t('suggestedTipsLabel')}</Label>
+              <div className="flex flex-wrap gap-2">
+                {currentTipPercentages.map((tip, index) => (
+                  <span
+                    key={index}
+                    className="flex items-center gap-1 bg-zinc-100 text-zinc-700 text-sm rounded-full px-3 py-1"
+                  >
+                    {tip}%
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveTip(index)}
+                      className="text-zinc-400 hover:text-zinc-700"
+                      aria-label={t('removeTipAriaLabel', { tip })}
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <Input
+                  type="number"
+                  min="0"
+                  max="100"
+                  placeholder={t('tipPlaceholderExample')}
+                  value={newTipValue}
+                  onChange={(e) => setNewTipValue(e.target.value)}
+                  className="focus-visible:ring-[#7a1315]"
+                />
+                <Button type="button" variant="outline" onClick={handleAddTip}>
+                  <Plus className="w-4 h-4 mr-1" />
+                  {t('addButton')}
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
 

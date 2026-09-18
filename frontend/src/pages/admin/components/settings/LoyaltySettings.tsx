@@ -106,8 +106,8 @@ export const LoyaltySettings = () => {
         </div>
       </CardHeader>
 
-      <CardContent>
-        <div className="max-w-md space-y-6">
+      <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6 p-6">
+        <div className="flex flex-col space-y-6">
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
               <Label htmlFor="loyaltyEnabled">{t('loyaltyEnabledLabel')}</Label>
@@ -137,7 +137,9 @@ export const LoyaltySettings = () => {
               </SelectContent>
             </Select>
           </div>
+        </div>
 
+        <div className="flex flex-col space-y-6">
           {currentAccrualMode === 'BY_VISIT' ? (
             <div className="space-y-2">
               <Label htmlFor="loyaltyPointsPerVisit">{t('pointsPerVisitLabel')}</Label>
