@@ -3,6 +3,7 @@ import { useMutation } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import { Download } from 'lucide-react'
 import { exportService } from '@/lib/api'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -45,48 +46,49 @@ export const ExportSettings = () => {
   })
 
   return (
-    <div className="h-full flex flex-col gap-8 rounded-xl border border-zinc-100 bg-card p-6 shadow-sm ring-1 ring-foreground/10 md:p-10">
-      {/* Settings.tsx's outer container no longer draws its own frame (every tab owns one now),
-          so this tab needs its own — same visual weight as every other tab's <Card>. */}
-      <div className="flex items-center gap-4">
+    <Card className="shadow-sm border-zinc-100">
+      <CardHeader className="flex flex-row items-center gap-4 space-y-0 p-6">
         <div className="w-12 h-12 bg-red-50 text-[#7a1315] rounded-full flex items-center justify-center shrink-0">
           <Download className="w-6 h-6" />
         </div>
         <div>
-          <h2 className="text-xl font-semibold text-zinc-800">{t('exportCardTitle')}</h2>
-          <p className="text-sm text-muted-foreground">{t('exportCardDescription')}</p>
+          <CardTitle className="text-xl">{t('exportCardTitle')}</CardTitle>
+          <CardDescription>{t('exportCardDescription')}</CardDescription>
         </div>
-      </div>
+      </CardHeader>
+      <div className="border-t w-full m-auto border-[#7a1315]/20"></div>
 
-      <div className="max-w-md space-y-6">
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="export-from">{t('exportFromLabel')}</Label>
-            <Input
-              id="export-from"
-              type="date"
-              max={maxDate}
-              value={fromDate}
-              onChange={(e) => setFromDate(e.target.value)}
-            />
+      <CardContent className="p-6">
+        <div className="max-w-md space-y-6">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="export-from">{t('exportFromLabel')}</Label>
+              <Input
+                id="export-from"
+                type="date"
+                max={maxDate}
+                value={fromDate}
+                onChange={(e) => setFromDate(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="export-to">{t('exportToLabel')}</Label>
+              <Input
+                id="export-to"
+                type="date"
+                max={maxDate}
+                value={toDate}
+                onChange={(e) => setToDate(e.target.value)}
+              />
+            </div>
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="export-to">{t('exportToLabel')}</Label>
-            <Input
-              id="export-to"
-              type="date"
-              max={maxDate}
-              value={toDate}
-              onChange={(e) => setToDate(e.target.value)}
-            />
-          </div>
+          <p className="text-xs text-muted-foreground">{t('exportHint')}</p>
+          <Button onClick={() => downloadMutation.mutate()} disabled={downloadMutation.isPending}>
+            <Download className="w-4 h-4 mr-2" />
+            {downloadMutation.isPending ? t('exportDownloadingLabel') : t('exportDownloadButton')}
+          </Button>
         </div>
-        <p className="text-xs text-muted-foreground">{t('exportHint')}</p>
-        <Button onClick={() => downloadMutation.mutate()} disabled={downloadMutation.isPending}>
-          <Download className="w-4 h-4 mr-2" />
-          {downloadMutation.isPending ? t('exportDownloadingLabel') : t('exportDownloadButton')}
-        </Button>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   )
 }
