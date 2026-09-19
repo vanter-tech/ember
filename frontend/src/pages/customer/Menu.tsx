@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useMutation } from '@tanstack/react-query'
 import { menuServices, SessionTableService } from '@/lib/api'
 import { Badge } from '@/components/ui/badge'
 import toast from 'react-hot-toast'
@@ -10,9 +10,8 @@ import {
   CardTitle,
   CardHeader,
 } from '@/components/ui/card'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { ArrowLeft, Plus, Receipt } from 'lucide-react'
-import { useWebsocketStore } from '@/store/websocket'
 import { LanguageSwitcher } from '@/components/LanguageSwitcher'
 import { useTranslation } from '@/lib/i18n'
 import { useSessionStore } from '@/store/sessionStore'
@@ -27,12 +26,9 @@ import type { MenuItemResponse } from '@/lib/api'
 export const Menu = () => {
   const [activeCategory, setActiveCategory] = useState<number | undefined>()
   const [selectingItem, setSelectingItem] = useState<MenuItemResponse | null>(null)
-  const { connect, isConnected, subscribeToSession, stompClient } =
-    useWebsocketStore()
   const sessionId = useSessionStore((state) => state.id)
   const joinCode = useSessionStore((state) => state.joinCode)
   const navigate = useNavigate()
-  const queryClient = useQueryClient()
   const { t } = useTranslation('customer')
 
   const mutation = useMutation({
@@ -76,33 +72,6 @@ export const Menu = () => {
   const itemsCategory =
     menuItems.find((item) => item.id == activeCategory)?.items || []
 
-  const {
-    data: sessionData,
-    isError: isSessionError,
-    isLoading: isSessionLoading
-  } = useQuery({
-    queryKey: ['sessionStatus', sessionId],
-    queryFn: () => SessionTableService.sessionStatus(sessionId!),
-    enabled: !!sessionId,
-    retry: false
-  })
-
-  useEffect(() => {
-    if(isSessionLoading) return
-    if(sessionId && (isSessionError || sessionData?.status === 'CLOSED')){
-      useSessionStore.getState().clearSession()
-      queryClient.removeQueries({queryKey: ['sessionStatus', sessionId]})
-      navigate('/customer/home')
-    }
-  },[sessionId, isSessionError, isSessionLoading, navigate, sessionData])
-    
-
-
-  useEffect(() => {
-    if (sessionId && isConnected && stompClient?.connected) {
-      subscribeToSession(sessionId)
-    }
-  }, [isConnected, sessionId, connect, subscribeToSession, stompClient])
 
 
   if (isLoading)
