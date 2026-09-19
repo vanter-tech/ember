@@ -7,9 +7,19 @@ import java.nio.file.Path;
 /** Test double shared by the backup tests. */
 final class FakeHubOrchestrator implements HubOrchestrator {
     ServicePhase postgres = ServicePhase.RUNNING;
+    int startCalls;
+    int stopAndWaitCalls;
+    Runnable onStopAndWait = () -> {};
 
-    @Override public void start(String[] launchArgs) {}
+    @Override public void start(String[] launchArgs) { startCalls++; }
     @Override public void stop() {}
+
+    @Override
+    public void stopAndWait() {
+        stopAndWaitCalls++;
+        onStopAndWait.run();
+    }
+
     @Override public void installLicense(Path source) {}
     @Override public void removeLicense() {}
 

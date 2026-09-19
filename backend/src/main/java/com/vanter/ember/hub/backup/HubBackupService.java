@@ -1,9 +1,13 @@
 package com.vanter.ember.hub.backup;
 
+import com.vanter.ember.hub.bootstrap.PortableDatabaseBootstrap;
+import com.vanter.ember.hub.bootstrap.PortableDatabaseException;
 import com.vanter.ember.hub.config.HubProperties;
 import com.vanter.ember.hub.control.HubOrchestrator;
 import com.vanter.ember.hub.control.ServicePhase;
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.ServerSocket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -110,6 +114,104 @@ public class HubBackupService implements HubBackup {
                             + "). Actualiza el Hub antes de restaurar.");
         }
         return snapshot;
+    }
+
+    @Override
+    public void restore(String path, boolean skipSafetySnapshot) throws BackupException {
+        lock.lock();
+        try {
+            Path zip = Path.of(path);
+            inspect(zip.toString()); // validation + version gate: nothing below runs if this throws
+
+            String safetyHint = "";
+            if (!skipSafetySnapshot) {
+                try {
+                    BackupSnapshot safety = doBackup(Path.of(store.loadConfig().destDir()), true);
+                    safetyHint = " Tus datos anteriores están guardados en " + safety.path() + ".";
+                } catch (BackupException e) {
+                    throw new BackupException(BackupException.SAFETY_FAILED,
+                            "No se pudo crear la copia de seguridad previa: " + e.getMessage(), e);
+                }
+            }
+
+            orchestrator.stopAndWait();
+            PortableDatabaseBootstrap db = new PortableDatabaseBootstrap(
+                    properties.dataDir(), properties.postgresBinDir(), properties.postgresPort());
+            Path work = null;
+            try {
+                work = Files.createTempDirectory("ember-hub-restore");
+                Path dump = work.resolve(BackupArchive.DUMP);
+                BackupArchive.extractDump(zip, dump);
+                ensurePostgresRunning(db);
+                tools.dropAndCreate();
+                tools.restore(dump);
+                db.stop();
+                swapMinio(zip);
+            } catch (IOException | PortableDatabaseException e) {
+                stopQuietly(db);
+                throw new BackupException(BackupException.RESTORE_FAILED,
+                        "La restauración falló: " + e.getMessage() + safetyHint, e);
+            } finally {
+                deleteRecursively(work);
+            }
+            orchestrator.start(new String[0]);
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    /**
+     * If Postgres refuses to start (corrupt data dir — the case this feature exists for) the data
+     * dir is moved aside, never deleted, and a fresh cluster is initialised. A port conflict is
+     * NOT treated as corruption.
+     */
+    private void ensurePostgresRunning(PortableDatabaseBootstrap db) throws PortableDatabaseException, IOException {
+        int port = properties.postgresPort();
+        if (portInUse(port)) {
+            throw new PortableDatabaseException("El puerto " + port
+                    + " ya está en uso. Cierra la otra aplicación que lo usa e intenta de nuevo.");
+        }
+        try {
+            db.ensureRunning();
+        } catch (PortableDatabaseException first) {
+            Path dataDir = properties.dataDir();
+            Path aside = dataDir.resolveSibling(
+                    dataDir.getFileName() + ".corrupt-" + FILE_TS.format(LocalDateTime.now(clock)));
+            Files.move(dataDir, aside);
+            db.ensureRunning();
+        }
+    }
+
+    /** Extract next to the live dir first, then swap, so a crash never leaves a half-written dir live. */
+    private void swapMinio(Path zip) throws IOException {
+        Path minio = properties.minioDataDir();
+        String name = minio.getFileName().toString();
+        Path staging = minio.resolveSibling(name + ".restoring");
+        Path old = minio.resolveSibling(name + ".replaced");
+        deleteRecursively(staging);
+        deleteRecursively(old);
+        BackupArchive.extractMinio(zip, staging);
+        if (Files.exists(minio)) {
+            Files.move(minio, old);
+        }
+        Files.move(staging, minio);
+        deleteRecursively(old);
+    }
+
+    private static void stopQuietly(PortableDatabaseBootstrap db) {
+        try {
+            db.stop();
+        } catch (PortableDatabaseException ignored) {
+            // nothing more to do: the caller is already reporting the original failure
+        }
+    }
+
+    private static boolean portInUse(int port) {
+        try (ServerSocket ignored = new ServerSocket(port, 1, InetAddress.getByName("localhost"))) {
+            return false;
+        } catch (IOException e) {
+            return true;
+        }
     }
 
     // --- scheduling ----------------------------------------------------------------

@@ -19,6 +19,12 @@ public interface HubOrchestrator {
     /** Stops the Spring server then Postgres+MinIO in the background; returns immediately. */
     void stop();
 
+    /**
+     * Same as {@link #stop()} but blocks until the Spring server, MinIO and Postgres are fully
+     * stopped. Used by restore, which must own the data directories.
+     */
+    void stopAndWait();
+
     /** Copies {@code source} into the configured license file location. */
     void installLicense(Path source) throws IOException;
 

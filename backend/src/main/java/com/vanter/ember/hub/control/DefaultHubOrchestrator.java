@@ -142,6 +142,14 @@ public final class DefaultHubOrchestrator implements HubOrchestrator {
     }
 
     @Override
+    public synchronized void stopAndWait() {
+        serverPhase = ServicePhase.STOPPING;
+        postgresPhase = ServicePhase.STOPPING;
+        minioPhase = ServicePhase.STOPPING;
+        runStop();
+    }
+
+    @Override
     public void installLicense(Path source) throws IOException {
         LicenseFileInstaller.install(source, properties.licenseFile());
     }

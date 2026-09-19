@@ -227,4 +227,38 @@ class HubBackupServiceTest {
                 .isInstanceOf(IllegalArgumentException.class);
         assertThat(service.setConfig(new BackupConfig("E:\\x", 3))).isEqualTo(new BackupConfig("E:\\x", 3));
     }
+
+    @Test
+    void restore_notABackup_throwsInvalidAndStopsNothing() throws Exception {
+        Path junk = Files.writeString(tmp.resolve("junk.zip"), "hola");
+
+        assertThatThrownBy(() -> service.restore(junk.toString(), false))
+                .isInstanceOfSatisfying(BackupException.class,
+                        e -> assertThat(e.code()).isEqualTo(BackupException.INVALID));
+        assertThat(orchestrator.stopAndWaitCalls).isZero();
+    }
+
+    @Test
+    void restore_incompatibleVersion_touchesNothing() {
+        version[0] = "0.9.0";
+        BackupSnapshot made = service.backupNow(null);
+        version[0] = "0.2.6.1";
+
+        assertThatThrownBy(() -> service.restore(made.path(), false))
+                .isInstanceOfSatisfying(BackupException.class,
+                        e -> assertThat(e.code()).isEqualTo(BackupException.INCOMPATIBLE));
+        assertThat(orchestrator.stopAndWaitCalls).isZero();
+        assertThat(orchestrator.startCalls).isZero();
+    }
+
+    @Test
+    void restore_safetySnapshotFails_blocksBeforeStoppingAnything() {
+        BackupSnapshot made = service.backupNow(null);
+        dumpFails = true;
+
+        assertThatThrownBy(() -> service.restore(made.path(), false))
+                .isInstanceOfSatisfying(BackupException.class,
+                        e -> assertThat(e.code()).isEqualTo(BackupException.SAFETY_FAILED));
+        assertThat(orchestrator.stopAndWaitCalls).isZero();
+    }
 }

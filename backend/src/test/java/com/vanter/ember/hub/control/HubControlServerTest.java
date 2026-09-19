@@ -156,6 +156,11 @@ class HubControlServerTest {
         }
 
         @Override
+        public void stopAndWait() {
+            stopCalled = true;
+        }
+
+        @Override
         public void installLicense(Path source) throws IOException {
             if (installLicenseFailure != null) {
                 throw installLicenseFailure;

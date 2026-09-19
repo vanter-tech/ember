@@ -19,4 +19,12 @@ public interface HubBackup {
 
     /** Validates a backup file (any path) and its version compatibility, without touching any data. */
     BackupSnapshot inspect(String path) throws BackupException;
+
+    /**
+     * Restores {@code path} over the live data. Order: validate + version gate (nothing touched if it
+     * fails) -> pre-restore safety snapshot (unless {@code skipSafetySnapshot}) -> stop everything ->
+     * rebuild Postgres if unusable -> {@code dropdb}/{@code createdb}/{@code pg_restore} -> swap MinIO
+     * files -> start again. Blocks until done.
+     */
+    void restore(String path, boolean skipSafetySnapshot) throws BackupException;
 }
