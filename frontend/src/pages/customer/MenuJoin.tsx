@@ -156,7 +156,7 @@ export const MenuJoin = () => {
 
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
-        <Card className="w-full max-w-sm rounded-3xl">
+        <Card className="w-full max-w-sm rounded-3xl py-6">
           <CardHeader>
             <CardTitle className="text-2xl font-bold text-[#8c1717]">{t('qrJoinTitle')}</CardTitle>
             <p className="text-sm text-gray-500">
@@ -212,7 +212,7 @@ export const MenuJoin = () => {
   // remaining path that still needs to ask, since the backend requires a non-blank userName.
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
-      <Card className="w-full max-w-sm rounded-3xl">
+      <Card className="w-full max-w-sm rounded-3xl py-6">
         <CardHeader>
           <CardTitle className="text-2xl font-bold text-[#8c1717]">
             {t('qrJoinTitle')}
