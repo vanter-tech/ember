@@ -37,20 +37,8 @@ export type PaymentResponse = components['schemas']['PaymentResponse']
 export type RefundResponse = components['schemas']['RefundResponse']
 export type Refund = components['schemas']['Refund']
 
-// WebSocket-only shapes (BILL_READY/SPLIT_PAID/DIGITAL_PAYMENT_INITIATED broadcasts) — the OpenAPI
-// spec only documents REST responses, so these have no generated schema to switch to.
-export interface PendingDigitalPayment {
-  id: number
-  participantName: string
-  amount: number
-}
-
-export interface WaiterBillState {
-  id: number
-  total: number
-  splits: BillSplit[]
-  pendingDigitalPayments?: PendingDigitalPayment[]
-}
+export type PendingDigitalPayment = components['schemas']['PendingDigitalPayment']
+export type WaiterBillState = components['schemas']['WaiterBillStateResponse']
 
 export type LoyaltySettings = components['schemas']['LoyaltySettings']
 export type LoyaltyAccrualMode = NonNullable<LoyaltySettings['accrualMode']>
@@ -193,12 +181,7 @@ export const authService = {
   },
 }
 
-export interface UserProfileResponse {
-  name: string
-  email: string
-  /** One of bannerPresets' BANNER_KEYS, or null when the user hasn't picked one. */
-  bannerKey: string | null
-}
+export type UserProfileResponse = components['schemas']['UserProfileResponse']
 
 export const userProfileService = {
   me: async (): Promise<UserProfileResponse> => {

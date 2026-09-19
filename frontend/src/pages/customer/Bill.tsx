@@ -33,7 +33,7 @@ export const Bill = () => {
 
   useEffect(() => {
     if (fetchedBill) {
-      setBillReady({ id: fetchedBill.id, total: fetchedBill.total }, fetchedBill.splits)
+      setBillReady({ id: fetchedBill.id, total: fetchedBill.total }, fetchedBill.splits ?? [])
     }
   }, [fetchedBill, setBillReady])
 

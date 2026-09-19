@@ -209,7 +209,7 @@ export const useWebsocketStore = create<WebSocketState>((set, get) => ({
                     old
                         ? {
                             ...old,
-                            splits: old.splits.map((split) =>
+                            splits: (old.splits || []).map((split) =>
                                 split.participantName === eventData.participantName
                                     ? { ...split, status: eventData.status }
                                     : split
@@ -226,7 +226,7 @@ export const useWebsocketStore = create<WebSocketState>((set, get) => ({
                     old
                         ? {
                             ...old,
-                            splits: old.splits.map((split) =>
+                            splits: (old.splits || []).map((split) =>
                                 split.participantName === eventData.participantName
                                     ? { ...split, status: eventData.status }
                                     : split

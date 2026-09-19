@@ -133,7 +133,7 @@ export const TableInformation = () => {
     }: {
       participantName: string
       amount: number
-    }) => billingService.registerPhysicalPayment(billData!.id, participantName, amount),
+    }) => billingService.registerPhysicalPayment(billData!.id!, participantName, amount),
     onSuccess: () => toast.success(t('cashPaymentRegisteredToast')),
     onError: (error) => {
       const code =
@@ -154,13 +154,13 @@ export const TableInformation = () => {
 
   const redistributeSplitMutation = useMutation({
     mutationFn: (departingParticipantName: string) =>
-      billingService.redistributeSplit(billData!.id, departingParticipantName),
+      billingService.redistributeSplit(billData!.id!, departingParticipantName),
     onSuccess: () => toast.success(t('splitRedistributedDoneToast')),
     onError: () => toast.error(t('splitRedistributeErrorToast')),
   })
 
   const settleAndCloseMutation = useMutation({
-    mutationFn: () => billingService.settleAndClose(billData!.id),
+    mutationFn: () => billingService.settleAndClose(billData!.id!),
     onSuccess: () => toast.success(t('tableSettledToast')),
     onError: () => toast.error(t('tableSettleErrorToast')),
   })
@@ -279,7 +279,7 @@ export const TableInformation = () => {
               sessionData?.status !== 'CLOSED' ||
               printBillMutation.isPending
             }
-            onClick={() => billData && printBillMutation.mutate(billData.id)}
+            onClick={() => billData && printBillMutation.mutate(billData.id!)}
           >
             <Printer className="w-4 h-4 mr-2" /> {t('printBillLabel')}
           </Button>
@@ -514,7 +514,7 @@ export const TableInformation = () => {
               <CardTitle className="text-2xl text-gray-800 font-bold">
                 {billData ? t('billTitle') : t('summaryTitle')}
               </CardTitle>
-              {billData && !billData.splits.some((s) => s.status !== 'UNPAID') && (
+              {billData && !billData.splits!.some((s) => s.status !== 'UNPAID') && (
                 <Button
                   variant="ghost"
                   className="text-sm text-destructive"
@@ -527,7 +527,7 @@ export const TableInformation = () => {
             {billData ? (
               <>
                 <CardContent className="flex flex-col gap-3 max-h-100 overflow-y-auto">
-                  {billData.splits.map((split) => {
+                  {billData.splits!.map((split) => {
                     const pendingDigital = billData.pendingDigitalPayments?.find(
                       (p) => p.participantName === split.participantName
                     )
@@ -582,7 +582,7 @@ export const TableInformation = () => {
                             <Button
                               className="text-sm"
                               onClick={() =>
-                                confirmDigitalPaymentMutation.mutate(pendingDigital.id)
+                                confirmDigitalPaymentMutation.mutate(pendingDigital.id!)
                               }
                               disabled={confirmDigitalPaymentMutation.isPending || actionsDisabled}
                             >
@@ -612,7 +612,7 @@ export const TableInformation = () => {
                   <div className="flex justify-between text-xl text-gray-500 p-4 w-full">
                     <span className="text-2xl font-bold">{t('totalLabel')}</span>
                     <span className="text-3xl font-bold text-[#8B0000]">
-                      ${billData.total.toFixed(2)}
+                      ${billData.total!.toFixed(2)}
                     </span>
                   </div>
                   <Button
