@@ -105,6 +105,10 @@ class GuestJoinFlowIntegrationTest {
                         .content("{\"joinCode\":\"" + joinCode + "\",\"name\":\"Ana\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.token").isNotEmpty())
+                .andExpect(jsonPath("$.userId").isNotEmpty())
+                .andExpect(jsonPath("$.restaurantId").isNotEmpty())
+                .andExpect(jsonPath("$.name").value("Ana"))
+                .andExpect(jsonPath("$.role").value("CUSTOMER"))
                 .andExpect(jsonPath("$.session.participants[?(@.name=='Ana')]").exists());
 
         assertThat(userRepository.count()).isEqualTo(usersBefore + 1);

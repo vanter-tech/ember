@@ -69,7 +69,10 @@ function Build-AppImage {
     Write-Host "-- mvn package --"
     Push-Location (Join-Path $repoRoot "backend")
     try {
-        & .\mvnw.cmd -q -DskipTests package
+        # `clean` is mandatory: a migration renamed in source (e.g. V12 -> V13) stays behind in
+        # target/classes and gets packaged next to its renamed copy, so Flyway aborts the Hub's
+        # server start with "Found more than one migration with version N".
+        & .\mvnw.cmd -q -DskipTests clean package
         if ($LASTEXITCODE -ne 0) { throw "mvn package failed" }
     } finally { Pop-Location }
 
@@ -81,6 +84,20 @@ function Build-AppImage {
            Sort-Object LastWriteTime -Descending |
            Select-Object -First 1
     if (-not $jar) { throw "no ember-*.jar in backend/target" }
+
+    # Guard against the duplicate-migration-version jar that made every installed Hub fail with
+    # "Unable to start web server" (Flyway: more than one migration with version N).
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    $zip = [IO.Compression.ZipFile]::OpenRead($jar.FullName)
+    try {
+        $dupes = $zip.Entries |
+                 Where-Object { $_.FullName -match '^BOOT-INF/classes/db/migration/V(\d+)__' } |
+                 Group-Object { [int]([regex]::Match($_.FullName, 'db/migration/V(\d+)__').Groups[1].Value) } |
+                 Where-Object { $_.Count -gt 1 }
+    } finally { $zip.Dispose() }
+    if ($dupes) {
+        throw "duplicate Flyway migration versions in $($jar.Name): $(($dupes | ForEach-Object { 'V' + $_.Name }) -join ', ')"
+    }
 
     # jpackage needs the jar alone in an input dir under a stable name
     $inputDir = Join-Path $distDir "jpackage-input"
