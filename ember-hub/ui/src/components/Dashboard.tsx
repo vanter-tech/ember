@@ -7,6 +7,7 @@ import { cardShellClass, IconBadge } from './Card';
 import Button from './Button';
 import ServiceCard from './ServiceCard';
 import LicenseCard from './LicenseCard';
+import BackupCard from './BackupCard';
 
 export default function Dashboard() {
   const [shellState, setShellState] = useState<AgentShellState>('starting');
@@ -97,6 +98,18 @@ export default function Dashboard() {
     await onRestart();
   }
 
+  async function pickBackupFolder(): Promise<string | null> {
+    const { open } = await import('@tauri-apps/plugin-dialog');
+    const dir = await open({ directory: true, title: 'Elige la carpeta de respaldo' });
+    return typeof dir === 'string' ? dir : null;
+  }
+
+  async function pickBackupFile(): Promise<string | null> {
+    const { open } = await import('@tauri-apps/plugin-dialog');
+    const file = await open({ filters: [{ name: 'Respaldo de Ember', extensions: ['zip'] }] });
+    return typeof file === 'string' ? file : null;
+  }
+
   async function onOpenBrowser() {
     if (!status) return;
     const { open } = await import('@tauri-apps/plugin-shell');
@@ -179,6 +192,12 @@ export default function Dashboard() {
           <ServiceCard id="minio" icon={HardDrive} title="MinIO" phase={status.minio} error={status.minioError} />
           <ServiceCard id="server" icon={Server} title="Servidor" phase={status.server} error={status.serverError} />
           <LicenseCard license={status.license} onSelectLicense={onSelectLicense} onRemoveLicense={onRemoveLicense} />
+          <BackupCard
+            pickFolder={pickBackupFolder}
+            pickBackupFile={pickBackupFile}
+            onBusyChange={setBusy}
+            onRestored={refresh}
+          />
           {licenseBlockedStartup && status.postgresError && (
             <p className="rounded-2xl bg-primary text-primary-foreground text-sm font-medium px-4 py-3">
               {status.postgresError}

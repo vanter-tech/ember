@@ -92,6 +92,40 @@ Bugs found here become their own follow-up tasks — do **not** fix them during 
   behavior change expected (window is already shown), just confirms the tray menu responds. Then
   use tray **Salir**: both the Tauri process and the `java.exe` child disappear from Task Manager.
 
+- [ ] **14. Backup modal + "Esta máquina".**
+  Dashboard → **Respaldos** → **Respaldar ahora**. A modal offers **USB o disco externo
+  (Recomendado)** and **Esta máquina**. Pick **Esta máquina**: `ember-backup-<fecha>.zip` appears in
+  `%ProgramData%\EmberHub\backups\` and in the card's list, with the "copia el archivo a una USB" notice.
+  Open the zip: it has `manifest.json` (its `appVersion` is a real version, **not** `unknown`),
+  `postgres.dump` and `minio/`.
+
+- [ ] **15. Backup to a USB, and a missing USB.**
+  **Respaldar ahora → USB o disco externo** opens the native folder picker; the zip lands on that
+  drive. Unplug it and repeat: the card shows a red banner "No se pudo escribir en la carpeta de
+  respaldo… Si es una USB, revisa que esté conectada." and nothing crashes.
+
+- [ ] **16. Settings + images round trip via an uploaded file.**
+  In the app change a restaurant Setting (e.g. tax rate) and upload a branding logo → **Respaldar
+  ahora**. Change the setting again and replace the logo. Copy the zip to the Desktop →
+  **Restaurar desde archivo…**, pick it, confirm. The Hub restarts by itself; the *original* setting
+  and logo are back, and `backups\` now also holds an `…-pre-restore.zip`.
+
+- [ ] **17. Recover from a corrupted database.**
+  Stop the Hub. Overwrite `%ProgramData%\EmberHub\data\postgres\PG_VERSION` with `99`. Start: the
+  PostgreSQL card shows an error. **Restaurar desde archivo…** with a good zip → "No se pudo guardar
+  la copia previa" → **Restaurar sin copia previa**. The Hub comes up with the backup's data, and
+  `%ProgramData%\EmberHub\data\postgres.corrupt-<fecha>\` exists next to the new `postgres\`.
+
+- [ ] **18. Newer-version guard.**
+  Edit a copy of a backup's `manifest.json` so `appVersion` is `99.0.0`, re-zip, pick it: the card
+  shows "Este respaldo es de una versión más reciente de Ember (99.0.0)…", no confirmation opens, no
+  data changes.
+
+- [ ] **19. Automatic backup.**
+  On a Hub with no backups leave it running ~20 min: a backup appears in the automatic folder and
+  "Próximo automático" shows ~24 h later. **Cambiar carpeta automática…** points future automatic
+  backups at a USB.
+
 ---
 
 ## Result
