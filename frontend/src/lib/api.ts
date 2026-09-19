@@ -460,12 +460,17 @@ export const SessionTableService = {
 
   // Join with no account — the backend mints a throwaway guest identity gated on a valid open
   // table. Exactly one of joinCode / qrToken; name optional (server generates one if blank).
+  // The response also carries the login-style identity (userId/role/name/restaurantId): a guest
+  // never logs in, so this is the only source for the auth store's CUSTOMER identity.
   joinAsGuest: async (payload: {
     joinCode?: string
     qrToken?: string
     name?: string
-  }): Promise<joinSessionResponse> => {
-    const { data } = await api.post<joinSessionResponse>('/sessions/join-as-guest', payload)
+  }): Promise<joinSessionResponse & LoginResponse> => {
+    const { data } = await api.post<joinSessionResponse & LoginResponse>(
+      '/sessions/join-as-guest',
+      payload,
+    )
     return data
   },
 

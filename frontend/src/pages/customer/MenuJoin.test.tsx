@@ -48,7 +48,13 @@ describe('MenuJoin (QR landing)', () => {
   test('unauthenticated: guest entry joins via joinAsGuest', async () => {
     const spy = vi
       .spyOn(SessionTableService, 'joinAsGuest')
-      .mockResolvedValue({ session: { id: 'sess-42' }, token: 'scoped' } as never)
+      .mockResolvedValue({
+        session: { id: 'sess-42' },
+        token: 'scoped',
+        userId: 'guest-1',
+        name: 'Ana',
+        role: 'CUSTOMER',
+      } as never)
 
     renderAt(`/menu/join?token=${QR_TOKEN}`)
     await userEvent.click(screen.getByRole('button', { name: /invitado/i }))
@@ -59,6 +65,8 @@ describe('MenuJoin (QR landing)', () => {
     )
     expect(screen.getByText('MENU PAGE')).toBeInTheDocument()
     expect(sessionStorage.getItem(PENDING_QR_TOKEN_KEY)).toBeNull()
+    // Without role/userId the /customer route guard bounces the guest to /login.
+    expect(useAuthStore.getState()).toMatchObject({ role: 'CUSTOMER', userId: 'guest-1' })
   })
 
   test('authenticated: submitting the name joins via the QR token', async () => {

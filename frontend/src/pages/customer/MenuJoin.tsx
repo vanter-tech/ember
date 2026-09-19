@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { useAuthStore } from '@/store/authStore'
 import { useSessionStore } from '@/store/sessionStore'
-import { SessionTableService } from '@/lib/api'
+import { SessionTableService, type LoginResponse } from '@/lib/api'
 import { PENDING_QR_TOKEN_KEY, sessionIdFromQrToken } from '@/lib/qrToken'
 import { useTranslation } from '@/lib/i18n'
 
@@ -44,9 +44,12 @@ export const MenuJoin = () => {
 
   const isAuthenticatedCustomer = !!token && role === 'CUSTOMER'
 
-  const finishJoin = (data: { token?: string; session?: unknown }) => {
-    if (data.token) setAuth({ token: data.token })
-    if (data.session) setSession(data.session as never)
+  const finishJoin = (data: { token?: string; session?: unknown } & Partial<LoginResponse>) => {
+    // Guests get the full identity back (they never logged in); an account holder's response has
+    // only the re-scoped token, so keep their stored identity and swap the token alone.
+    const { session, ...auth } = data
+    if (data.token) setAuth(data.role ? auth : { token: data.token })
+    if (session) setSession(session as never)
     sessionStorage.removeItem(PENDING_QR_TOKEN_KEY)
     toast.success(t('joinSuccessToast'))
     navigate('/customer/menu', { replace: true })

@@ -35,8 +35,9 @@ export const JoinByCode = () => {
         joinCode: code,
         name: name.trim() || undefined,
       })
-      if (data.token) setAuth({ token: data.token })
-      if (data.session) setSession(data.session as never)
+      const { session, ...auth } = data
+      if (data.token) setAuth(auth)
+      if (session) setSession(session as never)
       toast.success(t('joinSuccessToast'))
       navigate('/customer/menu', { replace: true })
     } catch (error) {

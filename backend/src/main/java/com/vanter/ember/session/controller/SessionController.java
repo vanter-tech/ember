@@ -1,6 +1,7 @@
 package com.vanter.ember.session.controller;
 
 import com.vanter.ember.identity.model.User;
+import com.vanter.ember.identity.model.dto.AuthResponse;
 import com.vanter.ember.identity.repository.UserRepository;
 import com.vanter.ember.identity.service.AuthService;
 import com.vanter.ember.identity.service.GuestUserService;
@@ -150,12 +151,14 @@ public class SessionController {
     @Operation(summary = "Join a table with no account — mints a throwaway guest identity")
     @PostMapping("/join-as-guest")
     @Transactional
-    public JoinSessionResponse joinAsGuest(@Valid @RequestBody JoinAsGuestRequest request) {
+    public GuestJoinResponse joinAsGuest(@Valid @RequestBody JoinAsGuestRequest request) {
         User guest = guestUserService.createGuest(request.name());
         Session session = request.hasQrToken()
                 ? sessionService.joinSession(request.qrToken(), guest.getEmail(), guest.getName())
                 : sessionService.joinSessionCode(request.joinCode(), guest.getEmail());
-        return withRescopedToken(session, guest.getEmail());
+        AuthResponse auth = authService.issueTenantScopedToken(guest.getEmail(), session.getTenantId());
+        return new GuestJoinResponse(session, auth.getToken(), auth.getUserId(),
+                auth.getRestaurantId(), auth.getName(), auth.getRole());
     }
 
     /**
