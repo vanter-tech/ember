@@ -1,11 +1,18 @@
 package com.vanter.ember.hub.control;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.vanter.ember.hub.backup.BackupConfig;
+import com.vanter.ember.hub.backup.BackupException;
+import com.vanter.ember.hub.backup.BackupSnapshot;
+import com.vanter.ember.hub.backup.BackupStatus;
+import com.vanter.ember.hub.backup.HubBackup;
 import java.io.IOException;
+import java.util.List;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -20,13 +27,15 @@ class HubControlServerTest {
     private final ObjectMapper mapper = new ObjectMapper();
     private final HttpClient http = HttpClient.newHttpClient();
     private FakeOrchestrator orchestrator;
+    private FakeBackup backup;
     private HubControlServer server;
     private String base;
 
     @BeforeEach
     void start() throws IOException {
         orchestrator = new FakeOrchestrator();
-        server = new HubControlServer(orchestrator);
+        backup = new FakeBackup();
+        server = new HubControlServer(orchestrator, backup);
         int port = server.start();
         base = "http://127.0.0.1:" + port;
     }
@@ -116,6 +125,90 @@ class HubControlServerTest {
         assertEquals("no se pudo borrar", mapper.readTree(res.body()).get("error").asText());
     }
 
+    @Test
+    void backupStatus_returnsBackupStatus() throws Exception {
+        JsonNode body = mapper.readTree(get("/api/backup/status").body());
+
+        assertEquals("C:\\backups", body.get("destDir").asText());
+        assertEquals("C:\\backups", body.get("defaultDestDir").asText());
+        assertEquals(7, body.get("retention").asInt());
+    }
+
+    @Test
+    void backupConfig_post_savesAndReturnsIt() throws Exception {
+        HttpResponse<String> res = post("/api/backup/config", "{\"destDir\":\"E:\\\\usb\",\"retention\":3}");
+
+        assertEquals(200, res.statusCode());
+        assertEquals("E:\\usb", backup.savedConfig.destDir());
+        assertEquals(3, backup.savedConfig.retention());
+    }
+
+    @Test
+    void backupConfig_invalid_returns400() throws Exception {
+        backup.setConfigFailure = new IllegalArgumentException("retention debe ser al menos 1.");
+
+        HttpResponse<String> res = post("/api/backup/config", "{\"destDir\":\"E:\\\\usb\",\"retention\":0}");
+
+        assertEquals(400, res.statusCode());
+        assertEquals("retention debe ser al menos 1.", mapper.readTree(res.body()).get("error").asText());
+    }
+
+    @Test
+    void backupNow_passesDestDir_andEmptyBodyMeansConfiguredFolder() throws Exception {
+        assertEquals(200, post("/api/backup/now", "{\"destDir\":\"E:\\\\usb\"}").statusCode());
+        assertEquals("E:\\usb", backup.nowDestDir);
+
+        assertEquals(200, post("/api/backup/now", "").statusCode());
+        assertNull(backup.nowDestDir);
+    }
+
+    @Test
+    void backupList_returnsSnapshotsArray() throws Exception {
+        JsonNode body = mapper.readTree(get("/api/backup/list").body());
+
+        assertTrue(body.isArray());
+        assertEquals("ember-backup-x.zip", body.get(0).get("id").asText());
+    }
+
+    @Test
+    void backupInspect_missingPath_returns400() throws Exception {
+        assertEquals(400, post("/api/backup/inspect", "{}").statusCode());
+    }
+
+    @Test
+    void backupInspect_incompatible_returns409WithCode() throws Exception {
+        backup.inspectFailure = new BackupException(BackupException.INCOMPATIBLE, "versión más reciente");
+
+        HttpResponse<String> res = post("/api/backup/inspect", "{\"path\":\"C:\\\\x.zip\"}");
+
+        assertEquals(409, res.statusCode());
+        assertEquals("BACKUP_INCOMPATIBLE", mapper.readTree(res.body()).get("code").asText());
+    }
+
+    @Test
+    void backupRestore_success_passesPathAndFlag() throws Exception {
+        HttpResponse<String> res =
+                post("/api/backup/restore", "{\"path\":\"C:\\\\x.zip\",\"skipSafetySnapshot\":true}");
+
+        assertEquals(200, res.statusCode());
+        assertEquals("C:\\x.zip", backup.restoredPath);
+        assertTrue(backup.restoredSkipSafety);
+    }
+
+    @Test
+    void backupRestore_errorsMapToHttpStatuses() throws Exception {
+        backup.restoreFailure = new BackupException(BackupException.SAFETY_FAILED, "sin copia previa");
+        assertEquals(409, post("/api/backup/restore", "{\"path\":\"C:\\\\x.zip\"}").statusCode());
+
+        backup.restoreFailure = new BackupException(BackupException.INVALID, "no es un respaldo");
+        assertEquals(400, post("/api/backup/restore", "{\"path\":\"C:\\\\x.zip\"}").statusCode());
+
+        backup.restoreFailure = new BackupException(BackupException.RESTORE_FAILED, "falló");
+        HttpResponse<String> res = post("/api/backup/restore", "{\"path\":\"C:\\\\x.zip\"}");
+        assertEquals(500, res.statusCode());
+        assertEquals("BACKUP_RESTORE_FAILED", mapper.readTree(res.body()).get("code").asText());
+    }
+
     private HttpResponse<String> get(String path) throws Exception {
         return http.send(HttpRequest.newBuilder(URI.create(base + path)).GET().build(),
                 HttpResponse.BodyHandlers.ofString());
@@ -179,6 +272,65 @@ class HubControlServerTest {
         @Override
         public HubStatusSnapshot snapshot() {
             return snapshot;
+        }
+    }
+
+    private static final class FakeBackup implements HubBackup {
+        BackupConfig savedConfig;
+        IllegalArgumentException setConfigFailure;
+        String nowDestDir;
+        BackupException inspectFailure;
+        BackupException restoreFailure;
+        String restoredPath;
+        boolean restoredSkipSafety;
+        final BackupSnapshot snapshot = new BackupSnapshot("ember-backup-x.zip", "C:\\backups\\ember-backup-x.zip",
+                "2026-09-19T10:00:00Z", 10, BackupSnapshot.OK, null, "0.2.6.1", false);
+
+        @Override
+        public BackupStatus status() {
+            return new BackupStatus(null, null, "C:\\backups", "C:\\backups", 7);
+        }
+
+        @Override
+        public BackupConfig getConfig() {
+            return new BackupConfig("C:\\backups", 7);
+        }
+
+        @Override
+        public BackupConfig setConfig(BackupConfig config) {
+            if (setConfigFailure != null) {
+                throw setConfigFailure;
+            }
+            savedConfig = config;
+            return config;
+        }
+
+        @Override
+        public BackupSnapshot backupNow(String destDirOrNull) {
+            nowDestDir = destDirOrNull;
+            return snapshot;
+        }
+
+        @Override
+        public List<BackupSnapshot> listSnapshots() {
+            return List.of(snapshot);
+        }
+
+        @Override
+        public BackupSnapshot inspect(String path) throws BackupException {
+            if (inspectFailure != null) {
+                throw inspectFailure;
+            }
+            return snapshot;
+        }
+
+        @Override
+        public void restore(String path, boolean skipSafetySnapshot) throws BackupException {
+            if (restoreFailure != null) {
+                throw restoreFailure;
+            }
+            restoredPath = path;
+            restoredSkipSafety = skipSafetySnapshot;
         }
     }
 }
