@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useSessionStore } from '@/store/sessionStore'
 import { useAuthStore } from '@/store/authStore'
@@ -22,20 +22,31 @@ export const Bill = () => {
   const setBillReady = useSessionStore((state) => state.setBillReady)
   const currentId = useAuthStore((state) => state.userId)
 
-  // Rehydrate the bill for a diner who rejoined after the BILL_READY frame was already broadcast —
-  // the store only ever held it from that live frame. WS updates take over once it's in the store.
+  // Always ask the server on open, not only when the store has no bill: the store is persisted, so
+  // after a reload it holds whatever the last live frame left — e.g. a split still UNPAID because
+  // the SPLIT_PAID / SESSION_CLOSED frames arrived while this page had no live subscription. That
+  // made "Pagar mi parte" reappear for a share the server already has PAID. Live WS updates take
+  // over from here (the effect only re-runs when the fetched bill itself changes).
+  const clearBill = useSessionStore((state) => state.clearBill)
+  // The bill this page opened with (the persisted one). A live BILL_READY frame that lands while the
+  // request is in flight replaces it, and a stale "no bill" answer must not wipe that newer bill.
+  const openedWithBillId = useRef(bill?.id)
   const { data: fetchedBill } = useQuery({
     queryKey: ['billState', sessionId],
     queryFn: () => billingService.getBillState(sessionId!),
-    enabled: !!sessionId && !bill,
+    enabled: !!sessionId,
     retry: false,
   })
 
   useEffect(() => {
-    if (fetchedBill) {
-      setBillReady({ id: fetchedBill.id, total: fetchedBill.total }, fetchedBill.splits ?? [])
+    if (fetchedBill === undefined) return
+    if (fetchedBill === null) {
+      // the server has no bill (voided/never requested): drop a stale persisted one
+      if (useSessionStore.getState().bill?.id === openedWithBillId.current) clearBill()
+      return
     }
-  }, [fetchedBill, setBillReady])
+    setBillReady({ id: fetchedBill.id, total: fetchedBill.total }, fetchedBill.splits ?? [])
+  }, [fetchedBill, setBillReady, clearBill])
 
   const myName = participants?.find((p) => p.userId === currentId)?.name
   const mySplit = billSplits?.find((split) => split.participantName === myName)
