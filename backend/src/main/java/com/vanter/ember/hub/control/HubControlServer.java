@@ -4,6 +4,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sun.net.httpserver.Filter;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
+import com.vanter.ember.hub.backup.BackupConfig;
+import com.vanter.ember.hub.backup.BackupException;
+import com.vanter.ember.hub.backup.HubBackup;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
@@ -46,12 +49,14 @@ public final class HubControlServer {
     };
 
     private final HubOrchestrator orchestrator;
+    private final HubBackup backup;
     private final ObjectMapper mapper = new ObjectMapper();
 
     private HttpServer httpServer;
 
-    public HubControlServer(HubOrchestrator orchestrator) {
+    public HubControlServer(HubOrchestrator orchestrator, HubBackup backup) {
         this.orchestrator = orchestrator;
+        this.backup = backup;
     }
 
     /** Starts listening on 127.0.0.1 at an OS-assigned port and returns that port. */
@@ -61,6 +66,12 @@ public final class HubControlServer {
         httpServer.createContext("/api/start", this::handleStart).getFilters().add(CORS_FILTER);
         httpServer.createContext("/api/stop", this::handleStop).getFilters().add(CORS_FILTER);
         httpServer.createContext("/api/license", this::handleLicense).getFilters().add(CORS_FILTER);
+        httpServer.createContext("/api/backup/status", this::handleBackupStatus).getFilters().add(CORS_FILTER);
+        httpServer.createContext("/api/backup/config", this::handleBackupConfig).getFilters().add(CORS_FILTER);
+        httpServer.createContext("/api/backup/now", this::handleBackupNow).getFilters().add(CORS_FILTER);
+        httpServer.createContext("/api/backup/list", this::handleBackupList).getFilters().add(CORS_FILTER);
+        httpServer.createContext("/api/backup/inspect", this::handleBackupInspect).getFilters().add(CORS_FILTER);
+        httpServer.createContext("/api/backup/restore", this::handleBackupRestore).getFilters().add(CORS_FILTER);
         httpServer.setExecutor(Executors.newCachedThreadPool(daemonThreadFactory()));
         httpServer.start();
         return httpServer.getAddress().getPort();
@@ -129,6 +140,97 @@ public final class HubControlServer {
         }
     }
 
+    // --- backup handlers -----------------------------------------------------------
+
+    private void handleBackupStatus(HttpExchange exchange) throws IOException {
+        if (!"GET".equals(exchange.getRequestMethod())) {
+            sendJson(exchange, 405, Map.of("error", "method not allowed"));
+            return;
+        }
+        sendJson(exchange, 200, backup.status());
+    }
+
+    private void handleBackupConfig(HttpExchange exchange) throws IOException {
+        String method = exchange.getRequestMethod();
+        if ("GET".equals(method)) {
+            sendJson(exchange, 200, backup.getConfig());
+            return;
+        }
+        if (!"POST".equals(method)) {
+            sendJson(exchange, 405, Map.of("error", "method not allowed"));
+            return;
+        }
+        ConfigRequest req = mapper.readValue(exchange.getRequestBody(), ConfigRequest.class);
+        try {
+            int retention = req.retention() == null ? backup.getConfig().retention() : req.retention();
+            sendJson(exchange, 200, backup.setConfig(new BackupConfig(req.destDir(), retention)));
+        } catch (IllegalArgumentException e) {
+            sendJson(exchange, 400, Map.of("error", e.getMessage()));
+        }
+    }
+
+    private void handleBackupNow(HttpExchange exchange) throws IOException {
+        if (!"POST".equals(exchange.getRequestMethod())) {
+            sendJson(exchange, 405, Map.of("error", "method not allowed"));
+            return;
+        }
+        byte[] body = exchange.getRequestBody().readAllBytes();
+        NowRequest req = body.length == 0 ? new NowRequest(null) : mapper.readValue(body, NowRequest.class);
+        sendJson(exchange, 200, backup.backupNow(req.destDir()));
+    }
+
+    private void handleBackupList(HttpExchange exchange) throws IOException {
+        if (!"GET".equals(exchange.getRequestMethod())) {
+            sendJson(exchange, 405, Map.of("error", "method not allowed"));
+            return;
+        }
+        sendJson(exchange, 200, backup.listSnapshots());
+    }
+
+    private void handleBackupInspect(HttpExchange exchange) throws IOException {
+        if (!"POST".equals(exchange.getRequestMethod())) {
+            sendJson(exchange, 405, Map.of("error", "method not allowed"));
+            return;
+        }
+        PathRequest req = mapper.readValue(exchange.getRequestBody(), PathRequest.class);
+        if (req.path() == null || req.path().isBlank()) {
+            sendJson(exchange, 400, Map.of("error", "path es obligatorio."));
+            return;
+        }
+        try {
+            sendJson(exchange, 200, backup.inspect(req.path()));
+        } catch (BackupException e) {
+            sendBackupError(exchange, e);
+        }
+    }
+
+    private void handleBackupRestore(HttpExchange exchange) throws IOException {
+        if (!"POST".equals(exchange.getRequestMethod())) {
+            sendJson(exchange, 405, Map.of("error", "method not allowed"));
+            return;
+        }
+        RestoreRequest req = mapper.readValue(exchange.getRequestBody(), RestoreRequest.class);
+        if (req.path() == null || req.path().isBlank()) {
+            sendJson(exchange, 400, Map.of("error", "path es obligatorio."));
+            return;
+        }
+        try {
+            backup.restore(req.path(), req.skipSafetySnapshot());
+            sendJson(exchange, 200, StatusDto.from(orchestrator.snapshot()));
+        } catch (BackupException e) {
+            sendBackupError(exchange, e);
+        }
+    }
+
+    private void sendBackupError(HttpExchange exchange, BackupException e) throws IOException {
+        int status = switch (e.code()) {
+            case BackupException.INCOMPATIBLE, BackupException.SAFETY_FAILED -> 409;
+            case BackupException.INVALID -> 400;
+            default -> 500;
+        };
+        sendJson(exchange, status, Map.of("error", e.getMessage(), "code", e.code()));
+    }
+
     // --- wire helpers --------------------------------------------------------------
 
     private void sendJson(HttpExchange exchange, int status, Object body) throws IOException {
@@ -151,6 +253,14 @@ public final class HubControlServer {
     // --- wire DTOs -------------------------------------------------------------------
 
     private record LicenseRequest(String path) {}
+
+    private record ConfigRequest(String destDir, Integer retention) {}
+
+    private record NowRequest(String destDir) {}
+
+    private record PathRequest(String path) {}
+
+    private record RestoreRequest(String path, boolean skipSafetySnapshot) {}
 
     private record LicenseDto(String status, String lastHeartbeatAt, String suspendedSince) {
         static LicenseDto from(HubOrchestrator.LicenseSnapshot s) {

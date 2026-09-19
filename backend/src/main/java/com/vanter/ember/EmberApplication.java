@@ -1,9 +1,16 @@
 package com.vanter.ember;
 
+import com.vanter.ember.hub.backup.BackupConfigStore;
+import com.vanter.ember.hub.backup.BackupScheduler;
+import com.vanter.ember.hub.backup.HubBackupService;
+import com.vanter.ember.hub.backup.HubVersion;
+import com.vanter.ember.hub.backup.PostgresTools;
 import com.vanter.ember.hub.config.HubProperties;
 import com.vanter.ember.hub.control.DefaultHubOrchestrator;
 import com.vanter.ember.hub.control.HubControlServer;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.time.Clock;
 import java.util.Arrays;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -33,7 +40,18 @@ public class EmberApplication {
         HubProperties properties = HubProperties.fromEnvironment();
         DefaultHubOrchestrator orchestrator = new DefaultHubOrchestrator(properties);
 
-        HubControlServer controlServer = new HubControlServer(orchestrator);
+        // Backup lives next to hub-state.json (%ProgramData%\EmberHub in a packaged install); the
+        // "Esta máquina" destination is the backups\ folder the Tauri shell already creates there.
+        Path stateFile = properties.stateFile().toAbsolutePath();
+        HubBackupService backupService = new HubBackupService(
+                properties, orchestrator,
+                new BackupConfigStore(stateFile.resolveSibling("hub-backup.json"), stateFile.resolveSibling("backups")),
+                new PostgresTools(properties.postgresBinDir(), properties.postgresPort()),
+                HubVersion::current, Clock.systemDefaultZone());
+        BackupScheduler backupScheduler = new BackupScheduler(backupService::runScheduledIfDue);
+        backupScheduler.start();
+
+        HubControlServer controlServer = new HubControlServer(orchestrator, backupService);
         int port = controlServer.start();
         System.out.println("PORT=" + port);
         System.out.flush();
@@ -41,6 +59,7 @@ public class EmberApplication {
         orchestrator.start(args);
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            backupScheduler.stop();
             orchestrator.stop();
             controlServer.stop();
         }, "ember-hub-shutdown"));

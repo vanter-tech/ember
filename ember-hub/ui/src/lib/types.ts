@@ -17,3 +17,27 @@ export interface HubStatus {
   license: LicenseSnapshot;
   serverPort: number;
 }
+
+export interface BackupSnapshot {
+  id: string | null;
+  path: string | null;
+  createdAt: string | null;
+  sizeBytes: number;
+  status: 'OK' | 'ERROR';
+  errorMessage: string | null;
+  appVersion: string | null;
+  preRestoreSafety: boolean;
+}
+
+export interface BackupConfig {
+  destDir: string;
+  retention: number;
+}
+
+export interface BackupStatus {
+  lastRun: BackupSnapshot | null;
+  nextScheduledRun: string | null;
+  destDir: string;
+  defaultDestDir: string;
+  retention: number;
+}

@@ -102,4 +102,17 @@ class DefaultHubOrchestratorTest {
         assertEquals(ServicePhase.STOPPED, snapshot.server());
         assertEquals(8080, snapshot.serverPort());
     }
+
+    @Test
+    void stopAndWait_whenNothingRunning_endsWithEverythingStopped() {
+        DefaultHubOrchestrator orchestrator =
+                new DefaultHubOrchestrator(propertiesWithStateFile(tempDir.resolve("hub-state.json")));
+
+        orchestrator.stopAndWait();
+
+        HubOrchestrator.HubStatusSnapshot s = orchestrator.snapshot();
+        assertEquals(ServicePhase.STOPPED, s.server());
+        assertEquals(ServicePhase.STOPPED, s.postgres());
+        assertEquals(ServicePhase.STOPPED, s.minio());
+    }
 }
