@@ -8,6 +8,10 @@ spring:
       ddl-auto: validate
 
 ember:
+  plans:
+    # Hub = paid on-premise license; its restaurant is seeded as FREE, so SaaS plan gates
+    # (branding, table count, ...) would 402 the onboarding wizard. See PlanGateService.
+    enforced: false
   hub:
     heartbeat-interval-ms: ${EMBER_HUB_HEARTBEAT_INTERVAL_MS:300000}
 
