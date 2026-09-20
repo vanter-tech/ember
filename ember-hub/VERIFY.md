@@ -126,6 +126,24 @@ Bugs found here become their own follow-up tasks — do **not** fix them during 
   "Próximo automático" shows ~24 h later. **Cambiar carpeta automática…** points future automatic
   backups at a USB.
 
+- [ ] **20. No license → backup/restore disabled, and nothing hangs.**
+  With no `license.key`: **Respaldar ahora**, **Restaurar desde archivo…** and every row's
+  **Restaurar** are disabled, with the hint "Instala la licencia (license.key)…". Do this on a PC
+  that also has another (password-protected) Postgres on port 5432 — nothing may hang or need a
+  restart. With a license but **Detener**ed services only **Respaldar ahora** is disabled ("Inicia
+  los servicios…").
+
+- [ ] **21. Progress bar.**
+  **Respaldar ahora → Esta máquina** on a Hub with some images: a bar appears with the phase
+  ("Exportando la base de datos…" animated, then "Comprimiendo archivos… N%" filling) and
+  disappears when done. **Restaurar** shows the phases (copia previa, deteniendo servicios,
+  restaurando base de datos, restaurando las imágenes N%, iniciando servicios).
+
+- [ ] **22. Small laptop + wide window.**
+  On a 1366×768 laptop (or 1080p at 125–150% scaling) the window opens fully inside the screen (no
+  part hanging off the bottom) and can be shrunk to ~420×360 with the content scrolling. Widening
+  it past ~768px lays the cards out in two columns (Respaldos spans the full width).
+
 ---
 
 ## Result

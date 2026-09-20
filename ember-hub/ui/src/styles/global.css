@@ -33,3 +33,13 @@ body {
   @apply font-sans bg-background text-foreground;
   margin: 0;
 }
+
+/* Indeterminate progress bar: a segment sliding across the track (BackupCard). */
+@keyframes indeterminate-slide {
+  0% { margin-left: -35%; }
+  100% { margin-left: 100%; }
+}
+
+.animate-indeterminate {
+  animation: indeterminate-slide 1.2s ease-in-out infinite;
+}

@@ -159,7 +159,7 @@ export default function Dashboard() {
   }
 
   return (
-    <main className="h-full p-4 flex flex-col gap-4 max-w-2xl mx-auto min-h-0 overflow-auto">
+    <main className="h-full p-4 flex flex-col gap-4 max-w-5xl w-full mx-auto min-h-0 overflow-auto">
       <header className={`${cardShellClass} p-4 flex items-center justify-between gap-3 flex-wrap shrink-0`}>
         <div className="flex items-center gap-3 min-w-0">
           <IconBadge icon={Router} size="lg" />
@@ -168,7 +168,7 @@ export default function Dashboard() {
             <p className="text-sm text-muted-foreground">Panel de control local</p>
           </div>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex flex-wrap items-center gap-2">
           {stopped ? (
             <Button variant="primary" disabled={busy} onClick={onStart}>Iniciar servicios</Button>
           ) : (
@@ -181,7 +181,7 @@ export default function Dashboard() {
       </header>
 
       {status && (
-        <>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
           <ServiceCard
             id="postgres"
             icon={Database}
@@ -192,18 +192,22 @@ export default function Dashboard() {
           <ServiceCard id="minio" icon={HardDrive} title="MinIO" phase={status.minio} error={status.minioError} />
           <ServiceCard id="server" icon={Server} title="Servidor" phase={status.server} error={status.serverError} />
           <LicenseCard license={status.license} onSelectLicense={onSelectLicense} onRemoveLicense={onRemoveLicense} />
-          <BackupCard
-            pickFolder={pickBackupFolder}
-            pickBackupFile={pickBackupFile}
-            onBusyChange={setBusy}
-            onRestored={refresh}
-          />
+          <div className="md:col-span-2 min-w-0">
+            <BackupCard
+              licenseStatus={status.license.status}
+              postgresRunning={status.postgres === 'RUNNING'}
+              pickFolder={pickBackupFolder}
+              pickBackupFile={pickBackupFile}
+              onBusyChange={setBusy}
+              onRestored={refresh}
+            />
+          </div>
           {licenseBlockedStartup && status.postgresError && (
-            <p className="rounded-2xl bg-primary text-primary-foreground text-sm font-medium px-4 py-3">
+            <p className="md:col-span-2 rounded-2xl bg-primary text-primary-foreground text-sm font-medium px-4 py-3">
               {status.postgresError}
             </p>
           )}
-        </>
+        </div>
       )}
     </main>
   );

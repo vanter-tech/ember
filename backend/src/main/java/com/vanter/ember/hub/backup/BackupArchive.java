@@ -7,6 +7,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Enumeration;
+import java.util.List;
+import java.util.function.IntConsumer;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -26,24 +28,37 @@ public final class BackupArchive {
     private BackupArchive() {}
 
     public static void create(Path zip, Path dumpFile, Path minioDir, Manifest manifest) throws IOException {
+        create(zip, dumpFile, minioDir, manifest, p -> {});
+    }
+
+    /** {@code progress} receives 0..100, counted in entries (manifest + dump + one per MinIO file). */
+    public static void create(Path zip, Path dumpFile, Path minioDir, Manifest manifest, IntConsumer progress)
+            throws IOException {
+        List<Path> mediaFiles = List.of();
+        if (Files.isDirectory(minioDir)) {
+            try (Stream<Path> files = Files.walk(minioDir)) {
+                mediaFiles = files.filter(Files::isRegularFile).toList();
+            }
+        }
+        int total = 2 + mediaFiles.size();
+        int done = 0;
         try (ZipOutputStream out = new ZipOutputStream(Files.newOutputStream(zip))) {
             out.putNextEntry(new ZipEntry(MANIFEST));
             out.write(MAPPER.writeValueAsBytes(manifest));
             out.closeEntry();
+            progress.accept(++done * 100 / total);
 
             out.putNextEntry(new ZipEntry(DUMP));
             Files.copy(dumpFile, out);
             out.closeEntry();
+            progress.accept(++done * 100 / total);
 
-            if (Files.isDirectory(minioDir)) {
-                try (Stream<Path> files = Files.walk(minioDir)) {
-                    for (Path file : (Iterable<Path>) files.filter(Files::isRegularFile)::iterator) {
-                        String rel = minioDir.relativize(file).toString().replace('\\', '/');
-                        out.putNextEntry(new ZipEntry(MINIO_PREFIX + rel));
-                        Files.copy(file, out);
-                        out.closeEntry();
-                    }
-                }
+            for (Path file : mediaFiles) {
+                String rel = minioDir.relativize(file).toString().replace('\\', '/');
+                out.putNextEntry(new ZipEntry(MINIO_PREFIX + rel));
+                Files.copy(file, out);
+                out.closeEntry();
+                progress.accept(++done * 100 / total);
             }
         }
     }
@@ -74,13 +89,26 @@ public final class BackupArchive {
 
     /** Extracts every {@code minio/**} entry under {@code targetDir}; rejects path traversal. */
     public static void extractMinio(Path zip, Path targetDir) throws IOException {
+        extractMinio(zip, targetDir, p -> {});
+    }
+
+    /** As above; {@code progress} receives 0..100, counted in extracted files. */
+    public static void extractMinio(Path zip, Path targetDir, IntConsumer progress) throws IOException {
         Files.createDirectories(targetDir);
         Path root = targetDir.toAbsolutePath().normalize();
         try (ZipFile zf = new ZipFile(zip.toFile())) {
+            int total = 0;
+            Enumeration<? extends ZipEntry> counting = zf.entries();
+            while (counting.hasMoreElements()) {
+                if (isMediaFile(counting.nextElement())) {
+                    total++;
+                }
+            }
+            int done = 0;
             Enumeration<? extends ZipEntry> entries = zf.entries();
             while (entries.hasMoreElements()) {
                 ZipEntry entry = entries.nextElement();
-                if (entry.isDirectory() || !entry.getName().startsWith(MINIO_PREFIX)) {
+                if (!isMediaFile(entry)) {
                     continue;
                 }
                 Path out = root.resolve(entry.getName().substring(MINIO_PREFIX.length())).normalize();
@@ -91,7 +119,15 @@ public final class BackupArchive {
                 try (InputStream in = zf.getInputStream(entry)) {
                     Files.copy(in, out, StandardCopyOption.REPLACE_EXISTING);
                 }
+                progress.accept(++done * 100 / total);
+            }
+            if (total == 0) {
+                progress.accept(100);
             }
         }
+    }
+
+    private static boolean isMediaFile(ZipEntry entry) {
+        return !entry.isDirectory() && entry.getName().startsWith(MINIO_PREFIX);
     }
 }

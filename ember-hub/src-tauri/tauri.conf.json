@@ -12,10 +12,10 @@
       {
         "label": "main",
         "title": "Ember Hub",
-        "width": 720,
-        "height": 800,
-        "minWidth": 640,
-        "minHeight": 640,
+        "width": 900,
+        "height": 780,
+        "minWidth": 420,
+        "minHeight": 360,
         "visible": true
       }
     ],

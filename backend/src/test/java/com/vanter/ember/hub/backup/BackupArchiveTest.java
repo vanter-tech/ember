@@ -6,6 +6,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import org.junit.jupiter.api.Test;
@@ -75,5 +77,36 @@ class BackupArchiveTest {
         assertThatThrownBy(() -> BackupArchive.extractMinio(zip, tmp.resolve("minio-out")))
                 .isInstanceOf(IOException.class);
         assertThat(Files.exists(tmp.resolve("escape.txt"))).isFalse();
+    }
+
+    @Test
+    void createReportsIncreasingProgressEndingAtOneHundred() throws IOException {
+        Path dump = Files.writeString(tmp.resolve("postgres.dump"), "DUMP");
+        Path minio = Files.createDirectories(tmp.resolve("minio-src"));
+        for (String n : List.of("a.png", "b.png", "c.png")) {
+            Files.writeString(minio.resolve(n), n);
+        }
+        List<Integer> seen = new ArrayList<>();
+
+        BackupArchive.create(tmp.resolve("b.zip"), dump, minio, new BackupArchive.Manifest("1", "t"), seen::add);
+
+        assertThat(seen).isNotEmpty().isSorted();
+        assertThat(seen.get(seen.size() - 1)).isEqualTo(100);
+    }
+
+    @Test
+    void extractMinioReportsProgressEndingAtOneHundred() throws IOException {
+        Path dump = Files.writeString(tmp.resolve("postgres.dump"), "DUMP");
+        Path minio = Files.createDirectories(tmp.resolve("minio-src"));
+        Files.writeString(minio.resolve("a.png"), "a");
+        Files.writeString(minio.resolve("b.png"), "b");
+        Path zip = tmp.resolve("b.zip");
+        BackupArchive.create(zip, dump, minio, new BackupArchive.Manifest("1", "t"));
+        List<Integer> seen = new ArrayList<>();
+
+        BackupArchive.extractMinio(zip, tmp.resolve("out"), seen::add);
+
+        assertThat(seen).isNotEmpty().isSorted();
+        assertThat(seen.get(seen.size() - 1)).isEqualTo(100);
     }
 }

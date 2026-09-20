@@ -38,6 +38,7 @@ class HubBackupServiceTest {
     Path minio;
     boolean dumpFails;
     int dumpCalls;
+    Runnable duringDump;
     String[] version = {"0.2.6.1"};
 
     @BeforeEach
@@ -49,6 +50,9 @@ class HubBackupServiceTest {
             @Override
             public void dump(Path out) throws IOException {
                 dumpCalls++;
+                if (duringDump != null) {
+                    duringDump.run();
+                }
                 if (dumpFails) {
                     throw new IOException("sin conexión");
                 }
@@ -260,5 +264,45 @@ class HubBackupServiceTest {
                 .isInstanceOfSatisfying(BackupException.class,
                         e -> assertThat(e.code()).isEqualTo(BackupException.SAFETY_FAILED));
         assertThat(orchestrator.stopAndWaitCalls).isZero();
+    }
+
+    /** Both used to spawn pg_dump anyway, hanging on a foreign password-protected Postgres. */
+    @Test
+    void backupNow_whenHubPostgresIsNotRunning_failsFastWithoutTouchingPgDump() {
+        orchestrator.postgres = ServicePhase.STOPPED;
+
+        BackupSnapshot snap = service.backupNow(null);
+
+        assertThat(snap.status()).isEqualTo(BackupSnapshot.ERROR);
+        assertThat(snap.errorMessage()).contains("servicios");
+        assertThat(dumpCalls).isZero();
+        assertThat(store.loadLastRun()).isNull(); // nothing was attempted, so nothing "failed"
+    }
+
+    @Test
+    void restore_whenHubPostgresIsNotRunning_reportsSafetyFailedWithoutTouchingPgDump() {
+        BackupSnapshot made = service.backupNow(null);
+        dumpCalls = 0;
+        orchestrator.postgres = ServicePhase.STOPPED;
+
+        assertThatThrownBy(() -> service.restore(made.path(), false))
+                .isInstanceOfSatisfying(BackupException.class,
+                        e -> assertThat(e.code()).isEqualTo(BackupException.SAFETY_FAILED));
+        assertThat(dumpCalls).isZero();
+        assertThat(orchestrator.stopAndWaitCalls).isZero();
+    }
+
+    @Test
+    void backupNow_exposesItsPhaseWhileRunning_andClearsItAfterwards() {
+        List<BackupProgress> seen = new java.util.ArrayList<>();
+        duringDump = () -> seen.add(service.status().progress());
+
+        service.backupNow(null);
+
+        assertThat(seen).hasSize(1);
+        assertThat(seen.get(0).operation()).isEqualTo("BACKUP");
+        assertThat(seen.get(0).phase()).contains("base de datos");
+        assertThat(seen.get(0).percent()).isNull(); // duration unknown -> indeterminate bar
+        assertThat(service.status().progress()).isNull();
     }
 }

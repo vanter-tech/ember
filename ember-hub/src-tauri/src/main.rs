@@ -113,9 +113,35 @@ fn kill_process_tree(child: &Child) {
         .output();
 }
 
+/// Default window size (logical px), shrunk to fit a small screen: 92% of its width and 85% of its
+/// height (leaving room for the taskbar and title bar). A 1366x768 laptop — or 1080p at 125-150%
+/// scaling — is shorter than the default 780px window, which used to hang off the bottom.
+fn fit_window_to_screen(screen_width: f64, screen_height: f64) -> (f64, f64) {
+    (900f64.min(screen_width * 0.92), 780f64.min(screen_height * 0.85))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn keeps_the_default_size_on_a_big_screen() {
+        assert_eq!(fit_window_to_screen(1920.0, 1080.0), (900.0, 780.0));
+    }
+
+    #[test]
+    fn shrinks_to_fit_a_1366x768_laptop() {
+        let (w, h) = fit_window_to_screen(1366.0, 768.0);
+        assert_eq!(w, 900.0);
+        assert!(h < 768.0 && (h - 652.8).abs() < 0.01);
+    }
+
+    #[test]
+    fn shrinks_both_dimensions_on_a_tiny_scaled_screen() {
+        // 1366x768 at 150% scaling = 911x512 logical
+        let (w, h) = fit_window_to_screen(911.0, 512.0);
+        assert!(w < 911.0 && h < 512.0);
+    }
 
     #[test]
     fn strips_verbatim_prefix_when_present() {
@@ -211,6 +237,15 @@ fn main() {
         .invoke_handler(tauri::generate_handler![get_port, restart_agent])
         .setup(move |app| {
             spawn_agent(app.handle(), port_state_setup.clone(), agent_process_setup.clone());
+
+            if let Some(window) = app.get_webview_window("main") {
+                if let Ok(Some(monitor)) = window.current_monitor() {
+                    let screen = monitor.size().to_logical::<f64>(monitor.scale_factor());
+                    let (width, height) = fit_window_to_screen(screen.width, screen.height);
+                    let _ = window.set_size(tauri::LogicalSize::new(width, height));
+                    let _ = window.center();
+                }
+            }
 
             let autostart = app.autolaunch();
             let _ = autostart.enable();

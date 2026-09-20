@@ -12,6 +12,7 @@ vi.mock('../lib/api', () => ({
 
 import * as api from '../lib/api';
 import BackupCard from './BackupCard';
+import type { LicenseStatus } from '../lib/types';
 
 const mocked = vi.mocked(api);
 
@@ -31,21 +32,22 @@ const status = {
   nextScheduledRun: '2026-09-20T10:00:00Z',
   destDir: 'C:\\backups',
   defaultDestDir: 'C:\\backups',
-  retention: 7
+  retention: 7,
+  progress: null
 };
 
 function apiError(message: string, code: string) {
   return Object.assign(new Error(message), { code });
 }
 
-function setup() {
+function setup(over: { licenseStatus?: LicenseStatus; postgresRunning?: boolean } = {}) {
   const props = {
     pickFolder: vi.fn().mockResolvedValue('E:\\usb'),
     pickBackupFile: vi.fn().mockResolvedValue('D:\\subido.zip'),
     onBusyChange: vi.fn(),
     onRestored: vi.fn()
   };
-  render(<BackupCard {...props} />);
+  render(<BackupCard licenseStatus="OK" postgresRunning {...over} {...props} />);
   return props;
 }
 
@@ -178,5 +180,57 @@ describe('BackupCard', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Cambiar carpeta automática…' }));
 
     await waitFor(() => expect(mocked.setBackupConfig).toHaveBeenCalledWith('E:\\usb'));
+  });
+
+  it('disables backing up and restoring until a license is installed, and says why', async () => {
+    setup({ licenseStatus: 'NONE', postgresRunning: false });
+
+    expect(await screen.findByText(/Instala la licencia/)).toBeTruthy();
+    expect((screen.getByRole('button', { name: 'Respaldar ahora' }) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByRole('button', { name: 'Restaurar desde archivo…' }) as HTMLButtonElement).disabled).toBe(true);
+    expect((await screen.findByRole('button', { name: 'Restaurar' }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('with a license but the services stopped, only backing up is blocked', async () => {
+    setup({ licenseStatus: 'OK', postgresRunning: false });
+
+    expect(await screen.findByText(/Inicia los servicios/)).toBeTruthy();
+    expect((screen.getByRole('button', { name: 'Respaldar ahora' }) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByRole('button', { name: 'Restaurar desde archivo…' }) as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it('shows a filled progress bar with the current phase while a backup runs', async () => {
+    mocked.getBackupStatus.mockResolvedValueOnce(status);
+    mocked.getBackupStatus.mockResolvedValue({
+      ...status,
+      progress: { operation: 'BACKUP', phase: 'Comprimiendo archivos…', percent: 40 }
+    });
+    mocked.backupNow.mockReturnValue(new Promise(() => {})); // never finishes: the run is "in progress"
+    setup();
+    await screen.findByText('C:\\backups');
+    fireEvent.click(await screen.findByRole('button', { name: 'Respaldar ahora' }));
+    fireEvent.click(await screen.findByRole('button', { name: /Esta máquina/ }));
+
+    const bar = await screen.findByRole('progressbar');
+    expect(bar.getAttribute('aria-valuenow')).toBe('40');
+    expect(screen.getByText(/Comprimiendo archivos…/)).toBeTruthy();
+    expect((screen.getByRole('button', { name: 'Respaldar ahora' }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('shows an indeterminate bar (no value) for a phase with unknown length', async () => {
+    mocked.getBackupStatus.mockResolvedValueOnce(status);
+    mocked.getBackupStatus.mockResolvedValue({
+      ...status,
+      progress: { operation: 'BACKUP', phase: 'Exportando la base de datos…', percent: null }
+    });
+    mocked.backupNow.mockReturnValue(new Promise(() => {}));
+    setup();
+    await screen.findByText('C:\\backups');
+    fireEvent.click(await screen.findByRole('button', { name: 'Respaldar ahora' }));
+    fireEvent.click(await screen.findByRole('button', { name: /Esta máquina/ }));
+
+    const bar = await screen.findByRole('progressbar');
+    expect(bar.hasAttribute('aria-valuenow')).toBe(false);
+    expect(screen.getByText(/Exportando la base de datos…/)).toBeTruthy();
   });
 });

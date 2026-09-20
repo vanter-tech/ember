@@ -12,7 +12,7 @@ import {
   restoreBackup,
   setBackupConfig
 } from '../lib/api';
-import type { BackupSnapshot, BackupStatus } from '../lib/types';
+import type { BackupSnapshot, BackupStatus, LicenseStatus } from '../lib/types';
 
 type ModalState =
   | null
@@ -32,12 +32,41 @@ function errorMessage(e: unknown): string {
   return e instanceof Error ? e.message : String(e);
 }
 
+function ProgressBar({ phase, percent }: { phase: string; percent: number | null }) {
+  return (
+    <div className="mb-3">
+      <p className="text-sm font-medium mb-1">
+        {phase}
+        {percent !== null ? ` ${percent}%` : ''}
+      </p>
+      <div
+        role="progressbar"
+        aria-label="Progreso"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        {...(percent !== null ? { 'aria-valuenow': percent } : {})}
+        className="h-2 w-full overflow-hidden rounded-full bg-muted"
+      >
+        {percent !== null ? (
+          <div className="h-full rounded-full bg-primary transition-[width]" style={{ width: `${percent}%` }} />
+        ) : (
+          <div className="h-full w-1/3 rounded-full bg-primary animate-indeterminate" />
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function BackupCard({
+  licenseStatus,
+  postgresRunning,
   pickFolder,
   pickBackupFile,
   onBusyChange,
   onRestored
 }: {
+  licenseStatus: LicenseStatus;
+  postgresRunning: boolean;
   pickFolder: () => Promise<string | null>;
   pickBackupFile: () => Promise<string | null>;
   onBusyChange?: (busy: boolean) => void;
@@ -63,6 +92,27 @@ export default function BackupCard({
   useEffect(() => {
     void load();
   }, []);
+
+  // While a backup/restore runs the sidecar reports its current phase in /api/backup/status, so
+  // poll it for the progress bar (the long request itself only answers when everything is done).
+  useEffect(() => {
+    if (working === null) return;
+    let cancelled = false;
+    async function poll() {
+      try {
+        const s = await getBackupStatus();
+        if (!cancelled) setStatus(s);
+      } catch {
+        // transient — the next tick retries
+      }
+    }
+    void poll();
+    const id = setInterval(poll, 600);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, [working]);
 
   async function runBackup(destDir: string) {
     setModal(null);
@@ -147,6 +197,18 @@ export default function BackupCard({
 
   const lastFailed = status?.lastRun?.status === 'ERROR';
 
+  // Backing up needs the Hub's own Postgres running (which needs the license); restoring rebuilds
+  // Postgres itself, so it only needs the license (the restored app can't start without one).
+  const licensed = licenseStatus !== 'NONE';
+  const backupBlocked = !licensed || !postgresRunning;
+  const restoreBlocked = !licensed;
+  const blockedHint = !licensed
+    ? 'Instala la licencia (license.key) para poder respaldar o restaurar.'
+    : !postgresRunning
+      ? 'Inicia los servicios para poder respaldar.'
+      : null;
+  const progress = status?.progress ?? null;
+
   return (
     <Card
       icon={Archive}
@@ -180,18 +242,35 @@ export default function BackupCard({
       {working === 'restore' && (
         <p className="text-sm font-medium mb-3">Restaurando… no cierres Ember Hub hasta que termine.</p>
       )}
+      {(working !== null || progress) && (
+        <ProgressBar
+          phase={progress?.phase ?? (working === 'restore' ? 'Preparando la restauración…' : 'Preparando el respaldo…')}
+          percent={progress?.percent ?? null}
+        />
+      )}
 
       <div className="flex flex-wrap gap-2">
-        <Button variant="primary" className="w-fit" disabled={working !== null} onClick={() => setModal({ kind: 'destination' })}>
+        <Button
+          variant="primary"
+          className="w-fit"
+          disabled={working !== null || backupBlocked}
+          onClick={() => setModal({ kind: 'destination' })}
+        >
           Respaldar ahora
         </Button>
-        <Button variant="outline" className="w-fit" disabled={working !== null} onClick={onRestoreFromFile}>
+        <Button
+          variant="outline"
+          className="w-fit"
+          disabled={working !== null || restoreBlocked}
+          onClick={onRestoreFromFile}
+        >
           Restaurar desde archivo…
         </Button>
         <Button variant="outline" className="w-fit" disabled={working !== null} onClick={onChangeAutoFolder}>
           Cambiar carpeta automática…
         </Button>
       </div>
+      {blockedHint && <p className="mt-2 text-xs text-muted-foreground">{blockedHint}</p>}
 
       {snapshots.length > 0 && (
         <ul className="mt-4 flex flex-col divide-y divide-border">
@@ -210,7 +289,7 @@ export default function BackupCard({
               ) : (
                 <Button
                   variant="outline"
-                  disabled={working !== null || !s.path}
+                  disabled={working !== null || restoreBlocked || !s.path}
                   onClick={() => s.path && beginRestore(s.path)}
                 >
                   Restaurar

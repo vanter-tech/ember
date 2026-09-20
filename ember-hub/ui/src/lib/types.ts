@@ -40,4 +40,13 @@ export interface BackupStatus {
   destDir: string;
   defaultDestDir: string;
   retention: number;
+  /** non-null only while a backup or restore is running */
+  progress: BackupProgress | null;
+}
+
+export interface BackupProgress {
+  operation: 'BACKUP' | 'RESTORE';
+  phase: string;
+  /** null = the phase has no measurable length (shown as an animated bar) */
+  percent: number | null;
 }

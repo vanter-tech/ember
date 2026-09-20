@@ -34,6 +34,8 @@ public class HubBackupService implements HubBackup {
             Pattern.compile("^ember-backup-\\d{4}-\\d{2}-\\d{2}T\\d{2}-\\d{2}-\\d{2}\\.zip$");
     private static final Duration INTERVAL = Duration.ofHours(24);
     private static final Duration ERROR_BACKOFF = Duration.ofHours(1);
+    private static final String SERVICES_NOT_RUNNING =
+            "Los servicios del Hub no están corriendo. Inicia el Hub (con su licencia) y vuelve a intentar.";
 
     private final HubProperties properties;
     private final HubOrchestrator orchestrator;
@@ -42,6 +44,7 @@ public class HubBackupService implements HubBackup {
     private final Supplier<String> versionSupplier;
     private final Clock clock;
     private final ReentrantLock lock = new ReentrantLock();
+    private volatile BackupProgress progress;
 
     public HubBackupService(HubProperties properties, HubOrchestrator orchestrator, BackupConfigStore store,
                             PostgresTools tools, Supplier<String> versionSupplier, Clock clock) {
@@ -61,7 +64,7 @@ public class HubBackupService implements HubBackup {
         Instant lastSuccess = parse(store.loadLastSuccessAt());
         String next = lastSuccess == null ? null : lastSuccess.plus(INTERVAL).toString();
         return new BackupStatus(store.loadLastRun(), next, config.destDir(),
-                store.defaultDestDir().toString(), config.retention());
+                store.defaultDestDir().toString(), config.retention(), progress);
     }
 
     @Override
@@ -125,6 +128,11 @@ public class HubBackupService implements HubBackup {
 
             String safetyHint = "";
             if (!skipSafetySnapshot) {
+                if (!hubPostgresRunning()) {
+                    // Same reasoning as runBackup: never point pg_dump at a port the Hub doesn't own.
+                    throw new BackupException(BackupException.SAFETY_FAILED,
+                            "No se pudo crear la copia de seguridad previa: " + SERVICES_NOT_RUNNING);
+                }
                 try {
                     BackupSnapshot safety = doBackup(Path.of(store.loadConfig().destDir()), true);
                     safetyHint = " Tus datos anteriores están guardados en " + safety.path() + ".";
@@ -134,6 +142,7 @@ public class HubBackupService implements HubBackup {
                 }
             }
 
+            setProgress(BackupProgress.RESTORE, "Deteniendo los servicios…", null);
             orchestrator.stopAndWait();
             PortableDatabaseBootstrap db = new PortableDatabaseBootstrap(
                     properties.dataDir(), properties.postgresBinDir(), properties.postgresPort());
@@ -141,6 +150,7 @@ public class HubBackupService implements HubBackup {
             try {
                 work = Files.createTempDirectory("ember-hub-restore");
                 Path dump = work.resolve(BackupArchive.DUMP);
+                setProgress(BackupProgress.RESTORE, "Restaurando la base de datos…", null);
                 BackupArchive.extractDump(zip, dump);
                 ensurePostgresRunning(db);
                 tools.dropAndCreate();
@@ -154,8 +164,10 @@ public class HubBackupService implements HubBackup {
             } finally {
                 deleteRecursively(work);
             }
+            setProgress(BackupProgress.RESTORE, "Iniciando los servicios…", null);
             orchestrator.start(new String[0]);
         } finally {
+            progress = null;
             lock.unlock();
         }
     }
@@ -190,7 +202,8 @@ public class HubBackupService implements HubBackup {
         Path old = minio.resolveSibling(name + ".replaced");
         deleteRecursively(staging);
         deleteRecursively(old);
-        BackupArchive.extractMinio(zip, staging);
+        BackupArchive.extractMinio(zip, staging,
+                p -> setProgress(BackupProgress.RESTORE, "Restaurando las imágenes…", p));
         if (Files.exists(minio)) {
             Files.move(minio, old);
         }
@@ -247,6 +260,12 @@ public class HubBackupService implements HubBackup {
             return BackupSnapshot.error(now(), "Ya hay un respaldo o una restauración en curso.");
         }
         try {
+            // pg_dump connects to whatever answers on the port: with the Hub's own Postgres down
+            // (no license, stopped) that can be a foreign server — it would hang on a password
+            // prompt, or worse, back up the wrong database. Only run against the Hub's own.
+            if (!hubPostgresRunning()) {
+                return BackupSnapshot.error(now(), SERVICES_NOT_RUNNING);
+            }
             BackupConfig config = store.loadConfig();
             Path dest = Path.of(destDirOverride != null && !destDirOverride.isBlank()
                     ? destDirOverride : config.destDir());
@@ -265,8 +284,17 @@ public class HubBackupService implements HubBackup {
             store.saveLastRun(result);
             return result;
         } finally {
+            progress = null;
             lock.unlock();
         }
+    }
+
+    private boolean hubPostgresRunning() {
+        return orchestrator.snapshot().postgres() == ServicePhase.RUNNING;
+    }
+
+    private void setProgress(String operation, String phase, Integer percent) {
+        progress = new BackupProgress(operation, phase, percent);
     }
 
     /** Caller must hold {@link #lock}. Writes {@code .tmp} then atomically renames. */
@@ -287,12 +315,16 @@ public class HubBackupService implements HubBackup {
         try {
             work = Files.createTempDirectory("ember-hub-backup");
             Path dump = work.resolve(BackupArchive.DUMP);
+            String operation = preRestore ? BackupProgress.RESTORE : BackupProgress.BACKUP;
+            String prefix = preRestore ? "Copia previa: " : "";
+            setProgress(operation, prefix + "Exportando la base de datos…", null);
             tools.dump(dump);
             String createdAt = now();
             String version = versionSupplier.get();
             String manifestVersion = version == null ? "unknown" : version;
             BackupArchive.create(tmpFile, dump, properties.minioDataDir(),
-                    new BackupArchive.Manifest(manifestVersion, createdAt));
+                    new BackupArchive.Manifest(manifestVersion, createdAt),
+                    p -> setProgress(operation, prefix + "Comprimiendo archivos…", p));
             Files.move(tmpFile, finalFile, StandardCopyOption.ATOMIC_MOVE);
             return new BackupSnapshot(name, finalFile.toString(), createdAt, Files.size(finalFile),
                     BackupSnapshot.OK, null, manifestVersion, preRestore);

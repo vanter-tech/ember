@@ -288,7 +288,7 @@ class HubControlServerTest {
 
         @Override
         public BackupStatus status() {
-            return new BackupStatus(null, null, "C:\\backups", "C:\\backups", 7);
+            return new BackupStatus(null, null, "C:\\backups", "C:\\backups", 7, null);
         }
 
         @Override
