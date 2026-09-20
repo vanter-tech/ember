@@ -14,6 +14,10 @@ ember:
     enforced: false
   hub:
     heartbeat-interval-ms: ${EMBER_HUB_HEARTBEAT_INTERVAL_MS:300000}
+  printing:
+    # Each caja PC runs its own print agent; a receipt goes to the agent connected from the
+    # requester's LAN address (see PrintTargetResolver). Meaningless behind the cloud's proxies.
+    route-by-source-ip: true
 
 minio:
   url: http://127.0.0.1:${EMBER_HUB_MINIO_PORT:9000}

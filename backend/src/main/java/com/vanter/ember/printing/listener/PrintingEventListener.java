@@ -8,6 +8,7 @@ import com.vanter.ember.printing.model.PrintJobStatus;
 import com.vanter.ember.printing.model.PrinterRole;
 import com.vanter.ember.printing.repository.PrintJobRepository;
 import com.vanter.ember.printing.service.PrintDispatchService;
+import com.vanter.ember.printing.service.PrintTargetResolver;
 import com.vanter.ember.printing.service.ReceiptRenderer;
 import com.vanter.ember.session.event.KitchenItemsConfirmed;
 import com.vanter.ember.session.model.OrderItem;
@@ -34,6 +35,7 @@ public class PrintingEventListener {
     private final PrintJobRepository printJobRepository;
     private final PrintDispatchService printDispatchService;
     private final ReceiptRenderer receiptRenderer;
+    private final PrintTargetResolver printTargetResolver;
 
     @EventListener
     public void onKitchenItemsConfirmed(KitchenItemsConfirmed event) {
@@ -53,14 +55,22 @@ public class PrintingEventListener {
             return;
         }
         createAndDispatch(PrinterRole.RECEIPT, PrintJobSourceType.BILL_RECEIPT,
-                String.valueOf(event.billId()), receiptRenderer.render(event.billId(), settings));
+                String.valueOf(event.billId()), receiptRenderer.render(event.billId(), settings),
+                printTargetResolver.resolveForCurrentRequest(tenantId, PrinterRole.RECEIPT).orElse(null));
     }
 
     private void createAndDispatch(
             PrinterRole role, PrintJobSourceType sourceType, String sourceId, String payload) {
+        createAndDispatch(role, sourceType, sourceId, payload, null);
+    }
+
+    private void createAndDispatch(
+            PrinterRole role, PrintJobSourceType sourceType, String sourceId, String payload,
+            UUID targetAgentId) {
         PrintJob job = PrintJob.builder()
                 .id(UUID.randomUUID())
                 .role(role)
+                .targetAgentId(targetAgentId)
                 .sourceType(sourceType)
                 .sourceId(sourceId)
                 .payload(payload)

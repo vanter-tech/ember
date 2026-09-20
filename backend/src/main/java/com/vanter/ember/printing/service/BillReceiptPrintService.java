@@ -30,6 +30,7 @@ public class BillReceiptPrintService {
     private final ReceiptRenderer receiptRenderer;
     private final PrintJobRepository printJobRepository;
     private final PrintDispatchService printDispatchService;
+    private final PrintTargetResolver printTargetResolver;
 
     public PrintJob enqueue(Long billId) {
         var bill = billRepository.findById(billId)
@@ -46,6 +47,7 @@ public class BillReceiptPrintService {
         PrintJob job = PrintJob.builder()
                 .id(UUID.randomUUID())
                 .role(PrinterRole.RECEIPT)
+                .targetAgentId(printTargetResolver.resolveForCurrentRequest(tenantId, PrinterRole.RECEIPT).orElse(null))
                 .sourceType(PrintJobSourceType.BILL_RECEIPT)
                 .sourceId(String.valueOf(billId))
                 .payload(payload)

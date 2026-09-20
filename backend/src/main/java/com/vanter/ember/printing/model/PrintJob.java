@@ -60,6 +60,13 @@ public class PrintJob {
     @Column(name = "last_error")
     private String lastError;
 
+    /**
+     * When set, only this agent's printers receive the job (an on-premise Hub routes a receipt to
+     * the caja that asked for it). Null keeps the historical "all printers of the role" behavior.
+     */
+    @Column(name = "target_agent_id")
+    private UUID targetAgentId;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 

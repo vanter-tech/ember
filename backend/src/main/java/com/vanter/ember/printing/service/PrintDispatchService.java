@@ -39,6 +39,16 @@ public class PrintDispatchService {
     public void dispatch(PrintJob job) {
         List<PrinterConfig> printers =
                 printerConfigRepository.findByTenantIdAndRoleAndActiveTrue(job.getTenantId(), job.getRole());
+        if (job.getTargetAgentId() != null) {
+            List<PrinterConfig> targeted = printers.stream()
+                    .filter(p -> job.getTargetAgentId().equals(p.getAgentId()))
+                    .toList();
+            // The target lost its printer for this role since the job was queued: a ticket that
+            // prints somewhere beats one stuck PENDING at the register.
+            if (!targeted.isEmpty()) {
+                printers = targeted;
+            }
+        }
         if (printers.isEmpty()) {
             printJobRepository.save(job);
             return;

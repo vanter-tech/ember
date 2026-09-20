@@ -134,12 +134,15 @@ public class PrintAgentChannelInterceptor implements ExecutorChannelInterceptor 
 
         UUID agentId = UUID.fromString(jwtService.extractSubject(token));
         UUID tenantId = jwtService.extractTenantId(token);
-        connectionRegistry.markConnected(agentId, accessor.getSessionId());
+        Map<String, Object> sessionAttributes = accessor.getSessionAttributes();
+        String remoteAddress = sessionAttributes == null
+                ? null
+                : (String) sessionAttributes.get(WebSocketSessionAttributes.REMOTE_ADDRESS_ATTRIBUTE);
+        connectionRegistry.markConnected(agentId, accessor.getSessionId(), remoteAddress);
 
         // STOMP frames on the same session can be processed on different pooled threads, so the
         // resolved ids are stashed on the session (not just a ThreadLocal) for the later
         // SUBSCRIBE frame to read back.
-        Map<String, Object> sessionAttributes = accessor.getSessionAttributes();
         if (sessionAttributes != null) {
             sessionAttributes.put(AGENT_ID_ATTRIBUTE, agentId);
             sessionAttributes.put(TENANT_ID_ATTRIBUTE, tenantId);

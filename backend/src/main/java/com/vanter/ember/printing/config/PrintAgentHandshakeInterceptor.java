@@ -20,6 +20,10 @@ public class PrintAgentHandshakeInterceptor implements HandshakeInterceptor {
     public boolean beforeHandshake(ServerHttpRequest request, ServerHttpResponse response,
             WebSocketHandler wsHandler, Map<String, Object> attributes) {
         attributes.put(WebSocketSessionAttributes.ENDPOINT_ATTRIBUTE, WebSocketSessionAttributes.PRINT_AGENT_ENDPOINT);
+        if (request.getRemoteAddress() != null && request.getRemoteAddress().getAddress() != null) {
+            attributes.put(WebSocketSessionAttributes.REMOTE_ADDRESS_ATTRIBUTE,
+                    request.getRemoteAddress().getAddress().getHostAddress());
+        }
         return true;
     }
 

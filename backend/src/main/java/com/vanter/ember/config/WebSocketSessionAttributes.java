@@ -14,6 +14,8 @@ public final class WebSocketSessionAttributes {
 
     public static final String ENDPOINT_ATTRIBUTE = "wsEndpoint";
     public static final String PRINT_AGENT_ENDPOINT = "print-agent";
+    /** Peer address of a {@code /ws/print-agent} handshake, stamped by its HandshakeInterceptor. */
+    public static final String REMOTE_ADDRESS_ATTRIBUTE = "wsRemoteAddress";
 
     private WebSocketSessionAttributes() {
     }
