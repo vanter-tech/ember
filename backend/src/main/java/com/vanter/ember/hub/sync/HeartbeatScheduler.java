@@ -13,6 +13,8 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.time.Duration;
+import java.time.Instant;
+import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
@@ -58,9 +60,14 @@ public class HeartbeatScheduler {
                 return;
             }
 
+            // Advance the monotonic clock reading every cycle, online or not, so a clock set back
+            // while offline is caught by GracePeriodInterceptor.
+            state = licenseService.recordClockSeen(state);
+
             String licenseKey = Files.readString(properties.licenseFile());
+            String nonce = UUID.randomUUID().toString();
             String requestBody = MAPPER.writeValueAsString(
-                    new HeartbeatRequestBody(licenseKey, state.hardwareFingerprint()));
+                    new HeartbeatRequestBody(licenseKey, state.hardwareFingerprint(), nonce));
 
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(properties.heartbeatUrl()))
@@ -79,8 +86,14 @@ public class HeartbeatScheduler {
             }
 
             HeartbeatResponseBody body = MAPPER.readValue(response.body(), HeartbeatResponseBody.class);
+            // Only the cloud holds the private key: an unsigned/forged answer (fake server behind
+            // a tampered heartbeat URL, replay of an old response) must never move the state.
+            if (!licenseService.verifyHeartbeat(body.status(), body.serverTime(), nonce, body.signature())) {
+                log.warn("Heartbeat response failed signature verification; ignoring it.");
+                return;
+            }
             if ("OK".equals(body.status())) {
-                licenseService.recordHeartbeatSuccess(state);
+                licenseService.recordHeartbeatSuccess(state, Instant.parse(body.serverTime()));
                 log.debug("Heartbeat OK.");
             } else if ("SUSPENDED".equals(body.status())) {
                 licenseService.recordSuspended(state);
@@ -98,7 +111,8 @@ public class HeartbeatScheduler {
         }
     }
 
-    private record HeartbeatRequestBody(String licenseKey, String hardwareFingerprint) {}
+    private record HeartbeatRequestBody(String licenseKey, String hardwareFingerprint, String nonce) {}
 
-    private record HeartbeatResponseBody(String status, String serverTime, String latestVersion) {}
+    private record HeartbeatResponseBody(
+            String status, String serverTime, String latestVersion, String signature) {}
 }

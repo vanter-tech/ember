@@ -11,6 +11,7 @@ import java.util.Optional;
 public class LicenseService {
 
     private static final Duration GRACE_PERIOD = Duration.ofDays(4);
+    private static final Duration CLOCK_TOLERANCE = Duration.ofMinutes(10);
 
     private final Path licenseFile;
     private final PublicKey publicKey;
@@ -65,17 +66,42 @@ public class LicenseService {
             return state;
         }
 
-        HubState activated = new HubState(currentFingerprint, licenseKey.restaurantId(), Instant.now());
+        // Starts with an expired heartbeat: grace is earned only by a signed cloud heartbeat, so
+        // deleting hub-state.json to get a fresh 4-day window no longer works.
+        HubState activated = new HubState(
+                currentFingerprint, licenseKey.restaurantId(), Instant.EPOCH, null, Instant.now());
         stateStore.save(activated);
         return activated;
+    }
+
+    /** True when {@code signature} is the cloud's signature over this heartbeat answer and our nonce. */
+    public boolean verifyHeartbeat(String status, String serverTime, String nonce, String signature) {
+        return LicenseKeyParser.verifyHeartbeat(status, serverTime, nonce, signature, publicKey);
+    }
+
+    /** True when the local clock is behind the newest reading ever recorded (clock set back). */
+    public boolean isClockRolledBack(HubState state) {
+        return state.lastSeenAt() != null
+                && Instant.now().isBefore(state.lastSeenAt().minus(CLOCK_TOLERANCE));
+    }
+
+    /** Advances (never lowers) the recorded clock reading and persists it. */
+    public HubState recordClockSeen(HubState state) {
+        HubState updated = state.withLastSeenAtAdvancedTo(Instant.now());
+        if (!updated.equals(state)) {
+            stateStore.save(updated);
+        }
+        return updated;
     }
 
     public boolean isWithinGracePeriod(HubState state) {
         return Duration.between(state.lastHeartbeatAt(), Instant.now()).compareTo(GRACE_PERIOD) <= 0;
     }
 
-    public HubState recordHeartbeatSuccess(HubState state) {
-        HubState updated = state.withHeartbeatNow();
+    /** @param cloudTime the signed {@code serverTime} of the heartbeat that just succeeded. */
+    public HubState recordHeartbeatSuccess(HubState state, Instant cloudTime) {
+        boolean clockAgrees = Duration.between(cloudTime, Instant.now()).abs().compareTo(CLOCK_TOLERANCE) <= 0;
+        HubState updated = state.withHeartbeatNow(clockAgrees);
         stateStore.save(updated);
         return updated;
     }

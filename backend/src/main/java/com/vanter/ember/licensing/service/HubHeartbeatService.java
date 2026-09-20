@@ -11,6 +11,7 @@ import com.vanter.ember.restaurant.model.Restaurant;
 import com.vanter.ember.restaurant.model.RestaurantStatus;
 import com.vanter.ember.restaurant.repository.RestaurantRepository;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -72,10 +73,18 @@ public class HubHeartbeatService {
 
         String status = restaurant.getStatus() == RestaurantStatus.ACTIVE ? "OK" : "SUSPENDED";
 
+        // Millis: the signed string is serverTime.toString(), which must equal what Jackson
+        // writes on the wire (ISO_INSTANT) for the Hub to verify the exact same text.
+        Instant serverTime = Instant.now().truncatedTo(ChronoUnit.MILLIS);
+        String signature = request.getNonce() == null || request.getNonce().isBlank()
+                ? null
+                : licenseIssuingService.signHeartbeat(status, serverTime.toString(), request.getNonce());
+
         return HubHeartbeatResponse.builder()
                 .status(status)
-                .serverTime(Instant.now())
+                .serverTime(serverTime)
                 .latestVersion(latestVersion == null || latestVersion.isBlank() ? null : latestVersion)
+                .signature(signature)
                 .build();
     }
 

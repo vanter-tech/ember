@@ -10,4 +10,7 @@ public class HubHeartbeatResponse {
     private String status;
     private Instant serverTime;
     private String latestVersion;
+
+    /** RSA signature over status + serverTime + the request's nonce; null when no nonce was sent. */
+    private String signature;
 }

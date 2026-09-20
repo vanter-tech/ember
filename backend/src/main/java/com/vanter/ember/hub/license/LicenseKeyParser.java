@@ -69,6 +69,39 @@ public class LicenseKeyParser {
                 + "." + Base64.getEncoder().encodeToString(signatureBytes);
     }
 
+    /**
+     * Cloud-side: signs a heartbeat answer. The Hub's per-request {@code nonce} is part of the
+     * payload, so a captured response can't be replayed and a fake server (e.g. one pointed at from
+     * {@code hub.env}) can't produce a valid one without the private key.
+     */
+    public static String signHeartbeat(String status, String serverTime, String nonce, PrivateKey privateKey)
+            throws GeneralSecurityException {
+        Signature signature = Signature.getInstance("SHA256withRSA");
+        signature.initSign(privateKey);
+        signature.update(heartbeatPayload(status, serverTime, nonce));
+        return Base64.getEncoder().encodeToString(signature.sign());
+    }
+
+    /** Hub-side: true only when {@code signatureBase64} is the cloud's signature over these exact values. */
+    public static boolean verifyHeartbeat(
+            String status, String serverTime, String nonce, String signatureBase64, PublicKey publicKey) {
+        if (status == null || serverTime == null || nonce == null || signatureBase64 == null) {
+            return false;
+        }
+        try {
+            Signature signature = Signature.getInstance("SHA256withRSA");
+            signature.initVerify(publicKey);
+            signature.update(heartbeatPayload(status, serverTime, nonce));
+            return signature.verify(Base64.getDecoder().decode(signatureBase64));
+        } catch (GeneralSecurityException | IllegalArgumentException e) {
+            return false;
+        }
+    }
+
+    private static byte[] heartbeatPayload(String status, String serverTime, String nonce) {
+        return ("hb1|" + status + "|" + serverTime + "|" + nonce).getBytes(java.nio.charset.StandardCharsets.UTF_8);
+    }
+
     public static PublicKey loadPublicKey(Path publicKeyFile) throws InvalidLicenseException {
         try {
             byte[] keyBytes = Files.readAllBytes(publicKeyFile);

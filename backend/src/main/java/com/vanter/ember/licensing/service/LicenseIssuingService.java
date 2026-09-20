@@ -57,6 +57,15 @@ public class LicenseIssuingService {
         }
     }
 
+    /** Signs a heartbeat answer so the Hub can tell it came from the cloud (see {@link LicenseKeyParser#signHeartbeat}). */
+    public String signHeartbeat(String status, String serverTime, String nonce) {
+        try {
+            return LicenseKeyParser.signHeartbeat(status, serverTime, nonce, privateKey);
+        } catch (GeneralSecurityException e) {
+            throw new IllegalStateException("No se pudo firmar el heartbeat.", e);
+        }
+    }
+
     public PublicKey publicKey() {
         return publicKey;
     }

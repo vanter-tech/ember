@@ -112,10 +112,73 @@ class LicenseServiceTest {
         HubState stale = new HubState("fp", UUID.randomUUID(), Instant.now().minus(5, java.time.temporal.ChronoUnit.DAYS));
         stateStore.save(stale);
 
-        HubState updated = licenseService.recordHeartbeatSuccess(stale);
+        HubState updated = licenseService.recordHeartbeatSuccess(stale, Instant.now());
 
         assertThat(licenseService.isWithinGracePeriod(updated)).isTrue();
         assertThat(stateStore.load()).contains(updated);
+    }
+
+    @Test
+    void validateOrActivate_firstRun_startsWithoutGrace_untilACloudHeartbeatSucceeds() throws Exception {
+        writeValidLicenseFile();
+
+        HubState state = licenseService.validateOrActivate();
+
+        assertThat(licenseService.isWithinGracePeriod(state)).isFalse();
+        assertThat(licenseService.isWithinGracePeriod(
+                licenseService.recordHeartbeatSuccess(state, Instant.now()))).isTrue();
+    }
+
+    @Test
+    void isClockRolledBack_falseForNullOrCurrentReading_trueWhenClockIsBehindIt() {
+        assertThat(licenseService.isClockRolledBack(new HubState("fp", UUID.randomUUID(), Instant.now()))).isFalse();
+        assertThat(licenseService.isClockRolledBack(new HubState("fp", UUID.randomUUID(), Instant.now(), null,
+                Instant.now().minus(1, ChronoUnit.HOURS)))).isFalse();
+        assertThat(licenseService.isClockRolledBack(new HubState("fp", UUID.randomUUID(), Instant.now(), null,
+                Instant.now().plus(3, ChronoUnit.HOURS)))).isTrue();
+    }
+
+    @Test
+    void recordHeartbeatSuccess_whenClockDisagreesWithCloud_keepsTheRollbackFlag() {
+        HubState rolledBack = new HubState("fp", UUID.randomUUID(), Instant.now(), null,
+                Instant.now().plus(3, ChronoUnit.HOURS));
+
+        HubState after = licenseService.recordHeartbeatSuccess(rolledBack, Instant.now().plus(3, ChronoUnit.HOURS));
+
+        assertThat(licenseService.isClockRolledBack(after)).isTrue();
+    }
+
+    @Test
+    void recordHeartbeatSuccess_whenClockAgreesWithCloud_clearsAFalseRollbackFlag() {
+        HubState flagged = new HubState("fp", UUID.randomUUID(), Instant.now(), null,
+                Instant.now().plus(3, ChronoUnit.HOURS));
+
+        HubState after = licenseService.recordHeartbeatSuccess(flagged, Instant.now());
+
+        assertThat(licenseService.isClockRolledBack(after)).isFalse();
+    }
+
+    @Test
+    void recordClockSeen_advancesButNeverLowersTheReading() {
+        Instant future = Instant.now().plus(3, ChronoUnit.HOURS);
+        HubState ahead = new HubState("fp", UUID.randomUUID(), Instant.now(), null, future);
+        HubState behind = new HubState("fp", UUID.randomUUID(), Instant.now(), null,
+                Instant.now().minus(1, ChronoUnit.HOURS));
+
+        assertThat(licenseService.recordClockSeen(ahead).lastSeenAt()).isEqualTo(future);
+        assertThat(licenseService.recordClockSeen(behind).lastSeenAt()).isAfter(behind.lastSeenAt());
+    }
+
+    @Test
+    void verifyHeartbeat_acceptsCloudSignature_rejectsForgeriesAndNulls() throws Exception {
+        String sig = LicenseKeyParser.signHeartbeat("OK", "2026-09-20T10:00:00Z", "n-1", keyPair.getPrivate());
+
+        assertThat(licenseService.verifyHeartbeat("OK", "2026-09-20T10:00:00Z", "n-1", sig)).isTrue();
+        assertThat(licenseService.verifyHeartbeat("SUSPENDED", "2026-09-20T10:00:00Z", "n-1", sig)).isFalse();
+        assertThat(licenseService.verifyHeartbeat("OK", "2026-09-20T10:00:01Z", "n-1", sig)).isFalse();
+        assertThat(licenseService.verifyHeartbeat("OK", "2026-09-20T10:00:00Z", "n-2", sig)).isFalse();
+        assertThat(licenseService.verifyHeartbeat("OK", "2026-09-20T10:00:00Z", "n-1", null)).isFalse();
+        assertThat(licenseService.verifyHeartbeat("OK", "2026-09-20T10:00:00Z", "n-1", "not-base64!!")).isFalse();
     }
 
     @Test
