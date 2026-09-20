@@ -1,5 +1,6 @@
 package com.vanter.emberagent.control;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sun.net.httpserver.Filter;
 import com.sun.net.httpserver.HttpExchange;
@@ -70,7 +71,10 @@ public final class LocalControlServer {
     private final PairingClient pairingClient;
     private final WindowsPrinterEnumerator enumerator = new WindowsPrinterEnumerator();
     private final WindowsPrintQueueSender printQueueSender = new WindowsPrintQueueSender();
-    private final ObjectMapper mapper = new ObjectMapper();
+    // Lenient on purpose: a dashboard that sends a field this sidecar does not know must still
+    // get an answer (an unanswered request reaches the UI as a bare "Failed to fetch").
+    private final ObjectMapper mapper = new ObjectMapper()
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     private final AtomicReference<List<DiscoveredPrinter>> printersCache = new AtomicReference<>(List.of());
     private final ScheduledExecutorService scheduler =
             Executors.newSingleThreadScheduledExecutor(daemonThreadFactory());
@@ -135,7 +139,13 @@ public final class LocalControlServer {
             sendJson(exchange, 405, Map.of("error", "method not allowed"));
             return;
         }
-        PairRequest req = mapper.readValue(exchange.getRequestBody(), PairRequest.class);
+        PairRequest req;
+        try {
+            req = mapper.readValue(exchange.getRequestBody(), PairRequest.class);
+        } catch (IOException e) {
+            sendJson(exchange, 400, Map.of("error", "Solicitud inválida."));
+            return;
+        }
         try {
             // The dashboard only says "cloud" or "local"; no server address ever reaches (or is
             // shown by) the UI. An explicit backendUrl is still honoured for scripted/manual use.

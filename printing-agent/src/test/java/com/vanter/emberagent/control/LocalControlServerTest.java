@@ -123,6 +123,25 @@ class LocalControlServerTest {
     }
 
     @Test
+    void pair_malformedBody_answersWith400Json_insteadOfDroppingTheConnection() throws Exception {
+        // An unanswered request reaches the dashboard as a bare "Failed to fetch".
+        HttpResponse<String> res = post("/api/pair", "{not json");
+
+        assertEquals(400, res.statusCode());
+        assertTrue(res.body().contains("\"error\""), res.body());
+        assertTrue(store.saved.isEmpty());
+    }
+
+    @Test
+    void pair_ignoresFieldsItDoesNotKnow_soANewerDashboardStillWorks() throws Exception {
+        HttpResponse<String> res = post("/api/pair",
+                "{\"apiKey\":\"key-1\",\"target\":\"cloud\",\"someFutureField\":42}");
+
+        assertEquals(200, res.statusCode());
+        assertEquals(Optional.of(new AgentCredential("key-1", LocalControlServer.CLOUD_URL)), store.saved);
+    }
+
+    @Test
     void pair_missingBackendUrl_returns400AndDoesNotSave() throws Exception {
         HttpResponse<String> res = post("/api/pair", "{\"apiKey\":\"key-1\"}");
 
