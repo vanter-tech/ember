@@ -40,6 +40,7 @@ class BillReceiptPrintServiceTest {
     @Mock ReceiptRenderer receiptRenderer;
     @Mock PrintJobRepository printJobRepository;
     @Mock PrintDispatchService printDispatchService;
+    @Mock PrintTargetResolver printTargetResolver;
     @InjectMocks BillReceiptPrintService service;
 
     @AfterEach
@@ -73,6 +74,38 @@ class BillReceiptPrintServiceTest {
         assertThat(job.getPayload()).isEqualTo("Bill #42\n");
         verify(printJobRepository).saveAndFlush(job);
         verify(printDispatchService).dispatch(job);
+    }
+
+    @Test
+    void enqueue_targetsTheAgentTheResolverPicksForTheRequester() {
+        UUID tenantId = UUID.randomUUID();
+        UUID cajaAgent = UUID.randomUUID();
+        TenantContextHolder.setTenantId(tenantId);
+        when(billRepository.findById(42L)).thenReturn(Optional.of(bill(BillStatus.PAID)));
+        RestaurantSettings s = mock(RestaurantSettings.class);
+        when(s.getPayload()).thenReturn(new SettingsPayload());
+        when(settingService.getSettings(any())).thenReturn(s);
+        when(receiptRenderer.render(eq(42L), any())).thenReturn("Bill #42\n");
+        when(printJobRepository.saveAndFlush(any())).thenAnswer(i -> i.getArgument(0));
+        when(printTargetResolver.resolveForCurrentRequest(tenantId, PrinterRole.RECEIPT))
+                .thenReturn(Optional.of(cajaAgent));
+
+        PrintJob job = service.enqueue(42L);
+
+        assertThat(job.getTargetAgentId()).isEqualTo(cajaAgent);
+    }
+
+    @Test
+    void enqueue_leavesTheJobUntargeted_whenNoAgentIsResolved() {
+        TenantContextHolder.setTenantId(UUID.randomUUID());
+        when(billRepository.findById(42L)).thenReturn(Optional.of(bill(BillStatus.PAID)));
+        RestaurantSettings s = mock(RestaurantSettings.class);
+        when(s.getPayload()).thenReturn(new SettingsPayload());
+        when(settingService.getSettings(any())).thenReturn(s);
+        when(receiptRenderer.render(eq(42L), any())).thenReturn("Bill #42\n");
+        when(printJobRepository.saveAndFlush(any())).thenAnswer(i -> i.getArgument(0));
+
+        assertThat(service.enqueue(42L).getTargetAgentId()).isNull();
     }
 
     @Test

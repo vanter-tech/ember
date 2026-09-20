@@ -3,6 +3,7 @@ package com.vanter.ember.printing.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -96,6 +97,66 @@ class PrintDispatchServiceTest {
 
         verify(messagingTemplate, never()).convertAndSend(any(String.class), any(Object.class));
         assertThat(job.getStatus()).isEqualTo(PrintJobStatus.PENDING);
+    }
+
+    private PrinterConfig receiptPrinterOf(UUID agentId) {
+        return PrinterConfig.builder()
+                .id(UUID.randomUUID()).tenantId(TENANT_ID).agentId(agentId)
+                .role(PrinterRole.RECEIPT).connectionType(ConnectionType.NETWORK)
+                .host("10.0.0.5").port(9100).label("Caja").active(true).build();
+    }
+
+    private PrintJob receiptJobFor(UUID targetAgentId) {
+        PrintJob job = kitchenJob();
+        job.setRole(PrinterRole.RECEIPT);
+        job.setTargetAgentId(targetAgentId);
+        return job;
+    }
+
+    @Test
+    void dispatch_targetedJob_reachesOnlyTheTargetAgent_notEveryPrinterOfTheRole() {
+        UUID otherAgent = UUID.randomUUID();
+        PrintJob job = receiptJobFor(AGENT_ID);
+        when(printerConfigRepository.findByTenantIdAndRoleAndActiveTrue(TENANT_ID, PrinterRole.RECEIPT))
+                .thenReturn(List.of(receiptPrinterOf(AGENT_ID), receiptPrinterOf(otherAgent)));
+        when(connectionRegistry.isConnected(AGENT_ID)).thenReturn(true);
+        when(printJobRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        printDispatchService.dispatch(job);
+
+        verify(messagingTemplate).convertAndSend(eq("/topic/print-agent/" + AGENT_ID), any(Object.class));
+        verify(messagingTemplate, never())
+                .convertAndSend(eq("/topic/print-agent/" + otherAgent), any(Object.class));
+        assertThat(job.getStatus()).isEqualTo(PrintJobStatus.SENT);
+    }
+
+    @Test
+    void dispatch_targetedJob_targetOffline_staysPending_insteadOfPrintingOnAnotherCaja() {
+        UUID otherAgent = UUID.randomUUID();
+        PrintJob job = receiptJobFor(AGENT_ID);
+        when(printerConfigRepository.findByTenantIdAndRoleAndActiveTrue(TENANT_ID, PrinterRole.RECEIPT))
+                .thenReturn(List.of(receiptPrinterOf(AGENT_ID), receiptPrinterOf(otherAgent)));
+        when(connectionRegistry.isConnected(AGENT_ID)).thenReturn(false);
+        when(printJobRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        printDispatchService.dispatch(job);
+
+        verify(messagingTemplate, never()).convertAndSend(any(String.class), any(Object.class));
+        assertThat(job.getStatus()).isEqualTo(PrintJobStatus.PENDING);
+    }
+
+    @Test
+    void dispatch_targetLostItsPrinterForTheRole_fallsBackToTheRemainingPrinters() {
+        UUID otherAgent = UUID.randomUUID();
+        PrintJob job = receiptJobFor(AGENT_ID);
+        when(printerConfigRepository.findByTenantIdAndRoleAndActiveTrue(TENANT_ID, PrinterRole.RECEIPT))
+                .thenReturn(List.of(receiptPrinterOf(otherAgent)));
+        when(connectionRegistry.isConnected(otherAgent)).thenReturn(true);
+        when(printJobRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        printDispatchService.dispatch(job);
+
+        verify(messagingTemplate).convertAndSend(eq("/topic/print-agent/" + otherAgent), any(Object.class));
     }
 
     @Test

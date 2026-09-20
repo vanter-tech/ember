@@ -94,8 +94,26 @@ class PrintAgentChannelInterceptorTest {
 
         interceptor.preSend(message, null);
 
-        verify(connectionRegistry).markConnected(eq(agentId), any());
+        verify(connectionRegistry).markConnected(eq(agentId), any(), any());
         verify(eventPublisher, never()).publishEvent(any());
+    }
+
+    @Test
+    void connect_passesTheHandshakeRemoteAddressToTheRegistry() {
+        UUID agentId = UUID.randomUUID();
+        StompHeaderAccessor accessor = printAgentConnectAccessor();
+        accessor.getSessionAttributes().put(WebSocketSessionAttributes.REMOTE_ADDRESS_ATTRIBUTE, "192.168.1.21");
+        accessor.setNativeHeader("Authorization", "Bearer agent.jwt");
+        Message<byte[]> message = MessageBuilder.createMessage(new byte[0], accessor.getMessageHeaders());
+        when(jwtService.isTokenValid("agent.jwt")).thenReturn(true);
+        when(jwtService.extractClaim(eq("agent.jwt"), org.mockito.ArgumentMatchers.any()))
+                .thenReturn("print-agent");
+        when(jwtService.extractSubject("agent.jwt")).thenReturn(agentId.toString());
+        when(jwtService.extractTenantId("agent.jwt")).thenReturn(UUID.randomUUID());
+
+        interceptor.preSend(message, null);
+
+        verify(connectionRegistry).markConnected(eq(agentId), any(), eq("192.168.1.21"));
     }
 
     @Test
@@ -185,7 +203,7 @@ class PrintAgentChannelInterceptorTest {
 
         assertThat(result).isSameAs(message);
         verify(jwtService, never()).isTokenValid(any());
-        verify(connectionRegistry, never()).markConnected(any(), any());
+        verify(connectionRegistry, never()).markConnected(any(), any(), any());
     }
 
     @Test
