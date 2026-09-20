@@ -78,6 +78,41 @@ class HubHeartbeatServiceTest {
     }
 
     @Test
+    void heartbeat_withNonce_signsStatusServerTimeAndNonce_verifiableWithThePublicKey() throws Exception {
+        KeyPair pair = KeyPairGenerator.getInstance("RSA").generateKeyPair();
+        String license = com.vanter.ember.hub.license.LicenseKeyParser.sign(
+                new LicenseKey(restaurantId, Instant.now()), pair.getPrivate());
+        LicenseIssuingService real = new LicenseIssuingService(
+                java.util.Base64.getEncoder().encodeToString(pair.getPrivate().getEncoded()));
+        HubHeartbeatService signing = new HubHeartbeatService(
+                real, hubActivationRepository, restaurantRepository, "1.4.0");
+        when(restaurantRepository.findById(restaurantId)).thenReturn(Optional.of(
+                restaurantWithStatus(RestaurantStatus.ACTIVE)));
+        HubHeartbeatRequest r = new HubHeartbeatRequest();
+        r.setLicenseKey(license);
+        r.setHardwareFingerprint(FP);
+        r.setNonce("nonce-abc-123");
+
+        HubHeartbeatResponse response = signing.heartbeat(r, IP);
+
+        assertThat(response.getSignature()).isNotBlank();
+        assertThat(com.vanter.ember.hub.license.LicenseKeyParser.verifyHeartbeat(
+                "OK", response.getServerTime().toString(), "nonce-abc-123", response.getSignature(),
+                pair.getPublic())).isTrue();
+        assertThat(com.vanter.ember.hub.license.LicenseKeyParser.verifyHeartbeat(
+                "OK", response.getServerTime().toString(), "another-nonce", response.getSignature(),
+                pair.getPublic())).isFalse();
+    }
+
+    @Test
+    void heartbeat_withoutNonce_isUnsigned_forHubsOlderThanTheSignedHeartbeat() throws InvalidLicenseException {
+        when(restaurantRepository.findById(restaurantId)).thenReturn(Optional.of(
+                restaurantWithStatus(RestaurantStatus.ACTIVE)));
+
+        assertThat(service.heartbeat(request(FP), IP).getSignature()).isNull();
+    }
+
+    @Test
     void heartbeat_suspendedRestaurant_returnsSuspended() throws InvalidLicenseException {
         when(restaurantRepository.findById(restaurantId)).thenReturn(Optional.of(
                 restaurantWithStatus(RestaurantStatus.SUSPENDED)));

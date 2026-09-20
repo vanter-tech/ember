@@ -36,6 +36,16 @@ public class GracePeriodInterceptor implements HandlerInterceptor {
             return false;
         }
 
+        if (licenseService.isClockRolledBack(state)) {
+            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+            response.setContentType("application/json");
+            response.getWriter().write(
+                    "{\"error\":\"license_clock_rolled_back\","
+                            + "\"message\":\"La fecha de esta PC está atrasada. Corrígela y "
+                            + "verifica tu conexión a internet para continuar.\"}");
+            return false;
+        }
+
         if (licenseService.isWithinGracePeriod(state)) {
             return true;
         }

@@ -73,6 +73,27 @@ class GracePeriodInterceptorTest {
     }
 
     @Test
+    void preHandle_clockRolledBack_blocksEvenWithinGrace() throws Exception {
+        HubState state = new HubState("fp", UUID.randomUUID(), Instant.now());
+        HubStateStore stateStore = mock(HubStateStore.class);
+        when(stateStore.load()).thenReturn(Optional.of(state));
+        LicenseService licenseService = mock(LicenseService.class);
+        when(licenseService.isWithinGracePeriod(state)).thenReturn(true);
+        when(licenseService.isClockRolledBack(state)).thenReturn(true);
+        GracePeriodInterceptor interceptor = new GracePeriodInterceptor(licenseService, stateStore);
+
+        HttpServletResponse response = mock(HttpServletResponse.class);
+        StringWriter body = new StringWriter();
+        when(response.getWriter()).thenReturn(new PrintWriter(body));
+
+        boolean allowed = interceptor.preHandle(mock(HttpServletRequest.class), response, new Object());
+
+        assertThat(allowed).isFalse();
+        org.mockito.Mockito.verify(response).setStatus(HttpServletResponse.SC_FORBIDDEN);
+        assertThat(body.toString()).contains("license_clock_rolled_back");
+    }
+
+    @Test
     void preHandle_notSuspendedAndWithinGrace_proceeds() throws Exception {
         HubState healthy = new HubState("fp", UUID.randomUUID(), Instant.now(), null);
         HubStateStore stateStore = mock(HubStateStore.class);
