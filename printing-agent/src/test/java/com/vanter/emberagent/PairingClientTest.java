@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.vanter.emberagent.credential.CredentialStore;
 import java.io.IOException;
 import java.net.http.HttpClient;
+import java.util.List;
 import java.util.Optional;
 import mockwebserver3.MockResponse;
 import mockwebserver3.MockWebServer;
@@ -89,6 +90,56 @@ class PairingClientTest {
                 () -> client(new FakeStore()).redeem(server.url("/").toString(), "ABCDE"));
 
         assertTrue(ex.getMessage().contains("Demasiados intentos"));
+    }
+
+    private static final String OK_BODY =
+            "{\"apiKey\":\"hub-key\",\"backendBaseUrl\":\"https://api.ember.test/v1\","
+                    + "\"agentId\":\"3f1c9e0a-0000-4000-8000-000000000001\",\"agentName\":\"Caja 1\"}";
+
+    @Test
+    void redeemAny_triesEachCandidateAndKeepsTheOneThatAcceptsTheCode() throws IOException {
+        MockWebServer otherHub = new MockWebServer();
+        otherHub.start();
+        try {
+            otherHub.enqueue(new MockResponse.Builder().code(401).body("nope").build());
+            server.enqueue(new MockResponse.Builder().code(200).body(OK_BODY)
+                    .addHeader("Content-Type", "application/json").build());
+            FakeStore store = new FakeStore();
+            String wrong = otherHub.url("/").toString();
+            String right = server.url("/").toString();
+
+            AgentCredential credential = client(store).redeemAny(List.of(wrong, right), "ABCDE");
+
+            assertEquals(right.substring(0, right.length() - 1), credential.backendBaseUrl());
+            assertEquals(Optional.of(credential), store.saved);
+        } finally {
+            otherHub.close();
+        }
+    }
+
+    @Test
+    void redeemAny_noCandidates_saysNoServerWasFound() {
+        PairingException ex = assertThrows(PairingException.class,
+                () -> client(new FakeStore()).redeemAny(List.of(), "ABCDE"));
+
+        assertEquals(PairingClient.NO_LOCAL_SERVER, ex.getMessage());
+    }
+
+    @Test
+    void redeemAny_whenServersRespondButRejectTheCode_reportsTheInvalidCode_notUnreachable() {
+        server.enqueue(new MockResponse.Builder().code(401).body("nope").build());
+        int deadPort;
+        try (MockWebServer dead = new MockWebServer()) {
+            dead.start();
+            deadPort = dead.getPort();
+        } catch (IOException e) {
+            throw new IllegalStateException(e);
+        }
+
+        PairingException ex = assertThrows(PairingException.class, () -> client(new FakeStore())
+                .redeemAny(List.of("http://127.0.0.1:" + deadPort, server.url("/").toString()), "BAD"));
+
+        assertTrue(ex.getMessage().contains("inválido"), ex.getMessage());
     }
 
     @Test

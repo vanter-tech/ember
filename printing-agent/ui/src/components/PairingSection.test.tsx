@@ -33,44 +33,65 @@ describe('PairingSection', () => {
     await waitFor(() => expect(onPaired).toHaveBeenCalledTimes(1));
   });
 
-  it('pairs against the cloud by default', async () => {
-    const spy = vi.spyOn(api, 'pairWithCode').mockResolvedValue({
-      phase: 'CONNECTING', detail: null, lastSeen: null, agentId: null, printerCount: 0, recentJobs: []
-    });
-    render(<PairingSection onPaired={vi.fn()} />);
+  const connecting = {
+    phase: 'CONNECTING' as const, detail: null, lastSeen: null, agentId: null, printerCount: 0, recentJobs: []
+  };
 
+  function pairWithCodeUsing(container: HTMLElement) {
     fireEvent.click(screen.getByText('Código de emparejamiento'));
     fireEvent.change(screen.getByPlaceholderText('Código de 10 caracteres'), { target: { value: 'abcdefghij' } });
     fireEvent.click(screen.getByText('Emparejar'));
+    return container;
+  }
 
-    await waitFor(() => expect(spy).toHaveBeenCalledWith('ABCDEFGHIJ', 'https://api.ember.vanter.net/v1'));
+  it('pairs against the cloud by default', async () => {
+    const spy = vi.spyOn(api, 'pairWithCode').mockResolvedValue(connecting);
+    const { container } = render(<PairingSection onPaired={vi.fn()} />);
+
+    pairWithCodeUsing(container);
+
+    await waitFor(() => expect(spy).toHaveBeenCalledWith('ABCDEFGHIJ', 'cloud'));
   });
 
-  it('pairs against the Hub address typed in the Servidor field, normalized', async () => {
-    const spy = vi.spyOn(api, 'pairWithCode').mockResolvedValue({
-      phase: 'CONNECTING', detail: null, lastSeen: null, agentId: null, printerCount: 0, recentJobs: []
-    });
-    render(<PairingSection onPaired={vi.fn()} />);
+  it('pairs against the Hub found on the network when Local is chosen', async () => {
+    const spy = vi.spyOn(api, 'pairWithCode').mockResolvedValue(connecting);
+    const { container } = render(<PairingSection onPaired={vi.fn()} />);
 
-    fireEvent.change(screen.getByLabelText('Servidor'), { target: { value: '192.168.1.10:8080/' } });
-    fireEvent.click(screen.getByText('Código de emparejamiento'));
-    fireEvent.change(screen.getByPlaceholderText('Código de 10 caracteres'), { target: { value: 'ABCDEFGHIJ' } });
-    fireEvent.click(screen.getByText('Emparejar'));
+    fireEvent.change(screen.getByLabelText('Servidor'), { target: { value: 'local' } });
+    pairWithCodeUsing(container);
 
-    await waitFor(() => expect(spy).toHaveBeenCalledWith('ABCDEFGHIJ', 'http://192.168.1.10:8080'));
+    await waitFor(() => expect(spy).toHaveBeenCalledWith('ABCDEFGHIJ', 'local'));
   });
 
-  it('refuses to pair with an empty server', async () => {
-    const spy = vi.spyOn(api, 'pairWithCode');
-    render(<PairingSection onPaired={vi.fn()} />);
+  it('offers only Nube and Local, and never shows or types a server address', () => {
+    const { container } = render(<PairingSection onPaired={vi.fn()} />);
 
-    fireEvent.change(screen.getByLabelText('Servidor'), { target: { value: '  ' } });
+    const select = screen.getByLabelText('Servidor') as HTMLSelectElement;
+    expect(Array.from(select.options).map((o) => o.text)).toEqual([
+      'Nube (Ember Cloud)',
+      'Local (Ember Hub en esta red)'
+    ]);
+    expect(container.querySelector('input')).toBeNull();
+
+    fireEvent.change(select, { target: { value: 'local' } });
     fireEvent.click(screen.getByText('Código de emparejamiento'));
-    fireEvent.change(screen.getByPlaceholderText('Código de 10 caracteres'), { target: { value: 'ABCDEFGHIJ' } });
-    fireEvent.click(screen.getByText('Emparejar'));
 
-    await waitFor(() => expect(screen.getByText('Escribe la dirección del servidor.')).toBeTruthy());
-    expect(spy).not.toHaveBeenCalled();
+    const text = container.textContent ?? '';
+    expect(text).not.toContain('http');
+    expect(text).not.toContain('ember.vanter');
+    expect(text).not.toContain('api.');
+  });
+
+  it('tells the operator it is searching the network while pairing locally', async () => {
+    let finish: (v: typeof connecting) => void = () => {};
+    vi.spyOn(api, 'pairWithCode').mockReturnValue(new Promise((resolve) => { finish = resolve; }));
+    const { container } = render(<PairingSection onPaired={vi.fn()} />);
+
+    fireEvent.change(screen.getByLabelText('Servidor'), { target: { value: 'local' } });
+    pairWithCodeUsing(container);
+
+    await waitFor(() => expect(screen.getByText('Buscando el servidor en la red…')).toBeTruthy());
+    finish(connecting);
   });
 
   it('shows only one option expanded, with only one data input, at a time', () => {

@@ -9,6 +9,7 @@ import com.vanter.emberagent.AgentPaths;
 import com.vanter.emberagent.AgentRunner;
 import com.vanter.emberagent.DiagnosticsReport;
 import com.vanter.emberagent.DiscoveredPrinter;
+import com.vanter.emberagent.HubDiscovery;
 import com.vanter.emberagent.PairingClient;
 import com.vanter.emberagent.PairingException;
 import com.vanter.emberagent.PrinterConfigClient;
@@ -76,11 +77,21 @@ public final class LocalControlServer {
 
     private HttpServer httpServer;
 
+    /** Ember Cloud. Lives here, not in the UI, so the dashboard never shows the API address. */
+    static final String CLOUD_URL = "https://api.ember.vanter.net/v1";
+
+    private final HubDiscovery discovery;
+
     public LocalControlServer(StatusHub hub, CredentialStore store, AgentRunner runner) {
+        this(hub, store, runner, new HubDiscovery());
+    }
+
+    LocalControlServer(StatusHub hub, CredentialStore store, AgentRunner runner, HubDiscovery discovery) {
         this.hub = hub;
         this.store = store;
         this.runner = runner;
         this.pairingClient = new PairingClient(store);
+        this.discovery = discovery;
     }
 
     /** Starts listening on 127.0.0.1 at an OS-assigned port and returns that port. */
@@ -126,13 +137,20 @@ public final class LocalControlServer {
         }
         PairRequest req = mapper.readValue(exchange.getRequestBody(), PairRequest.class);
         try {
+            // The dashboard only says "cloud" or "local"; no server address ever reaches (or is
+            // shown by) the UI. An explicit backendUrl is still honoured for scripted/manual use.
+            boolean local = "local".equalsIgnoreCase(req.target());
+            boolean cloud = "cloud".equalsIgnoreCase(req.target());
             if (req.apiKey() != null && !req.apiKey().isBlank()) {
-                requireField(req.backendUrl(), "backendUrl");
-                store.save(new AgentCredential(req.apiKey().trim(), req.backendUrl().trim()));
+                String url = cloud ? CLOUD_URL : local ? firstHubOrFail() : explicitUrl(req);
+                store.save(new AgentCredential(req.apiKey().trim(), url));
             } else {
                 requireField(req.code(), "code");
-                requireField(req.backendUrl(), "backendUrl");
-                pairingClient.redeem(req.backendUrl().trim(), req.code().trim());
+                if (local) {
+                    pairingClient.redeemAny(discovery.discover(), req.code().trim());
+                } else {
+                    pairingClient.redeem(cloud ? CLOUD_URL : explicitUrl(req), req.code().trim());
+                }
             }
             runner.requestReconnect();
             sendJson(exchange, 200, StatusDto.from(hub.snapshot()));
@@ -211,6 +229,19 @@ public final class LocalControlServer {
         }
     }
 
+    private String firstHubOrFail() {
+        List<String> hubs = discovery.discover();
+        if (hubs.isEmpty()) {
+            throw new PairingException(PairingClient.NO_LOCAL_SERVER);
+        }
+        return hubs.get(0);
+    }
+
+    private static String explicitUrl(PairRequest req) {
+        requireField(req.backendUrl(), "backendUrl");
+        return req.backendUrl().trim();
+    }
+
     private static void requireField(String value, String name) {
         if (value == null || value.isBlank()) {
             throw new IllegalArgumentException(name + " es obligatorio.");
@@ -227,7 +258,7 @@ public final class LocalControlServer {
 
     // --- wire DTOs -------------------------------------------------------------------
 
-    private record PairRequest(String code, String apiKey, String backendUrl) {}
+    private record PairRequest(String code, String apiKey, String target, String backendUrl) {}
 
     private record TestPrintRequest(String queue) {}
 

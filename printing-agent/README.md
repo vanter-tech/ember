@@ -20,7 +20,7 @@ code, and remembers its credential (encrypted with Windows DPAPI) across reboots
 
 1. In the admin, under **Configuración → Impresión**, create an agent (e.g. `Caja 1`) — the
    post-create screen shows a **pairing code** (valid ~15 minutes).
-2. Open Ember Agent (tray icon → *Abrir*), paste the code, **Emparejar**.
+2. Open Ember Agent (tray icon → *Abrir*), pick the **Servidor** — **Nube** for Ember Cloud, or **Local** for an on-premise Ember Hub (the agent finds the Hub on your network by itself; the Hub must be on and on the same network) — paste the code, **Emparejar**.
 3. The dashboard goes **Sin emparejar → Conectando… → Conectado**. The credential is written
    to `%ProgramData%\EmberAgent\credential.bin` and reused forever — you never pair again
    unless that folder is wiped or the PC changes.

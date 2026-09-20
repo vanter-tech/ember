@@ -1,5 +1,8 @@
 export type Phase = 'UNPAIRED' | 'CONNECTING' | 'CONNECTED' | 'RETRYING';
 
+/** Where the agent pairs: Ember Cloud, or the Ember Hub found on the local network. */
+export type PairTarget = 'cloud' | 'local';
+
 export interface JobRecord {
   at: string | null;
   role: string | null;
