@@ -49,14 +49,20 @@ function Build-AppImage {
     Write-Host "== app-image ==" -ForegroundColor Cyan
     if (-not (Test-Path $runtimeDir)) { Build-Runtime }
 
-    Write-Host "-- mvn package --"
-    & mvn -f (Join-Path $agentDir "pom.xml") -q -DskipTests package
+    # `clean`, and exactly one candidate jar: target/ accumulates a jar per version built, and this
+    # step used to take the alphabetically-first one - i.e. the OLDEST - so an installer labelled
+    # with the new version could ship a months-old sidecar (a new UI talking to an old agent
+    # answers every request with "Failed to fetch"). Same trap as the Hub's stale-jar guard.
+    Write-Host "-- mvn clean package --"
+    & mvn -f (Join-Path $agentDir "pom.xml") -q -DskipTests clean package
     if ($LASTEXITCODE -ne 0) { throw "mvn package failed" }
 
-    $jar = Get-ChildItem (Join-Path $agentDir "target") -Filter "printing-agent-*.jar" |
-           Where-Object { $_.Name -notmatch "original|sources|javadoc" } |
-           Select-Object -First 1
-    if (-not $jar) { throw "no shaded printing-agent-*.jar in printing-agent/target" }
+    $jars = @(Get-ChildItem (Join-Path $agentDir "target") -Filter "printing-agent-*.jar" |
+              Where-Object { $_.Name -notmatch "original|sources|javadoc" })
+    if ($jars.Count -ne 1) {
+        throw "expected exactly one printing-agent-*.jar in printing-agent/target after a clean build, found $($jars.Count): $(($jars | ForEach-Object { $_.Name }) -join ', ')"
+    }
+    $jar = $jars[0]
 
     # jpackage needs the jar alone in an input dir under a stable name
     $inputDir = Join-Path $distDir "jpackage-input"

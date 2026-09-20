@@ -31,7 +31,7 @@ class DiagnosticsReportTest {
     }
 
     @Test
-    void build_includesAgentIdEncryptionFlagHostOnlyAndOneLinePerJob() {
+    void build_includesAgentIdEncryptionFlagAndOneLinePerJob_butNoHostOrRuntimeVersions() {
         StatusHub.Snapshot snapshot = new StatusHub.Snapshot(
                 StatusHub.Phase.CONNECTED, "Conectado", Instant.now(), "agent-42", 2,
                 List.of(
@@ -42,9 +42,13 @@ class DiagnosticsReportTest {
 
         assertTrue(report.contains("agentId=agent-42"), report);
         assertTrue(report.contains("cifrada=sí"), report);
-        assertTrue(report.contains("api.ember.example"), report);
         assertFalse(report.contains("super-secret-key"), "must never leak the API key");
-        assertFalse(report.contains("https://api.ember.example/v1"), "host only, not the full URL");
+        assertFalse(report.contains("api.ember.example"), "must not reveal the backend host");
+        assertFalse(report.toLowerCase().contains("backendhost"), report);
+        assertFalse(report.contains("java.version"), "no runtime version");
+        assertFalse(report.contains(System.getProperty("java.version")), "no runtime version");
+        assertFalse(report.contains("os="), "no OS version");
+        assertFalse(report.contains(System.getProperty("os.version")), "no OS version");
         assertTrue(report.contains("PRINTED"), report);
         assertTrue(report.contains("cola no encontrada"), report);
     }
@@ -73,7 +77,7 @@ class DiagnosticsReportTest {
 
         String report = DiagnosticsReport.build(snapshot, empty);
 
-        assertTrue(report.contains("backendHost=(sin emparejar)"), report);
+        assertTrue(report.contains("agentId=(desconocido)"), report);
         assertTrue(report.contains("cifrada=no"), report);
     }
 }

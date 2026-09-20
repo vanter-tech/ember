@@ -1,5 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
-import type { DiscoveredPrinter, Status } from './types';
+import type { DiscoveredPrinter, PairTarget, Status } from './types';
 
 let cachedPort: number | null = null;
 
@@ -30,19 +30,19 @@ export async function getPrinters(): Promise<DiscoveredPrinter[]> {
   return asJson<DiscoveredPrinter[]>(await fetch(`${await base()}/api/printers`));
 }
 
-export async function pairWithCode(code: string, backendUrl: string): Promise<Status> {
+export async function pairWithCode(code: string, target: PairTarget): Promise<Status> {
   return asJson<Status>(await fetch(`${await base()}/api/pair`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ code, backendUrl })
+    body: JSON.stringify({ code, target })
   }));
 }
 
-export async function pairWithApiKey(apiKey: string, backendUrl: string): Promise<Status> {
+export async function pairWithApiKey(apiKey: string, target: PairTarget): Promise<Status> {
   return asJson<Status>(await fetch(`${await base()}/api/pair`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ apiKey, backendUrl })
+    body: JSON.stringify({ apiKey, target })
   }));
 }
 

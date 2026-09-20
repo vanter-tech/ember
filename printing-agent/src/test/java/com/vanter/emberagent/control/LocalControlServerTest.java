@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vanter.emberagent.AgentCredential;
 import com.vanter.emberagent.AgentRunner;
+import com.vanter.emberagent.HubDiscovery;
 import com.vanter.emberagent.credential.CredentialStore;
 import com.vanter.emberagent.status.StatusHub;
 import java.io.IOException;
@@ -14,6 +15,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -74,6 +76,69 @@ class LocalControlServerTest {
 
         assertEquals(200, res.statusCode());
         assertEquals(Optional.of(new AgentCredential("key-1", "https://api.ember.test/v1")), store.saved);
+    }
+
+    @Test
+    void pair_targetCloud_withApiKey_usesTheBuiltInCloudAddress_andNeverEchoesIt() throws Exception {
+        HttpResponse<String> res = post("/api/pair", "{\"apiKey\":\"key-1\",\"target\":\"cloud\"}");
+
+        assertEquals(200, res.statusCode());
+        assertEquals(Optional.of(new AgentCredential("key-1", LocalControlServer.CLOUD_URL)), store.saved);
+        assertTrue(!res.body().contains("http"), "the dashboard must never receive an address: " + res.body());
+    }
+
+    @Test
+    void pair_targetLocal_withApiKey_usesTheFirstHubFound() throws Exception {
+        restartWithHubs(List.of("http://192.168.1.10:8080"));
+
+        HttpResponse<String> res = post("/api/pair", "{\"apiKey\":\"key-1\",\"target\":\"local\"}");
+
+        assertEquals(200, res.statusCode());
+        assertEquals(Optional.of(new AgentCredential("key-1", "http://192.168.1.10:8080")), store.saved);
+    }
+
+    @Test
+    void pair_targetLocal_noHubOnTheNetwork_returns400WithAFriendlyMessage() throws Exception {
+        restartWithHubs(List.of());
+
+        HttpResponse<String> byCode = post("/api/pair", "{\"code\":\"ABCDE\",\"target\":\"local\"}");
+        HttpResponse<String> byKey = post("/api/pair", "{\"apiKey\":\"key-1\",\"target\":\"local\"}");
+
+        assertEquals(400, byCode.statusCode());
+        assertEquals(400, byKey.statusCode());
+        assertTrue(byCode.body().contains("No se encontró ningún servidor"), byCode.body());
+        assertTrue(store.saved.isEmpty());
+    }
+
+    private void restartWithHubs(List<String> hubs) throws IOException {
+        server.stop();
+        HubDiscovery stub = new HubDiscovery() {
+            @Override
+            public List<String> discover() {
+                return hubs;
+            }
+        };
+        server = new LocalControlServer(hub, store, new AgentRunner(store, hub), stub);
+        base = "http://127.0.0.1:" + server.start();
+    }
+
+    @Test
+    void pair_malformedBody_answersWith400Json_insteadOfDroppingTheConnection() throws Exception {
+        // An unanswered request reaches the dashboard as a bare "Failed to fetch".
+        HttpResponse<String> res = post("/api/pair", "{not json");
+
+        assertEquals(400, res.statusCode());
+        assertTrue(res.body().contains("\"error\""), res.body());
+        assertTrue(store.saved.isEmpty());
+    }
+
+    @Test
+    void pair_ignoresFieldsItDoesNotKnow_soANewerDashboardStillWorks() throws Exception {
+        HttpResponse<String> res = post("/api/pair",
+                "{\"apiKey\":\"key-1\",\"target\":\"cloud\",\"someFutureField\":42}");
+
+        assertEquals(200, res.statusCode());
+        assertEquals(Optional.of(new AgentCredential("key-1", LocalControlServer.CLOUD_URL)), store.saved);
     }
 
     @Test

@@ -1,7 +1,7 @@
 import { useState, type ComponentType } from 'react';
 import { Hash, KeyRound, ChevronDown } from 'lucide-react';
 import { pairWithApiKey, pairWithCode } from '../lib/api';
-import { DEFAULT_SERVER, normalizeServerUrl } from '../lib/server-url';
+import type { PairTarget } from '../lib/types';
 import Button from './Button';
 import { IconBadge } from './Card';
 
@@ -32,23 +32,20 @@ export default function PairingSection({
   const [openMode, setOpenMode] = useState<Mode | null>(null);
   const [code, setCode] = useState('');
   const [apiKey, setApiKey] = useState('');
-  const [server, setServer] = useState(DEFAULT_SERVER);
+  // Only "cloud" or "local" ever leaves the UI: the agent itself knows the cloud address and
+  // finds the Hub on the network, so no server address is shown, typed or sent from here.
+  const [target, setTarget] = useState<PairTarget>('cloud');
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   async function submit(mode: Mode) {
-    const backendUrl = normalizeServerUrl(server);
-    if (!backendUrl) {
-      setMessage('Escribe la dirección del servidor.');
-      return;
-    }
     setBusy(true);
-    setMessage('Procesando…');
+    setMessage(target === 'local' ? 'Buscando el servidor en la red…' : 'Procesando…');
     try {
       if (mode === 'key') {
-        await pairWithApiKey(apiKey.trim(), backendUrl);
+        await pairWithApiKey(apiKey.trim(), target);
       } else {
-        await pairWithCode(code.trim().toUpperCase(), backendUrl);
+        await pairWithCode(code.trim().toUpperCase(), target);
       }
       setMessage(null);
       onPaired();
@@ -63,17 +60,20 @@ export default function PairingSection({
     <div className="flex flex-col gap-3">
       <label className="flex flex-col gap-1">
         <span className="font-medium">Servidor</span>
-        <input
-          className="border border-border rounded-xl px-3 py-1.5 w-full"
+        <select
+          className="border border-border rounded-xl px-3 py-1.5 w-full bg-background"
           aria-label="Servidor"
-          value={server}
-          onChange={(e) => setServer(e.target.value)}
-        />
-        <span className="text-sm text-muted-foreground">
-          Ember en la nube por defecto. Para un local con Ember Hub escribe su dirección, por ejemplo{' '}
-          <code>http://192.168.1.10:8080</code> (o <code>http://localhost:8080</code> si el Hub está en esta
-          misma PC).
-        </span>
+          value={target}
+          onChange={(e) => setTarget(e.target.value as PairTarget)}
+        >
+          <option value="cloud">Nube (Ember Cloud)</option>
+          <option value="local">Local (Ember Hub en esta red)</option>
+        </select>
+        {target === 'local' && (
+          <span className="text-sm text-muted-foreground">
+            Busca automáticamente el Ember Hub en tu red. Debe estar encendido y en la misma red que esta PC.
+          </span>
+        )}
       </label>
       {OPTIONS.map((opt) => {
         const isOpen = openMode === opt.mode;
