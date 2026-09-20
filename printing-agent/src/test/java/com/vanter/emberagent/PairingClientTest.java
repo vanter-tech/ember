@@ -46,8 +46,27 @@ class PairingClientTest {
         AgentCredential credential = client(store).redeem(server.url("/").toString(), "  ABCDE-FGHIJ  ");
 
         assertEquals("live-key-123", credential.apiKey());
-        assertEquals("https://api.ember.test/v1", credential.backendBaseUrl());
         assertEquals(Optional.of(credential), store.saved);
+    }
+
+    @Test
+    void redeem_keepsTheServerItWasRedeemedAgainst_notTheUrlInTheResponse() {
+        // An on-premise Hub answers with the cloud's default address (its own LAN IP isn't known
+        // to the backend); the agent must stay on the Hub it actually paired with.
+        server.enqueue(new MockResponse.Builder()
+                .code(200)
+                .body("{\"apiKey\":\"hub-key\",\"backendBaseUrl\":\"https://api.ember.vanter.net/v1\","
+                        + "\"agentId\":\"3f1c9e0a-0000-4000-8000-000000000001\",\"agentName\":\"Caja 1\"}")
+                .addHeader("Content-Type", "application/json")
+                .build());
+        FakeStore store = new FakeStore();
+        String hubUrl = server.url("/").toString();
+
+        AgentCredential credential = client(store).redeem(hubUrl, "ABCDE-FGHIJ");
+
+        String expected = hubUrl.substring(0, hubUrl.length() - 1);
+        assertEquals(expected, credential.backendBaseUrl());
+        assertEquals(expected, store.saved.orElseThrow().backendBaseUrl());
     }
 
     @Test
