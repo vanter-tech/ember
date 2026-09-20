@@ -44,7 +44,10 @@ public class PairingClient {
                 throw new PairingException("Código inválido, usado o vencido.");
             }
             PairResult parsed = mapper.readValue(res.body(), PairResult.class);
-            AgentCredential credential = new AgentCredential(parsed.apiKey(), parsed.backendBaseUrl());
+            // Keep the server the code was actually redeemed against, NOT the URL in the response:
+            // the response carries the cloud's address, and against an on-premise Ember Hub (LAN
+            // IP, API at "/") that would silently point the agent back at the cloud.
+            AgentCredential credential = new AgentCredential(parsed.apiKey(), trimTrailingSlash(backendBaseUrl));
             store.save(credential);
             return credential;
         } catch (PairingException e) {
