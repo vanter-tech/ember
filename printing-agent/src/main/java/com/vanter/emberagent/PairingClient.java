@@ -53,7 +53,10 @@ public class PairingClient {
         } catch (PairingException e) {
             throw e;
         } catch (Exception e) {
-            throw new PairingException("No se pudo contactar al servidor: " + e.getMessage());
+            // The exception text can carry the request URL (e.g. a malformed-URI message); the
+            // operator must never see the backend address, so it goes to the log, not the UI.
+            System.err.println("[print-agent] pairing request failed: " + e);
+            throw new PairingException("No se pudo contactar al servidor. Verifica tu conexión a internet.");
         }
     }
 

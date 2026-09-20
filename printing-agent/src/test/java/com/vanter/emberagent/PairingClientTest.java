@@ -91,6 +91,22 @@ class PairingClientTest {
         assertTrue(ex.getMessage().contains("Demasiados intentos"));
     }
 
+    @Test
+    void redeem_unreachableOrMalformedServer_neverExposesTheAddressInTheMessage() {
+        // A space makes URI.create fail with a message that quotes the whole URL.
+        PairingException malformed = assertThrows(PairingException.class,
+                () -> client(new FakeStore()).redeem("https://api.secret host.example/v1", "ABCDE"));
+        assertTrue(!malformed.getMessage().contains("secret"), malformed.getMessage());
+        assertTrue(!malformed.getMessage().contains("http"), malformed.getMessage());
+
+        int deadPort = server.getPort();
+        server.close();
+        PairingException unreachable = assertThrows(PairingException.class,
+                () -> client(new FakeStore()).redeem("http://127.0.0.1:" + deadPort, "ABCDE"));
+        assertTrue(!unreachable.getMessage().contains("127.0.0.1"), unreachable.getMessage());
+        assertTrue(unreachable.getMessage().contains("No se pudo contactar"), unreachable.getMessage());
+    }
+
     private static final class FakeStore implements CredentialStore {
         private Optional<AgentCredential> saved = Optional.empty();
 

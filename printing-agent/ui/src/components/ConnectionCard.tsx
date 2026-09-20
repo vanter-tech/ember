@@ -43,7 +43,7 @@ export default function ConnectionCard({
       ) : (
         <dl className="grid grid-cols-2 gap-y-2 text-sm items-center">
           <dt className="text-muted-foreground">Estado</dt>
-          <dd>
+          <dd className="min-w-0">
             <Badge variant={PHASE_VARIANT[status.phase]}>{status.detail ?? status.phase}</Badge>
           </dd>
           <dt className="text-muted-foreground">Última vez visto</dt>
