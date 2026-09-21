@@ -14,6 +14,7 @@ import com.vanter.ember.identity.model.Role;
 import com.vanter.ember.identity.model.User;
 import com.vanter.ember.identity.repository.UserRepository;
 import com.vanter.ember.kitchen.event.KitchenItemUpdated;
+import com.vanter.ember.restaurant.model.DeploymentMode;
 import com.vanter.ember.restaurant.model.RestaurantStatus;
 import com.vanter.ember.restaurant.repository.RestaurantRepository;
 import com.vanter.ember.session.dto.OrderItemDto;
@@ -47,6 +48,7 @@ import java.util.stream.Collectors;
 import com.vanter.ember.settings.model.DiningTables;
 import com.vanter.ember.settings.repository.DiningTableRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.event.EventListener;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
@@ -66,6 +68,10 @@ public class SessionService {
     private final UserRepository userRepository;
     private final MenuItemRepository menuItemRepository;
     private final RestaurantRepository restaurantRepository;
+
+    /** False inside the Hub itself; see {@link DeploymentMode#isClosedToWeb}. */
+    @Value("${ember.deployment-mode.enforced:true}")
+    private boolean deploymentModeEnforced = true;
     private final BillRepository billRepository;
 
     /**
@@ -417,7 +423,8 @@ public class SessionService {
     private void bindResolvedTenant(UUID tenantId) {
         var restaurant = restaurantRepository.findById(tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Restaurant not found: " + tenantId));
-        if (restaurant.getStatus() != RestaurantStatus.ACTIVE) {
+        if (restaurant.getStatus() != RestaurantStatus.ACTIVE
+                || DeploymentMode.isClosedToWeb(restaurant, deploymentModeEnforced)) {
             throw new AccessDeniedException("This restaurant is not accepting orders right now");
         }
         TenantContextHolder.setTenantId(tenantId);

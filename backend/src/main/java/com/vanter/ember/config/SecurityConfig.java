@@ -2,6 +2,7 @@ package com.vanter.ember.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vanter.ember.identity.service.JwtService;
+import com.vanter.ember.restaurant.model.DeploymentMode;
 import com.vanter.ember.restaurant.model.Restaurant;
 import com.vanter.ember.restaurant.model.RestaurantStatus;
 import com.vanter.ember.restaurant.repository.RestaurantRepository;
@@ -10,6 +11,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -49,6 +51,10 @@ public class SecurityConfig {
     private final JwtService jwtService;
     private final UserDetailsService userDetailsService;
     private final RestaurantRepository restaurantRepository;
+
+    /** False inside the Hub itself; see {@link DeploymentMode#isClosedToWeb}. */
+    @Value("${ember.deployment-mode.enforced:true}")
+    private boolean deploymentModeEnforced = true;
     private final ObjectMapper objectMapper;
 
     @Bean
@@ -169,8 +175,9 @@ public class SecurityConfig {
                     Restaurant restaurant = tenantId != null
                             ? restaurantRepository.findById(tenantId).orElse(null)
                             : null;
-                    if (restaurant == null || restaurant.getStatus() != RestaurantStatus.ACTIVE) {
-                        writeSuspendedTenantResponse(request, response, restaurant);
+                    boolean closedToWeb = DeploymentMode.isClosedToWeb(restaurant, deploymentModeEnforced);
+                    if (restaurant == null || restaurant.getStatus() != RestaurantStatus.ACTIVE || closedToWeb) {
+                        writeSuspendedTenantResponse(request, response, restaurant, closedToWeb);
                         return;
                     }
                     chain.doFilter(request, response);
@@ -187,9 +194,12 @@ public class SecurityConfig {
 
             private void writeSuspendedTenantResponse(HttpServletRequest request,
                                                        HttpServletResponse response,
-                                                       Restaurant restaurant) throws IOException {
+                                                       Restaurant restaurant,
+                                                       boolean closedToWeb) throws IOException {
                 String detail = restaurant == null
                         ? "Tenant account not found."
+                        : closedToWeb
+                        ? "This restaurant is not available on Ember Web."
                         : "This tenant account is " + restaurant.getStatus().name().toLowerCase()
                                 + "; access is blocked pending resolution.";
                 ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, detail);

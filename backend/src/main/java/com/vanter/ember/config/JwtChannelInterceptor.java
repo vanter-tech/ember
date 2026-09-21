@@ -1,8 +1,11 @@
 package com.vanter.ember.config;
 
 import com.vanter.ember.identity.service.JwtService;
+import com.vanter.ember.restaurant.model.DeploymentMode;
+import com.vanter.ember.restaurant.repository.RestaurantRepository;
 import com.vanter.ember.session.service.SessionService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.MessageDeliveryException;
@@ -32,6 +35,11 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
     private final JwtService jwtService;
     private final UserDetailsService userDetailsService;
     private final SessionService sessionService;
+    private final RestaurantRepository restaurantRepository;
+
+    /** False inside the Hub itself; see {@link DeploymentMode#isClosedToWeb}. */
+    @Value("${ember.deployment-mode.enforced:true}")
+    private boolean deploymentModeEnforced = true;
 
     static final String TENANT_SESSION_ATTRIBUTE = "tenantId";
 
@@ -84,13 +92,18 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
             throw new MessageDeliveryException(message, "Invalid or expired token");
         }
 
+        UUID tenantId = jwtService.extractTenantId(token);
+        if (tenantId != null && DeploymentMode.isClosedToWeb(
+                restaurantRepository.findById(tenantId).orElse(null), deploymentModeEnforced)) {
+            throw new MessageDeliveryException(message, "This restaurant is not available on Ember Web");
+        }
+
         String email = jwtService.extractSubject(token);
         UserDetails userDetails = userDetailsService.loadUserByUsername(email);
         UsernamePasswordAuthenticationToken auth =
                 new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
         accessor.setUser(auth);
 
-        UUID tenantId = jwtService.extractTenantId(token);
         Map<String, Object> sessionAttributes = accessor.getSessionAttributes();
         if (sessionAttributes != null) {
             sessionAttributes.put(TENANT_SESSION_ATTRIBUTE, tenantId);

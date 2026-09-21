@@ -5,6 +5,7 @@ import com.vanter.ember.config.SecurityConfig;
 import com.vanter.ember.config.TenantContextHolder;
 import com.vanter.ember.identity.repository.UserRepository;
 import com.vanter.ember.identity.service.JwtService;
+import com.vanter.ember.restaurant.model.DeploymentMode;
 import com.vanter.ember.restaurant.model.Restaurant;
 import com.vanter.ember.restaurant.repository.RestaurantRepository;
 import com.vanter.ember.settings.model.RestaurantSettings;
@@ -114,5 +115,15 @@ class PublicRestaurantControllerTest {
                 .andExpect(status().is5xxServerError());
 
         org.junit.jupiter.api.Assertions.assertNull(TenantContextHolder.getTenantId());
+    }
+
+    @Test
+    void getBranding_isNotFoundForARestaurantThatRunsOnAHub() throws Exception {
+        Restaurant hub = Restaurant.builder().id(UUID.randomUUID()).name("Hub Grill").slug("hub-grill")
+                .deploymentMode(DeploymentMode.HUB).build();
+        when(restaurantRepository.findBySlug("hub-grill")).thenReturn(Optional.of(hub));
+
+        mockMvc.perform(get("/public/restaurants/hub-grill/branding"))
+                .andExpect(status().isNotFound());
     }
 }

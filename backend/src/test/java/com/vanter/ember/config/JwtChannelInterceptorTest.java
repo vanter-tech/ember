@@ -1,6 +1,9 @@
 package com.vanter.ember.config;
 
 import com.vanter.ember.identity.service.JwtService;
+import com.vanter.ember.restaurant.model.DeploymentMode;
+import com.vanter.ember.restaurant.model.Restaurant;
+import com.vanter.ember.restaurant.repository.RestaurantRepository;
 import com.vanter.ember.session.service.SessionService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -22,6 +25,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.messaging.MessageDeliveryException;
@@ -40,6 +44,7 @@ class JwtChannelInterceptorTest {
     @Mock JwtService jwtService;
     @Mock UserDetailsService userDetailsService;
     @Mock SessionService sessionService;
+    @Mock RestaurantRepository restaurantRepository;
     @Mock MessageChannel channel;
     @InjectMocks JwtChannelInterceptor interceptor;
 
@@ -306,5 +311,18 @@ class JwtChannelInterceptorTest {
                 subscribeMessage("/user/queue/notifications", tenantId, authOf("c@test.com", "CUSTOMER")), channel);
 
         assertThat(result).isNotNull();
+    }
+
+    @Test
+    void connect_toARestaurantThatRunsOnAHub_isRejectedBeforeAnyUserIsLoaded() {
+        UUID tenantId = UUID.randomUUID();
+        when(jwtService.isTokenValid("hub.jwt")).thenReturn(true);
+        when(jwtService.extractTenantId("hub.jwt")).thenReturn(tenantId);
+        when(restaurantRepository.findById(tenantId)).thenReturn(Optional.of(Restaurant.builder()
+                .id(tenantId).name("Hub").slug("hub").deploymentMode(DeploymentMode.HUB).build()));
+
+        assertThatThrownBy(() -> interceptor.preSend(connectMessage("Bearer hub.jwt"), channel))
+                .isInstanceOf(MessageDeliveryException.class);
+        verify(userDetailsService, never()).loadUserByUsername(any());
     }
 }
