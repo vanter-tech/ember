@@ -45,12 +45,13 @@ public class KitchenTicketPrintService {
                 .createdAt(now)
                 .updatedAt(now)
                 .build();
-        // saveAndFlush, not save — same reasoning as PrintingEventListener/BillReceiptPrintService:
-        // PrintJob.tenantId is a Hibernate @TenantId field generated at flush time, and
-        // dispatch() reads it immediately.
-        printJobRepository.saveAndFlush(job);
-        printDispatchService.dispatch(job);
-        return job;
+        // saveAndFlush returns the MANAGED copy: a PrintJob has an assigned id and no version, so Spring
+        // Data merges it, and the @TenantId is filled on that copy only. Dispatching the instance we
+        // built (tenantId still null) found no printers and left every job PENDING until an agent
+        // reconnected and the pending jobs were reloaded from the database.
+        PrintJob saved = printJobRepository.saveAndFlush(job);
+        printDispatchService.dispatch(saved);
+        return saved;
     }
 
     private String renderTicketPayload(KitchenOrder order) {

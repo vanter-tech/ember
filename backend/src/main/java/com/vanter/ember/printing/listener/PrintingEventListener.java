@@ -79,15 +79,12 @@ public class PrintingEventListener {
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
                 .build();
-        // saveAndFlush, not save: PrintJob.tenantId is a Hibernate @TenantId field, generated
-        // in-memory only when the INSERT actually executes (flush time), not at persist() —
-        // dispatch() below reads job.getTenantId() immediately, and a plain save() (which defers
-        // flushing to transaction commit) would hand it a still-null tenantId, making its printer
-        // lookup always come up empty on this synchronous first attempt (found+fixed during
-        // PRINT-07's manual verification, 2026-08-26 — every kitchen ticket landed PENDING with
-        // attempts=0 until the next unrelated agent reconnect happened to flush it).
-        printJobRepository.saveAndFlush(job);
-        printDispatchService.dispatch(job);
+        // saveAndFlush returns the MANAGED copy: a PrintJob has an assigned id and no version, so Spring
+        // Data merges it, and the @TenantId is filled on that copy only. Dispatching the instance we
+        // built (tenantId still null) found no printers and left every job PENDING until an agent
+        // reconnected and the pending jobs were reloaded from the database.
+        PrintJob saved = printJobRepository.saveAndFlush(job);
+        printDispatchService.dispatch(saved);
     }
 
     private String renderKitchenPayload(KitchenItemsConfirmed event) {

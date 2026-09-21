@@ -70,6 +70,26 @@ class PrintDispatchServiceTest {
     }
 
     @Test
+    void dispatch_jobWithoutATenantId_usesTheCurrentTenant_insteadOfFindingNoPrintersAndStayingPending() {
+        com.vanter.ember.config.TenantContextHolder.setTenantId(TENANT_ID);
+        try {
+            PrintJob job = kitchenJob();
+            job.setTenantId(null); // the instance a caller still holds after saveAndFlush merged a copy
+            when(printerConfigRepository.findByTenantIdAndRoleAndActiveTrue(TENANT_ID, PrinterRole.KITCHEN))
+                    .thenReturn(List.of(kitchenPrinter()));
+            when(connectionRegistry.isConnected(AGENT_ID)).thenReturn(true);
+            when(printJobRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            printDispatchService.dispatch(job);
+
+            verify(messagingTemplate).convertAndSend(eq("/topic/print-agent/" + AGENT_ID), any(Object.class));
+            assertThat(job.getStatus()).isEqualTo(PrintJobStatus.SENT);
+        } finally {
+            com.vanter.ember.config.TenantContextHolder.clear();
+        }
+    }
+
+    @Test
     void dispatch_agentConnected_sendsToAgentTopicAndIncrementsAttempts() {
         PrintJob job = kitchenJob();
         PrinterConfig printer = kitchenPrinter();
