@@ -57,7 +57,7 @@ public class HubStateStore {
             }
             if (!macMatches(state, mac)) {
                 return Optional.of(new HubState(state.hardwareFingerprint(), state.restaurantId(),
-                        Instant.EPOCH, Instant.EPOCH, state.lastSeenAt()));
+                        Instant.EPOCH, Instant.EPOCH, state.lastSeenAt(), state.migratedSince()));
             }
             return Optional.of(state);
         } catch (IOException | ClassCastException | NullPointerException e) {
@@ -91,16 +91,29 @@ public class HubStateStore {
             byte[] key = sha.digest(String.valueOf(state.hardwareFingerprint()).getBytes(StandardCharsets.UTF_8));
             Mac hmac = Mac.getInstance("HmacSHA256");
             hmac.init(new SecretKeySpec(key, "HmacSHA256"));
-            String canonical = String.join("|",
-                    String.valueOf(state.hardwareFingerprint()),
-                    String.valueOf(state.restaurantId()),
-                    field(state.lastHeartbeatAt()),
-                    field(state.suspendedSince()),
-                    field(state.lastSeenAt()));
-            return Base64.getEncoder().encodeToString(hmac.doFinal(canonical.getBytes(StandardCharsets.UTF_8)));
+            return Base64.getEncoder().encodeToString(
+                    hmac.doFinal(canonical(state).getBytes(StandardCharsets.UTF_8)));
         } catch (GeneralSecurityException e) {
             throw new IllegalStateException("HmacSHA256 not available", e);
         }
+    }
+
+    /**
+     * The exact text the MAC is computed over. {@code migratedSince} is appended ONLY when set:
+     * every hub-state.json written before that field existed carries a MAC over the five original
+     * fields, and it must keep verifying.
+     */
+    static String canonical(HubState state) {
+        String canonical = String.join("|",
+                String.valueOf(state.hardwareFingerprint()),
+                String.valueOf(state.restaurantId()),
+                field(state.lastHeartbeatAt()),
+                field(state.suspendedSince()),
+                field(state.lastSeenAt()));
+        if (state.migratedSince() != null) {
+            canonical += "|" + field(state.migratedSince());
+        }
+        return canonical;
     }
 
     private static String field(Instant value) {

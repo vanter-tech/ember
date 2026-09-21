@@ -226,4 +226,51 @@ class LicenseServiceTest {
         assertThat(after.suspendedSince()).isEqualTo(original);
         verify(mockStateStore, never()).save(any());
     }
+
+    @Test
+    void recordMigrated_firstTime_stampsAndPersists() {
+        HubState before = new HubState("fp", UUID.randomUUID(), Instant.now(), null);
+        LicenseService service = newServiceWithGrace(Duration.ofHours(48));
+
+        HubState after = service.recordMigrated(before);
+
+        assertThat(after.migratedSince()).isNotNull();
+        verify(mockStateStore).save(after);
+    }
+
+    @Test
+    void recordMigrated_alreadyMigrated_isNoOp_soTheCourtesyClockIsNotReset() {
+        Instant original = Instant.now().minus(5, ChronoUnit.HOURS);
+        HubState before = new HubState("fp", UUID.randomUUID(), Instant.now(), null, null, original);
+        LicenseService service = newServiceWithGrace(Duration.ofHours(48));
+
+        HubState after = service.recordMigrated(before);
+
+        assertThat(after.migratedSince()).isEqualTo(original);
+        verify(mockStateStore, never()).save(any());
+    }
+
+    @Test
+    void isMigratedGraceExpired_falseWhenNotMigrated_falseWithin48h_trueAfter() {
+        LicenseService service = newServiceWithGrace(Duration.ofHours(48));
+        UUID id = UUID.randomUUID();
+
+        assertThat(service.isMigratedGraceExpired(new HubState("fp", id, Instant.now()))).isFalse();
+        assertThat(service.isMigratedGraceExpired(new HubState("fp", id, Instant.now(), null, null,
+                Instant.now().minus(10, ChronoUnit.HOURS)))).isFalse();
+        assertThat(service.isMigratedGraceExpired(new HubState("fp", id, Instant.now(), null, null,
+                Instant.now().minus(49, ChronoUnit.HOURS)))).isTrue();
+    }
+
+    @Test
+    void recordHeartbeatSuccess_clearsMigrated_soFlippingTheModeBackResumesTheHub() {
+        HubState migrated = new HubState("fp", UUID.randomUUID(), Instant.now(), null, null,
+                Instant.now().minus(3, ChronoUnit.DAYS));
+        stateStore.save(migrated);
+
+        HubState after = licenseService.recordHeartbeatSuccess(migrated, Instant.now());
+
+        assertThat(after.migratedSince()).isNull();
+        assertThat(licenseService.isMigratedGraceExpired(after)).isFalse();
+    }
 }
