@@ -92,6 +92,30 @@ class PrintingEventListenerTest {
         assertThat(jobCaptor.getValue().getTargetAgentId()).isNull();
     }
 
+
+    /** What Hibernate does with an assigned-id entity: MERGE, i.e. fill the tenant id on a COPY. */
+    private static PrintJob mergedCopy(PrintJob given, UUID tenantId) {
+        return PrintJob.builder()
+                .id(given.getId()).tenantId(tenantId).role(given.getRole())
+                .targetAgentId(given.getTargetAgentId()).sourceType(given.getSourceType())
+                .sourceId(given.getSourceId()).payload(given.getPayload()).status(given.getStatus())
+                .attempts(given.getAttempts()).createdAt(given.getCreatedAt()).updatedAt(given.getUpdatedAt())
+                .build();
+    }
+
+    @Test
+    void createdJobs_areDispatchedAsTheManagedCopy_thatCarriesTheTenantId() {
+        when(settingService.getSettings(TENANT_ID)).thenReturn(settingsWith(true));
+        when(printJobRepository.saveAndFlush(any())).thenAnswer(inv -> mergedCopy(inv.getArgument(0), TENANT_ID));
+
+        printingEventListener.onKitchenItemsConfirmed(
+                new KitchenItemsConfirmed(TENANT_ID, "session-1", 5, List.of()));
+
+        ArgumentCaptor<PrintJob> dispatched = ArgumentCaptor.forClass(PrintJob.class);
+        verify(printDispatchService).dispatch(dispatched.capture());
+        assertThat(dispatched.getValue().getTenantId()).isEqualTo(TENANT_ID);
+    }
+
     private RestaurantSettings receiptSettings() {
         RestaurantSettings settings = settingsWith(true);
         settings.getPayload().getHardware().setPrintCustomerReceipt(true);

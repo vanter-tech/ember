@@ -5,7 +5,7 @@ import { Ban, KeyRound, Printer, RotateCcw, Ticket, Trash2 } from 'lucide-react'
 import { printingService, type PrintAgentResponse } from '@/lib/api'
 import { useUIStore } from '@/store/uiStore'
 import { useTranslation } from '@/lib/i18n'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { CreateAgentModal } from './printing/CreateAgentModal'
@@ -207,19 +207,25 @@ export const PrintingSettings = () => {
   })
 
   const hasPendingJobs = jobs.some((job) => job.status === 'PENDING')
+  // Newest first, always: the list scrolls inside a max-height box, so the most recent jobs must
+  // be the ones on top that stay visible.
+  const recentJobs = [...jobs].sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''))
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center gap-4">
+    <>
+    <Card className="shadow-sm border-zinc-100">
+      <CardHeader className="flex flex-row items-center gap-4 space-y-0 p-6">
         <div className="w-12 h-12 bg-red-50 text-[#7a1315] rounded-full flex items-center justify-center shrink-0">
           <Printer className="w-6 h-6" />
         </div>
         <div>
-          <h2 className="text-xl font-semibold text-zinc-800">{t('printingLabel')}</h2>
-          <p className="text-sm text-muted-foreground">{t('printingPageDescription')}</p>
+          <CardTitle className="text-xl">{t('printingLabel')}</CardTitle>
+          <CardDescription>{t('printingPageDescription')}</CardDescription>
         </div>
-      </div>
+      </CardHeader>
+      <div className="border-t w-full m-auto border-[#7a1315]/20"></div>
 
+      <CardContent className="space-y-6 p-6">
       <Card className="rounded-2xl border-zinc-200">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>{t('printingAgentsTitle')}</CardTitle>
@@ -239,7 +245,7 @@ export const PrintingSettings = () => {
           </div>
         </CardHeader>
         <div className="border-t w-full m-auto border-[#7a1315]/20"></div>
-        <CardContent className="space-y-2">
+        <CardContent className="max-h-96 space-y-2 overflow-y-auto py-4">
           {agents.length === 0 && (
             <p className="text-sm text-zinc-500">{t('printingNoAgentsMessage')}</p>
           )}
@@ -307,8 +313,8 @@ export const PrintingSettings = () => {
           )}
         </CardHeader>
         <div className="border-t w-full m-auto border-[#7a1315]/20"></div>
-        <CardContent className="space-y-2">
-          {jobs.map((job) => {
+        <CardContent className="max-h-96 space-y-2 overflow-y-auto py-4">
+          {recentJobs.map((job) => {
             const canceled = job.status === 'CANCELED'
             const cancelable = job.status === 'PENDING' || job.status === 'ERROR'
             return (
@@ -355,10 +361,12 @@ export const PrintingSettings = () => {
           })}
         </CardContent>
       </Card>
+      </CardContent>
+    </Card>
 
-      <CreateAgentModal />
-      <AddPrinterModal />
-      <GlobalDeleteModal />
-    </div>
+    <CreateAgentModal />
+    <AddPrinterModal />
+    <GlobalDeleteModal />
+    </>
   )
 }

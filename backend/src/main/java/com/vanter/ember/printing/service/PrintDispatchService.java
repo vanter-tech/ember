@@ -1,6 +1,7 @@
 package com.vanter.ember.printing.service;
 
 import com.vanter.ember.config.ResourceNotFoundException;
+import com.vanter.ember.config.TenantContextHolder;
 import com.vanter.ember.printing.dto.PrintJobAck;
 import com.vanter.ember.printing.dto.PrintJobMessage;
 import com.vanter.ember.printing.event.PrintAgentConnected;
@@ -37,8 +38,12 @@ public class PrintDispatchService {
 
     @Transactional
     public void dispatch(PrintJob job) {
+        // A caller may still hold the instance it built before saving (tenantId not filled on it);
+        // the request/event running the dispatch always has the tenant bound, so fall back to that
+        // instead of looking for printers of "no tenant" and leaving the job PENDING.
+        UUID tenantId = job.getTenantId() != null ? job.getTenantId() : TenantContextHolder.requireTenantId();
         List<PrinterConfig> printers =
-                printerConfigRepository.findByTenantIdAndRoleAndActiveTrue(job.getTenantId(), job.getRole());
+                printerConfigRepository.findByTenantIdAndRoleAndActiveTrue(tenantId, job.getRole());
         if (job.getTargetAgentId() != null) {
             List<PrinterConfig> targeted = printers.stream()
                     .filter(p -> job.getTargetAgentId().equals(p.getAgentId()))

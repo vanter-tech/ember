@@ -103,4 +103,29 @@ class PrintJobRepositoryTest {
             TenantContextHolder.clear();
         }
     }
+
+    /**
+     * The trap behind "the receipt always says queued, and only prints after the agent reconnects".
+     * A PrintJob has an assigned id and no version, so Spring Data treats it as NOT new and MERGES
+     * it: the tenant id is generated on the managed COPY that saveAndFlush returns, while the
+     * instance the caller passed in stays without one. Production used to ignore the returned
+     * copy and hand the ORIGINAL to PrintDispatchService.dispatch, which read job.getTenantId()
+     * (null) to look up the tenant's printers — found none, and left every job PENDING.
+     */
+    @Test
+    void saveAndFlush_ofAnAssignedIdEntity_doesNotFillTheTenantIdOnTheInstancePassedIn() {
+        TenantContextHolder.setTenantId(TENANT_ID);
+        try {
+            PrintJob passedIn = newJob();
+            PrintJob returned = new TransactionTemplate(transactionManager)
+                    .execute(status -> printJobRepository.saveAndFlush(passedIn));
+
+            assertThat(returned.getTenantId()).isEqualTo(TENANT_ID);
+            assertThat(passedIn.getTenantId())
+                    .as("the caller's own instance is not updated: dispatch must use the returned one")
+                    .isNull();
+        } finally {
+            TenantContextHolder.clear();
+        }
+    }
 }

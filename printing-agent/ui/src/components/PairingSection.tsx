@@ -1,11 +1,30 @@
 import { useState, type ComponentType } from 'react';
 import { Hash, KeyRound, ChevronDown } from 'lucide-react';
-import { pairWithApiKey, pairWithCode } from '../lib/api';
+import { getStatus, pairWithApiKey, pairWithCode } from '../lib/api';
 import type { PairTarget } from '../lib/types';
 import Button from './Button';
+import ConnectProgress, { type ConnectStage } from './ConnectProgress';
 import { IconBadge } from './Card';
 
 type Mode = 'code' | 'key';
+
+// After the pair request succeeds the agent still has to open its connection; we wait for the
+// sidecar to report CONNECTED (polling its status) so the operator sees a real result.
+const POLL_MS = 400;
+const CONNECT_TIMEOUT_MS = 20000;
+const SUCCESS_DWELL_MS = 1400;
+
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+async function waitUntilConnected(): Promise<void> {
+  const deadline = Date.now() + CONNECT_TIMEOUT_MS;
+  while (Date.now() < deadline) {
+    const status = await getStatus();
+    if (status.phase === 'CONNECTED') return;
+    await sleep(POLL_MS);
+  }
+  throw new Error('No se pudo conectar. Verifica que el servidor esté encendido e inténtalo de nuevo.');
+}
 
 const OPTIONS: { mode: Mode; icon: ComponentType<{ className?: string }>; title: string; description: string }[] = [
   {
@@ -37,21 +56,33 @@ export default function PairingSection({
   const [target, setTarget] = useState<PairTarget>('cloud');
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [stage, setStage] = useState<ConnectStage | null>(null);
+  const [progress, setProgress] = useState(0);
 
   async function submit(mode: Mode) {
     setBusy(true);
-    setMessage(target === 'local' ? 'Buscando el servidor en la red…' : 'Procesando…');
+    setMessage(null);
+    setProgress(8);
+    setStage(target === 'local' ? 'searching' : 'connecting');
+    // The bar creeps toward 90% while we wait; it only reaches 100% when really connected.
+    const ticker = setInterval(() => setProgress((p) => Math.min(p + 3, 90)), 250);
     try {
       if (mode === 'key') {
         await pairWithApiKey(apiKey.trim(), target);
       } else {
         await pairWithCode(code.trim().toUpperCase(), target);
       }
-      setMessage(null);
+      setStage('connecting');
+      await waitUntilConnected();
+      setProgress(100);
+      setStage('connected');
+      await sleep(SUCCESS_DWELL_MS);
       onPaired();
     } catch (e) {
+      setStage(null);
       setMessage(e instanceof Error ? e.message : 'Error desconocido');
     } finally {
+      clearInterval(ticker);
       setBusy(false);
     }
   }
@@ -125,6 +156,7 @@ export default function PairingSection({
           </div>
         );
       })}
+      {stage && <ConnectProgress stage={stage} progress={progress} />}
       {message && <p className="text-red-700 text-sm">{message}</p>}
     </div>
   );

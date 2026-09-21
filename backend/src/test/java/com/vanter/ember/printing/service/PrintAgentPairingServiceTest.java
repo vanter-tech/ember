@@ -43,7 +43,9 @@ class PrintAgentPairingServiceTest {
     @BeforeEach
     void setUp() {
         service = new PrintAgentService(
-                printAgentRepository, passwordEncoder, connectionRegistry, pairingCodeRepository);
+                printAgentRepository, passwordEncoder, connectionRegistry, pairingCodeRepository,
+                org.mockito.Mockito.mock(com.vanter.ember.printing.repository.PrinterConfigRepository.class),
+                org.mockito.Mockito.mock(PrintDispatchService.class));
         ReflectionTestUtils.setField(service, "agentBackendBaseUrl", "https://api.example/v1");
     }
 

@@ -9,8 +9,10 @@ import com.vanter.ember.printing.model.DiscoveredPrinter;
 import com.vanter.ember.printing.model.PairingCode;
 import com.vanter.ember.printing.model.PrintAgent;
 import com.vanter.ember.printing.model.PrintAgentStatus;
+import com.vanter.ember.printing.model.PrinterConfig;
 import com.vanter.ember.printing.repository.PairingCodeRepository;
 import com.vanter.ember.printing.repository.PrintAgentRepository;
+import com.vanter.ember.printing.repository.PrinterConfigRepository;
 import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -36,6 +38,8 @@ public class PrintAgentService {
     private final PasswordEncoder passwordEncoder;
     private final PrintAgentConnectionRegistry connectionRegistry;
     private final PairingCodeRepository pairingCodeRepository;
+    private final PrinterConfigRepository printerConfigRepository;
+    private final PrintDispatchService printDispatchService;
 
     @Value("${ember.agent.backend-base-url:https://api.ember.vanter.net/v1}")
     private String agentBackendBaseUrl;
@@ -129,6 +133,15 @@ public class PrintAgentService {
         PrintAgent agent = getOwned(tenantId, agentId);
         agent.setStatus(PrintAgentStatus.REVOKED);
         printAgentRepository.save(agent);
+
+        // Deleting an agent used to change only its status: its printers stayed active and the
+        // jobs already aimed at it stayed pending, so tickets sat in the queue for an agent that no
+        // longer exists. Take its printers out of play and give the pending jobs another try, so
+        // they go to a surviving agent (or wait for the next one to connect).
+        List<PrinterConfig> printers = printerConfigRepository.findByAgentId(agentId);
+        printers.forEach(printer -> printer.setActive(false));
+        printerConfigRepository.saveAll(printers);
+        printDispatchService.flushPendingFor(agentId);
     }
 
     @Transactional
