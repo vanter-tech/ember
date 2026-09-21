@@ -31,7 +31,7 @@ public interface RestaurantRepository extends JpaRepository<Restaurant, UUID> {
      * entity, not a fresh one. A native insert is the only reliable way to force this specific id.
      */
     @Modifying
-    @Query(value = "insert into restaurants (id, name, slug, plan, status, timezone, currency, created_at) "
-            + "values (:id, :name, :slug, 'FREE', 'ACTIVE', 'UTC', 'USD', now())", nativeQuery = true)
+    @Query(value = "insert into restaurants (id, name, slug, plan, status, timezone, currency, deployment_mode, created_at) "
+            + "values (:id, :name, :slug, 'FREE', 'ACTIVE', 'UTC', 'USD', 'HUB', now())", nativeQuery = true)
     void insertWithId(@Param("id") UUID id, @Param("name") String name, @Param("slug") String slug);
 }

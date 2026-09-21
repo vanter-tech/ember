@@ -37,6 +37,11 @@ public class Restaurant {
     @Builder.Default
     private RestaurantStatus status = RestaurantStatus.ACTIVE;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "deployment_mode", nullable = false)
+    @Builder.Default
+    private DeploymentMode deploymentMode = DeploymentMode.CLOUD;
+
     @Column(nullable = false)
     @Builder.Default
     private String timezone = "UTC";
