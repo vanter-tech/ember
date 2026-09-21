@@ -33,7 +33,7 @@
 - [x] Task 3 — cloud gates: JWT filter, STOMP CONNECT, QR join, public slug refuse HUB
 - [x] Task 4 — `issueHubLicense`/activation require HUB; heartbeat returns `MIGRATED` > `SUSPENDED` > `OK`
 - [x] Task 5 — Console backend: create with mode, `PATCH /{id}/mode` (typed slug + audit `RESTAURANT_MODE_CHANGED`), list filter by mode
-- [ ] Task 6 — Console frontend: required selector, badge, filter, change-mode dialog with "Plan actual" reminder
+- [x] Task 6 — Console frontend: required selector, badge, filter, change-mode dialog with "Plan actual" reminder
 - [ ] Task 7 — Hub state `migratedSince` (MAC canonical unchanged when null), 48 h courtesy, `HeartbeatScheduler` MIGRATED branch
 - [ ] Task 8 — `ReadOnlyModeInterceptor` ("modo consulta", 403 `license_migrated`) + Hub UI `LicenseCard` state
 - [ ] Task 9 — full verification + manual acceptance, bump 0.3.0, report 533, PR (squash), tag, deploy cloud then publish Hub

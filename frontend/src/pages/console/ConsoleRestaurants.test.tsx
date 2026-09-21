@@ -36,6 +36,7 @@ const row = (over: Record<string, unknown> = {}) => ({
   plan: 'PRO',
   status: 'ACTIVE',
   hubStatus: 'ONLINE',
+  deploymentMode: 'CLOUD',
   createdAt: '2026-09-01T00:00:00Z',
   ...over,
 })
@@ -59,7 +60,17 @@ describe('ConsoleRestaurants', () => {
     fireEvent.click(screen.getByRole('switch', { name: 'Ver eliminados' }))
 
     await waitFor(() =>
-      expect(platformRestaurantService.getAll).toHaveBeenLastCalledWith(0, 10, true)
+      expect(platformRestaurantService.getAll).toHaveBeenLastCalledWith(0, 10, true, undefined)
     )
+  })
+
+  test('shows a mode badge per row and offers a mode filter', async () => {
+    vi.mocked(platformRestaurantService.getAll).mockResolvedValue(
+      page([row({ deploymentMode: 'HUB' })]) as never
+    )
+    wrap(<ConsoleRestaurants />)
+
+    expect(await screen.findByLabelText('Modo: Hub')).toBeVisible()
+    expect(screen.getByLabelText('Filtrar por modo')).toBeInTheDocument()
   })
 })

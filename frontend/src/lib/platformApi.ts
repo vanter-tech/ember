@@ -26,6 +26,9 @@ export type HubStatus = 'NEVER' | 'ONLINE' | 'STALE' | 'OFFLINE'
 
 export type PlatformRestaurantStatus = 'ACTIVE' | 'SUSPENDED' | 'INACTIVE' | 'DELETED'
 
+// Mirrors com.vanter.ember.restaurant.model.DeploymentMode: CLOUD = Ember Web, HUB = on-premise.
+export type DeploymentMode = 'CLOUD' | 'HUB'
+
 // Mirrors PlatformRestaurantSummaryResponse (platform/model/dto).
 export interface PlatformRestaurantSummary {
   id: string
@@ -33,6 +36,7 @@ export interface PlatformRestaurantSummary {
   slug: string
   plan: 'FREE' | 'STARTER' | 'PRO' | 'ENTERPRISE'
   status: PlatformRestaurantStatus
+  deploymentMode: DeploymentMode
   hubStatus: HubStatus
   createdAt: string
 }
@@ -59,6 +63,7 @@ export interface PlatformRestaurantDetail {
   slug: string
   plan: 'FREE' | 'STARTER' | 'PRO' | 'ENTERPRISE'
   status: PlatformRestaurantStatus
+  deploymentMode: DeploymentMode
   createdAt: string
   admins: PlatformRestaurantAdmin[]
   hubStatus: HubStatus
@@ -72,6 +77,7 @@ export interface PlatformRestaurantCreateRequest {
   name: string
   slug: string
   plan?: 'FREE' | 'STARTER' | 'PRO' | 'ENTERPRISE'
+  deploymentMode: DeploymentMode
   adminName: string
   adminEmail: string
   adminPassword: string
@@ -157,11 +163,12 @@ export const platformRestaurantService = {
   getAll: async (
     page = 0,
     size = 10,
-    includeDeleted = false
+    includeDeleted = false,
+    mode?: DeploymentMode
   ): Promise<Page<PlatformRestaurantSummary>> => {
     const { data } = await platformApi.get<Page<PlatformRestaurantSummary>>(
       '/platform/restaurants',
-      { params: { page, size, includeDeleted } }
+      { params: { page, size, includeDeleted, ...(mode ? { mode } : {}) } }
     )
     return data
   },
@@ -202,6 +209,18 @@ export const platformRestaurantService = {
     const { data } = await platformApi.patch<PlatformRestaurantSummary>(
       `/platform/restaurants/${id}/plan`,
       { plan }
+    )
+    return data
+  },
+
+  updateMode: async (
+    id: string,
+    mode: DeploymentMode,
+    confirmSlug: string
+  ): Promise<PlatformRestaurantSummary> => {
+    const { data } = await platformApi.patch<PlatformRestaurantSummary>(
+      `/platform/restaurants/${id}/mode`,
+      { mode, confirmSlug }
     )
     return data
   },
