@@ -65,6 +65,21 @@ class DefaultHubOrchestratorTest {
     }
 
     @Test
+    void snapshot_migratedState_reportsMigratedWithItsSince() {
+        Path stateFile = tempDir.resolve("hub-state.json");
+        Instant migratedSince = Instant.parse("2026-09-21T08:00:00Z");
+        HubState migrated = new HubState("fp-1", UUID.randomUUID(), Instant.parse("2026-09-20T08:00:00Z"))
+                .withMigratedSince(migratedSince);
+        new HubStateStore(stateFile).save(migrated);
+
+        HubOrchestrator.LicenseSnapshot license =
+                new DefaultHubOrchestrator(propertiesWithStateFile(stateFile)).snapshot().license();
+
+        assertEquals(HubOrchestrator.LicenseSnapshot.MIGRATED, license.status());
+        assertEquals(migratedSince, license.migratedSince());
+    }
+
+    @Test
     void removeLicense_deletesLicenseFileAndStateFile_resetsToNone() throws Exception {
         Path stateFile = tempDir.resolve("hub-state.json");
         new HubStateStore(stateFile).save(new HubState("fp-1", UUID.randomUUID(), Instant.now()));

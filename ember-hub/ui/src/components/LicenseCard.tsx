@@ -7,12 +7,14 @@ import type { LicenseSnapshot } from '../lib/types';
 const STATUS_LABEL: Record<LicenseSnapshot['status'], string> = {
   OK: 'OK',
   SUSPENDED: 'Suspendida',
+  MIGRATED: 'Migrada a Web (solo lectura)',
   NONE: 'Sin licencia'
 };
 
 const STATUS_VARIANT: Record<LicenseSnapshot['status'], 'success' | 'danger' | 'neutral'> = {
   OK: 'success',
   SUSPENDED: 'danger',
+  MIGRATED: 'danger',
   NONE: 'neutral'
 };
 
@@ -47,6 +49,12 @@ export default function LicenseCard({
       )}
       {license.status === 'SUSPENDED' && (
         <p className="text-sm text-muted-foreground mb-3">suspendida {humanizeSince(license.suspendedSince)}</p>
+      )}
+      {license.status === 'MIGRATED' && (
+        <p className="text-sm text-muted-foreground mb-3">
+          Este restaurante ahora usa Ember Web. Tu Hub queda en modo consulta: puedes ver tu
+          historial y descargar el Excel, pero no registrar ventas nuevas.
+        </p>
       )}
       <div className="flex flex-wrap gap-2">
         <Button variant="primary" className="w-fit" onClick={onSelectLicense}>

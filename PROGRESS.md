@@ -35,7 +35,7 @@
 - [x] Task 5 — Console backend: create with mode, `PATCH /{id}/mode` (typed slug + audit `RESTAURANT_MODE_CHANGED`), list filter by mode
 - [x] Task 6 — Console frontend: required selector, badge, filter, change-mode dialog with "Plan actual" reminder
 - [x] Task 7 — Hub state `migratedSince` (MAC canonical unchanged when null), 48 h courtesy, `HeartbeatScheduler` MIGRATED branch
-- [ ] Task 8 — `ReadOnlyModeInterceptor` ("modo consulta", 403 `license_migrated`) + Hub UI `LicenseCard` state
+- [x] Task 8 — `ReadOnlyModeInterceptor` ("modo consulta", 403 `license_migrated`) + Hub UI `LicenseCard` state
 - [ ] Task 9 — full verification + manual acceptance, bump 0.3.0, report 533, PR (squash), tag, deploy cloud then publish Hub
 - Out of scope: data migration Hub↔Web (never), CSV menu importer (medium term), retention of cloud data left behind, WS SEND frames in read-only mode.
 
