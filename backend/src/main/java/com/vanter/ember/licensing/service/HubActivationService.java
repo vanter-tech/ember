@@ -11,6 +11,7 @@ import com.vanter.ember.licensing.model.HubActivation;
 import com.vanter.ember.licensing.model.dto.HubActivationRequest;
 import com.vanter.ember.licensing.model.dto.HubActivationResponse;
 import com.vanter.ember.licensing.repository.HubActivationRepository;
+import com.vanter.ember.restaurant.model.DeploymentMode;
 import com.vanter.ember.restaurant.model.Restaurant;
 import com.vanter.ember.restaurant.repository.RestaurantRepository;
 import java.time.Instant;
@@ -61,6 +62,9 @@ public class HubActivationService {
 
         Restaurant restaurant = restaurantRepository.findById(restaurantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Restaurant not found: " + restaurantId));
+        if (restaurant.getDeploymentMode() != DeploymentMode.HUB) {
+            throw new IllegalStateException("Este restaurante no está configurado para usar Ember Hub.");
+        }
 
         Optional<HubActivation> existing = hubActivationRepository.findByRestaurantId(restaurantId);
         if (existing.isPresent()) {

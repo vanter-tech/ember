@@ -14,6 +14,7 @@ import com.vanter.ember.platform.model.dto.PlatformRestaurantDetailResponse;
 import com.vanter.ember.platform.model.dto.PlatformRestaurantSummaryResponse;
 import com.vanter.ember.platform.repository.PlatformAuditLogRepository;
 import com.vanter.ember.platform.repository.PlatformOperatorRepository;
+import com.vanter.ember.restaurant.model.DeploymentMode;
 import com.vanter.ember.restaurant.model.Restaurant;
 import com.vanter.ember.restaurant.model.RestaurantPlan;
 import com.vanter.ember.restaurant.model.RestaurantStatus;
@@ -286,8 +287,11 @@ public class PlatformRestaurantService {
         PlatformOperator operator = platformOperatorRepository.findByEmail(operatorEmail)
                 .orElseThrow(() -> new BadCredentialsException("Invalid credentials"));
 
-        if (!restaurantRepository.existsById(restaurantId)) {
-            throw new ResourceNotFoundException("Restaurant not found: " + restaurantId);
+        Restaurant restaurant = restaurantRepository.findById(restaurantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Restaurant not found: " + restaurantId));
+        if (restaurant.getDeploymentMode() != DeploymentMode.HUB) {
+            throw new IllegalStateException(
+                    "Este restaurante usa Ember Web. Cambia su modo a Hub antes de emitir una licencia.");
         }
 
         String licenseKey = licenseIssuingService.issue(restaurantId);

@@ -31,7 +31,7 @@
 - [x] Task 1 — `DeploymentMode` enum + `restaurants.deployment_mode` + idempotent `V15` (backfill HUB) + `ember.deployment-mode.enforced` (false in Hub). **Local dev DB: add the column by hand**
 - [x] Task 2 — cloud login/PIN refuse a Hub restaurant's staff (same error as bad password)
 - [x] Task 3 — cloud gates: JWT filter, STOMP CONNECT, QR join, public slug refuse HUB
-- [ ] Task 4 — `issueHubLicense`/activation require HUB; heartbeat returns `MIGRATED` > `SUSPENDED` > `OK`
+- [x] Task 4 — `issueHubLicense`/activation require HUB; heartbeat returns `MIGRATED` > `SUSPENDED` > `OK`
 - [ ] Task 5 — Console backend: create with mode, `PATCH /{id}/mode` (typed slug + audit `RESTAURANT_MODE_CHANGED`), list filter by mode
 - [ ] Task 6 — Console frontend: required selector, badge, filter, change-mode dialog with "Plan actual" reminder
 - [ ] Task 7 — Hub state `migratedSince` (MAC canonical unchanged when null), 48 h courtesy, `HeartbeatScheduler` MIGRATED branch

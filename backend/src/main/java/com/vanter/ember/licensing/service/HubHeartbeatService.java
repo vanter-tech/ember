@@ -7,6 +7,7 @@ import com.vanter.ember.licensing.model.HubActivation;
 import com.vanter.ember.licensing.model.dto.HubHeartbeatRequest;
 import com.vanter.ember.licensing.model.dto.HubHeartbeatResponse;
 import com.vanter.ember.licensing.repository.HubActivationRepository;
+import com.vanter.ember.restaurant.model.DeploymentMode;
 import com.vanter.ember.restaurant.model.Restaurant;
 import com.vanter.ember.restaurant.model.RestaurantStatus;
 import com.vanter.ember.restaurant.repository.RestaurantRepository;
@@ -71,7 +72,15 @@ public class HubHeartbeatService {
 
         recordHeartbeatQuietly(restaurantId, callerIp);
 
-        String status = restaurant.getStatus() == RestaurantStatus.ACTIVE ? "OK" : "SUSPENDED";
+        // A restaurant that moved to Ember Web no longer belongs to any Hub; MIGRATED beats
+        // SUSPENDED so the Hub goes read-only instead of waiting on a reactivation that will never
+        // come.
+        String status;
+        if (restaurant.getDeploymentMode() != DeploymentMode.HUB) {
+            status = "MIGRATED";
+        } else {
+            status = restaurant.getStatus() == RestaurantStatus.ACTIVE ? "OK" : "SUSPENDED";
+        }
 
         // Millis: the signed string is serverTime.toString(), which must equal what Jackson
         // writes on the wire (ISO_INSTANT) for the Hub to verify the exact same text.

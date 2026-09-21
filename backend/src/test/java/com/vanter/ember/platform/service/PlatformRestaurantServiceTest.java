@@ -14,6 +14,7 @@ import com.vanter.ember.platform.model.dto.PlatformRestaurantDetailResponse;
 import com.vanter.ember.platform.model.dto.PlatformRestaurantSummaryResponse;
 import com.vanter.ember.platform.repository.PlatformAuditLogRepository;
 import com.vanter.ember.platform.repository.PlatformOperatorRepository;
+import com.vanter.ember.restaurant.model.DeploymentMode;
 import com.vanter.ember.restaurant.model.Restaurant;
 import com.vanter.ember.restaurant.model.RestaurantPlan;
 import com.vanter.ember.restaurant.model.RestaurantStatus;
@@ -509,7 +510,8 @@ class PlatformRestaurantServiceTest {
                 .build();
         UUID restaurantId = UUID.randomUUID();
         when(platformOperatorRepository.findByEmail("operator@ember.local")).thenReturn(Optional.of(operator));
-        when(restaurantRepository.existsById(restaurantId)).thenReturn(true);
+        when(restaurantRepository.findById(restaurantId)).thenReturn(Optional.of(
+                Restaurant.builder().id(restaurantId).deploymentMode(DeploymentMode.HUB).build()));
         when(licenseIssuingService.issue(restaurantId)).thenReturn("signed-license-key");
 
         String result = platformRestaurantService.issueHubLicense(restaurantId, "operator@ember.local");
@@ -531,9 +533,25 @@ class PlatformRestaurantServiceTest {
                 .build();
         UUID restaurantId = UUID.randomUUID();
         when(platformOperatorRepository.findByEmail("operator@ember.local")).thenReturn(Optional.of(operator));
-        when(restaurantRepository.existsById(restaurantId)).thenReturn(false);
+        when(restaurantRepository.findById(restaurantId)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> platformRestaurantService.issueHubLicense(restaurantId, "operator@ember.local"))
                 .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void issueHubLicense_refusesARestaurantInWebMode() {
+        PlatformOperator operator = PlatformOperator.builder()
+                .id(UUID.randomUUID())
+                .email("operator@ember.local")
+                .build();
+        UUID restaurantId = UUID.randomUUID();
+        when(platformOperatorRepository.findByEmail("operator@ember.local")).thenReturn(Optional.of(operator));
+        when(restaurantRepository.findById(restaurantId)).thenReturn(Optional.of(
+                Restaurant.builder().id(restaurantId).deploymentMode(DeploymentMode.CLOUD).build()));
+
+        assertThatThrownBy(() -> platformRestaurantService.issueHubLicense(restaurantId, "operator@ember.local"))
+                .isInstanceOf(IllegalStateException.class);
+        org.mockito.Mockito.verify(licenseIssuingService, org.mockito.Mockito.never()).issue(org.mockito.ArgumentMatchers.any());
     }
 }
