@@ -29,6 +29,8 @@ class PrintAgentServiceTest {
     @Mock PasswordEncoder passwordEncoder;
     @Mock PrintAgentConnectionRegistry connectionRegistry;
     @Mock PairingCodeRepository pairingCodeRepository;
+    @Mock com.vanter.ember.printing.repository.PrinterConfigRepository printerConfigRepository;
+    @Mock PrintDispatchService printDispatchService;
     @InjectMocks PrintAgentService printAgentService;
 
     private static final UUID TENANT_ID = UUID.randomUUID();
@@ -43,6 +45,28 @@ class PrintAgentServiceTest {
         assertThat(response.name()).isEqualTo("Agente Caja");
         assertThat(response.apiKey()).isNotBlank();
         assertThat(response.apiKey().length()).isGreaterThanOrEqualTo(32);
+    }
+
+    @Test
+    void revoke_marksTheAgentRevoked_takesItsPrintersOutOfPlay_andRetriesThePendingJobs() {
+        UUID agentId = UUID.randomUUID();
+        PrintAgent agent = PrintAgent.builder()
+                .id(agentId).tenantId(TENANT_ID).name("Caja")
+                .apiKeyHash("h").status(PrintAgentStatus.ACTIVE).createdAt(LocalDateTime.now()).build();
+        when(printAgentRepository.findById(agentId)).thenReturn(Optional.of(agent));
+        com.vanter.ember.printing.model.PrinterConfig receipt = com.vanter.ember.printing.model.PrinterConfig.builder()
+                .id(UUID.randomUUID()).agentId(agentId).active(true).build();
+        com.vanter.ember.printing.model.PrinterConfig kitchen = com.vanter.ember.printing.model.PrinterConfig.builder()
+                .id(UUID.randomUUID()).agentId(agentId).active(true).build();
+        when(printerConfigRepository.findByAgentId(agentId)).thenReturn(java.util.List.of(receipt, kitchen));
+
+        printAgentService.revoke(TENANT_ID, agentId);
+
+        assertThat(agent.getStatus()).isEqualTo(PrintAgentStatus.REVOKED);
+        assertThat(receipt.isActive()).isFalse();
+        assertThat(kitchen.isActive()).isFalse();
+        org.mockito.Mockito.verify(printerConfigRepository).saveAll(java.util.List.of(receipt, kitchen));
+        org.mockito.Mockito.verify(printDispatchService).flushPendingFor(agentId);
     }
 
     @Test

@@ -74,7 +74,10 @@ public class AgentRunner {
                 String jwt = authClient.fetchToken(config);
                 String agentId = decodeAgentIdFromJwt(jwt);
 
-                reportDiscoveredPrinters(config, jwt);
+                DiscoveredPrintersSync printersSync = new DiscoveredPrintersSync(
+                        enumerator::enumerate,
+                        printers -> discoveredPrintersClient.report(config.backendBaseUrl(), jwt, printers));
+                printersSync.reportNow();
 
                 // Fetched once here only to fail fast (and show a count) if the config endpoint is
                 // unreachable before opening the WS session — PrintJobHandler refetches the list
@@ -95,8 +98,14 @@ public class AgentRunner {
                 System.out.println("[print-agent] conectado, agentId=" + agentId
                         + ", impresoras=" + myPrinters.size());
 
+                // Every ~30s re-check the Windows queues and tell the backend if they changed, so a
+                // printer installed while connected shows up in the admin without re-pairing.
+                int ticks = 0;
                 while (running && session.isConnected()) {
                     TimeUnit.SECONDS.sleep(5);
+                    if (++ticks % 6 == 0) {
+                        printersSync.reportIfChanged();
+                    }
                 }
                 currentSession.set(null);
                 if (running) {
@@ -108,14 +117,6 @@ public class AgentRunner {
                 status.setPhase(StatusHub.Phase.RETRYING, "Conexión perdida, reintentando en 10s");
                 sleep(10);
             }
-        }
-    }
-
-    private void reportDiscoveredPrinters(AgentConfig config, String jwt) {
-        try {
-            discoveredPrintersClient.report(config.backendBaseUrl(), jwt, enumerator.enumerate());
-        } catch (RuntimeException e) {
-            // best-effort; never blocks the connection
         }
     }
 

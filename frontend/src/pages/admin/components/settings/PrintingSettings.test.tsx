@@ -88,4 +88,52 @@ describe('PrintingSettings', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Limpiar pendientes' }))
     await waitFor(() => expect(printingService.cancelPendingJobs).toHaveBeenCalled())
   })
+
+  test('the tab is a Card with its own CardHeader (title and description), like the other tabs', async () => {
+    vi.mocked(printingService.listAgents).mockResolvedValue([] as never)
+
+    wrap(<PrintingSettings />)
+
+    const title = await screen.findByText('Impresoras')
+    const header = title.closest('[data-slot="card-header"]')
+    expect(header).not.toBeNull()
+    expect(header?.closest('[data-slot="card"]')).not.toBeNull()
+    expect(header?.textContent).toContain('Conecta las impresoras')
+  })
+
+  test('the agents list and the recent-jobs list are height-capped and scroll instead of growing', async () => {
+    vi.mocked(printingService.listAgents).mockResolvedValue([
+      { id: 'a-1', name: 'Caja 1', status: 'ACTIVE', connected: true },
+    ] as never)
+
+    wrap(<PrintingSettings />)
+
+    const agentsBox = (await screen.findByText('Caja 1')).closest('[data-slot="card-content"]')
+    const jobsBox = screen.getByText('Trabajos recientes').closest('[data-slot="card"]')
+      ?.querySelector('[data-slot="card-content"]')
+    for (const box of [agentsBox, jobsBox]) {
+      expect(box?.className).toContain('max-h-96')
+      expect(box?.className).toContain('overflow-y-auto')
+      expect(box?.className).toContain('py-4') // the last row must not sit flush on the card's edge
+    }
+  })
+
+  test('recent jobs are listed newest first', async () => {
+    vi.mocked(printingService.listAgents).mockResolvedValue([] as never)
+    vi.mocked(printingService.listJobs).mockResolvedValue([
+      { id: 'old', role: 'RECEIPT', status: 'PRINTED', createdAt: '2026-09-20T10:00:00' },
+      { id: 'new', role: 'KITCHEN', status: 'PENDING', createdAt: '2026-09-20T18:00:00' },
+      { id: 'mid', role: 'RECEIPT', status: 'ERROR', createdAt: '2026-09-20T14:00:00' },
+    ] as never)
+
+    wrap(<PrintingSettings />)
+
+    await screen.findByText(/KITCHEN/)
+    const rows = screen.getAllByText(/(KITCHEN|RECEIPT) ·/).map((el) => el.textContent)
+    expect(rows).toEqual([
+      expect.stringContaining('KITCHEN'),
+      expect.stringContaining('RECEIPT · ERROR'),
+      expect.stringContaining('RECEIPT · PRINTED'),
+    ])
+  })
 })

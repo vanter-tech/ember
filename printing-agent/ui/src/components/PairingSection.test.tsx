@@ -1,10 +1,17 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import PairingSection from './PairingSection';
 import * as api from '../lib/api';
 
+const connectedStatus = {
+  phase: 'CONNECTED' as const, detail: 'Conectado', lastSeen: null, agentId: null, printerCount: 0, recentJobs: []
+};
+
 describe('PairingSection', () => {
-  beforeEach(() => vi.restoreAllMocks());
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    vi.spyOn(api, 'getStatus').mockResolvedValue(connectedStatus);
+  });
 
   it('shows the server error message when pairing fails', async () => {
     vi.spyOn(api, 'pairWithCode').mockRejectedValue(new Error('Código inválido, usado o vencido.'));
@@ -30,7 +37,7 @@ describe('PairingSection', () => {
     fireEvent.change(screen.getByPlaceholderText('Código de 10 caracteres'), { target: { value: 'ABCDEFGHIJ' } });
     fireEvent.click(screen.getByText('Emparejar'));
 
-    await waitFor(() => expect(onPaired).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(onPaired).toHaveBeenCalledTimes(1), { timeout: 4000 });
   });
 
   const connecting = {
@@ -92,6 +99,57 @@ describe('PairingSection', () => {
 
     await waitFor(() => expect(screen.getByText('Buscando el servidor en la red…')).toBeTruthy());
     finish(connecting);
+  });
+
+  it('shows a loading bar while connecting, then Conectado with the success text below it', async () => {
+    let connect: () => void = () => {};
+    const gate = new Promise<void>((resolve) => { connect = resolve; });
+    vi.spyOn(api, 'pairWithCode').mockResolvedValue({ ...connectedStatus, phase: 'CONNECTING' });
+    vi.spyOn(api, 'getStatus').mockImplementation(async () => {
+      await gate;
+      return connectedStatus;
+    });
+    const onPaired = vi.fn();
+    const { container } = render(<PairingSection onPaired={onPaired} />);
+
+    pairWithCodeUsing(container);
+
+    // still connecting: the bar is there, reads Conectando…, and there is no success text yet
+    expect(await screen.findByRole('progressbar')).toBeTruthy();
+    expect(await screen.findByText('Conectando…')).toBeTruthy();
+    expect(screen.queryByText('Conectado correctamente')).toBeNull();
+
+    connect();
+
+    // connected: the bar says Conectado and the confirmation is below it
+    const bar = await screen.findByRole('progressbar');
+    await waitFor(() => expect(bar.textContent).toContain('Conectado'));
+    const success = await screen.findByText('Conectado correctamente');
+    expect(bar.compareDocumentPosition(success) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(onPaired).not.toHaveBeenCalled(); // it lingers a moment so the message can be read
+    await waitFor(() => expect(onPaired).toHaveBeenCalledTimes(1), { timeout: 4000 });
+  });
+
+  it('reports a clear error, and no success text, when the agent never connects', async () => {
+    vi.useFakeTimers();
+    try {
+      vi.spyOn(api, 'pairWithCode').mockResolvedValue({ ...connectedStatus, phase: 'CONNECTING' });
+      vi.spyOn(api, 'getStatus').mockResolvedValue({ ...connectedStatus, phase: 'RETRYING' });
+      const onPaired = vi.fn();
+      const { container } = render(<PairingSection onPaired={onPaired} />);
+
+      pairWithCodeUsing(container);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(25000);
+      });
+
+      expect(screen.getByText(/No se pudo conectar/)).toBeTruthy();
+      expect(screen.queryByText('Conectado correctamente')).toBeNull();
+      expect(screen.queryByRole('progressbar')).toBeNull();
+      expect(onPaired).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('shows only one option expanded, with only one data input, at a time', () => {

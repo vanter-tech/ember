@@ -29,7 +29,8 @@ public class DiscoveredPrintersClient {
         this.http = http;
     }
 
-    public void report(String backendBaseUrl, String jwt, List<DiscoveredPrinter> printers) {
+    /** @return true when the backend accepted the list (204), so a caller can retry a failed delivery. */
+    public boolean report(String backendBaseUrl, String jwt, List<DiscoveredPrinter> printers) {
         try {
             String body = mapper.writeValueAsString(new ReportBody(printers));
             HttpRequest request = HttpRequest.newBuilder()
@@ -41,9 +42,12 @@ public class DiscoveredPrintersClient {
             HttpResponse<String> res = http.send(request, HttpResponse.BodyHandlers.ofString());
             if (res.statusCode() != 204) {
                 log.log(Level.WARNING, "No se pudo reportar impresoras descubiertas: HTTP " + res.statusCode());
+                return false;
             }
+            return true;
         } catch (Exception e) {
             log.log(Level.WARNING, "No se pudo reportar impresoras descubiertas: " + e.getMessage());
+            return false;
         }
     }
 
