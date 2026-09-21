@@ -9,6 +9,7 @@ import com.vanter.ember.identity.model.dto.RegisterRequest;
 import com.vanter.ember.identity.repository.UserRepository;
 import com.vanter.ember.restaurant.model.DeploymentMode;
 import com.vanter.ember.restaurant.model.Restaurant;
+import com.vanter.ember.restaurant.repository.RestaurantRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -38,6 +39,7 @@ class AuthServiceTest {
     @Mock JwtService jwtService;
     @Mock PasswordEncoder passwordEncoder;
     @Mock PinAttemptGuard pinAttemptGuard;
+    @Mock RestaurantRepository restaurantRepository;
     @InjectMocks AuthService authService;
 
     @Test
@@ -284,9 +286,15 @@ class AuthServiceTest {
                 .passwordHash("hashed").pinHash("pin-hashed").role(Role.ADMIN).restaurantId(restaurant).build();
     }
 
+    private void stubRestaurantOf(User user) {
+        when(restaurantRepository.findById(user.getRestaurantId().getId()))
+                .thenReturn(Optional.of(user.getRestaurantId()));
+    }
+
     @Test
     void login_refusesAHubRestaurantsStaff_withTheSameErrorAsABadPassword() {
         User user = staffOf(restaurantIn(DeploymentMode.HUB));
+        stubRestaurantOf(user);
         LoginRequest req = new LoginRequest();
         req.setEmail("admin@test.com");
         req.setPassword("secret");
@@ -302,6 +310,7 @@ class AuthServiceTest {
     @Test
     void login_stillWorksForACloudRestaurantsStaff() {
         User user = staffOf(restaurantIn(DeploymentMode.CLOUD));
+        stubRestaurantOf(user);
         LoginRequest req = new LoginRequest();
         req.setEmail("admin@test.com");
         req.setPassword("secret");
@@ -329,6 +338,7 @@ class AuthServiceTest {
     @Test
     void loginWithPin_refusesAHubRestaurantsStaff_andCountsItAsAFailedAttempt() {
         User user = staffOf(restaurantIn(DeploymentMode.HUB));
+        stubRestaurantOf(user);
         PinLoginRequest req = new PinLoginRequest();
         req.setEmail("admin@test.com");
         req.setPin("1234");

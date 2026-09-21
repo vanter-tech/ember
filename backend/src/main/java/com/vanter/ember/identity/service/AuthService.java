@@ -9,6 +9,8 @@ import com.vanter.ember.identity.model.dto.PinLoginRequest;
 import com.vanter.ember.identity.model.dto.RegisterRequest;
 import com.vanter.ember.identity.repository.UserRepository;
 import com.vanter.ember.restaurant.model.DeploymentMode;
+import com.vanter.ember.restaurant.model.Restaurant;
+import com.vanter.ember.restaurant.repository.RestaurantRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -27,6 +29,7 @@ public class AuthService {
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
     private final PinAttemptGuard pinAttemptGuard;
+    private final RestaurantRepository restaurantRepository;
 
     /** False inside the Hub itself; see {@link DeploymentMode#isClosedToWeb}. */
     @Value("${ember.deployment-mode.enforced:true}")
@@ -90,8 +93,13 @@ public class AuthService {
      * between restaurants and are gated when they join a table.
      */
     private boolean closedToWeb(User user) {
-        return user.getRole() != Role.CUSTOMER
-                && DeploymentMode.isClosedToWeb(user.getRestaurantId(), deploymentModeEnforced);
+        if (!deploymentModeEnforced || user.getRole() == Role.CUSTOMER || user.getRestaurantId() == null) {
+            return false;
+        }
+        // User.restaurantId is a LAZY proxy: only its id is readable outside a transaction, so the
+        // mode has to come from the repository (same lookup jwtAuthFilter does per request).
+        Restaurant restaurant = restaurantRepository.findById(user.getRestaurantId().getId()).orElse(null);
+        return DeploymentMode.isClosedToWeb(restaurant, deploymentModeEnforced);
     }
 
     /**
