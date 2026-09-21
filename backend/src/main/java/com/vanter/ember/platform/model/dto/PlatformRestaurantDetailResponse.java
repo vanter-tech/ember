@@ -1,6 +1,7 @@
 package com.vanter.ember.platform.model.dto;
 
 import com.vanter.ember.licensing.model.HubActivation;
+import com.vanter.ember.restaurant.model.DeploymentMode;
 import com.vanter.ember.restaurant.model.Restaurant;
 import com.vanter.ember.restaurant.model.RestaurantPlan;
 import com.vanter.ember.restaurant.model.RestaurantStatus;
@@ -18,6 +19,7 @@ public class PlatformRestaurantDetailResponse {
     private String slug;
     private RestaurantPlan plan;
     private RestaurantStatus status;
+    private DeploymentMode deploymentMode;
     private Instant createdAt;
     private List<PlatformRestaurantAdminResponse> admins;
     private HubStatus hubStatus;
@@ -39,6 +41,7 @@ public class PlatformRestaurantDetailResponse {
                 .slug(restaurant.getSlug())
                 .plan(restaurant.getPlan())
                 .status(restaurant.getStatus())
+                .deploymentMode(restaurant.getDeploymentMode())
                 .createdAt(restaurant.getCreatedAt())
                 .admins(admins)
                 .hubStatus(HubStatus.from(lastBeat, Instant.now()))

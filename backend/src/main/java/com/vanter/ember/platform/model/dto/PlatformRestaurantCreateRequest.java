@@ -1,8 +1,10 @@
 package com.vanter.ember.platform.model.dto;
 
+import com.vanter.ember.restaurant.model.DeploymentMode;
 import com.vanter.ember.restaurant.model.RestaurantPlan;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
@@ -19,6 +21,10 @@ public class PlatformRestaurantCreateRequest {
 
     /** Optional — omitted or null defaults to FREE, same as Restaurant's own @Builder.Default. */
     private RestaurantPlan plan;
+
+    /** Required, no default: whether this restaurant runs on Ember Web or on an on-premise Hub. */
+    @NotNull(message = "Deployment mode is required")
+    private DeploymentMode deploymentMode;
 
     @NotBlank(message = "Admin name is required")
     private String adminName;

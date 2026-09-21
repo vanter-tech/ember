@@ -337,6 +337,7 @@ class PlatformRestaurantServiceTest {
         PlatformRestaurantCreateRequest request = new PlatformRestaurantCreateRequest();
         request.setName("Tenant Grill");
         request.setSlug("tenant-grill");
+        request.setDeploymentMode(DeploymentMode.HUB);
         request.setAdminName("Owner Admin");
         request.setAdminEmail("owner@tenant-grill.local");
         request.setAdminPassword("Str0ng!Pass");
@@ -553,5 +554,87 @@ class PlatformRestaurantServiceTest {
         assertThatThrownBy(() -> platformRestaurantService.issueHubLicense(restaurantId, "operator@ember.local"))
                 .isInstanceOf(IllegalStateException.class);
         org.mockito.Mockito.verify(licenseIssuingService, org.mockito.Mockito.never()).issue(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void create_storesTheChosenDeploymentMode() {
+        when(platformOperatorRepository.findByEmail("operator@ember.local")).thenReturn(Optional.of(operator()));
+        when(restaurantRepository.existsBySlug("tenant-grill")).thenReturn(false);
+        when(userRepository.existsByEmail("owner@tenant-grill.local")).thenReturn(false);
+        when(restaurantRepository.save(org.mockito.ArgumentMatchers.any(Restaurant.class)))
+                .thenAnswer(inv -> inv.getArgument(0));
+        when(passwordEncoder.encode("Str0ng!Pass")).thenReturn("hashed");
+
+        PlatformRestaurantSummaryResponse response = platformRestaurantService.create(
+                createRequest(), "operator@ember.local");
+
+        assertThat(response.getDeploymentMode()).isEqualTo(DeploymentMode.HUB);
+        ArgumentCaptor<Restaurant> captor = ArgumentCaptor.forClass(Restaurant.class);
+        org.mockito.Mockito.verify(restaurantRepository).save(captor.capture());
+        assertThat(captor.getValue().getDeploymentMode()).isEqualTo(DeploymentMode.HUB);
+    }
+
+    @Test
+    void updateDeploymentMode_changesTheModeAndWritesAnAuditRow() {
+        UUID id = UUID.randomUUID();
+        Restaurant hub = Restaurant.builder().id(id).slug("tenant-grill").deploymentMode(DeploymentMode.HUB).build();
+        Restaurant web = Restaurant.builder().id(id).slug("tenant-grill").deploymentMode(DeploymentMode.CLOUD).build();
+        when(platformOperatorRepository.findByEmail("operator@ember.local")).thenReturn(Optional.of(operator()));
+        when(restaurantRepository.findById(id)).thenReturn(Optional.of(hub));
+        when(restaurantService.updateDeploymentMode(id, DeploymentMode.CLOUD)).thenReturn(web);
+
+        PlatformRestaurantSummaryResponse response = platformRestaurantService.updateDeploymentMode(
+                id, DeploymentMode.CLOUD, "tenant-grill", "operator@ember.local");
+
+        assertThat(response.getDeploymentMode()).isEqualTo(DeploymentMode.CLOUD);
+        ArgumentCaptor<com.vanter.ember.platform.model.PlatformAuditLog> audit =
+                ArgumentCaptor.forClass(com.vanter.ember.platform.model.PlatformAuditLog.class);
+        org.mockito.Mockito.verify(platformAuditLogRepository).save(audit.capture());
+        assertThat(audit.getValue().getAction()).isEqualTo("RESTAURANT_MODE_CHANGED");
+        assertThat(audit.getValue().getOldValue()).isEqualTo("HUB");
+        assertThat(audit.getValue().getNewValue()).isEqualTo("CLOUD");
+        assertThat(audit.getValue().getRestaurantId()).isEqualTo(id);
+    }
+
+    @Test
+    void updateDeploymentMode_refusesAWrongConfirmationSlug() {
+        UUID id = UUID.randomUUID();
+        when(platformOperatorRepository.findByEmail("operator@ember.local")).thenReturn(Optional.of(operator()));
+        when(restaurantRepository.findById(id)).thenReturn(Optional.of(
+                Restaurant.builder().id(id).slug("tenant-grill").deploymentMode(DeploymentMode.HUB).build()));
+
+        assertThatThrownBy(() -> platformRestaurantService.updateDeploymentMode(
+                id, DeploymentMode.CLOUD, "another-slug", "operator@ember.local"))
+                .isInstanceOf(IllegalArgumentException.class);
+        org.mockito.Mockito.verify(restaurantService, org.mockito.Mockito.never())
+                .updateDeploymentMode(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void updateDeploymentMode_refusesTheModeItAlreadyHas() {
+        UUID id = UUID.randomUUID();
+        when(platformOperatorRepository.findByEmail("operator@ember.local")).thenReturn(Optional.of(operator()));
+        when(restaurantRepository.findById(id)).thenReturn(Optional.of(
+                Restaurant.builder().id(id).slug("tenant-grill").deploymentMode(DeploymentMode.HUB).build()));
+
+        assertThatThrownBy(() -> platformRestaurantService.updateDeploymentMode(
+                id, DeploymentMode.HUB, "tenant-grill", "operator@ember.local"))
+                .isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    void getAll_withAModeFilter_usesTheModeQueries() {
+        Pageable pageable = PageRequest.of(0, 10);
+        when(restaurantRepository.findByStatusNotAndDeploymentMode(RestaurantStatus.DELETED, DeploymentMode.HUB, pageable))
+                .thenReturn(new PageImpl<>(List.of()));
+        when(restaurantRepository.findByDeploymentMode(DeploymentMode.HUB, pageable))
+                .thenReturn(new PageImpl<>(List.of()));
+
+        platformRestaurantService.getAll(pageable, false, DeploymentMode.HUB);
+        platformRestaurantService.getAll(pageable, true, DeploymentMode.HUB);
+
+        org.mockito.Mockito.verify(restaurantRepository)
+                .findByStatusNotAndDeploymentMode(RestaurantStatus.DELETED, DeploymentMode.HUB, pageable);
+        org.mockito.Mockito.verify(restaurantRepository).findByDeploymentMode(DeploymentMode.HUB, pageable);
     }
 }

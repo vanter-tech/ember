@@ -2,10 +2,12 @@ package com.vanter.ember.platform.controller;
 
 import com.vanter.ember.platform.model.dto.PlatformRestaurantCreateRequest;
 import com.vanter.ember.platform.model.dto.PlatformRestaurantDetailResponse;
+import com.vanter.ember.platform.model.dto.PlatformRestaurantModeUpdateRequest;
 import com.vanter.ember.platform.model.dto.PlatformRestaurantPlanUpdateRequest;
 import com.vanter.ember.platform.model.dto.PlatformRestaurantStatusUpdateRequest;
 import com.vanter.ember.platform.model.dto.PlatformRestaurantSummaryResponse;
 import com.vanter.ember.platform.service.PlatformRestaurantService;
+import com.vanter.ember.restaurant.model.DeploymentMode;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -50,12 +52,13 @@ public class PlatformRestaurantController {
         return ResponseEntity.ok(platformRestaurantService.issueHubLicense(id, authentication.getName()));
     }
 
-    @Operation(summary = "List all tenants, paginated; soft-deleted excluded unless includeDeleted=true")
+    @Operation(summary = "List all tenants, paginated; soft-deleted excluded unless includeDeleted=true; optional mode filter")
     @GetMapping
     public ResponseEntity<Page<PlatformRestaurantSummaryResponse>> getAll(
             Pageable pageable,
-            @RequestParam(name = "includeDeleted", defaultValue = "false") boolean includeDeleted) {
-        return ResponseEntity.ok(platformRestaurantService.getAll(pageable, includeDeleted));
+            @RequestParam(name = "includeDeleted", defaultValue = "false") boolean includeDeleted,
+            @RequestParam(name = "mode", required = false) DeploymentMode mode) {
+        return ResponseEntity.ok(platformRestaurantService.getAll(pageable, includeDeleted, mode));
     }
 
     @Operation(summary = "Soft-delete a restaurant (must be SUSPENDED); reversible via restore")
@@ -86,6 +89,16 @@ public class PlatformRestaurantController {
             Authentication authentication) {
         return ResponseEntity.ok(
                 platformRestaurantService.updateStatus(id, request.getStatus(), authentication.getName()));
+    }
+
+    @Operation(summary = "Change a tenant's deployment mode (Web/Hub), audited; the slug must be typed as confirmation")
+    @PatchMapping("/{id}/mode")
+    public ResponseEntity<PlatformRestaurantSummaryResponse> updateMode(
+            @PathVariable UUID id,
+            @Valid @RequestBody PlatformRestaurantModeUpdateRequest request,
+            Authentication authentication) {
+        return ResponseEntity.ok(platformRestaurantService.updateDeploymentMode(
+                id, request.getMode(), request.getConfirmSlug(), authentication.getName()));
     }
 
     @Operation(summary = "Update a tenant's subscription plan, audited")
