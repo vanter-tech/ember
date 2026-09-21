@@ -8,7 +8,11 @@ import com.vanter.ember.identity.model.dto.LoginRequest;
 import com.vanter.ember.identity.model.dto.PinLoginRequest;
 import com.vanter.ember.identity.model.dto.RegisterRequest;
 import com.vanter.ember.identity.repository.UserRepository;
+import com.vanter.ember.restaurant.model.DeploymentMode;
+import com.vanter.ember.restaurant.model.Restaurant;
+import com.vanter.ember.restaurant.repository.RestaurantRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -25,6 +29,11 @@ public class AuthService {
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
     private final PinAttemptGuard pinAttemptGuard;
+    private final RestaurantRepository restaurantRepository;
+
+    /** False inside the Hub itself; see {@link DeploymentMode#isClosedToWeb}. */
+    @Value("${ember.deployment-mode.enforced:true}")
+    private boolean deploymentModeEnforced = true;
 
     public AuthResponse register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
@@ -51,7 +60,7 @@ public class AuthService {
             throw new BadCredentialsException("Invalid credentials");
         }
 
-        if (!Boolean.TRUE.equals(user.getActive())) {
+        if (!Boolean.TRUE.equals(user.getActive()) || closedToWeb(user)) {
             throw new BadCredentialsException("Invalid credentials");
         }
 
@@ -69,13 +78,28 @@ public class AuthService {
         }
 
         if (!passwordEncoder.matches(request.getPin(), user.getPinHash())
-                || !Boolean.TRUE.equals(user.getActive())) {
+                || !Boolean.TRUE.equals(user.getActive())
+                || closedToWeb(user)) {
             pinAttemptGuard.recordFailure(request.getEmail());
             throw new BadCredentialsException("Invalid credentials");
         }
 
         pinAttemptGuard.recordSuccess(request.getEmail());
         return buildResponse(user, tenantIdOf(user));
+    }
+
+    /**
+     * A Hub restaurant's staff have no business on Ember Web. Staff only: CUSTOMER accounts float
+     * between restaurants and are gated when they join a table.
+     */
+    private boolean closedToWeb(User user) {
+        if (!deploymentModeEnforced || user.getRole() == Role.CUSTOMER || user.getRestaurantId() == null) {
+            return false;
+        }
+        // User.restaurantId is a LAZY proxy: only its id is readable outside a transaction, so the
+        // mode has to come from the repository (same lookup jwtAuthFilter does per request).
+        Restaurant restaurant = restaurantRepository.findById(user.getRestaurantId().getId()).orElse(null);
+        return DeploymentMode.isClosedToWeb(restaurant, deploymentModeEnforced);
     }
 
     /**

@@ -107,4 +107,58 @@ class HubStateStoreTest {
         assertThat(loaded.hardwareFingerprint()).isEqualTo("fp-legacy");
         assertThat(loaded.suspendedSince()).isNull();
     }
+
+    @Test
+    void save_thenLoad_roundTripsMigratedSince() {
+        HubStateStore store = new HubStateStore(tempDir.resolve("migrated/hub-state.json"));
+        Instant since = Instant.parse("2026-09-21T10:00:00Z");
+        HubState state = new HubState("fp", UUID.randomUUID(), Instant.now(), null, Instant.now(), since);
+
+        store.save(state);
+
+        assertThat(store.load().orElseThrow().migratedSince()).isEqualTo(since);
+    }
+
+    @Test
+    void save_omitsTheMigratedSinceKeyWhenNull_soOlderHubsCanStillReadTheFile() throws Exception {
+        Path stateFile = tempDir.resolve("nokey/hub-state.json");
+        new HubStateStore(stateFile).save(new HubState("fp", UUID.randomUUID(), Instant.now()));
+
+        assertThat(Files.readString(stateFile)).doesNotContain("migratedSince");
+    }
+
+    @Test
+    void canonical_ofAStateWithoutMigratedSince_isTheLegacyFiveFieldString() {
+        // The MAC of every hub-state.json already written by an installed Hub was computed over
+        // exactly these five fields; changing this string would fail-close every existing install.
+        UUID restaurantId = UUID.randomUUID();
+        Instant heartbeat = Instant.parse("2026-09-20T10:00:00Z");
+        Instant seen = Instant.parse("2026-09-20T10:05:00Z");
+        HubState state = new HubState("fp", restaurantId, heartbeat, null, seen);
+
+        assertThat(HubStateStore.canonical(state))
+                .isEqualTo("fp|" + restaurantId + "|" + heartbeat + "||" + seen);
+    }
+
+    @Test
+    void canonical_appendsMigratedSinceOnlyWhenPresent() {
+        UUID restaurantId = UUID.randomUUID();
+        Instant since = Instant.parse("2026-09-21T10:00:00Z");
+        HubState state = new HubState("fp", restaurantId, Instant.EPOCH, null, null, since);
+
+        assertThat(HubStateStore.canonical(state)).endsWith("|" + since);
+    }
+
+    @Test
+    void load_aMigratedSinceThatWasEditedByHand_failsClosed() throws Exception {
+        Path stateFile = tempDir.resolve("edited/hub-state.json");
+        HubStateStore store = new HubStateStore(stateFile);
+        store.save(new HubState("fp", UUID.randomUUID(), Instant.now(), null, Instant.now(),
+                Instant.now().minus(3, ChronoUnit.DAYS)));
+
+        Files.writeString(stateFile, Files.readString(stateFile)
+                .replaceAll("\"migratedSince\"\\s*:\\s*[^,\\n}]+", "\"migratedSince\":null"));
+
+        assertThat(store.load().orElseThrow().lastHeartbeatAt()).isEqualTo(Instant.EPOCH);
+    }
 }

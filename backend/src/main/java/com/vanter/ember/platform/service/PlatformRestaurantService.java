@@ -14,6 +14,7 @@ import com.vanter.ember.platform.model.dto.PlatformRestaurantDetailResponse;
 import com.vanter.ember.platform.model.dto.PlatformRestaurantSummaryResponse;
 import com.vanter.ember.platform.repository.PlatformAuditLogRepository;
 import com.vanter.ember.platform.repository.PlatformOperatorRepository;
+import com.vanter.ember.restaurant.model.DeploymentMode;
 import com.vanter.ember.restaurant.model.Restaurant;
 import com.vanter.ember.restaurant.model.RestaurantPlan;
 import com.vanter.ember.restaurant.model.RestaurantStatus;
@@ -82,9 +83,22 @@ public class PlatformRestaurantService {
     }
 
     public Page<PlatformRestaurantSummaryResponse> getAll(Pageable pageable, boolean includeDeleted) {
-        Page<Restaurant> page = includeDeleted
-                ? restaurantRepository.findAll(pageable)
-                : restaurantRepository.findByStatusNot(RestaurantStatus.DELETED, pageable);
+        return getAll(pageable, includeDeleted, null);
+    }
+
+    public Page<PlatformRestaurantSummaryResponse> getAll(Pageable pageable, boolean includeDeleted,
+                                                          DeploymentMode mode) {
+        Page<Restaurant> page;
+        if (mode == null) {
+            page = includeDeleted
+                    ? restaurantRepository.findAll(pageable)
+                    : restaurantRepository.findByStatusNot(RestaurantStatus.DELETED, pageable);
+        } else {
+            page = includeDeleted
+                    ? restaurantRepository.findByDeploymentMode(mode, pageable)
+                    : restaurantRepository.findByStatusNotAndDeploymentMode(
+                            RestaurantStatus.DELETED, mode, pageable);
+        }
         List<UUID> ids = page.getContent().stream().map(Restaurant::getId).toList();
         Map<UUID, HubActivation> byRestaurant = ids.isEmpty()
                 ? Map.of()
@@ -175,6 +189,42 @@ public class PlatformRestaurantService {
     }
 
     /**
+     * Operator-driven switch between Ember Web and Ember Hub. No data moves: each side keeps its
+     * own. The typed slug is verified here too, not only in the UI. Audited in the same
+     * transaction, like every other operator action.
+     */
+    @Transactional
+    public PlatformRestaurantSummaryResponse updateDeploymentMode(UUID restaurantId, DeploymentMode newMode,
+                                                                  String confirmSlug, String operatorEmail) {
+        PlatformOperator operator = platformOperatorRepository.findByEmail(operatorEmail)
+                .orElseThrow(() -> new BadCredentialsException("Invalid credentials"));
+
+        Restaurant restaurant = restaurantRepository.findById(restaurantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Restaurant not found: " + restaurantId));
+
+        if (!restaurant.getSlug().equals(confirmSlug)) {
+            throw new IllegalArgumentException("El slug de confirmación no coincide.");
+        }
+        DeploymentMode oldMode = restaurant.getDeploymentMode();
+        if (oldMode == newMode) {
+            throw new IllegalStateException("El restaurante ya usa el modo " + newMode + ".");
+        }
+
+        Restaurant updated = restaurantService.updateDeploymentMode(restaurantId, newMode);
+
+        platformAuditLogRepository.save(PlatformAuditLog.builder()
+                .operatorId(operator.getId())
+                .operatorEmail(operator.getEmail())
+                .restaurantId(restaurantId)
+                .action("RESTAURANT_MODE_CHANGED")
+                .oldValue(oldMode.name())
+                .newValue(newMode.name())
+                .build());
+
+        return PlatformRestaurantSummaryResponse.from(updated);
+    }
+
+    /**
      * Soft-delete a churned tenant. Only a SUSPENDED restaurant may be deleted — the operator has
      * to suspend it first, a deliberate two-step gate. Reversible via {@link #restore}. Nothing is
      * physically removed; DELETED is just another "not ACTIVE" status, so every access gate
@@ -255,6 +305,7 @@ public class PlatformRestaurantService {
                 .name(request.getName())
                 .slug(request.getSlug())
                 .plan(request.getPlan() != null ? request.getPlan() : RestaurantPlan.FREE)
+                .deploymentMode(request.getDeploymentMode())
                 .build());
 
         userRepository.save(User.builder()
@@ -286,8 +337,11 @@ public class PlatformRestaurantService {
         PlatformOperator operator = platformOperatorRepository.findByEmail(operatorEmail)
                 .orElseThrow(() -> new BadCredentialsException("Invalid credentials"));
 
-        if (!restaurantRepository.existsById(restaurantId)) {
-            throw new ResourceNotFoundException("Restaurant not found: " + restaurantId);
+        Restaurant restaurant = restaurantRepository.findById(restaurantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Restaurant not found: " + restaurantId));
+        if (restaurant.getDeploymentMode() != DeploymentMode.HUB) {
+            throw new IllegalStateException(
+                    "Este restaurante usa Ember Web. Cambia su modo a Hub antes de emitir una licencia.");
         }
 
         String licenseKey = licenseIssuingService.issue(restaurantId);

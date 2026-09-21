@@ -81,4 +81,22 @@ describe('LicenseCard', () => {
 
     expect(onRemoveLicense).toHaveBeenCalledTimes(1);
   });
+
+  it('shows a "Migrada a Web (solo lectura)" badge and explains the read-only mode', () => {
+    render(
+      <LicenseCard
+        license={{
+          status: 'MIGRATED',
+          lastHeartbeatAt: null,
+          suspendedSince: null,
+          migratedSince: new Date().toISOString()
+        }}
+        onSelectLicense={vi.fn()}
+        onRemoveLicense={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText('Migrada a Web (solo lectura)')).toBeTruthy();
+    expect(screen.getByText(/modo consulta/i)).toBeTruthy();
+  });
 });

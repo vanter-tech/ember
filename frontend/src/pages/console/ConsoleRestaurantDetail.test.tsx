@@ -22,6 +22,7 @@ vi.mock('@/lib/platformApi', async (importOriginal) => {
       restoreRestaurant: vi.fn().mockResolvedValue(undefined),
       updateStatus: vi.fn(),
       issueHubLicense: vi.fn(),
+      updateMode: vi.fn(),
     },
     platformAuditLogService: { ...actual.platformAuditLogService, getByRestaurant: vi.fn() },
   }
@@ -36,6 +37,7 @@ const detail = (over: Record<string, unknown> = {}) => ({
   createdAt: '2026-09-01T00:00:00Z',
   admins: [],
   hubStatus: 'ONLINE',
+  deploymentMode: 'HUB',
   hubActivatedAt: '2026-09-02T00:00:00Z',
   lastHeartbeatAt: '2026-09-06T11:59:00Z',
   lastHeartbeatIp: '203.0.113.7',
@@ -118,5 +120,38 @@ describe('ConsoleRestaurantDetail', () => {
     )
     expect(screen.queryByRole('button', { name: 'Emitir licencia Hub' })).toBeNull()
     expect(screen.queryByRole('button', { name: 'Eliminar restaurante' })).toBeNull()
+  })
+
+  test('changing the mode needs the typed slug, shows the consequences and the plan reminder', async () => {
+    vi.mocked(platformRestaurantService.getById).mockResolvedValue(detail() as never)
+    vi.mocked(platformRestaurantService.updateMode).mockResolvedValue({} as never)
+    wrap(<ConsoleRestaurantDetail />)
+
+    expect(await screen.findByLabelText('Modo: Hub')).toBeVisible()
+    fireEvent.click(screen.getByRole('button', { name: 'Cambiar modo' }))
+
+    expect(screen.getByText(/su Hub queda en modo consulta/i)).toBeInTheDocument()
+    expect(screen.getByText(/Plan actual:/)).toBeInTheDocument()
+    const confirmBtn = screen.getByRole('button', { name: 'Confirmar cambio' })
+    expect(confirmBtn).toBeDisabled()
+
+    fireEvent.change(screen.getByLabelText('Escribe el slug para confirmar'), {
+      target: { value: 'tenant-grill' },
+    })
+    expect(confirmBtn).toBeEnabled()
+    fireEvent.click(confirmBtn)
+
+    await waitFor(() =>
+      expect(platformRestaurantService.updateMode).toHaveBeenCalledWith('r-1', 'CLOUD', 'tenant-grill')
+    )
+  })
+
+  test('a Web restaurant cannot be issued a Hub license from here', async () => {
+    vi.mocked(platformRestaurantService.getById).mockResolvedValue(
+      detail({ deploymentMode: 'CLOUD', status: 'ACTIVE' }) as never
+    )
+    wrap(<ConsoleRestaurantDetail />)
+
+    expect(await screen.findByRole('button', { name: 'Emitir licencia Hub' })).toBeDisabled()
   })
 })

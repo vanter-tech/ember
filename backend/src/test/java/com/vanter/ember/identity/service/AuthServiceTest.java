@@ -7,7 +7,9 @@ import com.vanter.ember.identity.model.dto.LoginRequest;
 import com.vanter.ember.identity.model.dto.PinLoginRequest;
 import com.vanter.ember.identity.model.dto.RegisterRequest;
 import com.vanter.ember.identity.repository.UserRepository;
+import com.vanter.ember.restaurant.model.DeploymentMode;
 import com.vanter.ember.restaurant.model.Restaurant;
+import com.vanter.ember.restaurant.repository.RestaurantRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -16,6 +18,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -25,6 +28,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -35,6 +39,7 @@ class AuthServiceTest {
     @Mock JwtService jwtService;
     @Mock PasswordEncoder passwordEncoder;
     @Mock PinAttemptGuard pinAttemptGuard;
+    @Mock RestaurantRepository restaurantRepository;
     @InjectMocks AuthService authService;
 
     @Test
@@ -269,5 +274,81 @@ class AuthServiceTest {
         req.setEmail("w@test.com"); req.setPin("1234");
 
         assertThatThrownBy(() -> authService.loginWithPin(req)).isInstanceOf(BadCredentialsException.class);
+    }
+
+    private static Restaurant restaurantIn(DeploymentMode mode) {
+        return Restaurant.builder().id(UUID.randomUUID()).name("R").slug("r").deploymentMode(mode).build();
+    }
+
+    private static User staffOf(Restaurant restaurant) {
+        return User.builder()
+                .id("user-1").name("Admin").email("admin@test.com").active(true)
+                .passwordHash("hashed").pinHash("pin-hashed").role(Role.ADMIN).restaurantId(restaurant).build();
+    }
+
+    private void stubRestaurantOf(User user) {
+        when(restaurantRepository.findById(user.getRestaurantId().getId()))
+                .thenReturn(Optional.of(user.getRestaurantId()));
+    }
+
+    @Test
+    void login_refusesAHubRestaurantsStaff_withTheSameErrorAsABadPassword() {
+        User user = staffOf(restaurantIn(DeploymentMode.HUB));
+        stubRestaurantOf(user);
+        LoginRequest req = new LoginRequest();
+        req.setEmail("admin@test.com");
+        req.setPassword("secret");
+        when(userRepository.findByEmail("admin@test.com")).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("secret", "hashed")).thenReturn(true);
+
+        assertThatThrownBy(() -> authService.login(req))
+                .isInstanceOf(BadCredentialsException.class)
+                .hasMessage("Invalid credentials");
+        verify(jwtService, never()).generateToken(any(), anyMap());
+    }
+
+    @Test
+    void login_stillWorksForACloudRestaurantsStaff() {
+        User user = staffOf(restaurantIn(DeploymentMode.CLOUD));
+        stubRestaurantOf(user);
+        LoginRequest req = new LoginRequest();
+        req.setEmail("admin@test.com");
+        req.setPassword("secret");
+        when(userRepository.findByEmail("admin@test.com")).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("secret", "hashed")).thenReturn(true);
+        when(jwtService.generateToken(eq("admin@test.com"), anyMap())).thenReturn("jwt-token");
+
+        assertThat(authService.login(req).getToken()).isEqualTo("jwt-token");
+    }
+
+    @Test
+    void login_isNotBlockedInsideTheHubItself() {
+        ReflectionTestUtils.setField(authService, "deploymentModeEnforced", false);
+        User user = staffOf(restaurantIn(DeploymentMode.HUB));
+        LoginRequest req = new LoginRequest();
+        req.setEmail("admin@test.com");
+        req.setPassword("secret");
+        when(userRepository.findByEmail("admin@test.com")).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("secret", "hashed")).thenReturn(true);
+        when(jwtService.generateToken(eq("admin@test.com"), anyMap())).thenReturn("jwt-token");
+
+        assertThat(authService.login(req).getToken()).isEqualTo("jwt-token");
+    }
+
+    @Test
+    void loginWithPin_refusesAHubRestaurantsStaff_andCountsItAsAFailedAttempt() {
+        User user = staffOf(restaurantIn(DeploymentMode.HUB));
+        stubRestaurantOf(user);
+        PinLoginRequest req = new PinLoginRequest();
+        req.setEmail("admin@test.com");
+        req.setPin("1234");
+        when(userRepository.findByEmail("admin@test.com")).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("1234", "pin-hashed")).thenReturn(true);
+
+        assertThatThrownBy(() -> authService.loginWithPin(req))
+                .isInstanceOf(BadCredentialsException.class)
+                .hasMessage("Invalid credentials");
+        verify(pinAttemptGuard).recordFailure("admin@test.com");
+        verify(pinAttemptGuard, never()).recordSuccess(any());
     }
 }

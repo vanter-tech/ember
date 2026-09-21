@@ -1,5 +1,6 @@
 package com.vanter.ember.restaurant.repository;
 
+import com.vanter.ember.restaurant.model.DeploymentMode;
 import com.vanter.ember.restaurant.model.Restaurant;
 import com.vanter.ember.restaurant.model.RestaurantStatus;
 import java.util.Optional;
@@ -18,6 +19,12 @@ public interface RestaurantRepository extends JpaRepository<Restaurant, UUID> {
     /** Console directory default view: every restaurant except soft-deleted ones. */
     Page<Restaurant> findByStatusNot(RestaurantStatus status, Pageable pageable);
 
+    /** Console directory filtered by mode, including soft-deleted rows. */
+    Page<Restaurant> findByDeploymentMode(DeploymentMode mode, Pageable pageable);
+
+    /** Console directory filtered by mode, default view (no soft-deleted). */
+    Page<Restaurant> findByStatusNotAndDeploymentMode(RestaurantStatus status, DeploymentMode mode, Pageable pageable);
+
     /** Console dashboard KPI: tenant count for one lifecycle status. */
     long countByStatus(RestaurantStatus status);
 
@@ -31,7 +38,7 @@ public interface RestaurantRepository extends JpaRepository<Restaurant, UUID> {
      * entity, not a fresh one. A native insert is the only reliable way to force this specific id.
      */
     @Modifying
-    @Query(value = "insert into restaurants (id, name, slug, plan, status, timezone, currency, created_at) "
-            + "values (:id, :name, :slug, 'FREE', 'ACTIVE', 'UTC', 'USD', now())", nativeQuery = true)
+    @Query(value = "insert into restaurants (id, name, slug, plan, status, timezone, currency, deployment_mode, created_at) "
+            + "values (:id, :name, :slug, 'FREE', 'ACTIVE', 'UTC', 'USD', 'HUB', now())", nativeQuery = true)
     void insertWithId(@Param("id") UUID id, @Param("name") String name, @Param("slug") String slug);
 }

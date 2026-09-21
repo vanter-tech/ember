@@ -2,6 +2,8 @@ package com.vanter.ember.licensing.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.vanter.ember.config.ResourceNotFoundException;
@@ -14,6 +16,7 @@ import com.vanter.ember.licensing.model.HubActivation;
 import com.vanter.ember.licensing.model.dto.HubActivationRequest;
 import com.vanter.ember.licensing.model.dto.HubActivationResponse;
 import com.vanter.ember.licensing.repository.HubActivationRepository;
+import com.vanter.ember.restaurant.model.DeploymentMode;
 import com.vanter.ember.restaurant.model.Restaurant;
 import com.vanter.ember.restaurant.repository.RestaurantRepository;
 import java.security.KeyPair;
@@ -61,7 +64,8 @@ class HubActivationServiceTest {
     }
 
     private Restaurant restaurant() {
-        return Restaurant.builder().id(restaurantId).name("Tenant Grill").slug("tenant-grill").build();
+        return Restaurant.builder().id(restaurantId).name("Tenant Grill").slug("tenant-grill")
+                .deploymentMode(DeploymentMode.HUB).build();
     }
 
     private User admin() {
@@ -117,6 +121,17 @@ class HubActivationServiceTest {
         assertThatThrownBy(() -> hubActivationService.activate(request("fp-2")))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("otra PC");
+    }
+
+    @Test
+    void activate_refusesARestaurantThatIsNotInHubMode() throws Exception {
+        Restaurant web = Restaurant.builder().id(restaurantId).name("Web Grill").slug("web-grill")
+                .deploymentMode(DeploymentMode.CLOUD).build();
+        when(restaurantRepository.findById(restaurantId)).thenReturn(Optional.of(web));
+
+        assertThatThrownBy(() -> hubActivationService.activate(request("fp-1")))
+                .isInstanceOf(IllegalStateException.class);
+        verify(hubActivationRepository, never()).save(org.mockito.ArgumentMatchers.any());
     }
 
     @Test

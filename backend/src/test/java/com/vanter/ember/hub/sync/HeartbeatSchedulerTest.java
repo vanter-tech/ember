@@ -203,4 +203,38 @@ class HeartbeatSchedulerTest {
 
         assertThat(stateStore.load().orElseThrow().lastHeartbeatAt()).isEqualTo(before.lastHeartbeatAt());
     }
+
+    @Test
+    void migrated_stampsMigratedSince_andLeavesTheHeartbeat() throws Exception {
+        Instant oldHeartbeat = Instant.now().minus(2, ChronoUnit.DAYS);
+        stateStore.save(new HubState("fp", restaurantId, oldHeartbeat, null));
+        startSigningServer("MIGRATED", cloudKeys.getPrivate(), false);
+
+        new HeartbeatScheduler(propsPointingAt(url()), stateStore, licenseService).runHeartbeat();
+
+        HubState after = stateStore.load().orElseThrow();
+        assertThat(after.migratedSince()).isNotNull();
+        assertThat(after.lastHeartbeatAt()).isEqualTo(oldHeartbeat);
+    }
+
+    @Test
+    void unsignedMigrated_isIgnored() throws Exception {
+        stateStore.save(new HubState("fp", restaurantId, Instant.now().minus(2, ChronoUnit.DAYS), null));
+        startServer(200, "{\"status\":\"MIGRATED\",\"serverTime\":\"2026-08-28T00:00:00Z\",\"latestVersion\":null}");
+
+        new HeartbeatScheduler(propsPointingAt(url()), stateStore, licenseService).runHeartbeat();
+
+        assertThat(stateStore.load().orElseThrow().migratedSince()).isNull();
+    }
+
+    @Test
+    void okAfterMigrated_clearsMigratedSince() throws Exception {
+        stateStore.save(new HubState("fp", restaurantId, Instant.now().minus(2, ChronoUnit.DAYS), null, null,
+                Instant.now().minus(1, ChronoUnit.DAYS)));
+        startSigningServer("OK", cloudKeys.getPrivate(), false);
+
+        new HeartbeatScheduler(propsPointingAt(url()), stateStore, licenseService).runHeartbeat();
+
+        assertThat(stateStore.load().orElseThrow().migratedSince()).isNull();
+    }
 }

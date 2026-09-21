@@ -2,6 +2,7 @@ package com.vanter.ember.platform.controller;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -19,6 +20,7 @@ import com.vanter.ember.platform.model.dto.PlatformRestaurantSummaryResponse;
 import com.vanter.ember.platform.service.PlatformJwtService;
 import com.vanter.ember.platform.service.PlatformOperatorDetailsService;
 import com.vanter.ember.platform.service.PlatformRestaurantService;
+import com.vanter.ember.restaurant.model.DeploymentMode;
 import com.vanter.ember.restaurant.model.RestaurantPlan;
 import com.vanter.ember.restaurant.model.RestaurantStatus;
 import java.time.Instant;
@@ -62,6 +64,7 @@ class PlatformRestaurantControllerTest {
     private static final String VALID_CREATE_BODY = "{"
             + "\"name\":\"Tenant Grill\","
             + "\"slug\":\"tenant-grill\","
+            + "\"deploymentMode\":\"HUB\","
             + "\"adminName\":\"Owner Admin\","
             + "\"adminEmail\":\"owner@tenant-grill.local\","
             + "\"adminPassword\":\"Str0ng!Pass\"}";
@@ -136,7 +139,7 @@ class PlatformRestaurantControllerTest {
                 .status(RestaurantStatus.ACTIVE)
                 .createdAt(Instant.now())
                 .build();
-        when(platformRestaurantService.getAll(any(), eq(false))).thenReturn(new PageImpl<>(List.of(summary)));
+        when(platformRestaurantService.getAll(any(), eq(false), isNull())).thenReturn(new PageImpl<>(List.of(summary)));
 
         mockMvc.perform(get("/platform/restaurants").header("Authorization", "Bearer " + TOKEN))
                 .andExpect(status().isOk())
@@ -190,14 +193,14 @@ class PlatformRestaurantControllerTest {
     @Test
     void getAll_forwardsIncludeDeleted() throws Exception {
         authenticate();
-        when(platformRestaurantService.getAll(any(), eq(true))).thenReturn(new PageImpl<>(List.of()));
+        when(platformRestaurantService.getAll(any(), eq(true), isNull())).thenReturn(new PageImpl<>(List.of()));
 
         mockMvc.perform(get("/platform/restaurants")
                         .param("includeDeleted", "true")
                         .header("Authorization", "Bearer " + TOKEN))
                 .andExpect(status().isOk());
 
-        org.mockito.Mockito.verify(platformRestaurantService).getAll(any(), eq(true));
+        org.mockito.Mockito.verify(platformRestaurantService).getAll(any(), eq(true), isNull());
     }
 
     @Test
@@ -381,5 +384,59 @@ class PlatformRestaurantControllerTest {
         mockMvc.perform(post("/platform/restaurants/" + id + "/hub-license")
                         .header("Authorization", "Bearer " + TOKEN))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void create_returns400WhenTheDeploymentModeIsMissing() throws Exception {
+        authenticate();
+
+        mockMvc.perform(post("/platform/restaurants")
+                        .header("Authorization", "Bearer " + TOKEN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"Tenant Grill\",\"slug\":\"tenant-grill\","
+                                + "\"adminName\":\"Owner Admin\",\"adminEmail\":\"owner@tenant-grill.local\","
+                                + "\"adminPassword\":\"Str0ng!Pass\"}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void getAll_forwardsTheModeFilter() throws Exception {
+        authenticate();
+        when(platformRestaurantService.getAll(any(), eq(false), eq(DeploymentMode.HUB)))
+                .thenReturn(new PageImpl<>(List.of()));
+
+        mockMvc.perform(get("/platform/restaurants?mode=HUB")
+                        .header("Authorization", "Bearer " + TOKEN))
+                .andExpect(status().isOk());
+
+        org.mockito.Mockito.verify(platformRestaurantService).getAll(any(), eq(false), eq(DeploymentMode.HUB));
+    }
+
+    @Test
+    void updateMode_delegatesToTheServiceWithTheTypedSlug() throws Exception {
+        authenticate();
+        UUID id = UUID.randomUUID();
+        when(platformRestaurantService.updateDeploymentMode(
+                eq(id), eq(DeploymentMode.CLOUD), eq("tenant-grill"), eq(OPERATOR_EMAIL)))
+                .thenReturn(PlatformRestaurantSummaryResponse.builder().id(id).slug("tenant-grill")
+                        .deploymentMode(DeploymentMode.CLOUD).build());
+
+        mockMvc.perform(patch("/platform/restaurants/" + id + "/mode")
+                        .header("Authorization", "Bearer " + TOKEN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"mode\":\"CLOUD\",\"confirmSlug\":\"tenant-grill\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.deploymentMode").value("CLOUD"));
+    }
+
+    @Test
+    void updateMode_returns400WithoutTheConfirmationSlug() throws Exception {
+        authenticate();
+
+        mockMvc.perform(patch("/platform/restaurants/" + UUID.randomUUID() + "/mode")
+                        .header("Authorization", "Bearer " + TOKEN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"mode\":\"CLOUD\"}"))
+                .andExpect(status().isBadRequest());
     }
 }

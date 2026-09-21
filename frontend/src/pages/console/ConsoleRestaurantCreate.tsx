@@ -39,6 +39,8 @@ const createSchema = z.object({
       'El slug debe ser minúsculas y números separados por guiones'
     ),
   plan: z.enum(['FREE', 'STARTER', 'PRO', 'ENTERPRISE']),
+  // No default on purpose: the operator must choose Web or Hub (see defaultValues).
+  deploymentMode: z.enum(['CLOUD', 'HUB'], { error: 'Elige el modo de uso' }),
   adminName: z.string().min(1, 'El nombre del admin es obligatorio'),
   adminEmail: z
     .string()
@@ -149,6 +151,28 @@ export default function ConsoleRestaurantCreate() {
                         <SelectItem value="STARTER">Starter</SelectItem>
                         <SelectItem value="PRO">Pro</SelectItem>
                         <SelectItem value="ENTERPRISE">Enterprise</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="deploymentMode"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Modo de uso</FormLabel>
+                    <Select value={field.value ?? ''} onValueChange={field.onChange}>
+                      <FormControl>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Selecciona Web o Hub" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="CLOUD">Web (Ember en la nube)</SelectItem>
+                        <SelectItem value="HUB">Hub (instalado en el local)</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />

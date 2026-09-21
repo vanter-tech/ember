@@ -117,6 +117,28 @@ public class LicenseService {
     }
 
     /**
+     * True once a Hub whose restaurant moved to Ember Web (cloud status MIGRATED) has been past the
+     * courtesy window: from then on the Hub is read-only. Reuses the suspension courtesy length.
+     */
+    public boolean isMigratedGraceExpired(HubState state) {
+        return state.migratedSince() != null
+                && Duration.between(state.migratedSince(), Instant.now()).compareTo(suspendedGrace) > 0;
+    }
+
+    /**
+     * Stamps {@code migratedSince} the first time the cloud reports MIGRATED and persists it; later
+     * cycles are a no-op so the courtesy clock is not reset every heartbeat.
+     */
+    public HubState recordMigrated(HubState state) {
+        if (state.migratedSince() != null) {
+            return state;
+        }
+        HubState updated = state.withMigratedSince(Instant.now());
+        stateStore.save(updated);
+        return updated;
+    }
+
+    /**
      * Stamps {@code suspendedSince} the first time the cloud reports SUSPENDED and persists it; a
      * later SUSPENDED cycle is a no-op so the courtesy-grace counter is not reset every heartbeat.
      */

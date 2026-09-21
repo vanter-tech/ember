@@ -173,7 +173,10 @@ public final class DefaultHubOrchestrator implements HubOrchestrator {
     }
 
     private LicenseSnapshot toLicenseSnapshot(HubState state) {
-        String status = state.suspendedSince() != null ? LicenseSnapshot.SUSPENDED : LicenseSnapshot.OK;
-        return new LicenseSnapshot(status, state.lastHeartbeatAt(), state.suspendedSince());
+        // MIGRATED wins: a restaurant that moved to Ember Web is not "suspended", it is read-only.
+        String status = state.migratedSince() != null
+                ? LicenseSnapshot.MIGRATED
+                : state.suspendedSince() != null ? LicenseSnapshot.SUSPENDED : LicenseSnapshot.OK;
+        return new LicenseSnapshot(status, state.lastHeartbeatAt(), state.suspendedSince(), state.migratedSince());
     }
 }

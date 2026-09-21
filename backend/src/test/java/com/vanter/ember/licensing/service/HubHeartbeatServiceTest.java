@@ -11,6 +11,7 @@ import com.vanter.ember.licensing.model.HubActivation;
 import com.vanter.ember.licensing.model.dto.HubHeartbeatRequest;
 import com.vanter.ember.licensing.model.dto.HubHeartbeatResponse;
 import com.vanter.ember.licensing.repository.HubActivationRepository;
+import com.vanter.ember.restaurant.model.DeploymentMode;
 import com.vanter.ember.restaurant.model.Restaurant;
 import com.vanter.ember.restaurant.model.RestaurantStatus;
 import com.vanter.ember.restaurant.repository.RestaurantRepository;
@@ -188,6 +189,25 @@ class HubHeartbeatServiceTest {
         Restaurant restaurant = new Restaurant();
         restaurant.setId(restaurantId);
         restaurant.setStatus(status);
+        restaurant.setDeploymentMode(DeploymentMode.HUB);
         return restaurant;
+    }
+
+    @Test
+    void heartbeat_restaurantThatMovedToWeb_returnsMigrated() throws InvalidLicenseException {
+        Restaurant migrated = restaurantWithStatus(RestaurantStatus.ACTIVE);
+        migrated.setDeploymentMode(DeploymentMode.CLOUD);
+        when(restaurantRepository.findById(restaurantId)).thenReturn(Optional.of(migrated));
+
+        assertThat(service.heartbeat(request(FP), IP).getStatus()).isEqualTo("MIGRATED");
+    }
+
+    @Test
+    void heartbeat_migratedTakesPrecedenceOverSuspended() throws InvalidLicenseException {
+        Restaurant migrated = restaurantWithStatus(RestaurantStatus.SUSPENDED);
+        migrated.setDeploymentMode(DeploymentMode.CLOUD);
+        when(restaurantRepository.findById(restaurantId)).thenReturn(Optional.of(migrated));
+
+        assertThat(service.heartbeat(request(FP), IP).getStatus()).isEqualTo("MIGRATED");
     }
 }

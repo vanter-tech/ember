@@ -12,6 +12,10 @@ ember:
     # Hub = paid on-premise license; its restaurant is seeded as FREE, so SaaS plan gates
     # (branding, table count, ...) would 402 the onboarding wizard. See PlanGateService.
     enforced: false
+  deployment-mode:
+    # Inside the Hub its own restaurant is HUB and must keep working; the "closed to Web" gates
+    # only make sense in the cloud. See DeploymentMode.isClosedToWeb.
+    enforced: false
   hub:
     heartbeat-interval-ms: ${EMBER_HUB_HEARTBEAT_INTERVAL_MS:300000}
   printing:

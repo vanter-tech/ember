@@ -98,6 +98,10 @@ public class HeartbeatScheduler {
             } else if ("SUSPENDED".equals(body.status())) {
                 licenseService.recordSuspended(state);
                 log.warn("Heartbeat reports the restaurant is SUSPENDED.");
+            } else if ("MIGRATED".equals(body.status())) {
+                licenseService.recordMigrated(state);
+                log.warn("Heartbeat reports the restaurant now runs on Ember Web (MIGRATED); this Hub "
+                        + "goes read-only after the courtesy period.");
             } else {
                 log.warn("Heartbeat returned unrecognised status '{}'.", body.status());
             }

@@ -11,6 +11,7 @@ import com.vanter.ember.identity.model.Role;
 import com.vanter.ember.identity.model.User;
 import com.vanter.ember.identity.repository.UserRepository;
 import com.vanter.ember.kitchen.event.KitchenItemUpdated;
+import com.vanter.ember.restaurant.model.DeploymentMode;
 import com.vanter.ember.restaurant.model.Restaurant;
 import com.vanter.ember.restaurant.model.RestaurantStatus;
 import com.vanter.ember.restaurant.repository.RestaurantRepository;
@@ -567,6 +568,20 @@ class SessionServiceTest {
                 .thenReturn(List.of(openSessionWithCapacity(4, List.of())));
         when(restaurantRepository.findById(RESTAURANT_ID)).thenReturn(Optional.of(
                 Restaurant.builder().id(RESTAURANT_ID).status(RestaurantStatus.SUSPENDED).build()));
+
+        assertThatThrownBy(() -> sessionService.joinSessionCode("AB3CD", "user-1"))
+                .isInstanceOf(AccessDeniedException.class);
+        verify(sessionRepository, never()).save(any());
+    }
+
+    @Test
+    void joinCode_refusesWhenTheResolvedRestaurantRunsOnAHub() {
+        when(userRepository.findByEmail("user-1")).thenReturn(Optional.of(user("user-1")));
+        when(sessionRepository.findByJoinCodeAndStatus("AB3CD", SessionStatus.OPEN))
+                .thenReturn(List.of(openSessionWithCapacity(4, List.of())));
+        when(restaurantRepository.findById(RESTAURANT_ID)).thenReturn(Optional.of(
+                Restaurant.builder().id(RESTAURANT_ID).status(RestaurantStatus.ACTIVE)
+                        .deploymentMode(DeploymentMode.HUB).build()));
 
         assertThatThrownBy(() -> sessionService.joinSessionCode("AB3CD", "user-1"))
                 .isInstanceOf(AccessDeniedException.class);

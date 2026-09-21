@@ -1,6 +1,7 @@
 package com.vanter.ember.restaurant.service;
 
 import com.vanter.ember.config.ResourceNotFoundException;
+import com.vanter.ember.restaurant.model.DeploymentMode;
 import com.vanter.ember.restaurant.model.Restaurant;
 import com.vanter.ember.restaurant.model.RestaurantPlan;
 import com.vanter.ember.restaurant.model.RestaurantStatus;
@@ -29,6 +30,17 @@ public class RestaurantService {
     public Restaurant updatePlan(UUID restaurantId, RestaurantPlan plan) {
         Restaurant restaurant = getCurrent(restaurantId);
         restaurant.setPlan(plan);
+        return restaurantRepository.save(restaurant);
+    }
+
+    /**
+     * Only reachable via the platform-operator path
+     * ({@link com.vanter.ember.platform.service.PlatformRestaurantService#updateDeploymentMode}):
+     * the mode decides who may sign in where, so the tenant never chooses it.
+     */
+    public Restaurant updateDeploymentMode(UUID restaurantId, DeploymentMode mode) {
+        Restaurant restaurant = getCurrent(restaurantId);
+        restaurant.setDeploymentMode(mode);
         return restaurantRepository.save(restaurant);
     }
 

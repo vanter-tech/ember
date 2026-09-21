@@ -6,6 +6,7 @@ import toast from 'react-hot-toast'
 import {
   platformAuditLogService,
   platformRestaurantService,
+  type DeploymentMode,
   type PlatformRestaurantDetail,
 } from '@/lib/platformApi'
 import { PaginationControls } from '@/components/PaginationControls'
@@ -52,6 +53,11 @@ const statusBadgeClass = (status: string) => {
   }
 }
 
+const modeBadgeClass = (mode: string) =>
+  mode === 'HUB' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-700'
+const modeLabel = (mode: string) => (mode === 'HUB' ? 'Hub' : 'Web')
+const otherMode = (mode: DeploymentMode): DeploymentMode => (mode === 'HUB' ? 'CLOUD' : 'HUB')
+
 const nextStatus = (
   status: PlatformRestaurantDetail['status']
 ): PlatformRestaurantDetail['status'] => (status === 'SUSPENDED' ? 'ACTIVE' : 'SUSPENDED')
@@ -62,6 +68,8 @@ export default function ConsoleRestaurantDetail() {
   const [auditPage, setAuditPage] = useState(0)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [slugInput, setSlugInput] = useState('')
+  const [showModeConfirm, setShowModeConfirm] = useState(false)
+  const [modeSlugInput, setModeSlugInput] = useState('')
 
   const {
     data: restaurant,
@@ -96,6 +104,27 @@ export default function ConsoleRestaurantDetail() {
     mutationFn: (plan: PlatformRestaurantDetail['plan']) =>
       platformRestaurantService.updatePlan(id!, plan),
     onSuccess: invalidateAll,
+  })
+
+  const changeMode = useMutation({
+    mutationFn: (mode: DeploymentMode) =>
+      platformRestaurantService.updateMode(id!, mode, modeSlugInput),
+    onSuccess: () => {
+      setShowModeConfirm(false)
+      setModeSlugInput('')
+      invalidateAll()
+    },
+    onError: (error) => {
+      const detail =
+        axios.isAxiosError(error) &&
+        typeof (error.response?.data as { detail?: unknown })?.detail === 'string'
+          ? (error.response!.data as { detail: string }).detail
+          : undefined
+      toast.error(detail ?? 'No se pudo cambiar el modo', {
+        id: 'console-mode-error',
+        duration: 5000,
+      })
+    },
   })
 
   const deleteRestaurant = useMutation({
@@ -163,7 +192,10 @@ export default function ConsoleRestaurantDetail() {
               <>
                 <Button
                   variant="outline"
-                  disabled={issueHubLicense.isPending}
+                  disabled={issueHubLicense.isPending || restaurant.deploymentMode !== 'HUB'}
+                  title={
+                    restaurant.deploymentMode !== 'HUB' ? 'Solo restaurantes en modo Hub' : undefined
+                  }
                   onClick={() => issueHubLicense.mutate()}
                 >
                   {issueHubLicense.isPending ? 'Emitiendo...' : 'Emitir licencia Hub'}
@@ -222,6 +254,25 @@ export default function ConsoleRestaurantDetail() {
                 <SelectItem value="ENTERPRISE">Enterprise</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+          <div>
+            <div className="text-zinc-500">Modo de uso</div>
+            <div className="flex items-center gap-2">
+              <Badge
+                aria-label={`Modo: ${modeLabel(restaurant.deploymentMode)}`}
+                className={modeBadgeClass(restaurant.deploymentMode)}
+              >
+                {modeLabel(restaurant.deploymentMode)}
+              </Badge>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={restaurant.status === 'DELETED'}
+                onClick={() => setShowModeConfirm(true)}
+              >
+                Cambiar modo
+              </Button>
+            </div>
           </div>
           <div>
             <div className="text-zinc-500">Estado</div>
@@ -349,6 +400,67 @@ export default function ConsoleRestaurantDetail() {
         totalPages={auditLogPage?.totalPages ?? 0}
         onPageChange={setAuditPage}
       />
+
+      <Dialog
+        open={showModeConfirm}
+        onOpenChange={(open) => {
+          setShowModeConfirm(open)
+          if (!open) setModeSlugInput('')
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Cambiar modo de uso</DialogTitle>
+            <DialogDescription>
+              {restaurant.deploymentMode === 'HUB' ? (
+                <>
+                  Pasar <span className="font-medium">{restaurant.name}</span> a{' '}
+                  <strong>Web</strong>: su Hub queda en modo consulta (solo lectura) tras 48 h y la
+                  cuenta web empieza vacía. No se copian datos.
+                </>
+              ) : (
+                <>
+                  Pasar <span className="font-medium">{restaurant.name}</span> a{' '}
+                  <strong>Hub</strong>: el acceso a Ember Web se bloquea de inmediato y sus datos en
+                  la nube quedan guardados pero inaccesibles. No se copian datos.
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <p className="text-sm text-zinc-600">
+            Plan actual: <span className="font-medium">{restaurant.plan}</span>. Asigna el plan
+            acordado después del cambio.
+          </p>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="mode-slug" className="text-sm text-zinc-600">
+              Escribe el slug para confirmar
+            </Label>
+            <input
+              id="mode-slug"
+              className="rounded-md border border-zinc-300 px-2 py-1 text-sm"
+              value={modeSlugInput}
+              onChange={(e) => setModeSlugInput(e.target.value)}
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowModeConfirm(false)
+                setModeSlugInput('')
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button
+              disabled={modeSlugInput !== restaurant.slug || changeMode.isPending}
+              onClick={() => changeMode.mutate(otherMode(restaurant.deploymentMode))}
+            >
+              Confirmar cambio
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog
         open={showDeleteConfirm}

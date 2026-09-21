@@ -1,10 +1,11 @@
 export type ServicePhase = 'STOPPED' | 'STARTING' | 'RUNNING' | 'STOPPING' | 'ERROR';
-export type LicenseStatus = 'OK' | 'SUSPENDED' | 'NONE';
+export type LicenseStatus = 'OK' | 'SUSPENDED' | 'MIGRATED' | 'NONE';
 
 export interface LicenseSnapshot {
   status: LicenseStatus;
   lastHeartbeatAt: string | null;
   suspendedSince: string | null;
+  migratedSince?: string | null;
 }
 
 export interface HubStatus {

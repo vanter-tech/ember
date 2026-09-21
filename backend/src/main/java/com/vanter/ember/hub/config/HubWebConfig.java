@@ -3,6 +3,7 @@ package com.vanter.ember.hub.config;
 import com.vanter.ember.hub.license.GracePeriodInterceptor;
 import com.vanter.ember.hub.license.HubStateStore;
 import com.vanter.ember.hub.license.LicenseService;
+import com.vanter.ember.hub.license.ReadOnlyModeInterceptor;
 import java.io.IOException;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -19,9 +20,11 @@ import org.springframework.web.servlet.resource.PathResourceResolver;
 public class HubWebConfig implements WebMvcConfigurer {
 
     private final GracePeriodInterceptor gracePeriodInterceptor;
+    private final ReadOnlyModeInterceptor readOnlyModeInterceptor;
 
     public HubWebConfig(LicenseService licenseService, HubStateStore stateStore) {
         this.gracePeriodInterceptor = new GracePeriodInterceptor(licenseService, stateStore);
+        this.readOnlyModeInterceptor = new ReadOnlyModeInterceptor(licenseService, stateStore);
     }
 
     @Bean
@@ -33,6 +36,12 @@ public class HubWebConfig implements WebMvcConfigurer {
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(gracePeriodInterceptor)
                 .addPathPatterns("/sessions/*/items", "/sessions/*/participants/*/confirm", "/billing/**");
+        // Every write, once the restaurant moved to Ember Web and the courtesy has passed. Login,
+        // the bundled SPA and the health endpoints stay reachable so the customer can still sign
+        // in and read their history.
+        registry.addInterceptor(readOnlyModeInterceptor)
+                .addPathPatterns("/**")
+                .excludePathPatterns("/auth/**", "/app/**", "/actuator/**", "/error", "/ws/**");
     }
 
     /**

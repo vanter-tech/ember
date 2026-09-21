@@ -33,10 +33,15 @@ public interface HubOrchestrator {
 
     HubStatusSnapshot snapshot();
 
-    record LicenseSnapshot(String status, Instant lastHeartbeatAt, Instant suspendedSince) {
+    record LicenseSnapshot(String status, Instant lastHeartbeatAt, Instant suspendedSince, Instant migratedSince) {
         public static final String OK = "OK";
         public static final String SUSPENDED = "SUSPENDED";
+        public static final String MIGRATED = "MIGRATED";
         public static final String NONE = "NONE";
+
+        public LicenseSnapshot(String status, Instant lastHeartbeatAt, Instant suspendedSince) {
+            this(status, lastHeartbeatAt, suspendedSince, null);
+        }
     }
 
     record HubStatusSnapshot(
