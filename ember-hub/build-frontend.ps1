@@ -34,4 +34,21 @@ window.ENV = {
 '@
 Set-Content -Path (Join-Path $staticDir "env-config.js") -Value $envConfig -Encoding ascii -NoNewline
 
+# The shared index.html loads env-config.js with a RELATIVE src (needed so --base=/app/ works).
+# On a hard refresh (F5) of any inner route, e.g. /app/waiter/tables, the browser then asks for
+# /app/waiter/env-config.js; HubWebConfig's SPA fallback answers that with index.html (HTML), the
+# script never runs, window.ENV stays undefined and the API client falls back to the baked-in
+# http://localhost:8080/v1 - a prefix the Hub does not have, or another PC's localhost - so every
+# call fails ("Failed to fetch", blank page). Pin the tag to the real path. Same fix the cloud
+# build applies in frontend/scripts/gen-env-config.mjs.
+$indexPath = Join-Path $staticDir "index.html"
+$indexHtml = [System.IO.File]::ReadAllText($indexPath)
+if (-not $indexHtml.Contains('src="env-config.js"')) {
+    throw "${indexPath}: expected <script src=""env-config.js""> not found - did frontend/index.html change?"
+}
+[System.IO.File]::WriteAllText(
+    $indexPath,
+    $indexHtml.Replace('src="env-config.js"', 'src="/app/env-config.js"'),
+    (New-Object System.Text.UTF8Encoding($false)))
+
 Write-Host "Done. Frontend bundled into $staticDir"

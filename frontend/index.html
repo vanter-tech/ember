@@ -14,7 +14,9 @@
          --base, so an absolute path would ignore --base=/app/ (used by the Hub build) and
          request it from the server root instead of alongside index.html. The Cloudflare Pages
          build (served from root) rewrites this to "/env-config.js" in scripts/gen-env-config.mjs
-         so deep links don't hit the SPA fallback for "/<route>/env-config.js". -->
+         so deep links don't hit the SPA fallback for "/<route>/env-config.js"; the Hub build
+         rewrites it to "/app/env-config.js" in ember-hub/build-frontend.ps1 for the same reason
+         (F5 on any inner route would otherwise leave window.ENV undefined). -->
     <script src="env-config.js"></script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
