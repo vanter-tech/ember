@@ -13,17 +13,33 @@ import java.util.List;
  * port already in use, an empty data directory (first run — runs {@code initdb}), and a data
  * directory {@code pg_ctl} refuses to start (corruption or any other reason) — each gets a
  * distinct, actionable error message rather than a generic stack trace.
+ *
+ * <p>The {@code ember} superuser's password is only ever set once, at {@code initdb} time
+ * (F-21), which is also when {@code pg_hba.conf}'s auth method is fixed as {@code scram-sha-256}
+ * instead of Windows's default {@code trust} for loopback — neither rotates on an
+ * already-initialized data directory. A fresh install gets a random per-machine password
+ * generated into {@code hub.env} by the Tauri shell (and real, enforced auth); an install from
+ * before this existed keeps whatever password — and {@code trust} auth — its data directory
+ * already has.
  */
 public class PortableDatabaseBootstrap {
 
     private final Path dataDir;
     private final Path postgresBinDir;
     private final int port;
+    private final String password;
 
+    /** Uses the historical hardcoded local password (F-21's pre-fix default) — for callers that
+     *  don't rotate credentials (most tests: they only care about a scratch data directory). */
     public PortableDatabaseBootstrap(Path dataDir, Path postgresBinDir, int port) {
+        this(dataDir, postgresBinDir, port, "ember");
+    }
+
+    public PortableDatabaseBootstrap(Path dataDir, Path postgresBinDir, int port, String password) {
         this.dataDir = dataDir;
         this.postgresBinDir = postgresBinDir;
         this.port = port;
+        this.password = password;
     }
 
     public void ensureRunning() throws PortableDatabaseException {
@@ -76,13 +92,18 @@ public class PortableDatabaseBootstrap {
         try {
             Files.createDirectories(dataDir);
             pwFile = Files.createTempFile("ember-hub-initdb", ".txt");
-            Files.writeString(pwFile, "ember");
+            Files.writeString(pwFile, password);
 
             Process process = new ProcessBuilder(
                     postgresBinDir.resolve("initdb").toString(),
                     "-D", dataDir.toString(),
                     "-U", "ember",
                     "--pwfile", pwFile.toString(),
+                    // F-21: without an explicit -A, initdb falls back to "trust" for local/loopback
+                    // connections on Windows — meaning the password above would never actually be
+                    // checked by anything. scram-sha-256 makes it the real access boundary it looks
+                    // like it is.
+                    "-A", "scram-sha-256",
                     "-E", "UTF8")
                     .redirectErrorStream(true)
                     .start();
@@ -144,14 +165,15 @@ public class PortableDatabaseBootstrap {
      */
     private void ensureApplicationDatabaseExists() throws PortableDatabaseException {
         try {
-            Process process = new ProcessBuilder(
+            ProcessBuilder builder = new ProcessBuilder(
                     postgresBinDir.resolve("createdb").toString(),
                     "-U", "ember",
                     "-h", "127.0.0.1",
                     "-p", String.valueOf(port),
                     "ember")
-                    .redirectErrorStream(true)
-                    .start();
+                    .redirectErrorStream(true);
+            builder.environment().put("PGPASSWORD", password);
+            Process process = builder.start();
             String output = new String(process.getInputStream().readAllBytes());
             int exitCode = process.waitFor();
             if (exitCode != 0 && !output.contains("already exists") && !output.contains("ya existe")) {

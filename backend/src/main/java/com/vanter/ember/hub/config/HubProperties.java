@@ -22,7 +22,22 @@ public record HubProperties(
         Path minioBinDir,
         int minioPort,
         String heartbeatUrl,
-        int suspendedGraceHours) {
+        int suspendedGraceHours,
+        String postgresPassword,
+        String minioSecretKey) {
+
+    /** Back-compat: the pre-credential-rotation 13-arg shape (F-21), still used by tests that
+     *  don't care about it — defaults to the historical hardcoded local credentials, same as
+     *  {@code application-hub.yml}'s own fallback for a `hub.env` that predates this field. */
+    public HubProperties(
+            Path dataDir, Path postgresBinDir, Path licenseFile, Path publicKeyFile, Path stateFile,
+            int postgresPort, int serverPort, String activationUrl,
+            Path minioDataDir, Path minioBinDir, int minioPort,
+            String heartbeatUrl, int suspendedGraceHours) {
+        this(dataDir, postgresBinDir, licenseFile, publicKeyFile, stateFile, postgresPort, serverPort,
+                activationUrl, minioDataDir, minioBinDir, minioPort, heartbeatUrl, suspendedGraceHours,
+                "ember", "ember-hub-local");
+    }
 
     /** Back-compat: the pre-heartbeat 11-arg shape, still used by tests that don't care about it. */
     public HubProperties(
@@ -47,7 +62,12 @@ public record HubProperties(
                 Path.of(env("EMBER_HUB_MINIO_BIN_DIR", "./minio/bin")),
                 Integer.parseInt(env("EMBER_HUB_MINIO_PORT", "9000")),
                 env("EMBER_HUB_HEARTBEAT_URL", ""),
-                Integer.parseInt(env("EMBER_HUB_SUSPENDED_GRACE_HOURS", "48")));
+                Integer.parseInt(env("EMBER_HUB_SUSPENDED_GRACE_HOURS", "48")),
+                // F-21: a fresh Hub install gets a random value generated into hub.env by the
+                // Tauri shell (ensure_hub_env in main.rs); these literals are only ever used as
+                // a fallback for a hub.env that predates this change, or a manual local run.
+                env("EMBER_HUB_POSTGRES_PASSWORD", "ember"),
+                env("EMBER_HUB_MINIO_SECRET_KEY", "ember-hub-local"));
     }
 
     private static String env(String name, String fallback) {

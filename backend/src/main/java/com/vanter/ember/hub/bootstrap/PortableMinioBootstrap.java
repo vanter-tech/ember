@@ -18,6 +18,12 @@ import java.util.concurrent.TimeUnit;
  * {@link PortableDatabaseBootstrap}, adapted to MinIO's differences: no blocking "wait until
  * ready" start flag (polls the health endpoint instead) and no on-disk pid file (the live
  * {@link Process} handle is tracked in memory instead).
+ *
+ * <p>Unlike Postgres, MinIO's root credentials (F-21) are not baked into the data directory on
+ * first run — with no other IAM users ever created here, it accepts whatever
+ * {@code MINIO_ROOT_PASSWORD} the environment supplies on every launch, so a data directory
+ * created under the old hardcoded secret starts working under a newly-rotated one immediately,
+ * no migration needed.
  */
 public class PortableMinioBootstrap {
 
@@ -28,14 +34,22 @@ public class PortableMinioBootstrap {
     private final Path dataDir;
     private final Path minioBinDir;
     private final int port;
+    private final String secretKey;
     private final HttpClient httpClient = HttpClient.newHttpClient();
 
     private Process process;
 
+    /** Uses the historical hardcoded local secret key (F-21's pre-fix default) — for callers
+     *  that don't rotate credentials (most tests: they only care about a scratch data directory). */
     public PortableMinioBootstrap(Path dataDir, Path minioBinDir, int port) {
+        this(dataDir, minioBinDir, port, "ember-hub-local");
+    }
+
+    public PortableMinioBootstrap(Path dataDir, Path minioBinDir, int port, String secretKey) {
         this.dataDir = dataDir;
         this.minioBinDir = minioBinDir;
         this.port = port;
+        this.secretKey = secretKey;
     }
 
     public void ensureRunning() throws PortableMinioException {
@@ -103,7 +117,7 @@ public class PortableMinioBootstrap {
                     .redirectErrorStream(true)
                     .redirectOutput(dataDir.resolveSibling("minio.log").toFile());
             builder.environment().put("MINIO_ROOT_USER", "ember-hub");
-            builder.environment().put("MINIO_ROOT_PASSWORD", "ember-hub-local");
+            builder.environment().put("MINIO_ROOT_PASSWORD", secretKey);
             builder.environment().put("MINIO_BROWSER", "off");
             process = builder.start();
         } catch (IOException e) {

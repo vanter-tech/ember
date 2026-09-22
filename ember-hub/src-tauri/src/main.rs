@@ -38,6 +38,13 @@ fn random_hex(bytes: usize) -> String {
 /// installer used to do in `ssPostInstall`; doing it here instead of in NSIS lets it use a real
 /// CSPRNG (`rand`) instead of hand-rolled Pascal LCG, and keeps the logic testable/versioned in
 /// the same codebase as the rest of the shell.
+///
+/// `EMBER_HUB_POSTGRES_PASSWORD`/`EMBER_HUB_MINIO_SECRET_KEY` (F-21) get a fresh random value
+/// here too, same as the JWT secrets below — `HubProperties.fromEnvironment` on the Java side
+/// falls back to the historical hardcoded "ember"/"ember-hub-local" only when these are absent,
+/// which is exactly the case for a Hub installed before this change (its `hub.env` already
+/// exists, so this function returns early and never touches it) — rotating an already-installed
+/// Hub's Postgres data directory needs its own migration, not attempted here.
 fn ensure_hub_env(app_dir: &std::path::Path) -> std::io::Result<()> {
     let path = hub_env_path();
     if path.exists() {
@@ -51,7 +58,15 @@ fn ensure_hub_env(app_dir: &std::path::Path) -> std::io::Result<()> {
         std::fs::create_dir_all(parent.join("backups"))?;
     }
     let program_data = path.parent().unwrap().to_string_lossy().to_string();
-    let contents = format!(
+    let contents = hub_env_contents(&program_data, app_dir);
+    let mut file = std::fs::File::create(&path)?;
+    file.write_all(contents.as_bytes())
+}
+
+/// Pure content-generation half of [`ensure_hub_env`], split out so the format string and the
+/// freshness of each generated secret are unit-testable without touching `%ProgramData%`.
+fn hub_env_contents(program_data: &str, app_dir: &std::path::Path) -> String {
+    format!(
         "# Generado por Ember Hub al primer arranque. No editar salvo el puerto.\n\
          EMBER_HUB_DATA_DIR={pd}\\data\\postgres\n\
          EMBER_HUB_MINIO_DATA_DIR={pd}\\data\\minio\n\
@@ -66,14 +81,16 @@ fn ensure_hub_env(app_dir: &std::path::Path) -> std::io::Result<()> {
          EMBER_HUB_ACTIVATION_URL=https://api.ember.vanter.net/v1/hub-activations\n\
          EMBER_HUB_HEARTBEAT_URL=https://api.ember.vanter.net/v1/hub-heartbeat\n\
          JWT_SECRET={jwt}\n\
-         PLATFORM_JWT_SECRET={pjwt}\n",
+         PLATFORM_JWT_SECRET={pjwt}\n\
+         EMBER_HUB_POSTGRES_PASSWORD={pgpw}\n\
+         EMBER_HUB_MINIO_SECRET_KEY={miniokey}\n",
         pd = program_data,
         app = app_dir.display(),
         jwt = random_hex(32),
-        pjwt = random_hex(32)
-    );
-    let mut file = std::fs::File::create(&path)?;
-    file.write_all(contents.as_bytes())
+        pjwt = random_hex(32),
+        pgpw = random_hex(24),
+        miniokey = random_hex(24)
+    )
 }
 
 fn read_hub_env() -> HashMap<String, String> {
@@ -153,6 +170,40 @@ mod tests {
     fn leaves_normal_path_unchanged() {
         let input = PathBuf::from(r"C:\Users\ferob\app-image\Ember Hub");
         assert_eq!(strip_verbatim_prefix(&input), input);
+    }
+
+    #[test]
+    fn generates_a_postgres_password_and_minio_secret_key() {
+        let contents = hub_env_contents(r"C:\ProgramData\EmberHub", &PathBuf::from(r"C:\app"));
+        assert!(contents.contains("EMBER_HUB_POSTGRES_PASSWORD="));
+        assert!(contents.contains("EMBER_HUB_MINIO_SECRET_KEY="));
+    }
+
+    #[test]
+    fn generates_different_secrets_on_each_call() {
+        // F-21: a static/hardcoded value would make every Hub install share one credential.
+        let a = hub_env_contents(r"C:\ProgramData\EmberHub", &PathBuf::from(r"C:\app"));
+        let b = hub_env_contents(r"C:\ProgramData\EmberHub", &PathBuf::from(r"C:\app"));
+        let extract = |c: &str, key: &str| {
+            c.lines()
+                .find(|l| l.starts_with(key))
+                .unwrap()
+                .split('=')
+                .nth(1)
+                .unwrap()
+                .to_string()
+        };
+        assert_ne!(
+            extract(&a, "EMBER_HUB_POSTGRES_PASSWORD"),
+            extract(&b, "EMBER_HUB_POSTGRES_PASSWORD")
+        );
+        assert_ne!(
+            extract(&a, "EMBER_HUB_MINIO_SECRET_KEY"),
+            extract(&b, "EMBER_HUB_MINIO_SECRET_KEY")
+        );
+        // random_hex(24) = 24 bytes -> 48 hex chars, well above MinIO's 8-char secret-key minimum.
+        assert_eq!(extract(&a, "EMBER_HUB_POSTGRES_PASSWORD").len(), 48);
+        assert_eq!(extract(&a, "EMBER_HUB_MINIO_SECRET_KEY").len(), 48);
     }
 }
 
