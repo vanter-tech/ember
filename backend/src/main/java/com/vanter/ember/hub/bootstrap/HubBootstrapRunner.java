@@ -45,13 +45,15 @@ public class HubBootstrapRunner {
 
         listener.onPostgresStarting();
         dbBootstrap = new PortableDatabaseBootstrap(
-                properties.dataDir(), properties.postgresBinDir(), properties.postgresPort());
+                properties.dataDir(), properties.postgresBinDir(), properties.postgresPort(),
+                properties.postgresPassword());
         dbBootstrap.ensureRunning();
         listener.onPostgresReady();
 
         listener.onMinioStarting();
         minioBootstrap = new PortableMinioBootstrap(
-                properties.minioDataDir(), properties.minioBinDir(), properties.minioPort());
+                properties.minioDataDir(), properties.minioBinDir(), properties.minioPort(),
+                properties.minioSecretKey());
         minioBootstrap.ensureRunning();
         listener.onMinioReady();
 

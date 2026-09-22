@@ -24,6 +24,10 @@ class HubBackupRestoreIntegrationTest {
 
     private static final Path PG_BIN =
             Path.of("../ember-hub/.vendor-cache/postgres/bin").toAbsolutePath().normalize();
+    // F-21: deliberately not "ember" — proves the backup/restore round trip (pg_dump/dropdb/
+    // createdb/pg_restore, all via PostgresTools) actually authenticates with scram-sha-256
+    // instead of relying on Windows's default local "trust".
+    private static final String PG_PASSWORD = "hub-backup-test-pw";
 
     @TempDir Path tmp;
     int port;
@@ -42,7 +46,7 @@ class HubBackupRestoreIntegrationTest {
         }
         dataDir = tmp.resolve("data/postgres");
         minio = Files.createDirectories(tmp.resolve("data/minio"));
-        db = new PortableDatabaseBootstrap(dataDir, PG_BIN, port);
+        db = new PortableDatabaseBootstrap(dataDir, PG_BIN, port, PG_PASSWORD);
         db.ensureRunning();
         orchestrator.onStopAndWait = () -> {
             try {
@@ -52,10 +56,11 @@ class HubBackupRestoreIntegrationTest {
             }
         };
         HubProperties props = new HubProperties(dataDir, PG_BIN, tmp.resolve("license.key"), tmp.resolve("pub.der"),
-                tmp.resolve("hub-state.json"), port, 8080, "", minio, tmp.resolve("minio-bin"), 9000);
+                tmp.resolve("hub-state.json"), port, 8080, "", minio, tmp.resolve("minio-bin"), 9000,
+                "", 48, PG_PASSWORD, "ember-hub-local");
         service = new HubBackupService(props, orchestrator,
                 new BackupConfigStore(tmp.resolve("hub-backup.json"), tmp.resolve("backups")),
-                new PostgresTools(PG_BIN, port), () -> "0.2.6.1", Clock.systemUTC());
+                new PostgresTools(PG_BIN, port, PG_PASSWORD), () -> "0.2.6.1", Clock.systemUTC());
     }
 
     @AfterEach
@@ -66,7 +71,8 @@ class HubBackupRestoreIntegrationTest {
     }
 
     private Connection connect() throws Exception {
-        return DriverManager.getConnection("jdbc:postgresql://127.0.0.1:" + port + "/ember", "ember", "ember");
+        return DriverManager.getConnection(
+                "jdbc:postgresql://127.0.0.1:" + port + "/ember", "ember", PG_PASSWORD);
     }
 
     private String setting(String key) throws Exception {

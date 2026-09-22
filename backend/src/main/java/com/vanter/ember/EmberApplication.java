@@ -46,7 +46,8 @@ public class EmberApplication {
         HubBackupService backupService = new HubBackupService(
                 properties, orchestrator,
                 new BackupConfigStore(stateFile.resolveSibling("hub-backup.json"), stateFile.resolveSibling("backups")),
-                new PostgresTools(properties.postgresBinDir(), properties.postgresPort()),
+                new PostgresTools(properties.postgresBinDir(), properties.postgresPort(),
+                        properties.postgresPassword()),
                 HubVersion::current, Clock.systemDefaultZone());
         BackupScheduler backupScheduler = new BackupScheduler(backupService::runScheduledIfDue);
         backupScheduler.start();

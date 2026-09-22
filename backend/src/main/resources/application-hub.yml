@@ -2,7 +2,9 @@ spring:
   datasource:
     url: jdbc:postgresql://localhost:${EMBER_HUB_POSTGRES_PORT:5432}/ember
     username: ember
-    password: ember
+    # F-21: a fresh install gets a random value in hub.env (see PortableDatabaseBootstrap's
+    # javadoc); this literal is only a fallback for an install from before that existed.
+    password: ${EMBER_HUB_POSTGRES_PASSWORD:ember}
   jpa:
     hibernate:
       ddl-auto: validate
@@ -26,7 +28,9 @@ ember:
 minio:
   url: http://127.0.0.1:${EMBER_HUB_MINIO_PORT:9000}
   access-key: ember-hub
-  secret-key: ember-hub-local
+  # F-21: a fresh install gets a random value in hub.env; this literal is only a fallback for
+  # an install from before that existed.
+  secret-key: ${EMBER_HUB_MINIO_SECRET_KEY:ember-hub-local}
   bucket: ember-media
 
 server:

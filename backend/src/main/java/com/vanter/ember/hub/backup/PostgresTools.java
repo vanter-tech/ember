@@ -12,12 +12,15 @@ import java.util.concurrent.TimeUnit;
 /**
  * Thin process wrapper over the {@code pg_dump}/{@code dropdb}/{@code createdb}/{@code pg_restore}
  * binaries the portable Postgres already ships. Same user/host/auth assumptions as
- * {@code PortableDatabaseBootstrap} (user {@code ember}, database {@code ember}, loopback, trust).
+ * {@code PortableDatabaseBootstrap} (user {@code ember}, database {@code ember}, loopback,
+ * {@code scram-sha-256} since F-21 — {@code PGPASSWORD} is set on every command's environment,
+ * never passed as a CLI argument, which would leak it via the process list/log).
  * Non-final so tests can stub the process calls.
  *
  * <p>Every call is non-interactive ({@code -w}) and has a timeout: if the port is answered by some
- * other, password-protected Postgres (a dev Docker one), the tools would otherwise prompt for a
- * password on the console and never return, leaving the Hub's backup button stuck.
+ * other, password-protected Postgres (a dev Docker one) whose password we don't have, the tools
+ * would otherwise prompt for a password on the console and never return, leaving the Hub's backup
+ * button stuck.
  */
 public class PostgresTools {
 
@@ -31,10 +34,18 @@ public class PostgresTools {
 
     private final Path binDir;
     private final int port;
+    private final String password;
 
+    /** Uses the historical hardcoded local password (F-21's pre-fix default) — for callers that
+     *  don't rotate credentials (most tests: they stub the process calls, never really connect). */
     public PostgresTools(Path binDir, int port) {
+        this(binDir, port, "ember");
+    }
+
+    public PostgresTools(Path binDir, int port, String password) {
         this.binDir = binDir;
         this.port = port;
+        this.password = password;
     }
 
     public void dump(Path outFile) throws IOException {
@@ -70,10 +81,11 @@ public class PostgresTools {
     void execute(List<String> command, String tool, Duration timeout) throws IOException {
         Path log = Files.createTempFile("ember-hub-pg-", ".log");
         try {
-            Process process = new ProcessBuilder(command)
+            ProcessBuilder builder = new ProcessBuilder(command)
                     .redirectErrorStream(true)
-                    .redirectOutput(log.toFile())
-                    .start();
+                    .redirectOutput(log.toFile());
+            builder.environment().put("PGPASSWORD", password);
+            Process process = builder.start();
             process.getOutputStream().close(); // nothing will ever be typed into it
             boolean finished;
             try {

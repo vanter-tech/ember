@@ -145,7 +145,8 @@ public class HubBackupService implements HubBackup {
             setProgress(BackupProgress.RESTORE, "Deteniendo los servicios…", null);
             orchestrator.stopAndWait();
             PortableDatabaseBootstrap db = new PortableDatabaseBootstrap(
-                    properties.dataDir(), properties.postgresBinDir(), properties.postgresPort());
+                    properties.dataDir(), properties.postgresBinDir(), properties.postgresPort(),
+                    properties.postgresPassword());
             Path work = null;
             try {
                 work = Files.createTempDirectory("ember-hub-restore");
