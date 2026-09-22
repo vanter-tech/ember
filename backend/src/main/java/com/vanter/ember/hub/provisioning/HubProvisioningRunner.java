@@ -3,6 +3,7 @@ package com.vanter.ember.hub.provisioning;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vanter.ember.hub.config.HubProperties;
+import com.vanter.ember.hub.control.FirstRunCredentialHolder;
 import com.vanter.ember.hub.license.HardwareFingerprintService;
 import com.vanter.ember.hub.license.HubState;
 import com.vanter.ember.hub.license.HubStateStore;
@@ -17,6 +18,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.file.Files;
+import java.security.SecureRandom;
 import java.time.Duration;
 import java.util.UUID;
 import org.slf4j.Logger;
@@ -24,6 +26,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Profile;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -36,6 +39,11 @@ import org.springframework.transaction.support.TransactionTemplate;
  * the admin {@code User} locally, reusing the SAME id as the license's {@code restaurantId}
  * (Hibernate's {@code GenerationType.UUID} respects a pre-assigned id — confirmed during design).
  * Every later boot: a no-op, zero network calls, since the restaurant already exists locally.
+ *
+ * <p>F-15: the admin's local password is generated HERE, not received from the cloud (the
+ * activation response used to carry the real bcrypt hash, a secret that never needed to leave
+ * the cloud tenant). The plaintext is handed to {@link FirstRunCredentialHolder} for the Hub UI
+ * to show once; it is never written to disk.
  */
 @Component
 @Profile("hub")
@@ -44,12 +52,19 @@ public class HubProvisioningRunner implements ApplicationRunner {
     private static final Logger log = LoggerFactory.getLogger(HubProvisioningRunner.class);
     private static final ObjectMapper MAPPER = new ObjectMapper()
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+    private static final SecureRandom RANDOM = new SecureRandom();
+    // Unambiguous on screen (no 0/O/1/l/I) — this gets read off a monitor and typed once.
+    private static final String TEMP_PASSWORD_ALPHABET =
+            "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
+    private static final int TEMP_PASSWORD_LENGTH = 20;
 
     private final HubProperties properties;
     private final HubStateStore stateStore;
     private final HardwareFingerprintService fingerprintService;
     private final RestaurantRepository restaurantRepository;
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final FirstRunCredentialHolder credentialHolder;
     private final TransactionTemplate transactionTemplate;
 
     public HubProvisioningRunner(
@@ -58,12 +73,16 @@ public class HubProvisioningRunner implements ApplicationRunner {
             HardwareFingerprintService fingerprintService,
             RestaurantRepository restaurantRepository,
             UserRepository userRepository,
+            PasswordEncoder passwordEncoder,
+            FirstRunCredentialHolder credentialHolder,
             PlatformTransactionManager transactionManager) {
         this.properties = properties;
         this.stateStore = stateStore;
         this.fingerprintService = fingerprintService;
         this.restaurantRepository = restaurantRepository;
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.credentialHolder = credentialHolder;
         // Programmatic transaction demarcation (TransactionTemplate), not @Transactional: run()
         // calls seedRestaurantAndAdmin() on `this`, and Spring AOP's @Transactional relies on a
         // proxy that self-invocation bypasses entirely — an @Transactional annotation on a method
@@ -91,9 +110,21 @@ public class HubProvisioningRunner implements ApplicationRunner {
 
         ActivationResponseBody body = callActivationEndpoint(state);
 
-        Restaurant restaurant = seedRestaurantAndAdmin(state.restaurantId(), body);
+        // F-15: generated locally, never received from the cloud — see FirstRunCredentialHolder's
+        // javadoc for why it's handed off in memory instead of written anywhere on disk.
+        String temporaryPassword = generateTemporaryPassword();
+        Restaurant restaurant = seedRestaurantAndAdmin(state.restaurantId(), body, temporaryPassword);
+        credentialHolder.set(body.adminEmail(), temporaryPassword);
 
         log.info("Provisioned restaurant {} ({}) locally.", restaurant.getId(), restaurant.getSlug());
+    }
+
+    private String generateTemporaryPassword() {
+        StringBuilder sb = new StringBuilder(TEMP_PASSWORD_LENGTH);
+        for (int i = 0; i < TEMP_PASSWORD_LENGTH; i++) {
+            sb.append(TEMP_PASSWORD_ALPHABET.charAt(RANDOM.nextInt(TEMP_PASSWORD_ALPHABET.length())));
+        }
+        return sb.toString();
     }
 
     /**
@@ -104,7 +135,7 @@ public class HubProvisioningRunner implements ApplicationRunner {
      * restaurant on the next boot and retries activation from scratch instead of getting stuck
      * behind an orphaned Restaurant that the {@code existsById} guard above would otherwise hide.
      */
-    Restaurant seedRestaurantAndAdmin(UUID restaurantId, ActivationResponseBody body) {
+    Restaurant seedRestaurantAndAdmin(UUID restaurantId, ActivationResponseBody body, String temporaryPassword) {
         return transactionTemplate.execute(status -> {
             restaurantRepository.insertWithId(restaurantId, body.name(), body.slug());
             Restaurant restaurant = restaurantRepository.findById(restaurantId).orElseThrow(() ->
@@ -115,7 +146,7 @@ public class HubProvisioningRunner implements ApplicationRunner {
                     .restaurantId(restaurant)
                     .name(body.adminName())
                     .email(body.adminEmail())
-                    .passwordHash(body.adminPasswordHash())
+                    .passwordHash(passwordEncoder.encode(temporaryPassword))
                     .role(Role.ADMIN)
                     .build());
 
@@ -179,5 +210,5 @@ public class HubProvisioningRunner implements ApplicationRunner {
     private record ActivationRequestBody(String licenseKey, String hardwareFingerprint) {}
 
     private record ActivationResponseBody(
-            String name, String slug, String adminName, String adminEmail, String adminPasswordHash) {}
+            String name, String slug, String adminName, String adminEmail) {}
 }

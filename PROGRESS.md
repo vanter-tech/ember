@@ -27,6 +27,15 @@
 
 ## Task Queue Status
 
+### HUB-ACTIVATION-NO-PASSWORD-HASH — F-15, Hub generates its own admin password — DONE, report 537 — branch `fix/hub-activation-no-password-hash`, merged to `main` locally 2026-09-22
+- [x] Cloud: `HubActivationResponse`/`HubActivationService` no longer send `adminPasswordHash`
+- [x] Hub: `HubProvisioningRunner` generates + hashes a random local password itself
+- [x] `FirstRunCredentialHolder` (in-memory only) shared between the embedded context and the sidecar via `SpringApplication.addInitializers`
+- [x] `HubControlServer` `GET`/`DELETE /api/first-run-credentials` + `ember-hub/ui` `FirstRunCredentialsModal` (copy + two-step ack)
+- [x] Merge to `main` (local, 2026-09-22) — push to `origin` still pending (user-gated)
+- Known gap (stated in the UI): lost if not acknowledged before a full process restart — no "forgot password" flow yet
+- Out of scope: none — this closes F-15 as originally scoped (no data migration needed, activation is one-time)
+
 ### HUB-LOCAL-CREDENTIAL-ROTATION — F-21, random Postgres/MinIO credentials + real local auth — DONE, report 536 — branch `fix/hub-local-credentials`, merged to `main` locally 2026-09-22
 - [x] Rust `ensure_hub_env` generates `EMBER_HUB_POSTGRES_PASSWORD`/`EMBER_HUB_MINIO_SECRET_KEY` into `hub.env` on first run
 - [x] `HubProperties`/`PortableDatabaseBootstrap`/`PortableMinioBootstrap`/`PostgresTools` thread the real credentials through (back-compat ctors preserved)
@@ -158,7 +167,7 @@ Rationale: architecture is sound but prod infra is early (single VM, no HA, manu
 - [ ] **Bug Y** — live retest with two diners now that `v0.2.1` cleared the deploy skew (marked fixed by the user, no formal retest logged).
 - [ ] **LSEO** — content (blog / keyword articles / case studies), conversion (contact/demo form, WhatsApp, hero video, retargeting), off-page, minor JSON-LD. LSEO-04 Google Business Profile.
 - [ ] **Login: no "recuperar contraseña" (forgot password)** — flagged live by the user (report 461), explicitly deferred by them ("puede ser después"); no plan yet.
-- [ ] **Security debt:** F-15 (Hub activation returns `adminPasswordHash` — redesign contract + migration path for installed Hubs); ~~F-21 (Hub portable bootstrap has hardcoded Postgres/MinIO credentials, local Postgres ran under `trust`)~~ — **FIXED for new installs, report 536** (random creds + `scram-sha-256`; already-installed Hubs still need a dedicated migration, see its Task Queue entry); ~~F-14 (no RBAC on `/platform/**`)~~ — **FIXED, report 535** (`PlatformOperatorRole`, `@PreAuthorize`); ~~F-24 (print-agent key plaintext on disk)~~ — **FIXED, report 418** (DPAPI machine-scope credential store); F-10/E-23 (PIN-login enumeration oracle — accepted, needs a product decision); F-17 (JWT in `localStorage`, no revocation — accepted); F-22 (secret in git history — accepted, rotate if revisited).
+- [ ] **Security debt:** ~~F-15 (Hub activation returns `adminPasswordHash`)~~ — **FIXED, report 537** (Hub generates its own local admin password, shown once in-memory via `FirstRunCredentialHolder`, never received from the cloud or written to disk); ~~F-21 (Hub Postgres/MinIO hardcoded credentials + local `trust` auth)~~ — **FIXED for new installs, report 536** (already-installed Hubs still need a dedicated migration, see its Task Queue entry); ~~F-14 (no RBAC on `/platform/**`)~~ — **FIXED, report 535**; ~~F-24 (print-agent key plaintext on disk)~~ — **FIXED, report 418** (DPAPI machine-scope credential store); F-10/E-23 (PIN-login enumeration oracle — accepted, needs a product decision); F-17 (JWT in `localStorage`, no revocation — accepted); F-22 (secret in git history — accepted, rotate if revisited). All three F-15/F-21/F-14 merged to `main` locally 2026-09-22.
 
 ### Done (collapsed)
 - [x] **KDS-BULK-STATUS-UPDATE (r464-467)** — focused-ticket bulk select (checkbox + select-all) + status dropdown, each dish walks every intermediate status one at a time. Plan `docs/superpowers/plans/2026-09-13-kds-bulk-status-update.md`.

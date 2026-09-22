@@ -44,7 +44,6 @@ class HubActivationControllerTest {
                 .slug("tenant-grill")
                 .adminName("Owner Admin")
                 .adminEmail("owner@tenant-grill.local")
-                .adminPasswordHash("bcrypt-hash")
                 .build());
 
         mockMvc.perform(post("/hub-activations")
@@ -52,7 +51,9 @@ class HubActivationControllerTest {
                         .content(VALID_BODY))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.slug").value("tenant-grill"))
-                .andExpect(jsonPath("$.adminPasswordHash").value("bcrypt-hash"));
+                // F-15: the response must never carry a password/hash field of any kind.
+                .andExpect(jsonPath("$.adminPasswordHash").doesNotExist())
+                .andExpect(jsonPath("$.adminPassword").doesNotExist());
     }
 
     @Test

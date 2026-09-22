@@ -89,7 +89,6 @@ public class HubActivationService {
                 .slug(restaurant.getSlug())
                 .adminName(admin.getName())
                 .adminEmail(admin.getEmail())
-                .adminPasswordHash(admin.getPasswordHash())
                 .build();
     }
 }

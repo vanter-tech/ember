@@ -1,17 +1,28 @@
 import { useEffect, useState } from 'react';
 import { Database, HardDrive, Server, Router } from 'lucide-react';
-import { getStatus, startServices, stopServices, installLicense, removeLicense, resetPortCache } from '../lib/api';
-import type { HubStatus } from '../lib/types';
+import {
+  getStatus,
+  startServices,
+  stopServices,
+  installLicense,
+  removeLicense,
+  resetPortCache,
+  getFirstRunCredentials,
+  ackFirstRunCredentials
+} from '../lib/api';
+import type { FirstRunCredentials, HubStatus } from '../lib/types';
 import { watchAgentShell, type AgentShellState } from '../lib/agent-events';
 import { cardShellClass, IconBadge } from './Card';
 import Button from './Button';
 import ServiceCard from './ServiceCard';
 import LicenseCard from './LicenseCard';
 import BackupCard from './BackupCard';
+import FirstRunCredentialsModal from './FirstRunCredentialsModal';
 
 export default function Dashboard() {
   const [shellState, setShellState] = useState<AgentShellState>('starting');
   const [status, setStatus] = useState<HubStatus | null>(null);
+  const [firstRun, setFirstRun] = useState<FirstRunCredentials | null>(null);
   const [busy, setBusy] = useState(false);
   const [restartNonce, setRestartNonce] = useState(0);
 
@@ -25,6 +36,22 @@ export default function Dashboard() {
     } catch {
       // transient poll failure — retried on the next tick, not fatal (spec §4)
     }
+    // Only worth asking once nothing is already showing it — no point re-fetching on every 400ms
+    // tick while the operator is reading/copying it (a poll landing mid-read wouldn't change
+    // anything anyway: the backend only clears it on an explicit acknowledgement).
+    if (!firstRun?.password) {
+      try {
+        const credentials = await getFirstRunCredentials();
+        if (credentials.password) setFirstRun(credentials);
+      } catch {
+        // same as above — retried next tick
+      }
+    }
+  }
+
+  async function onAcknowledgeFirstRun() {
+    await ackFirstRunCredentials();
+    setFirstRun(null);
   }
 
   useEffect(() => {
@@ -159,7 +186,15 @@ export default function Dashboard() {
   }
 
   return (
-    <main className="h-full p-4 flex flex-col gap-4 max-w-5xl w-full mx-auto min-h-0 overflow-auto">
+    <>
+      {firstRun?.password && firstRun.email && (
+        <FirstRunCredentialsModal
+          email={firstRun.email}
+          password={firstRun.password}
+          onAcknowledge={onAcknowledgeFirstRun}
+        />
+      )}
+      <main className="h-full p-4 flex flex-col gap-4 max-w-5xl w-full mx-auto min-h-0 overflow-auto">
       <header className={`${cardShellClass} p-4 flex items-center justify-between gap-3 flex-wrap shrink-0`}>
         <div className="flex items-center gap-3 min-w-0">
           <IconBadge icon={Router} size="lg" />
@@ -209,6 +244,7 @@ export default function Dashboard() {
           )}
         </div>
       )}
-    </main>
+      </main>
+    </>
   );
 }

@@ -13,6 +13,7 @@ import static org.mockito.Mockito.when;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import com.vanter.ember.hub.config.HubProperties;
+import com.vanter.ember.hub.control.FirstRunCredentialHolder;
 import com.vanter.ember.hub.license.HardwareFingerprintService;
 import com.vanter.ember.hub.license.HubState;
 import com.vanter.ember.hub.license.HubStateStore;
@@ -34,6 +35,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
 import org.springframework.boot.DefaultApplicationArguments;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionStatus;
 
@@ -46,6 +49,11 @@ class HubProvisioningRunnerTest {
     private HardwareFingerprintService fingerprintService;
     private RestaurantRepository restaurantRepository;
     private UserRepository userRepository;
+    // Real (not mocked): the F-15 assertions round-trip a generated plaintext through it to prove
+    // the saved hash actually corresponds to what the credential holder published, not just that
+    // some string was saved.
+    private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+    private FirstRunCredentialHolder credentialHolder;
     private PlatformTransactionManager transactionManager;
     private UUID restaurantId;
     private HttpServer stubServer;
@@ -73,6 +81,7 @@ class HubProvisioningRunnerTest {
         when(fingerprintService.currentFingerprint()).thenReturn("fp-1");
         restaurantRepository = mock(RestaurantRepository.class);
         userRepository = mock(UserRepository.class);
+        credentialHolder = new FirstRunCredentialHolder();
         transactionManager = mock(PlatformTransactionManager.class);
         when(transactionManager.getTransaction(any())).thenReturn(mock(TransactionStatus.class));
     }
@@ -82,7 +91,7 @@ class HubProvisioningRunnerTest {
         when(restaurantRepository.existsById(restaurantId)).thenReturn(true);
         HubProvisioningRunner runner = new HubProvisioningRunner(
                 properties, stateStore, fingerprintService, restaurantRepository, userRepository,
-                transactionManager);
+                passwordEncoder, credentialHolder, transactionManager);
 
         runner.run(new DefaultApplicationArguments());
 
@@ -98,7 +107,7 @@ class HubProvisioningRunnerTest {
         when(restaurantRepository.existsById(restaurantId)).thenReturn(false);
         HubProvisioningRunner runner = new HubProvisioningRunner(
                 propertiesWithoutUrl, stateStore, fingerprintService, restaurantRepository, userRepository,
-                transactionManager);
+                passwordEncoder, credentialHolder, transactionManager);
 
         assertThatThrownBy(() -> runner.run(new DefaultApplicationArguments()))
                 .isInstanceOf(HubProvisioningException.class)
@@ -110,7 +119,7 @@ class HubProvisioningRunnerTest {
         when(restaurantRepository.existsById(restaurantId)).thenReturn(false);
         HubProvisioningRunner runner = new HubProvisioningRunner(
                 properties, stateStore, fingerprintService, restaurantRepository, userRepository,
-                transactionManager);
+                passwordEncoder, credentialHolder, transactionManager);
 
         assertThatThrownBy(() -> runner.run(new DefaultApplicationArguments()))
                 .isInstanceOf(HubProvisioningException.class)
@@ -119,12 +128,12 @@ class HubProvisioningRunnerTest {
 
     @Test
     void run_successfulActivation_savesRestaurantAndAdminUser() throws Exception {
+        // F-15: no password/hash field in the cloud's response anymore.
         String responseJson = "{"
                 + "\"name\":\"Tenant Grill\","
                 + "\"slug\":\"tenant-grill\","
                 + "\"adminName\":\"Owner Admin\","
-                + "\"adminEmail\":\"owner@tenant-grill.local\","
-                + "\"adminPasswordHash\":\"bcrypt-hash\""
+                + "\"adminEmail\":\"owner@tenant-grill.local\""
                 + "}";
 
         stubServer = HttpServer.create(new InetSocketAddress("localhost", 0), 0);
@@ -151,7 +160,7 @@ class HubProvisioningRunnerTest {
         when(restaurantRepository.findById(restaurantId)).thenReturn(Optional.of(insertedRestaurant));
         HubProvisioningRunner runner = new HubProvisioningRunner(
                 propertiesWithStubUrl, stateStore, fingerprintService, restaurantRepository, userRepository,
-                transactionManager);
+                passwordEncoder, credentialHolder, transactionManager);
 
         runner.run(new DefaultApplicationArguments());
 
@@ -163,7 +172,16 @@ class HubProvisioningRunnerTest {
         assertThat(savedUser.getRestaurantId()).isSameAs(insertedRestaurant);
         assertThat(savedUser.getName()).isEqualTo("Owner Admin");
         assertThat(savedUser.getEmail()).isEqualTo("owner@tenant-grill.local");
-        assertThat(savedUser.getPasswordHash()).isEqualTo("bcrypt-hash");
+
+        // F-15: the password is generated locally, never received from the cloud — prove the
+        // saved hash actually corresponds to what got published for the Hub UI to show, not just
+        // that some opaque string was saved.
+        FirstRunCredentialHolder.Credential credential = credentialHolder.get();
+        assertThat(credential).isNotNull();
+        assertThat(credential.email()).isEqualTo("owner@tenant-grill.local");
+        assertThat(credential.password()).hasSize(20);
+        assertThat(passwordEncoder.matches(credential.password(), savedUser.getPasswordHash())).isTrue();
+        assertThat(savedUser.getPasswordHash()).isNotEqualTo(credential.password());
         assertThat(savedUser.getRole()).isEqualTo(Role.ADMIN);
     }
 }
