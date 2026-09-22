@@ -51,3 +51,11 @@ export interface BackupProgress {
   /** null = the phase has no measurable length (shown as an animated bar) */
   percent: number | null;
 }
+
+/** F-15: the Hub's own generated first-run admin password, held in memory only (never written to
+ *  disk) — both fields are null once there's nothing pending (never activated yet, or already
+ *  acknowledged via `ackFirstRunCredentials`). */
+export interface FirstRunCredentials {
+  email: string | null;
+  password: string | null;
+}

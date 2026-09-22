@@ -28,6 +28,7 @@ class HubControlServerTest {
     private final HttpClient http = HttpClient.newHttpClient();
     private FakeOrchestrator orchestrator;
     private FakeBackup backup;
+    private FirstRunCredentialHolder credentialHolder;
     private HubControlServer server;
     private String base;
 
@@ -35,7 +36,8 @@ class HubControlServerTest {
     void start() throws IOException {
         orchestrator = new FakeOrchestrator();
         backup = new FakeBackup();
-        server = new HubControlServer(orchestrator, backup);
+        credentialHolder = new FirstRunCredentialHolder();
+        server = new HubControlServer(orchestrator, backup, credentialHolder);
         int port = server.start();
         base = "http://127.0.0.1:" + port;
     }
@@ -80,6 +82,41 @@ class HubControlServerTest {
 
         assertEquals(200, res.statusCode());
         assertTrue(orchestrator.stopCalled);
+    }
+
+    @Test
+    void firstRunCredentials_returnsNullFieldsWhenNonePending() throws Exception {
+        JsonNode body = mapper.readTree(get("/api/first-run-credentials").body());
+
+        assertTrue(body.get("email").isNull());
+        assertTrue(body.get("password").isNull());
+    }
+
+    @Test
+    void firstRunCredentials_returnsThePendingCredential() throws Exception {
+        credentialHolder.set("owner@tenant-grill.local", "s3cr3t-temp-pw");
+
+        JsonNode body = mapper.readTree(get("/api/first-run-credentials").body());
+
+        assertEquals("owner@tenant-grill.local", body.get("email").asText());
+        assertEquals("s3cr3t-temp-pw", body.get("password").asText());
+    }
+
+    @Test
+    void firstRunCredentials_delete_clearsIt() throws Exception {
+        credentialHolder.set("owner@tenant-grill.local", "s3cr3t-temp-pw");
+
+        HttpResponse<String> res = delete("/api/first-run-credentials");
+
+        assertEquals(204, res.statusCode());
+        assertNull(credentialHolder.get());
+    }
+
+    @Test
+    void firstRunCredentials_rejectsPost() throws Exception {
+        HttpResponse<String> res = post("/api/first-run-credentials", "{}");
+
+        assertEquals(405, res.statusCode());
     }
 
     @Test

@@ -89,7 +89,6 @@ class HubActivationServiceTest {
         assertThat(result.getName()).isEqualTo("Tenant Grill");
         assertThat(result.getSlug()).isEqualTo("tenant-grill");
         assertThat(result.getAdminEmail()).isEqualTo("owner@tenant-grill.local");
-        assertThat(result.getAdminPasswordHash()).isEqualTo("bcrypt-hash");
 
         org.mockito.ArgumentCaptor<HubActivation> captor = org.mockito.ArgumentCaptor.forClass(HubActivation.class);
         org.mockito.Mockito.verify(hubActivationRepository).save(captor.capture());

@@ -50,13 +50,20 @@ public final class HubControlServer {
 
     private final HubOrchestrator orchestrator;
     private final HubBackup backup;
+    private final FirstRunCredentialHolder credentialHolder;
     private final ObjectMapper mapper = new ObjectMapper();
 
     private HttpServer httpServer;
 
+    /** Back-compat: tests that don't care about F-15's first-run credential hand-off. */
     public HubControlServer(HubOrchestrator orchestrator, HubBackup backup) {
+        this(orchestrator, backup, new FirstRunCredentialHolder());
+    }
+
+    public HubControlServer(HubOrchestrator orchestrator, HubBackup backup, FirstRunCredentialHolder credentialHolder) {
         this.orchestrator = orchestrator;
         this.backup = backup;
+        this.credentialHolder = credentialHolder;
     }
 
     /** Starts listening on 127.0.0.1 at an OS-assigned port and returns that port. */
@@ -66,6 +73,8 @@ public final class HubControlServer {
         httpServer.createContext("/api/start", this::handleStart).getFilters().add(CORS_FILTER);
         httpServer.createContext("/api/stop", this::handleStop).getFilters().add(CORS_FILTER);
         httpServer.createContext("/api/license", this::handleLicense).getFilters().add(CORS_FILTER);
+        httpServer.createContext("/api/first-run-credentials", this::handleFirstRunCredentials)
+                .getFilters().add(CORS_FILTER);
         httpServer.createContext("/api/backup/status", this::handleBackupStatus).getFilters().add(CORS_FILTER);
         httpServer.createContext("/api/backup/config", this::handleBackupConfig).getFilters().add(CORS_FILTER);
         httpServer.createContext("/api/backup/now", this::handleBackupNow).getFilters().add(CORS_FILTER);
@@ -138,6 +147,30 @@ public final class HubControlServer {
         } catch (IOException | RuntimeException e) {
             sendJson(exchange, 400, Map.of("error", e.getMessage()));
         }
+    }
+
+    /**
+     * F-15: the Hub UI polls this to show the first-run admin password exactly once (never
+     * persisted — see {@link FirstRunCredentialHolder}). {@code DELETE} is how it acknowledges
+     * having shown it, clearing it from memory so a later poll (or a crash-and-reopen of the
+     * window before a full process restart) doesn't leak it again.
+     */
+    private void handleFirstRunCredentials(HttpExchange exchange) throws IOException {
+        String method = exchange.getRequestMethod();
+        if ("GET".equals(method)) {
+            FirstRunCredentialHolder.Credential credential = credentialHolder.get();
+            sendJson(exchange, 200, new FirstRunCredentialsDto(
+                    credential == null ? null : credential.email(),
+                    credential == null ? null : credential.password()));
+            return;
+        }
+        if ("DELETE".equals(method)) {
+            credentialHolder.clear();
+            exchange.sendResponseHeaders(204, -1);
+            exchange.close();
+            return;
+        }
+        sendJson(exchange, 405, Map.of("error", "method not allowed"));
     }
 
     // --- backup handlers -----------------------------------------------------------
@@ -261,6 +294,8 @@ public final class HubControlServer {
     private record PathRequest(String path) {}
 
     private record RestoreRequest(String path, boolean skipSafetySnapshot) {}
+
+    private record FirstRunCredentialsDto(String email, String password) {}
 
     private record LicenseDto(String status, String lastHeartbeatAt, String suspendedSince) {
         static LicenseDto from(HubOrchestrator.LicenseSnapshot s) {

@@ -7,6 +7,7 @@ import com.vanter.ember.hub.backup.HubVersion;
 import com.vanter.ember.hub.backup.PostgresTools;
 import com.vanter.ember.hub.config.HubProperties;
 import com.vanter.ember.hub.control.DefaultHubOrchestrator;
+import com.vanter.ember.hub.control.FirstRunCredentialHolder;
 import com.vanter.ember.hub.control.HubControlServer;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -38,7 +39,11 @@ public class EmberApplication {
      */
     private static void runHubSidecar(String[] args) throws IOException {
         HubProperties properties = HubProperties.fromEnvironment();
-        DefaultHubOrchestrator orchestrator = new DefaultHubOrchestrator(properties);
+        // F-15: one holder, shared for this process's life, between HubProvisioningRunner (inside
+        // the embedded Spring context DefaultHubOrchestrator boots) and HubControlServer (outside
+        // it) — see FirstRunCredentialHolder's javadoc.
+        FirstRunCredentialHolder credentialHolder = new FirstRunCredentialHolder();
+        DefaultHubOrchestrator orchestrator = new DefaultHubOrchestrator(properties, credentialHolder);
 
         // Backup lives next to hub-state.json (%ProgramData%\EmberHub in a packaged install); the
         // "Esta máquina" destination is the backups\ folder the Tauri shell already creates there.
@@ -51,7 +56,7 @@ public class EmberApplication {
         BackupScheduler backupScheduler = new BackupScheduler(backupService::runScheduledIfDue);
         backupScheduler.start();
 
-        HubControlServer controlServer = new HubControlServer(orchestrator, backupService);
+        HubControlServer controlServer = new HubControlServer(orchestrator, backupService, credentialHolder);
         int port = controlServer.start();
         System.out.println("PORT=" + port);
         System.out.flush();

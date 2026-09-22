@@ -2324,7 +2324,6 @@ export interface components {
             slug?: string;
             adminName?: string;
             adminEmail?: string;
-            adminPasswordHash?: string;
         };
         ModifierGroupRequest: {
             name: string;

@@ -1,5 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
-import type { BackupConfig, BackupSnapshot, BackupStatus, HubStatus } from './types';
+import type { BackupConfig, BackupSnapshot, BackupStatus, FirstRunCredentials, HubStatus } from './types';
 
 let cachedPort: number | null = null;
 
@@ -60,6 +60,17 @@ export async function installLicense(path: string): Promise<HubStatus> {
 
 export async function removeLicense(): Promise<HubStatus> {
   return asJson<HubStatus>(await fetch(`${await base()}/api/license`, { method: 'DELETE' }));
+}
+
+// --- first-run admin credential (F-15) ----------------------------------------------
+
+export async function getFirstRunCredentials(): Promise<FirstRunCredentials> {
+  return asJson<FirstRunCredentials>(await fetch(`${await base()}/api/first-run-credentials`));
+}
+
+/** Confirms the operator has seen/copied it; the backend clears it from memory afterward. */
+export async function ackFirstRunCredentials(): Promise<void> {
+  await fetch(`${await base()}/api/first-run-credentials`, { method: 'DELETE' });
 }
 
 // --- backup / restore ---------------------------------------------------------------

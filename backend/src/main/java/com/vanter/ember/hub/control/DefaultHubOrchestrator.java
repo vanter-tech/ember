@@ -42,11 +42,18 @@ public final class DefaultHubOrchestrator implements HubOrchestrator {
     private volatile ServicePhase serverPhase = ServicePhase.STOPPED;
     private volatile String serverError;
     private volatile ConfigurableApplicationContext context;
+    private final FirstRunCredentialHolder credentialHolder;
 
+    /** Back-compat: tests that don't care about F-15's first-run credential hand-off. */
     public DefaultHubOrchestrator(HubProperties properties) {
+        this(properties, new FirstRunCredentialHolder());
+    }
+
+    public DefaultHubOrchestrator(HubProperties properties, FirstRunCredentialHolder credentialHolder) {
         this.properties = properties;
         this.bootstrapRunner = new HubBootstrapRunner(properties);
         this.stateStore = new HubStateStore(properties.stateFile());
+        this.credentialHolder = credentialHolder;
     }
 
     @Override
@@ -91,6 +98,11 @@ public final class DefaultHubOrchestrator implements HubOrchestrator {
             serverPhase = ServicePhase.STARTING;
             SpringApplication app = new SpringApplication(EmberApplication.class);
             app.addListeners((ApplicationListener<ApplicationReadyEvent>) event -> serverPhase = ServicePhase.RUNNING);
+            // F-15: registers the SAME holder instance as a bean before context refresh, so
+            // HubProvisioningRunner (inside this context) and HubControlServer (outside it) share
+            // one in-memory hand-off for the generated first-run admin password.
+            app.addInitializers(ctx -> ctx.getBeanFactory()
+                    .registerSingleton("firstRunCredentialHolder", credentialHolder));
             context = app.run(launchArgs);
         } catch (InvalidLicenseException e) {
             // Licencia inválida bloquea todo antes de que Postgres arranque siquiera — se reporta
