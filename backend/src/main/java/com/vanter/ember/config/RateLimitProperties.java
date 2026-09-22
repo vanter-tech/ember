@@ -33,6 +33,15 @@ public class RateLimitProperties {
      */
     private int ipMaxRequests = 30;
 
+    /**
+     * A tighter, {@code /auth/login/pin}-only ceiling per {@code (tenant, IP)}, on top of (not
+     * instead of) {@link #maxRequests}. F-10/E-23: that endpoint's 401/409/423 split lets an
+     * anonymous caller tell which emails exist and which have a PIN set — a deliberate product
+     * trade-off (the quick-login UX needs the distinction), so this doesn't change the response,
+     * only how fast it can be harvested. {@code 0} disables it, falling back to the shared budget.
+     */
+    private int pinLoginMaxRequests = 5;
+
     /** Sliding window the counters above apply to. */
     private Duration window = Duration.ofMinutes(1);
 

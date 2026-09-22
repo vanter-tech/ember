@@ -52,6 +52,7 @@ public class AuthRateLimiterFilter extends OncePerRequestFilter {
     private static final String FORWARDED_FOR = "X-Forwarded-For";
     private static final String FORWARDED_HOST = "X-Forwarded-Host";
     private static final String CF_CONNECTING_IP = "CF-Connecting-IP";
+    private static final String PIN_LOGIN_PATH = "/auth/login/pin";
 
     private final RateLimitProperties properties;
     private final ObjectMapper objectMapper;
@@ -117,6 +118,16 @@ public class AuthRateLimiterFilter extends OncePerRequestFilter {
         if (canTrack(tenantKey, now) && !tryConsume(tenantKey, now, properties.getMaxRequests())) {
             reject(request, response);
             return;
+        }
+        // F-10/E-23: a third, tighter budget only for the PIN-login enumeration surface, on top
+        // of (not instead of) the shared tenant bucket above.
+        if (PIN_LOGIN_PATH.equals(pathWithinApplication(request))) {
+            String pinKey = "pin:" + resolveTenant(request, trustedPeer) + "|" + clientIp;
+            if (canTrack(pinKey, now)
+                    && !tryConsume(pinKey, now, properties.getPinLoginMaxRequests())) {
+                reject(request, response);
+                return;
+            }
         }
         chain.doFilter(request, response);
     }

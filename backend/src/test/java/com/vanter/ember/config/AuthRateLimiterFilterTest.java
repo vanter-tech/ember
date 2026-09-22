@@ -53,6 +53,14 @@ class AuthRateLimiterFilterTest {
         return request;
     }
 
+    private MockHttpServletRequest pinLoginRequest(String ip) {
+        MockHttpServletRequest request =
+                new MockHttpServletRequest("POST", CONTEXT_PATH + "/auth/login/pin");
+        request.setContextPath(CONTEXT_PATH);
+        request.setRemoteAddr(ip);
+        return request;
+    }
+
     private int statusOf(AuthRateLimiterFilter filter, MockHttpServletRequest request) throws Exception {
         MockHttpServletResponse response = new MockHttpServletResponse();
         filter.doFilterInternal(request, response, chain);
@@ -351,6 +359,69 @@ class AuthRateLimiterFilterTest {
         MockHttpServletRequest spoofed = loginRequest("198.51.100.7");
         spoofed.addHeader("CF-Connecting-IP", "203.0.113.200");
         assertThat(statusOf(filter, spoofed)).isEqualTo(429);
+    }
+
+    // --- PIN-login enumeration (F-10/E-23) ------------------------------------------------------
+
+    @Test
+    void pinLogin_defaultsToFivePerMinuteEvenThoughTheSharedBudgetAllowsTen() throws Exception {
+        // /auth/login/pin's 401-vs-409-vs-423 split is a deliberate product decision (an anonymous
+        // caller can tell whether an email exists) — this tighter, path-specific bucket is the
+        // defense-in-depth: it doesn't change the responses, only how fast they can be harvested.
+        AuthRateLimiterFilter filter = newFilter();
+
+        for (int i = 0; i < 5; i++) {
+            assertThat(statusOf(filter, pinLoginRequest("1.2.3.4"))).isEqualTo(200);
+        }
+        assertThat(statusOf(filter, pinLoginRequest("1.2.3.4"))).isEqualTo(429);
+    }
+
+    @Test
+    void pinLogin_limitIsConfigurable() throws Exception {
+        properties.setPinLoginMaxRequests(2);
+        AuthRateLimiterFilter filter = newFilter();
+
+        assertThat(statusOf(filter, pinLoginRequest("9.9.9.9"))).isEqualTo(200);
+        assertThat(statusOf(filter, pinLoginRequest("9.9.9.9"))).isEqualTo(200);
+        assertThat(statusOf(filter, pinLoginRequest("9.9.9.9"))).isEqualTo(429);
+    }
+
+    @Test
+    void pinLogin_hasItsOwnBudgetIndependentOfTheSharedAuthBucket() throws Exception {
+        AuthRateLimiterFilter filter = newFilter();
+        for (int i = 0; i < 5; i++) {
+            filter.doFilterInternal(pinLoginRequest("4.4.4.4"), new MockHttpServletResponse(), chain);
+        }
+        assertThat(statusOf(filter, pinLoginRequest("4.4.4.4"))).isEqualTo(429);
+
+        // The shared (tenant, IP) bucket (10/min) still has room: exhausting the tighter
+        // PIN-specific bucket must not also burn the general auth budget for the same caller.
+        assertThat(statusOf(filter, loginRequest("4.4.4.4"))).isEqualTo(200);
+    }
+
+    @Test
+    void pinLogin_differentIpsHaveSeparateBuckets() throws Exception {
+        AuthRateLimiterFilter filter = newFilter();
+        for (int i = 0; i < 5; i++) {
+            filter.doFilterInternal(pinLoginRequest("10.0.0.1"), new MockHttpServletResponse(), chain);
+        }
+
+        assertThat(statusOf(filter, pinLoginRequest("10.0.0.2"))).isEqualTo(200);
+    }
+
+    @Test
+    void pinLoginLimit_disabledWhenNonPositive() throws Exception {
+        properties.setPinLoginMaxRequests(0);
+        AuthRateLimiterFilter filter = newFilter();
+
+        for (int i = 0; i < 5; i++) {
+            assertThat(statusOf(filter, pinLoginRequest("7.7.7.7"))).isEqualTo(200);
+        }
+        // Still bound by the shared (tenant, IP) budget (10/min), just not the PIN-specific one.
+        for (int i = 0; i < 5; i++) {
+            assertThat(statusOf(filter, pinLoginRequest("7.7.7.7"))).isEqualTo(200);
+        }
+        assertThat(statusOf(filter, pinLoginRequest("7.7.7.7"))).isEqualTo(429);
     }
 
     @Test
