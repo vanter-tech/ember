@@ -1,12 +1,12 @@
 # PROGRESS.md — Active Execution State
 
 ## Current Execution State
-- **Last Completed Task:** reports 540-541 — **PRICING-TABLE-HONESTY** + **DOWNLOADS-BUTTON-ALIGNMENT**, merged to `main` locally 2026-09-22 (branches `fix/pricing-table-honesty`, `fix/downloads-button-alignment`, both off `main`). r540 audited every `/planes` comparison-table row/bullet against `PlanGateService`'s real gates (only 6 exist: `tables`, `periodfilters`, `cashclose`, `roles`, `branding`, `export`) — removed 3 fully-fabricated rows (multi-waiter limit, rooms/areas, multi-branch), fixed 5 falsely-gated rows, relabeled roles, trimmed Pro's card to 3 honest bullets. r541 fixed `/info/descarga`'s misaligned CTA buttons (`mt-auto`, same pattern as `PlanCards.astro`). Both `pnpm run build` clean. **Pending (user-gated):** push to `origin`. Also this session: defined Ember Hub's pricing ($490/yr, $294/semester — matches Cloud Pro; 30% founder discount, first 12 months only, never published) — see memory `ember-hub-pricing`; paused a prod-infra hardening brainstorm before writing its spec — see memory `ember-prod-infra-hardening`.
+- **Last Completed Task:** reports 540-542 — three independent `landing/`-only tasks, all merged to `main` locally 2026-09-22. **PRICING-TABLE-HONESTY** (r540): audited every `/planes` row/bullet against `PlanGateService`'s 6 real gates, removed 3 fabricated rows (multi-waiter, rooms, multi-branch), fixed 5 falsely-gated rows, trimmed Pro's card to 3 honest bullets. **DOWNLOADS-BUTTON-ALIGNMENT** (r541): `mt-auto` fix so the Hub/agent download CTAs line up. **HUB-PRICE-MODAL** (r542): "Ver precio" button on `LocalPlan.astro` opens a `<dialog>` (same pattern as `videos.astro`) with Ember Hub's list price ($490/año, $294/semestre — matches Cloud Pro; no founder discount shown) + value explanation, before "Hablar con el equipo". All three `pnpm run build` clean; r542 also live-tested in Chrome (ES+EN). **Pending (user-gated):** push to `origin`. Also this session: defined Ember Hub's pricing (30% founder discount, first 12 months only, never published) — see memory `ember-hub-pricing`; paused a prod-infra hardening brainstorm before writing its spec — see memory `ember-prod-infra-hardening`.
 - **Prev (compressed, reports 534-539 — all 5 security-debt items + RESTAURANT-DEPLOYMENT-MODE, merged to `main` locally 2026-09-22 and pushed to `origin/main`):** F-21 Hub Postgres/MinIO random credentials (r536); F-14 `/platform/**` per-operator RBAC (r535); F-15 Hub generates its own admin password (r537); F-17 JWT session revocation via `tokenVersion` (r538); F-10/E-23 PIN-login enumeration rate-limited + audit-logged (r539); RESTAURANT-DEPLOYMENT-MODE per-restaurant Web/Hub mode, `V15` (r534, still awaits end-to-end manual acceptance + tag `v0.3.0` rollout). Full detail in each report + Task Queue Status below.
 - **Prev (compressed r495-533, full detail in `reports/` + Task Queue Status below):** LIVE-BUG-BATCH (7 live bugs, r495-508) → HUB-LICENSE-HARDENING (r520) → HUB-PRINT 1-2 (r521-522) → AGENT-UI-HARDENING (r524-527) → FEAT-REAL-RECEIPT (r528-529) → FIX-HUB-SPA-DEEP-LINK (r530) → FIX-PRINTING-UX + FIX-PRINT-DISPATCH-TENANT (r531-532) → FIX-FORM-MESSAGE-BODY (r533). HUB-BACKUP-RESTORE code-complete (r509-517), `v0.2.7` tagged but superseded by hotfix `0.2.7.1` (r519) — pending (user-gated): VERIFY 14-22 on `EmberHubSetup-0.2.7.1.exe`, tag, publish.
-- **Current Active Task:** none in code. `feat/hub-price-modal` (r542) is a third small landing branch still pending merge on top of this. The F-14/F-15/F-17/F-21/F-10/RESTAURANT-DEPLOYMENT-MODE batch (r534-539) is already on `origin/main` (pushed 2026-09-22, bypassed 3 required status checks — **confirm CI still goes green on it**). Prod-infra hardening and the pilot's Hub pricing conversation are open threads outside the code — see memories `ember-prod-infra-hardening`/`ember-hub-pricing`. HUB-BACKUP-RESTORE and LIVE-BUG-BATCH's hotfix gates remain pending as above — one task per context, `/clear` between.
+- **Current Active Task:** none in code — all landing/pricing work for today is merged to `main`. The F-14/F-15/F-17/F-21/F-10/RESTAURANT-DEPLOYMENT-MODE batch (r534-539) is already on `origin/main` (pushed 2026-09-22, bypassed 3 required status checks — **confirm CI still goes green**); r540-542 still need a push. Next up (user-directed): prod-infra hardening — see memory `ember-prod-infra-hardening` for the paused direction/budget ceiling. HUB-BACKUP-RESTORE and LIVE-BUG-BATCH's hotfix gates remain pending as above — one task per context, `/clear` between.
 - **Prev (compressed, reports 401-494, full detail in `reports/` + Task Queue Status below):** CASH-SHIFT-DENOMINATION-COUNT (r488-494, merged via PR #128) → PLAN-GATING-PHASE1 (r474-483) → ACCOUNTANT role (r473) → KDS-BULK-STATUS-UPDATE, EMBER-HUB-V2/PRINT-AGENT-V2 Tauri shells, EMB-EXPORT, EMB-PRINT-AGENT, landing pages (r401-472).
-- **System Health:** backend `./mvnw test` **1528/1528** (`main`, after the F-17+F-10 merge, 2026-09-22, pushed to `origin`). `landing`: `pnpm run build` clean, 28 pages (this report). `frontend`/`ember-hub/ui` last verified in the r534-539 batch.
+- **System Health:** backend `./mvnw test` **1528/1528** (`main`, pushed to `origin`, 2026-09-22 — unaffected by this session's landing-only tasks). `landing`: `pnpm run build` clean, 28 pages, live-tested in Chrome. `frontend`/`ember-hub/ui` last verified in the r534-539 batch.
 - **⚠ Prod Flyway is NOT baselined.** Prod `flyway_schema_history` is at **v11** — `v0.2.5` deploy (2026-09-15) ran V11 clean 10→11 (widens `users_role_check` for `ACCOUNTANT`), verified live via `psql ... flyway_schema_history`, all `success=t`. `V9`/`V10`/`V11` are idempotent (`IF NOT EXISTS`); `V7`/`V8` are NOT. Only the *local dev* DB is baselined at v15, so migrations ≤ 15 are skipped there — add new columns by hand for local dev (done for `V11`/`V13` via `docker exec` this session). Never pre-run migration DDL on prod. **TODO (ops, not code):** inspect prod `flyway_schema_history` from Cloud Shell and baseline properly. `V12`/`V13` (denomination breakdown + `restaurants_status_check` widen) are code-only until this branch and `feat/cash-shift-denomination-count` both deploy — prod will run both automatically, no manual step needed there.
 - **Prod deploy:** tag `v*` on `main` → `backend-image.yml` builds `ember-backend:<tag-without-v>` → `./deploy/deploy.sh <tag-without-v>` from Cloud Shell (pure gcloud/IAP; the `v` is stripped — `deploy.sh 0.2.5`, not `v0.2.5`). Frontend + landing auto-deploy from `main` via Cloudflare. Backend on **`v0.2.5`** (ACCOUNTANT role, PLAN-GATING-PHASE1, Corte Z shifts table, hourly backups; tag pushed straight from `origin/main` after PR #123 squash-merged reports 473–485, 2026-09-15). V11 applied clean.
 - **Backup cadence live in prod (2026-09-15):** hourly `pg_dump` → `gs://ember-backups-ember-prod-vanter/postgres/` confirmed working (`2026-09-15T02.dump.gz`), report 485's change fully applied (was code-only until now). Found + fixed one real bug while applying it: `RUNBOOK.md`'s rebuild command was missing `-f docker-compose.prod.yml` (docker compose silently looked for the default filename and failed with "no configuration file provided") — fixed in both the doc and the live run.
@@ -24,6 +24,12 @@
 
 ## Task Queue Status
 
+### HUB-PRICE-MODAL — Ember Local card shows price + explanation in a modal — DONE, report 542 — branch `feat/hub-price-modal`
+- [x] "Ver precio" button + native `<dialog>` modal (same pattern as `videos.astro`), no React island
+- [x] Shows list price only ($490/año, $294/semestre) — founder discount stays private, never in the modal
+- [x] Reworded `pay.note` (was "a convenir por tablets/mesas", now states the price is fixed)
+- [x] Live-tested in Chrome (open/close, ES+EN); `pnpm run build` clean — push to `origin` still pending (user-gated)
+
 ### DOWNLOADS-BUTTON-ALIGNMENT — `/info/descarga` CTA buttons weren't lined up — DONE, report 541 — branch `fix/downloads-button-alignment`
 - [x] `mt-auto` on the download button (was `mt-6`), same fix pattern as `PlanCards.astro`
 - [x] `pnpm run build` clean — push to `origin` still pending (user-gated)
@@ -36,7 +42,6 @@
 - [x] `pnpm run build` clean (landing, 28 pages) — push to `origin` still pending (user-gated)
 - Enterprise's SLA/integrations/account-manager bullets deliberately kept despite no code — legitimate sales-negotiated commitments, unlike a software capability like multi-branch
 - Out of scope: Ember Hub's own pricing/landing section — untouched, see memory `ember-hub-pricing`
-
 ### F-10-PIN-ENUMERATION-MITIGATION — rate limit + audit logging for the PIN-login oracle — DONE, report 539 — branch `fix/pin-enumeration-rate-limit`, merged to `main` locally 2026-09-22
 - [x] `RateLimitProperties.pinLoginMaxRequests` (default 5/min) — third, tighter budget on top of the shared one
 - [x] `AuthRateLimiterFilter` checks it only for `/auth/login/pin`, own bucket key, doesn't touch other paths' budgets
@@ -107,20 +112,9 @@ Replaces printer-agent's Swing UI (`AgentDashboard`/`AgentTrayIcon`/`PairDialog`
 - [x] Task 6a — `VERIFY.md` updated for the Tauri shell (+ sidecar crash/orphan checks 11–13) — report 443
 - [ ] Task 6b — run the 13-item checklist on a clean Windows machine/VM (ops action, pending)
 
-### Landing — Ember Local (on-premise) — DONE, r401 (merged #100) + r402 (PR #101 open)
-- [x] `EmberLocal.astro` home band (after `<Compare/>`) + `LocalPlan.astro` on `/planes` (`#local`) + `/funcionalidades` callout (report 401)
-- [x] `local.*` i18n in `es`/`en`; billing = anual **o** semestral + install cotizado; CTA → `/contacto`
-- [x] Dedicated `/info/local` (+ `/en/…`) page: cómo funciona / offline / datos / soporte / **Requisitos** table; added to `/info` sidebar + card (report 402)
-- [x] Home band + funcionalidades callout CTAs → `/info/local`; callout lists 2 cloud-vs-Local diffs; `LocalPlan` secondary link → `/info/local`
-- [x] r402 shipped as its own PR #101 (PR #100 with r401 was merged mid-work)
-
-### Landing nice-to-have batch — DONE r403–r407, branch `feat/landing-ember-local` → PR #101
-- [x] r403 remove non-functional cookie consent banner (`CookieBanner.tsx` + `cookie.*` keys); Plausible is cookieless/PROD-only
-- [x] r404 `/info/seguridad` (+ `/en/…`): multi-tenant / JWT+BCrypt / TLS / backups; claims verified vs code + `RUNBOOK.md`; `/info` sidebar + card
-- [x] r405 `/contacto` form + `ContactForm.tsx` island + `/gracias` (+ `/en/…`); r406 full-width layout + drop Turnstile test-key
-- [x] r407 endpoint moved off Pages Functions → `landing/worker/index.ts` (deploy target is a **Worker + static assets**, not Pages); `wrangler.jsonc` `main` + `assets.binding`; Turnstile site key `0x4AAAAAAEsaAHQ6XDMni_IM` hard-coded (public)
+### Landing — Ember Local + nice-to-have batch (r401-407, PRs #100/#101) — DONE except one config item
+- [x] `EmberLocal.astro` home band, `LocalPlan.astro` on `/planes`, `/info/local` page, `/info/seguridad`, `/contacto` + `/gracias`, contact endpoint moved to `landing/worker/index.ts` (Worker + static assets)
 - [ ] **Config owed (owner, on the `ember` Worker → Settings → Variables and Secrets):** `TURNSTILE_SECRET_KEY` + `RESEND_API_KEY` (Secret), `CONTACT_TO` (Text) — `POST /api/contact` returns 500 until set
-- [x] `pnpm build` clean (26 pages), ES/EN i18n parity 445/445, `wrangler deploy --dry-run` OK
 
 ### EMB-PRINT-AGENT — Print agent: desktop app + Windows installer — plan `docs/superpowers/plans/2026-09-08-print-agent-installer.md`
 Cloud agent only (spec §4.1 Hub-local detection = separate future plan). One task per context, `/clear` between.
