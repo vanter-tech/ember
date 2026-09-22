@@ -3,6 +3,8 @@ package com.vanter.ember.platform.model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -43,6 +45,10 @@ public class PlatformOperator {
     @JsonIgnore
     @Column(nullable = false)
     private String passwordHash;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private PlatformOperatorRole role;
 
     @Column(nullable = false, updatable = false)
     private Instant createdAt;

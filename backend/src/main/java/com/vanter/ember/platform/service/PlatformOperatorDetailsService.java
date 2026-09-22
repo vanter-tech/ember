@@ -11,9 +11,10 @@ import org.springframework.stereotype.Service;
  * Loads {@link com.vanter.ember.platform.model.PlatformOperator} rows for platform auth
  * (EMB-PC-04's {@code /platform/**} filter chain), mirroring
  * {@link com.vanter.ember.identity.service.EmberUserDetailsService} but over
- * {@link PlatformOperatorRepository} instead of the tenant {@code UserRepository}. There is only
- * one operator "role" today, so it is granted a single fixed {@code PLATFORM_ADMIN} authority
- * rather than reading a role column that does not exist on {@code PlatformOperator}.
+ * {@link PlatformOperatorRepository} instead of the tenant {@code UserRepository}. Grants the
+ * operator's real {@code role} column (F-14) as the Spring Security authority, so
+ * {@code @PreAuthorize} on the {@code /platform/**} controllers can tell {@code SUPER_ADMIN} apart
+ * from a read-only {@code SUPPORT} account.
  */
 @Service
 @RequiredArgsConstructor
@@ -27,7 +28,7 @@ public class PlatformOperatorDetailsService implements UserDetailsService {
                 .map(operator -> org.springframework.security.core.userdetails.User.builder()
                         .username(operator.getEmail())
                         .password(operator.getPasswordHash())
-                        .roles("PLATFORM_ADMIN")
+                        .roles(operator.getRole().name())
                         .build())
                 .orElseThrow(() -> new UsernameNotFoundException(
                         "Platform operator not found: " + email));

@@ -18,6 +18,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -39,6 +40,7 @@ public class PlatformRestaurantController {
     private final PlatformRestaurantService platformRestaurantService;
 
     @Operation(summary = "Operator-driven tenant onboarding: creates the restaurant and its initial ADMIN user")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     @PostMapping
     public ResponseEntity<PlatformRestaurantSummaryResponse> create(
             @Valid @RequestBody PlatformRestaurantCreateRequest request,
@@ -47,12 +49,14 @@ public class PlatformRestaurantController {
     }
 
     @Operation(summary = "Issue a Hub license.key for this restaurant")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     @PostMapping(value = "/{id}/hub-license", produces = MediaType.TEXT_PLAIN_VALUE)
     public ResponseEntity<String> issueHubLicense(@PathVariable UUID id, Authentication authentication) {
         return ResponseEntity.ok(platformRestaurantService.issueHubLicense(id, authentication.getName()));
     }
 
     @Operation(summary = "List all tenants, paginated; soft-deleted excluded unless includeDeleted=true; optional mode filter")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'SUPPORT')")
     @GetMapping
     public ResponseEntity<Page<PlatformRestaurantSummaryResponse>> getAll(
             Pageable pageable,
@@ -62,6 +66,7 @@ public class PlatformRestaurantController {
     }
 
     @Operation(summary = "Soft-delete a restaurant (must be SUSPENDED); reversible via restore")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable UUID id, Authentication authentication) {
@@ -69,6 +74,7 @@ public class PlatformRestaurantController {
     }
 
     @Operation(summary = "Restore a soft-deleted restaurant to SUSPENDED")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     @PostMapping("/{id}/restore")
     public ResponseEntity<PlatformRestaurantSummaryResponse> restore(
             @PathVariable UUID id, Authentication authentication) {
@@ -76,12 +82,14 @@ public class PlatformRestaurantController {
     }
 
     @Operation(summary = "Tenant detail, including its ADMIN user(s)")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'SUPPORT')")
     @GetMapping("/{id}")
     public ResponseEntity<PlatformRestaurantDetailResponse> getById(@PathVariable UUID id) {
         return ResponseEntity.ok(platformRestaurantService.getById(id));
     }
 
     @Operation(summary = "Update a tenant's status (suspend/reactivate), audited")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     @PatchMapping("/{id}/status")
     public ResponseEntity<PlatformRestaurantSummaryResponse> updateStatus(
             @PathVariable UUID id,
@@ -92,6 +100,7 @@ public class PlatformRestaurantController {
     }
 
     @Operation(summary = "Change a tenant's deployment mode (Web/Hub), audited; the slug must be typed as confirmation")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     @PatchMapping("/{id}/mode")
     public ResponseEntity<PlatformRestaurantSummaryResponse> updateMode(
             @PathVariable UUID id,
@@ -102,6 +111,7 @@ public class PlatformRestaurantController {
     }
 
     @Operation(summary = "Update a tenant's subscription plan, audited")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     @PatchMapping("/{id}/plan")
     public ResponseEntity<PlatformRestaurantSummaryResponse> updatePlan(
             @PathVariable UUID id,
