@@ -70,6 +70,17 @@ public class JwtService {
         }
     }
 
+    /**
+     * Reads the {@code ver} claim used to invalidate already-issued tokens on demand (deactivation,
+     * PIN/role changes, an explicit "revoke sessions" action) without a session store — see
+     * {@code SecurityConfig#jwtAuthFilter}. Defaults to {@code 0} for tokens minted before this
+     * claim existed, matching {@code User.tokenVersion}'s default so old tokens keep working.
+     */
+    public int extractTokenVersion(String token) {
+        Integer ver = extractClaim(token, claims -> claims.get("ver", Integer.class));
+        return ver == null ? 0 : ver;
+    }
+
     public boolean isTokenValid(String token) {
         try {
             return extractAllClaims(token).getExpiration().after(new Date());

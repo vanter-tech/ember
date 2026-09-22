@@ -46,6 +46,19 @@ class EmberUserDetailsServiceTest {
     }
 
     @Test
+    void loadUserByUsername_exposesTheUsersTokenVersion() {
+        User user = User.builder()
+                .email("ana@test.com").passwordHash("hashed").role(Role.WAITER)
+                .active(true).tokenVersion(5).build();
+        when(userRepository.findByEmail("ana@test.com")).thenReturn(Optional.of(user));
+
+        UserDetails details = detailsService.loadUserByUsername("ana@test.com");
+
+        assertThat(details).isInstanceOf(EmberUserDetails.class);
+        assertThat(((EmberUserDetails) details).getTokenVersion()).isEqualTo(5);
+    }
+
+    @Test
     void loadUserByUsername_throwsWhenUserNotFound() {
         when(userRepository.findByEmail("missing@test.com")).thenReturn(Optional.empty());
 

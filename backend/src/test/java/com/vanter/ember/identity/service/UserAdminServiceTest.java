@@ -388,6 +388,21 @@ class UserAdminServiceTest {
     }
 
     @Test
+    void setPin_bumpsTokenVersion_soAnyStolenSessionIsCutOnItsNextRequest() {
+        User existing = waiterFor(TENANT_A);
+        existing.setTokenVersion(4);
+        when(userRepository.findById("u-1")).thenReturn(Optional.of(existing));
+        when(passwordEncoder.encode("1234")).thenReturn("pinHash");
+        when(userRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        userAdminService.setPin("u-1", TENANT_A, "1234");
+
+        ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(captor.capture());
+        assertThat(captor.getValue().getTokenVersion()).isEqualTo(5);
+    }
+
+    @Test
     void setPin_throwsWhenUserBelongsToAnotherTenant() {
         when(userRepository.findById("u-1")).thenReturn(Optional.of(waiterFor(UUID.randomUUID())));
 
@@ -409,6 +424,71 @@ class UserAdminServiceTest {
         verify(userRepository).save(captor.capture());
         assertThat(captor.getValue().getPinHash()).isNull();
         assertThat(captor.getValue().getPinUpdatedAt()).isNull();
+    }
+
+    @Test
+    void clearPin_bumpsTokenVersion() {
+        User existing = waiterFor(TENANT_A);
+        existing.setPinHash("pinHash");
+        when(userRepository.findById("u-1")).thenReturn(Optional.of(existing));
+        when(userRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        userAdminService.clearPin("u-1", TENANT_A);
+
+        ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(captor.capture());
+        assertThat(captor.getValue().getTokenVersion()).isEqualTo(1);
+    }
+
+    @Test
+    void updateProfile_deactivating_bumpsTokenVersion() {
+        User existing = waiterFor(TENANT_A);
+        existing.setActive(true);
+        when(userRepository.findById("u-1")).thenReturn(Optional.of(existing));
+        when(userRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        var result = userAdminService.updateProfile(
+                "u-1", TENANT_A,
+                new UpdateStaffProfileRequest(false, null, null, null, null, null, null, null, null));
+
+        assertThat(result.active()).isFalse();
+        assertThat(existing.getTokenVersion()).isEqualTo(1);
+    }
+
+    @Test
+    void updateProfile_leavingActiveUnset_doesNotBumpTokenVersion() {
+        User existing = waiterFor(TENANT_A);
+        when(userRepository.findById("u-1")).thenReturn(Optional.of(existing));
+        when(userRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        userAdminService.updateProfile(
+                "u-1", TENANT_A,
+                new UpdateStaffProfileRequest(null, null, null, null, null, null, null, "Ana Nueva", null));
+
+        assertThat(existing.getTokenVersion()).isZero();
+    }
+
+    @Test
+    void revokeSessions_bumpsTokenVersion() {
+        User existing = waiterFor(TENANT_A);
+        existing.setTokenVersion(7);
+        when(userRepository.findById("u-1")).thenReturn(Optional.of(existing));
+        when(userRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        userAdminService.revokeSessions("u-1", TENANT_A);
+
+        ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(captor.capture());
+        assertThat(captor.getValue().getTokenVersion()).isEqualTo(8);
+    }
+
+    @Test
+    void revokeSessions_throwsWhenUserBelongsToAnotherTenant() {
+        when(userRepository.findById("u-1")).thenReturn(Optional.of(waiterFor(UUID.randomUUID())));
+
+        assertThatThrownBy(() -> userAdminService.revokeSessions("u-1", TENANT_A))
+                .isInstanceOf(ResourceNotFoundException.class);
+        verify(userRepository, org.mockito.Mockito.never()).save(any());
     }
 
     @Test

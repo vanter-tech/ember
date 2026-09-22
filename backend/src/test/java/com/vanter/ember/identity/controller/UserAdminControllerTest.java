@@ -308,4 +308,29 @@ class UserAdminControllerTest {
         mockMvc.perform(delete("/admin/staff/u-1/pin"))
                 .andExpect(status().isForbidden());
     }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void revokeSessions_noContentForAdmin() throws Exception {
+        TenantContextHolder.setTenantId(TENANT_ID);
+
+        mockMvc.perform(post("/admin/staff/u-1/revoke-sessions"))
+                .andExpect(status().isNoContent());
+        verify(userAdminService).revokeSessions("u-1", TENANT_ID);
+    }
+
+    @Test
+    @WithMockUser(roles = "WAITER")
+    void revokeSessions_forbiddenForWaiter() throws Exception {
+        TenantContextHolder.setTenantId(TENANT_ID);
+
+        mockMvc.perform(post("/admin/staff/u-1/revoke-sessions"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void revokeSessions_unauthenticatedReturns401() throws Exception {
+        mockMvc.perform(post("/admin/staff/u-1/revoke-sessions"))
+                .andExpect(status().isUnauthorized());
+    }
 }

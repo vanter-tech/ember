@@ -50,4 +50,16 @@ class JwtServiceTest {
         String token = jwtService.generateToken("user@test.com", Map.of()) + "tampered";
         assertThat(jwtService.isTokenValid(token)).isFalse();
     }
+
+    @Test
+    void extractTokenVersion_returnsTheVerClaim() {
+        String token = jwtService.generateToken("user@test.com", Map.of("ver", 3));
+        assertThat(jwtService.extractTokenVersion(token)).isEqualTo(3);
+    }
+
+    @Test
+    void extractTokenVersion_defaultsToZeroWhenClaimAbsent() {
+        String token = jwtService.generateToken("user@test.com", Map.of());
+        assertThat(jwtService.extractTokenVersion(token)).isEqualTo(0);
+    }
 }
