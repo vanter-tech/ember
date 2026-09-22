@@ -1,12 +1,12 @@
 # PROGRESS.md — Active Execution State
 
 ## Current Execution State
-- **Last Completed Task:** report 539 — **F-10-PIN-ENUMERATION-MITIGATION** (branch `fix/pin-enumeration-rate-limit` off `main`, not pushed) — mitigates security finding **F-10/E-23** (`/auth/login/pin` lets an anonymous caller distinguish unknown/no-PIN/locked accounts) without touching that response contract (kept, user-ratified UX trade-off): `RateLimitProperties.pinLoginMaxRequests` (default 5/min) is a third, tighter budget in `AuthRateLimiterFilter` on top of the shared 10/min bucket, path-scoped to `/auth/login/pin` only; `AuthService.loginWithPin` logs a `WARN` (email + reason, never the PIN) on each of the 4 rejection paths (unknown email, no PIN set, locked, wrong PIN). Evaluated and rejected: stripping `email` from `frontend/src/store/quickAccessStore.ts` — `QuickLoginModal.tsx` uses it directly to build the login call, so removing it breaks the feature, not just its exposure. TDD throughout, incl. Logback `ListAppender` log-capture tests (new pattern for this repo). Backend **1514/1514**. **Pending (user-gated):** PR/merge.
-- **Prev (compressed, reports 534-538 — F-14/F-15/F-17/F-21 security fixes + RESTAURANT-DEPLOYMENT-MODE, all merged to `main` locally 2026-09-22, not yet pushed):** F-21 Hub Postgres/MinIO random credentials + real local auth (r536); F-14 `/platform/**` per-operator RBAC (r535); F-15 Hub generates its own admin password (r537); F-17 JWT session revocation via `tokenVersion` + `POST /admin/staff/{id}/revoke-sessions` (r538); RESTAURANT-DEPLOYMENT-MODE per-restaurant Web/Hub mode, `V15`, still awaits end-to-end manual acceptance + tag `v0.3.0` rollout (r534). Full detail in each report + Task Queue Status below.
+- **Last Completed Task:** report 542 — **HUB-PRICE-MODAL** (branch `feat/hub-price-modal` off `main`, not pushed) — `LocalPlan.astro` gets a "Ver precio" button that opens a `<dialog>` (same pattern as `videos.astro`'s lightbox, no React island) showing Ember Hub's list price ($490/año, $294/semestre — matches Cloud Pro's price + "2 meses gratis" convention, no founder discount shown) plus a short value explanation, before the "Hablar con el equipo" CTA. Reworded `local.plan.pay.note` (used to say price was "a convenir por tablets/mesas", now says it's fixed). Live-tested in Chrome (open/close, ES+EN). `pnpm run build` clean. **Pending (user-gated):** PR/merge.
+- **Prev (compressed, reports 540-541, sibling branches not yet merged):** PRICING-TABLE-HONESTY (r540) — `/planes` comparison table/cards corrected to match `PlanGateService`'s real gates, 3 fabricated rows removed, 5 falsely-gated rows fixed. DOWNLOADS-BUTTON-ALIGNMENT (r541) — `mt-auto` fix so the Hub/agent download CTAs line up.
+- **Prev (compressed, reports 534-539 — all 5 security-debt items + RESTAURANT-DEPLOYMENT-MODE, merged to `main` locally 2026-09-22 and pushed to `origin/main`):** F-21 Hub Postgres/MinIO random credentials (r536); F-14 `/platform/**` per-operator RBAC (r535); F-15 Hub generates its own admin password (r537); F-17 JWT session revocation via `tokenVersion` (r538); F-10/E-23 PIN-login enumeration rate-limited + audit-logged (r539); RESTAURANT-DEPLOYMENT-MODE per-restaurant Web/Hub mode, `V15` (r534, still awaits end-to-end manual acceptance + tag `v0.3.0` rollout).
 - **Prev (compressed r495-533, full detail in `reports/` + Task Queue Status below):** LIVE-BUG-BATCH (7 live bugs, r495-508) → HUB-LICENSE-HARDENING (r520) → HUB-PRINT 1-2 (r521-522) → AGENT-UI-HARDENING (r524-527) → FEAT-REAL-RECEIPT (r528-529) → FIX-HUB-SPA-DEEP-LINK (r530) → FIX-PRINTING-UX + FIX-PRINT-DISPATCH-TENANT (r531-532) → FIX-FORM-MESSAGE-BODY (r533). HUB-BACKUP-RESTORE code-complete (r509-517), `v0.2.7` tagged but superseded by hotfix `0.2.7.1` (r519) — pending (user-gated): VERIFY 14-22 on `EmberHubSetup-0.2.7.1.exe`, tag, publish.
-- **Current Active Task:** none in code. F-10 (this report), the F-14/F-15/F-17/F-21/RESTAURANT-DEPLOYMENT-MODE batch (r534-538) and this task are all merged to `main` locally on their own branches, pending PR/merge and push to `origin` (user-gated) — **security debt list is now fully addressed or explicitly accepted** (F-22 only, see Open/deferred). HUB-BACKUP-RESTORE and LIVE-BUG-BATCH's hotfix gates remain pending as above — one task per context, `/clear` between.
-- **Prev (compressed, reports 401-494, full detail in `reports/` + Task Queue Status below):** CASH-SHIFT-DENOMINATION-COUNT (r488-494, merged via PR #128) → PLAN-GATING-PHASE1 (r474-483) → ACCOUNTANT role (r473) → KDS-BULK-STATUS-UPDATE, EMBER-HUB-V2/PRINT-AGENT-V2 Tauri shells, EMB-EXPORT, EMB-PRINT-AGENT, landing pages (r401-472).
-- **System Health:** backend `./mvnw test` **1519/1519** (verified again after merging F-17 + F-10 into `main` locally, 2026-09-22). Frontend/`ember-hub/ui` last verified in the r534-538 batch: frontend `pnpm run build` clean, `ember-hub/ui` **34/34**.
+- **Current Active Task:** none in code. Three small `landing/`-only branches pending merge, all independent (no overlapping lines expected): `fix/pricing-table-honesty` (r540), `fix/downloads-button-alignment` (r541), `feat/hub-price-modal` (r542, this one). The F-14/F-15/F-17/F-21/F-10/RESTAURANT-DEPLOYMENT-MODE batch (r534-539) is already on `origin/main` (pushed 2026-09-22, bypassed 3 required status checks — confirm CI still goes green). Prod-infra hardening is an open thread outside the code — see memory `ember-prod-infra-hardening`. Ember Hub's pricing anchor ($490/$294, founder discount) is now live on the landing modal — see memory `ember-hub-pricing` (update its "landing stays hidden" note, that decision changed this task). HUB-BACKUP-RESTORE and LIVE-BUG-BATCH's hotfix gates remain pending as above — one task per context, `/clear` between.
+- **System Health:** backend `./mvnw test` **1528/1528** (`main`, pushed to `origin`, 2026-09-22 — unaffected by this session's landing-only tasks). `landing`: `pnpm run build` clean, 28 pages, live-tested in Chrome (this report). `frontend`/`ember-hub/ui` last verified in the r534-539 batch.
 - **⚠ Prod Flyway is NOT baselined.** Prod `flyway_schema_history` is at **v11** — `v0.2.5` deploy (2026-09-15) ran V11 clean 10→11 (widens `users_role_check` for `ACCOUNTANT`), verified live via `psql ... flyway_schema_history`, all `success=t`. `V9`/`V10`/`V11` are idempotent (`IF NOT EXISTS`); `V7`/`V8` are NOT. Only the *local dev* DB is baselined at v15, so migrations ≤ 15 are skipped there — add new columns by hand for local dev (done for `V11`/`V13` via `docker exec` this session). Never pre-run migration DDL on prod. **TODO (ops, not code):** inspect prod `flyway_schema_history` from Cloud Shell and baseline properly. `V12`/`V13` (denomination breakdown + `restaurants_status_check` widen) are code-only until this branch and `feat/cash-shift-denomination-count` both deploy — prod will run both automatically, no manual step needed there.
 - **Prod deploy:** tag `v*` on `main` → `backend-image.yml` builds `ember-backend:<tag-without-v>` → `./deploy/deploy.sh <tag-without-v>` from Cloud Shell (pure gcloud/IAP; the `v` is stripped — `deploy.sh 0.2.5`, not `v0.2.5`). Frontend + landing auto-deploy from `main` via Cloudflare. Backend on **`v0.2.5`** (ACCOUNTANT role, PLAN-GATING-PHASE1, Corte Z shifts table, hourly backups; tag pushed straight from `origin/main` after PR #123 squash-merged reports 473–485, 2026-09-15). V11 applied clean.
 - **Backup cadence live in prod (2026-09-15):** hourly `pg_dump` → `gs://ember-backups-ember-prod-vanter/postgres/` confirmed working (`2026-09-15T02.dump.gz`), report 485's change fully applied (was code-only until now). Found + fixed one real bug while applying it: `RUNBOOK.md`'s rebuild command was missing `-f docker-compose.prod.yml` (docker compose silently looked for the default filename and failed with "no configuration file provided") — fixed in both the doc and the live run.
@@ -23,6 +23,25 @@
 - **CHECK-constraint trap (recurring):** adding a new enum constant (Java) without a matching Flyway migration widening the DB's `CHECK` constraint causes a silent-looking 500 the first time that value is actually persisted (seen with `ACCOUNTANT`/`users_role_check` → V11 fix, and again with `RestaurantStatus.DELETED`/`restaurants_status_check` → bug 7/V13). When adding an enum value backed by a `CHECK`-constrained string column, always grep the baseline/migrations for that column's `_check` constraint.
 
 ## Task Queue Status
+
+### HUB-PRICE-MODAL — Ember Local card shows price + explanation in a modal — DONE, report 542 — branch `feat/hub-price-modal`
+- [x] "Ver precio" button + native `<dialog>` modal (same pattern as `videos.astro`), no React island
+- [x] Shows list price only ($490/año, $294/semestre) — founder discount stays private, never in the modal
+- [x] Reworded `pay.note` (was "a convenir por tablets/mesas", now states the price is fixed)
+- [x] Live-tested in Chrome (open/close, ES+EN); `pnpm run build` clean — push to `origin` still pending (user-gated)
+
+### PRICING-TABLE-HONESTY — `/planes` claims match what `PlanGateService` actually enforces — DONE, report 540 — branch `fix/pricing-table-honesty`
+- [x] Audited every row/bullet against `PlanGateService`'s 6 real gates (tables/periodfilters/cashclose/roles/branding/export)
+- [x] Removed 3 fabricated rows (multi-waiter limit, rooms/areas, multi-branch) — zero code backs any of them
+- [x] Fixed 5 rows wrongly marked paid-tier-exclusive (floor mgmt, bill split, printing, "advanced" analytics) — actually unrestricted for every tier
+- [x] Relabeled the roles row (only Kitchen/Accountant gated, not Waiter/Admin); Pro card trimmed to 3 honest bullets
+- [x] `pnpm run build` clean (landing, 28 pages) — push to `origin` still pending (user-gated)
+- Enterprise's SLA/integrations/account-manager bullets deliberately kept despite no code — legitimate sales-negotiated commitments, unlike a software capability like multi-branch
+- Out of scope: Ember Hub's own pricing/landing section — untouched, see memory `ember-hub-pricing`
+
+### DOWNLOADS-BUTTON-ALIGNMENT — `/info/descarga` CTA buttons weren't lined up — DONE, report 541 — branch `fix/downloads-button-alignment`
+- [x] `mt-auto` on the download button (was `mt-6`), same fix pattern as `PlanCards.astro`
+- [x] `pnpm run build` clean — push to `origin` still pending (user-gated)
 
 ### F-10-PIN-ENUMERATION-MITIGATION — rate limit + audit logging for the PIN-login oracle — DONE, report 539 — branch `fix/pin-enumeration-rate-limit`, merged to `main` locally 2026-09-22
 - [x] `RateLimitProperties.pinLoginMaxRequests` (default 5/min) — third, tighter budget on top of the shared one
@@ -67,26 +86,9 @@
 - Out of scope: no operator-management UI (operators are still hand-inserted in the DB); exposing `role` in the Console is a follow-up if that UI gets built
 
 ### RESTAURANT-DEPLOYMENT-MODE — per-restaurant Web (CLOUD) vs Hub mode — DONE, report 534 — branch `feat/restaurant-deployment-mode` (not pushed) — spec `docs/superpowers/specs/2026-09-20-restaurant-deployment-mode-design.md`, plan `docs/superpowers/plans/2026-09-20-restaurant-deployment-mode.md` (spec+plan committed on `spec/restaurant-deployment-mode`, not pushed). Report numbers assigned at commit time (next: 533). Rollout: cloud first (V15), then Hub.
-- [x] Task 1 — `DeploymentMode` enum + `restaurants.deployment_mode` + idempotent `V15` (backfill HUB) + `ember.deployment-mode.enforced` (false in Hub). **Local dev DB: add the column by hand**
-- [x] Task 2 — cloud login/PIN refuse a Hub restaurant's staff (same error as bad password)
-- [x] Task 3 — cloud gates: JWT filter, STOMP CONNECT, QR join, public slug refuse HUB
-- [x] Task 4 — `issueHubLicense`/activation require HUB; heartbeat returns `MIGRATED` > `SUSPENDED` > `OK`
-- [x] Task 5 — Console backend: create with mode, `PATCH /{id}/mode` (typed slug + audit `RESTAURANT_MODE_CHANGED`), list filter by mode
-- [x] Task 6 — Console frontend: required selector, badge, filter, change-mode dialog with "Plan actual" reminder
-- [x] Task 7 — Hub state `migratedSince` (MAC canonical unchanged when null), 48 h courtesy, `HeartbeatScheduler` MIGRATED branch
-- [x] Task 8 — `ReadOnlyModeInterceptor` ("modo consulta", 403 `license_migrated`) + Hub UI `LicenseCard` state
-- [x] Task 9 — full verification (V15 run on real Postgres), bump 0.3.0, report 534
+- [x] Tasks 1-9 (all DONE) — `DeploymentMode` enum + idempotent `V15`; cloud login/PIN/JWT/STOMP/QR-join/public-slug all refuse HUB; `issueHubLicense`/heartbeat require HUB (`MIGRATED` > `SUSPENDED` > `OK`); Console create/filter/change-mode (audited); Hub `migratedSince` + 48h courtesy + `ReadOnlyModeInterceptor`; full verification on real Postgres, bumped 0.3.0. **Local dev DB: add `deployment_mode` by hand.**
 - [ ] Rollout (user-gated) — manual end-to-end acceptance on a real Hub, PR (squash), tag `v0.3.0`, deploy cloud FIRST, then build/publish Hub
 - Out of scope: data migration Hub↔Web (never), CSV menu importer (medium term), retention of cloud data left behind, WS SEND frames in read-only mode.
-
-### HUB-PRINT — print from the Ember Hub (agent pairs with the Hub; no separate print path)
-- [x] Task 1 — agent "Servidor" field + keep the redeemed URL (report 521)
-- [x] Task 2 — route `RECEIPT` jobs to the requesting caja's agent by source IP (report 522). Unscheduled follow-ups: fallback to another printer when a caja's agent is offline; show PC name/IP on the agent card
-- [x] AGENT-UI-HARDENING — part 1: Badge wraps, pairing errors never carry the address, diagnostics without OS/Java/host (report 524); part 2: "Servidor" is now a Nube/Local dropdown, cloud URL lives only in the agent, Local auto-detects the Hub on the LAN (report 525). Open: agent 0.1.3 build + publish; landing badge says the agent is only for the cloud but USB-on-caja setups need it with the Hub too
-### HUB-LICENSE-HARDENING — self-audit of the Hub license lock — DONE, report 520
-- [x] Cloud signs heartbeat answers (`HubHeartbeatService`/`LicenseIssuingService`) + Hub verifies with the nonce (`HeartbeatScheduler`, `LicenseService.verifyHeartbeat`)
-- [x] `hub-state.json` HMAC, fail-closed load; fresh activation starts without grace (`HubStateStore`, `LicenseService`)
-- [x] Monotonic `lastSeenAt` + `license_clock_rolled_back` in `GracePeriodInterceptor`
 
 ### HUB-BACKUP-RESTORE - Hub backup (USB/this-machine modal) + restore from uploaded file - plan `docs/superpowers/plans/2026-09-19-hub-backup-restore.md`, spec `docs/superpowers/specs/2026-09-14-hub-backup-restore-design.md`
 Branch `feat/hub-backup-restore` off `main`. Strictly in order, ONE task per context: TDD per the plan -> verify -> report `reports/NNN-...` (509-514 expected) -> tick below -> single commit -> **finish by telling the user to run `/clear`** before the next task.
@@ -111,20 +113,9 @@ Replaces printer-agent's Swing UI (`AgentDashboard`/`AgentTrayIcon`/`PairDialog`
 - [x] Task 6a — `VERIFY.md` updated for the Tauri shell (+ sidecar crash/orphan checks 11–13) — report 443
 - [ ] Task 6b — run the 13-item checklist on a clean Windows machine/VM (ops action, pending)
 
-### Landing — Ember Local (on-premise) — DONE, r401 (merged #100) + r402 (PR #101 open)
-- [x] `EmberLocal.astro` home band (after `<Compare/>`) + `LocalPlan.astro` on `/planes` (`#local`) + `/funcionalidades` callout (report 401)
-- [x] `local.*` i18n in `es`/`en`; billing = anual **o** semestral + install cotizado; CTA → `/contacto`
-- [x] Dedicated `/info/local` (+ `/en/…`) page: cómo funciona / offline / datos / soporte / **Requisitos** table; added to `/info` sidebar + card (report 402)
-- [x] Home band + funcionalidades callout CTAs → `/info/local`; callout lists 2 cloud-vs-Local diffs; `LocalPlan` secondary link → `/info/local`
-- [x] r402 shipped as its own PR #101 (PR #100 with r401 was merged mid-work)
-
-### Landing nice-to-have batch — DONE r403–r407, branch `feat/landing-ember-local` → PR #101
-- [x] r403 remove non-functional cookie consent banner (`CookieBanner.tsx` + `cookie.*` keys); Plausible is cookieless/PROD-only
-- [x] r404 `/info/seguridad` (+ `/en/…`): multi-tenant / JWT+BCrypt / TLS / backups; claims verified vs code + `RUNBOOK.md`; `/info` sidebar + card
-- [x] r405 `/contacto` form + `ContactForm.tsx` island + `/gracias` (+ `/en/…`); r406 full-width layout + drop Turnstile test-key
-- [x] r407 endpoint moved off Pages Functions → `landing/worker/index.ts` (deploy target is a **Worker + static assets**, not Pages); `wrangler.jsonc` `main` + `assets.binding`; Turnstile site key `0x4AAAAAAEsaAHQ6XDMni_IM` hard-coded (public)
+### Landing — Ember Local + nice-to-have batch (r401-407, PRs #100/#101) — DONE except one config item
+- [x] `EmberLocal.astro` home band, `LocalPlan.astro` on `/planes`, `/info/local` page, `/info/seguridad`, `/contacto` + `/gracias`, contact endpoint moved to `landing/worker/index.ts` (Worker + static assets)
 - [ ] **Config owed (owner, on the `ember` Worker → Settings → Variables and Secrets):** `TURNSTILE_SECRET_KEY` + `RESEND_API_KEY` (Secret), `CONTACT_TO` (Text) — `POST /api/contact` returns 500 until set
-- [x] `pnpm build` clean (26 pages), ES/EN i18n parity 445/445, `wrangler deploy --dry-run` OK
 
 ### EMB-PRINT-AGENT — Print agent: desktop app + Windows installer — plan `docs/superpowers/plans/2026-09-08-print-agent-installer.md`
 Cloud agent only (spec §4.1 Hub-local detection = separate future plan). One task per context, `/clear` between.
@@ -157,6 +148,7 @@ Rationale: architecture is sound but prod infra is early (single VM, no HA, manu
 - [x] **Security debt — closed out 2026-09-22 (r535-539):** ~~F-15~~ Hub own admin password (r537); ~~F-21~~ Hub Postgres/MinIO random creds (r536, new installs only); ~~F-14~~ `/platform/**` RBAC (r535); ~~F-17~~ JWT `tokenVersion` revocation (r538); ~~F-10/E-23~~ PIN-login enumeration rate-limited + audit-logged, response split kept by product decision (r539); ~~F-24~~ print-agent key DPAPI (r418). Only remaining: F-22 (secret in git history — accepted, already rotated, rewrite only if the repo opens to untrusted third parties). All 5 branches merged to `main` locally, pending PR/merge + push to `origin`.
 
 ### Done (collapsed)
+- [x] **HUB-PRINT + AGENT-UI-HARDENING + HUB-LICENSE-HARDENING (r520-525)** — print agent pairs with the Hub via a Nube/Local dropdown (cloud URL never in the UI bundle), `RECEIPT` jobs route to the requesting caja's agent by source IP; Hub heartbeat answers are RSA-signed + `hub-state.json` HMAC fail-closed + monotonic clock guard.
 - [x] **CASH-SHIFT-DENOMINATION-COUNT (r488-494, PR #128)** — accountant open/close cash-shift counts bills/coins by 14 BCN denominations instead of one typed total; breakdown JSON on `CashShift` (`V12`), backend re-validates sum + legal denominations, close gains optional notes.
 - [x] **PLAN-GATING-PHASE1 (r474-483)** — `PlanGateService` (402 `PLAN_LIMIT_EXCEEDED`) gates 6 features (tables/cashclose/periodfilters/export/branding/staff-roles) by `restaurant.plan`; Console assigns+changes plans; tenant self-service plan-change endpoint removed.
 - [x] **KDS-BULK-STATUS-UPDATE (r464-467)** — focused-ticket bulk select (checkbox + select-all) + status dropdown, each dish walks every intermediate status one at a time. Plan `docs/superpowers/plans/2026-09-13-kds-bulk-status-update.md`.

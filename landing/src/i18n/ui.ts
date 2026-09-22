@@ -306,9 +306,19 @@ export const ui: Record<Lang, Record<string, string>> = {
 		'local.plan.pay.install.body':
 			'Pago único, según tu local: puesta en marcha, red, impresoras y entrenamiento del personal.',
 		'local.plan.pay.note':
-			'Precio de licencia a convenir según la cantidad de tablets y mesas. Escribinos y armamos la propuesta.',
+			'El precio de licencia es fijo, sin importar la cantidad de tablets o mesas. La instalación se cotiza aparte según tu local.',
 		'local.plan.cta': 'Hablar con el equipo',
 		'local.plan.morelink': 'Ver cómo funciona y requisitos',
+		'local.plan.priceCta': 'Ver precio',
+		'local.plan.priceModal.title': 'Precio de Ember Local',
+		'local.plan.priceModal.annualPrice': '$490',
+		'local.plan.priceModal.annualPeriod': '/año',
+		'local.plan.priceModal.annualNote': '2 meses gratis vs. pagar semestral',
+		'local.plan.priceModal.semiannualPrice': '$294',
+		'local.plan.priceModal.semiannualPeriod': '/semestre',
+		'local.plan.priceModal.body':
+			'Incluye todo sin límites — mesas ilimitadas, todos los roles de tu equipo, reportes completos, marca propia — lo mismo que el plan Pro, corriendo en tu propio servidor.',
+		'local.plan.priceModal.close': 'Cerrar',
 		'local.feat.eyebrow': 'Ember Local',
 		'local.feat.title': '¿Preferís el servicio 100% atendido?',
 		'local.feat.body':
@@ -946,9 +956,19 @@ export const ui: Record<Lang, Record<string, string>> = {
 		'local.plan.pay.install.body':
 			'One-time fee, based on your venue: rollout, network, printers and staff training.',
 		'local.plan.pay.note':
-			'License price agreed based on the number of tablets and tables. Get in touch and we will put together a proposal.',
+			'License price is fixed, no matter how many tablets or tables you use. Installation is quoted separately based on your site.',
 		'local.plan.cta': 'Talk to the team',
 		'local.plan.morelink': 'See how it works and requirements',
+		'local.plan.priceCta': 'See price',
+		'local.plan.priceModal.title': 'Ember Local pricing',
+		'local.plan.priceModal.annualPrice': '$490',
+		'local.plan.priceModal.annualPeriod': '/year',
+		'local.plan.priceModal.annualNote': '2 months free vs. paying semi-annually',
+		'local.plan.priceModal.semiannualPrice': '$294',
+		'local.plan.priceModal.semiannualPeriod': '/6 months',
+		'local.plan.priceModal.body':
+			'Includes everything with no limits — unlimited tables, every role on your team, full reports, your own branding — the same as our Pro plan, running on your own server.',
+		'local.plan.priceModal.close': 'Close',
 		'local.feat.eyebrow': 'Ember Local',
 		'local.feat.title': 'Prefer fully staff-served operation?',
 		'local.feat.body':
