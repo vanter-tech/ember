@@ -105,9 +105,15 @@ public class UserAdminService {
             user.setEmail(request.email());
         }
         if (request.active() != null) {
-            if (Boolean.FALSE.equals(request.active()) && isLastActiveAdmin(user, tenantId)) {
-                throw new IllegalArgumentException(
-                        "Cannot deactivate the last active administrator of this restaurant.");
+            if (Boolean.FALSE.equals(request.active())) {
+                if (isLastActiveAdmin(user, tenantId)) {
+                    throw new IllegalArgumentException(
+                            "Cannot deactivate the last active administrator of this restaurant.");
+                }
+                // Deactivation already cuts off the next request (EmberUserDetailsService/
+                // SecurityConfig check isEnabled()); bumping tokenVersion too means a token
+                // issued right before this call can't survive a later re-activation either.
+                bumpTokenVersion(user);
             }
             user.setActive(request.active());
         }
@@ -132,6 +138,7 @@ public class UserAdminService {
         User user = requireTenantUser(userId, tenantId);
         user.setPinHash(passwordEncoder.encode(pin));
         user.setPinUpdatedAt(Instant.now());
+        bumpTokenVersion(user);
         userRepository.save(user);
     }
 
@@ -140,7 +147,23 @@ public class UserAdminService {
         User user = requireTenantUser(userId, tenantId);
         user.setPinHash(null);
         user.setPinUpdatedAt(null);
+        bumpTokenVersion(user);
         userRepository.save(user);
+    }
+
+    /**
+     * Explicit "sign out everywhere" action (F-17): invalidates every already-issued token for
+     * this user on its very next request, without waiting for it to expire. Tenant-scoped like
+     * every other staff-management method here.
+     */
+    public void revokeSessions(String userId, UUID tenantId) {
+        User user = requireTenantUser(userId, tenantId);
+        bumpTokenVersion(user);
+        userRepository.save(user);
+    }
+
+    private void bumpTokenVersion(User user) {
+        user.setTokenVersion(user.getTokenVersion() + 1);
     }
 
     /**

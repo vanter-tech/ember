@@ -85,6 +85,7 @@ class SecurityAuditTest {
         "PATCH, /admin/staff/u-1",
         "PUT,  /admin/staff/u-1/pin",
         "DELETE, /admin/staff/u-1/pin",
+        "POST, /admin/staff/u-1/revoke-sessions",
         "GET,  /admin/analytics/range",
         "GET,  /admin/analytics/summary",
         "GET,  /admin/analytics/sales",

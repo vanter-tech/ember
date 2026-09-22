@@ -1,8 +1,10 @@
 package com.vanter.ember.identity.service;
 
 import com.vanter.ember.identity.repository.UserRepository;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Primary;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -26,12 +28,12 @@ public class EmberUserDetailsService implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         return userRepository.findByEmail(email)
-                .map(user -> org.springframework.security.core.userdetails.User.builder()
-                        .username(user.getEmail())
-                        .password(user.getPasswordHash())
-                        .roles(user.getRole().name())
-                        .disabled(!Boolean.TRUE.equals(user.getActive()))
-                        .build())
+                .map(user -> new EmberUserDetails(
+                        user.getEmail(),
+                        user.getPasswordHash(),
+                        List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().name())),
+                        Boolean.TRUE.equals(user.getActive()),
+                        user.getTokenVersion()))
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + email));
     }
 }

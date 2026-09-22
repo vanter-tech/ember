@@ -20,6 +20,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -171,6 +172,26 @@ class AuthServiceTest {
         AuthResponse response = authService.login(req);
 
         assertThat(response.getRestaurantId()).isEqualTo(restaurant.getId());
+    }
+
+    @Test
+    void login_putsTheUsersTokenVersionInTheVerClaim() {
+        User user = User.builder()
+                .id("user-1").name("Ana").email("ana@test.com")
+                .passwordHash("hashed").role(Role.WAITER).tokenVersion(3).build();
+        LoginRequest req = new LoginRequest();
+        req.setEmail("ana@test.com");
+        req.setPassword("secret");
+
+        when(userRepository.findByEmail("ana@test.com")).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("secret", "hashed")).thenReturn(true);
+        when(jwtService.generateToken(eq("ana@test.com"), anyMap())).thenReturn("jwt-token");
+
+        authService.login(req);
+
+        ArgumentCaptor<Map<String, Object>> claims = ArgumentCaptor.forClass(Map.class);
+        verify(jwtService).generateToken(eq("ana@test.com"), claims.capture());
+        assertThat(claims.getValue()).containsEntry("ver", 3);
     }
 
     @Test

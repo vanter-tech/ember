@@ -47,6 +47,16 @@ public class User {
     @Builder.Default
     private Boolean active = true;
 
+    /**
+     * Bumped to invalidate every already-issued JWT for this user on demand (deactivation, PIN
+     * change, an explicit "revoke sessions" action) — see {@code JwtService#extractTokenVersion}
+     * and {@code SecurityConfig#jwtAuthFilter}. Default {@code 0} matches the claim's default for
+     * tokens minted before this field existed, so they keep working (F-17).
+     */
+    @Column(name = "token_version", nullable = false)
+    @Builder.Default
+    private int tokenVersion = 0;
+
     /** True for a throwaway walk-in identity created by POST /sessions/join-as-guest. Guests
      *  behave like a CUSTOMER for the session but never get a loyalty account or visits. */
     @Column(nullable = false)

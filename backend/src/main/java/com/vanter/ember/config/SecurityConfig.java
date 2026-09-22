@@ -1,6 +1,7 @@
 package com.vanter.ember.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.vanter.ember.identity.service.EmberUserDetails;
 import com.vanter.ember.identity.service.JwtService;
 import com.vanter.ember.restaurant.model.DeploymentMode;
 import com.vanter.ember.restaurant.model.Restaurant;
@@ -145,8 +146,11 @@ public class SecurityConfig {
                             UserDetails userDetails = userDetailsService.loadUserByUsername(email);
                             // A deactivated staff account's JWT can still be within its validity window —
                             // simply not authenticating here lets the existing anyRequest().authenticated()
-                            // rule reject it the same way an absent/invalid token already does.
-                            if (userDetails.isEnabled()) {
+                            // rule reject it the same way an absent/invalid token already does. Same
+                            // fallthrough for a stale `ver` claim (F-17): PIN change, an explicit
+                            // "revoke sessions" action, bumps User.tokenVersion so a stolen token stops
+                            // working on its very next request instead of surviving until it expires.
+                            if (userDetails.isEnabled() && tokenVersionMatches(userDetails, token)) {
                                 UsernamePasswordAuthenticationToken authToken =
                                         new UsernamePasswordAuthenticationToken(
                                                 userDetails, null, userDetails.getAuthorities());
@@ -190,6 +194,19 @@ public class SecurityConfig {
                 var authentication = SecurityContextHolder.getContext().getAuthentication();
                 return authentication != null && authentication.getAuthorities().stream()
                         .anyMatch(granted -> "ROLE_CUSTOMER".equals(granted.getAuthority()));
+            }
+
+            /**
+             * True unless the token's {@code ver} claim is behind the account's live
+             * {@link EmberUserDetails#getTokenVersion()} (F-17). Non-{@code EmberUserDetails}
+             * principals (none exist today, but the type isn't sealed) pass through unchecked
+             * rather than risk breaking an unrelated auth path.
+             */
+            private boolean tokenVersionMatches(UserDetails userDetails, String token) {
+                if (!(userDetails instanceof EmberUserDetails emberUserDetails)) {
+                    return true;
+                }
+                return jwtService.extractTokenVersion(token) >= emberUserDetails.getTokenVersion();
             }
 
             private void writeSuspendedTenantResponse(HttpServletRequest request,

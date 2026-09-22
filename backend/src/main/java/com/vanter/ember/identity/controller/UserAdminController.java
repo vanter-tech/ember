@@ -84,4 +84,14 @@ public class UserAdminController {
     public void clearStaffPin(@PathVariable String userId) {
         userAdminService.clearPin(userId, TenantContextHolder.requireTenantId());
     }
+
+    @Operation(summary =
+            "Sign a staff member out of every device: invalidates their already-issued tokens "
+                    + "on the next request instead of waiting for them to expire (ADMIN, F-17)")
+    @PostMapping("/staff/{userId}/revoke-sessions")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("hasRole('ADMIN')")
+    public void revokeSessions(@PathVariable String userId) {
+        userAdminService.revokeSessions(userId, TenantContextHolder.requireTenantId());
+    }
 }
