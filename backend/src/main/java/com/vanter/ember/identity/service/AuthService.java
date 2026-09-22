@@ -12,6 +12,7 @@ import com.vanter.ember.restaurant.model.DeploymentMode;
 import com.vanter.ember.restaurant.model.Restaurant;
 import com.vanter.ember.restaurant.repository.RestaurantRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -21,6 +22,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -67,20 +69,40 @@ public class AuthService {
         return buildResponse(user, tenantIdOf(user));
     }
 
+    /**
+     * F-10/E-23: this endpoint's 401 (unknown email) vs. 409 {@link PinNotSetException} vs. 423
+     * {@link com.vanter.ember.identity.exception.PinLockedException} split is a deliberate, kept
+     * product trade-off — {@code QuickLoginModal}'s UX needs the distinction — so it isn't
+     * unified here. Rate-limited separately, tighter than the shared auth budget
+     * ({@code AuthRateLimiterFilter}/{@code RateLimitProperties#pinLoginMaxRequests}); the
+     * {@code log.warn} calls below only add visibility so a scripted enumeration attempt shows up
+     * in logs instead of being silent — they never change what the caller sees.
+     */
     public AuthResponse loginWithPin(PinLoginRequest request) {
-        pinAttemptGuard.assertNotLocked(request.getEmail());
+        try {
+            pinAttemptGuard.assertNotLocked(request.getEmail());
+        } catch (com.vanter.ember.identity.exception.PinLockedException e) {
+            log.warn("PIN login rejected: account locked for {}", request.getEmail());
+            throw e;
+        }
 
         User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new BadCredentialsException("Invalid credentials"));
+                .orElseThrow(() -> {
+                    log.warn("PIN login rejected: unknown email {}", request.getEmail());
+                    return new BadCredentialsException("Invalid credentials");
+                });
 
         if (user.getPinHash() == null) {
+            log.warn("PIN login rejected: no PIN set for {}", request.getEmail());
             throw new PinNotSetException();
         }
 
-        if (!passwordEncoder.matches(request.getPin(), user.getPinHash())
-                || !Boolean.TRUE.equals(user.getActive())
-                || closedToWeb(user)) {
+        boolean pinMatches = passwordEncoder.matches(request.getPin(), user.getPinHash());
+        if (!pinMatches || !Boolean.TRUE.equals(user.getActive()) || closedToWeb(user)) {
             pinAttemptGuard.recordFailure(request.getEmail());
+            if (!pinMatches) {
+                log.warn("PIN login rejected: wrong PIN for {}", request.getEmail());
+            }
             throw new BadCredentialsException("Invalid credentials");
         }
 

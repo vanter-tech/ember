@@ -276,6 +276,90 @@ class AuthServiceTest {
         assertThatThrownBy(() -> authService.loginWithPin(req)).isInstanceOf(BadCredentialsException.class);
     }
 
+    // --- F-10/E-23: audit logging on the PIN-login enumeration surface -------------------------
+    // The 401-vs-409-vs-423 split is a deliberate, kept trade-off (QuickLoginModal's UX needs it),
+    // rate-limited separately (AuthRateLimiterFilterTest) — this only adds visibility so a scripted
+    // enumeration attempt shows up in logs instead of being silent.
+
+    private ch.qos.logback.core.read.ListAppender<ch.qos.logback.classic.spi.ILoggingEvent>
+            attachLogCapture() {
+        var logger = (ch.qos.logback.classic.Logger)
+                org.slf4j.LoggerFactory.getLogger(AuthService.class);
+        var appender = new ch.qos.logback.core.read.ListAppender
+                <ch.qos.logback.classic.spi.ILoggingEvent>();
+        appender.start();
+        logger.addAppender(appender);
+        return appender;
+    }
+
+    @Test
+    void loginWithPin_logsAWarningForAnUnknownEmail() {
+        when(userRepository.findByEmail("ghost@test.com")).thenReturn(Optional.empty());
+        var logs = attachLogCapture();
+
+        PinLoginRequest req = new PinLoginRequest();
+        req.setEmail("ghost@test.com"); req.setPin("1234");
+
+        assertThatThrownBy(() -> authService.loginWithPin(req)).isInstanceOf(BadCredentialsException.class);
+        assertThat(logs.list).anyMatch(e ->
+                e.getLevel() == ch.qos.logback.classic.Level.WARN
+                        && e.getFormattedMessage().contains("ghost@test.com")
+                        && e.getFormattedMessage().contains("unknown email"));
+    }
+
+    @Test
+    void loginWithPin_logsAWarningWhenThePinIsNotSet() {
+        User user = User.builder().id("u1").email("w@test.com").name("W")
+                .role(Role.WAITER).passwordHash("pw").pinHash(null).active(true).build();
+        when(userRepository.findByEmail("w@test.com")).thenReturn(Optional.of(user));
+        var logs = attachLogCapture();
+
+        PinLoginRequest req = new PinLoginRequest();
+        req.setEmail("w@test.com"); req.setPin("1234");
+
+        assertThatThrownBy(() -> authService.loginWithPin(req))
+                .isInstanceOf(com.vanter.ember.identity.exception.PinNotSetException.class);
+        assertThat(logs.list).anyMatch(e ->
+                e.getLevel() == ch.qos.logback.classic.Level.WARN
+                        && e.getFormattedMessage().contains("w@test.com")
+                        && e.getFormattedMessage().contains("no PIN set"));
+    }
+
+    @Test
+    void loginWithPin_logsAWarningWhenTheAccountIsLocked() {
+        org.mockito.Mockito.doThrow(new com.vanter.ember.identity.exception.PinLockedException())
+                .when(pinAttemptGuard).assertNotLocked("w@test.com");
+        var logs = attachLogCapture();
+
+        PinLoginRequest req = new PinLoginRequest();
+        req.setEmail("w@test.com"); req.setPin("1234");
+
+        assertThatThrownBy(() -> authService.loginWithPin(req))
+                .isInstanceOf(com.vanter.ember.identity.exception.PinLockedException.class);
+        assertThat(logs.list).anyMatch(e ->
+                e.getLevel() == ch.qos.logback.classic.Level.WARN
+                        && e.getFormattedMessage().contains("w@test.com")
+                        && e.getFormattedMessage().contains("locked"));
+    }
+
+    @Test
+    void loginWithPin_logsAWarningWhenThePinIsWrong() {
+        User user = User.builder().id("u1").email("w@test.com").name("W")
+                .role(Role.WAITER).passwordHash("pw").pinHash("pinHash").active(true).build();
+        when(userRepository.findByEmail("w@test.com")).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("9999", "pinHash")).thenReturn(false);
+        var logs = attachLogCapture();
+
+        PinLoginRequest req = new PinLoginRequest();
+        req.setEmail("w@test.com"); req.setPin("9999");
+
+        assertThatThrownBy(() -> authService.loginWithPin(req)).isInstanceOf(BadCredentialsException.class);
+        assertThat(logs.list).anyMatch(e ->
+                e.getLevel() == ch.qos.logback.classic.Level.WARN
+                        && e.getFormattedMessage().contains("w@test.com")
+                        && e.getFormattedMessage().contains("wrong PIN"));
+    }
+
     private static Restaurant restaurantIn(DeploymentMode mode) {
         return Restaurant.builder().id(UUID.randomUUID()).name("R").slug("r").deploymentMode(mode).build();
     }
