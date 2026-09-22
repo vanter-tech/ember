@@ -16,15 +16,23 @@ import com.vanter.ember.platform.service.PlatformStatsService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(PlatformStatsController.class)
-@Import({PlatformSecurityConfig.class, CorsConfig.class})
+@Import({PlatformSecurityConfig.class, CorsConfig.class,
+        PlatformStatsControllerTest.MethodSecurityConfig.class})
 class PlatformStatsControllerTest {
+
+    @TestConfiguration
+    @EnableMethodSecurity
+    static class MethodSecurityConfig {
+    }
 
     private static final String OPERATOR_EMAIL = "operator@ember.local";
     private static final String TOKEN = "valid-token";
@@ -36,10 +44,14 @@ class PlatformStatsControllerTest {
     @MockBean PlatformOperatorDetailsService platformOperatorDetailsService;
 
     private void authenticate() {
+        authenticateAs("SUPER_ADMIN");
+    }
+
+    private void authenticateAs(String role) {
         when(platformJwtService.isTokenValid(TOKEN)).thenReturn(true);
         when(platformJwtService.extractSubject(TOKEN)).thenReturn(OPERATOR_EMAIL);
         UserDetails userDetails = User.builder()
-                .username(OPERATOR_EMAIL).password("ignored").roles("PLATFORM_ADMIN").build();
+                .username(OPERATOR_EMAIL).password("ignored").roles(role).build();
         when(platformOperatorDetailsService.loadUserByUsername(OPERATOR_EMAIL)).thenReturn(userDetails);
     }
 
@@ -58,5 +70,15 @@ class PlatformStatsControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.tenants.active").value(5))
                 .andExpect(jsonPath("$.hubs.never").value(2));
+    }
+
+    @Test
+    void get_returns200ForSupportOperator() throws Exception {
+        authenticateAs("SUPPORT");
+        when(platformStatsService.get()).thenReturn(new PlatformStatsResponse(
+                new TenantCounts(5, 2, 1), new HubCounts(3, 1, 0, 2)));
+
+        mockMvc.perform(get("/platform/stats").header("Authorization", "Bearer " + TOKEN))
+                .andExpect(status().isOk());
     }
 }

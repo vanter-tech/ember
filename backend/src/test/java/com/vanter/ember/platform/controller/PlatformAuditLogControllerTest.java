@@ -20,16 +20,24 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(PlatformAuditLogController.class)
-@Import({PlatformSecurityConfig.class, CorsConfig.class})
+@Import({PlatformSecurityConfig.class, CorsConfig.class,
+        PlatformAuditLogControllerTest.MethodSecurityConfig.class})
 class PlatformAuditLogControllerTest {
+
+    @TestConfiguration
+    @EnableMethodSecurity
+    static class MethodSecurityConfig {
+    }
 
     private static final String OPERATOR_EMAIL = "operator@ember.local";
     private static final String TOKEN = "valid-token";
@@ -41,12 +49,16 @@ class PlatformAuditLogControllerTest {
     @MockBean PlatformOperatorDetailsService platformOperatorDetailsService;
 
     private void authenticate() {
+        authenticateAs("SUPER_ADMIN");
+    }
+
+    private void authenticateAs(String role) {
         when(platformJwtService.isTokenValid(TOKEN)).thenReturn(true);
         when(platformJwtService.extractSubject(TOKEN)).thenReturn(OPERATOR_EMAIL);
         UserDetails userDetails = User.builder()
                 .username(OPERATOR_EMAIL)
                 .password("ignored")
-                .roles("PLATFORM_ADMIN")
+                .roles(role)
                 .build();
         when(platformOperatorDetailsService.loadUserByUsername(OPERATOR_EMAIL)).thenReturn(userDetails);
     }
@@ -93,5 +105,15 @@ class PlatformAuditLogControllerTest {
                         .header("Authorization", "Bearer " + TOKEN))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].restaurantId").value(restaurantId.toString()));
+    }
+
+    @Test
+    void getAll_returns200ForSupportOperator() throws Exception {
+        authenticateAs("SUPPORT");
+        when(platformAuditLogService.getAuditLog(isNull(), any()))
+                .thenReturn(new PageImpl<>(List.of(entry(null))));
+
+        mockMvc.perform(get("/platform/audit-log").header("Authorization", "Bearer " + TOKEN))
+                .andExpect(status().isOk());
     }
 }

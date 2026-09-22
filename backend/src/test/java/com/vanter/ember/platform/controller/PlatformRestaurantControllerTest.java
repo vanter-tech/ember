@@ -29,17 +29,28 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.http.MediaType;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(PlatformRestaurantController.class)
-@Import({PlatformSecurityConfig.class, CorsConfig.class})
+@Import({PlatformSecurityConfig.class, CorsConfig.class,
+        PlatformRestaurantControllerTest.MethodSecurityConfig.class})
 class PlatformRestaurantControllerTest {
+
+    /** Activates {@code @PreAuthorize} for this slice (F-14) without pulling in the tenant
+     *  {@code SecurityConfig}'s bean graph — {@code @EnableMethodSecurity} just needs to be
+     *  declared on some {@code @Configuration} the context picks up. */
+    @TestConfiguration
+    @EnableMethodSecurity
+    static class MethodSecurityConfig {
+    }
 
     private static final String OPERATOR_EMAIL = "operator@ember.local";
     private static final String TOKEN = "valid-token";
@@ -51,12 +62,16 @@ class PlatformRestaurantControllerTest {
     @MockBean PlatformOperatorDetailsService platformOperatorDetailsService;
 
     private void authenticate() {
+        authenticateAs("SUPER_ADMIN");
+    }
+
+    private void authenticateAs(String role) {
         when(platformJwtService.isTokenValid(TOKEN)).thenReturn(true);
         when(platformJwtService.extractSubject(TOKEN)).thenReturn(OPERATOR_EMAIL);
         UserDetails userDetails = User.builder()
                 .username(OPERATOR_EMAIL)
                 .password("ignored")
-                .roles("PLATFORM_ADMIN")
+                .roles(role)
                 .build();
         when(platformOperatorDetailsService.loadUserByUsername(OPERATOR_EMAIL)).thenReturn(userDetails);
     }
@@ -438,5 +453,98 @@ class PlatformRestaurantControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"mode\":\"CLOUD\"}"))
                 .andExpect(status().isBadRequest());
+    }
+
+    // --- F-14: SUPPORT is read-only, SUPER_ADMIN keeps full access ---
+
+    @Test
+    void create_returns403ForSupportOperator() throws Exception {
+        authenticateAs("SUPPORT");
+
+        mockMvc.perform(post("/platform/restaurants")
+                        .header("Authorization", "Bearer " + TOKEN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(VALID_CREATE_BODY))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void deleteRestaurant_returns403ForSupportOperator() throws Exception {
+        authenticateAs("SUPPORT");
+
+        mockMvc.perform(delete("/platform/restaurants/" + UUID.randomUUID())
+                        .header("Authorization", "Bearer " + TOKEN))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void updateStatus_returns403ForSupportOperator() throws Exception {
+        authenticateAs("SUPPORT");
+
+        mockMvc.perform(patch("/platform/restaurants/" + UUID.randomUUID() + "/status")
+                        .header("Authorization", "Bearer " + TOKEN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"SUSPENDED\"}"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void updatePlan_returns403ForSupportOperator() throws Exception {
+        authenticateAs("SUPPORT");
+
+        mockMvc.perform(patch("/platform/restaurants/" + UUID.randomUUID() + "/plan")
+                        .header("Authorization", "Bearer " + TOKEN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"plan\":\"PRO\"}"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void updateMode_returns403ForSupportOperator() throws Exception {
+        authenticateAs("SUPPORT");
+
+        mockMvc.perform(patch("/platform/restaurants/" + UUID.randomUUID() + "/mode")
+                        .header("Authorization", "Bearer " + TOKEN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"mode\":\"CLOUD\",\"confirmSlug\":\"tenant-grill\"}"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void issueHubLicense_returns403ForSupportOperator() throws Exception {
+        authenticateAs("SUPPORT");
+
+        mockMvc.perform(post("/platform/restaurants/" + UUID.randomUUID() + "/hub-license")
+                        .header("Authorization", "Bearer " + TOKEN))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void restoreRestaurant_returns403ForSupportOperator() throws Exception {
+        authenticateAs("SUPPORT");
+
+        mockMvc.perform(post("/platform/restaurants/" + UUID.randomUUID() + "/restore")
+                        .header("Authorization", "Bearer " + TOKEN))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void getAll_returns200ForSupportOperator() throws Exception {
+        authenticateAs("SUPPORT");
+        when(platformRestaurantService.getAll(any(), eq(false), isNull())).thenReturn(new PageImpl<>(List.of()));
+
+        mockMvc.perform(get("/platform/restaurants").header("Authorization", "Bearer " + TOKEN))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void getById_returns200ForSupportOperator() throws Exception {
+        authenticateAs("SUPPORT");
+        UUID id = UUID.randomUUID();
+        when(platformRestaurantService.getById(id)).thenReturn(
+                PlatformRestaurantDetailResponse.builder().id(id).slug("tenant-grill").build());
+
+        mockMvc.perform(get("/platform/restaurants/" + id).header("Authorization", "Bearer " + TOKEN))
+                .andExpect(status().isOk());
     }
 }

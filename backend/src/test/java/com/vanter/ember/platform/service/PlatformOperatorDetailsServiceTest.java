@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 
 import com.vanter.ember.platform.model.PlatformOperator;
+import com.vanter.ember.platform.model.PlatformOperatorRole;
 import com.vanter.ember.platform.repository.PlatformOperatorRepository;
 import java.util.Optional;
 import java.util.UUID;
@@ -29,6 +30,7 @@ class PlatformOperatorDetailsServiceTest {
                 .name("Platform Admin")
                 .email("operator@ember.local")
                 .passwordHash("$2a$10$fakehashfakehashfakehashfakehashfakehashfakehash")
+                .role(PlatformOperatorRole.SUPER_ADMIN)
                 .build();
         when(platformOperatorRepository.findByEmail("operator@ember.local"))
                 .thenReturn(Optional.of(operator));
@@ -40,7 +42,27 @@ class PlatformOperatorDetailsServiceTest {
         assertThat(userDetails.getPassword()).isEqualTo(operator.getPasswordHash());
         assertThat(userDetails.getAuthorities())
                 .extracting(Object::toString)
-                .containsExactly("ROLE_PLATFORM_ADMIN");
+                .containsExactly("ROLE_SUPER_ADMIN");
+    }
+
+    @Test
+    void loadUserByUsername_grantsSupportRoleForSupportOperator() {
+        PlatformOperator operator = PlatformOperator.builder()
+                .id(UUID.randomUUID())
+                .name("Support Operator")
+                .email("support@ember.local")
+                .passwordHash("$2a$10$fakehashfakehashfakehashfakehashfakehashfakehash")
+                .role(PlatformOperatorRole.SUPPORT)
+                .build();
+        when(platformOperatorRepository.findByEmail("support@ember.local"))
+                .thenReturn(Optional.of(operator));
+
+        UserDetails userDetails =
+                platformOperatorDetailsService.loadUserByUsername("support@ember.local");
+
+        assertThat(userDetails.getAuthorities())
+                .extracting(Object::toString)
+                .containsExactly("ROLE_SUPPORT");
     }
 
     @Test

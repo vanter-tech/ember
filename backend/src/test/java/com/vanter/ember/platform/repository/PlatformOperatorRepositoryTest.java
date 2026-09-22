@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.vanter.ember.config.TenantIdentifierResolver;
 import com.vanter.ember.platform.model.PlatformOperator;
+import com.vanter.ember.platform.model.PlatformOperatorRole;
 import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -36,6 +37,7 @@ class PlatformOperatorRepositoryTest {
                         .name("Operator")
                         .email(email)
                         .passwordHash("$2a$10$fakehashfakehashfakehashfakehashfakehashfakehash")
+                        .role(PlatformOperatorRole.SUPER_ADMIN)
                         .build());
     }
 
