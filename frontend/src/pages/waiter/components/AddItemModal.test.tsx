@@ -199,20 +199,30 @@ describe('AddItemModal', () => {
     expect(within(panel).getByText(/Todavía no hay platillos/)).toBeVisible()
   })
 
-  test('the close button on the cart panel hides it', async () => {
+  // The panel is now a real DOM child of DialogContent (see report 547), not a floating sibling —
+  // that structural fix is what makes both of the next two tests pass: Radix's outside-interaction
+  // dismiss logic only ever sees "outside" for things that aren't inside the dialog's own content
+  // node, and the panel now always is one. Report 546 tried patching this with a ref-based
+  // `onInteractOutside` guard; it missed the close button specifically, because clicking it
+  // unmounts the panel (and the focused button with it), which is exactly the case a "click
+  // target" guard can't catch — the fix had to be structural, not a guard.
+  test('closing the cart panel via its own close button only hides the panel, not the whole modal', async () => {
     wrap(<AddItemModal />)
     await screen.findByText('Pizza')
+    fireEvent.click(addButtonFor('Pizza'))
     openCartPanel()
-    expect(screen.getByTestId('client-cart-panel')).toBeInTheDocument()
 
-    fireEvent.click(screen.getByLabelText('Cerrar carrito'))
+    const closeButton = screen.getByLabelText('Cerrar carrito')
+    fireEvent.pointerDown(closeButton)
+    fireEvent.pointerUp(closeButton)
+    fireEvent.click(closeButton)
+
     expect(screen.queryByTestId('client-cart-panel')).not.toBeInTheDocument()
+    // the modal itself is still open, not the waiter back at the tables view
+    expect(screen.getByText(/Confirmar pedido/)).toBeInTheDocument()
   })
 
-  // The panel lives outside the Dialog's own content node (see report 545), so Radix's
-  // outside-pointerdown dismiss logic was mistaking any interaction inside it for a click outside
-  // the whole dialog and closing everything (report 546 review feedback).
-  test('interacting inside the cart panel does not close the whole modal', async () => {
+  test('interacting with a line inside the cart panel does not close the whole modal', async () => {
     wrap(<AddItemModal />)
     await screen.findByText('Pizza')
     fireEvent.click(addButtonFor('Pizza'))
