@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useLayoutEffect, useMemo, useRef, useState } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -53,6 +53,11 @@ export const AddItemModal = () => {
   const [pendingItem, setPendingItem] = useState<MenuItemResponse | null>(null)
   const [optionIds, setOptionIds] = useState<Record<number, number[]>>({})
   const [showCartPanel, setShowCartPanel] = useState(false)
+  const dialogContentRef = useRef<HTMLDivElement>(null)
+  const cartPanelRef = useRef<HTMLDivElement>(null)
+  const [panelAnchor, setPanelAnchor] = useState<{ top: number; left: number; maxHeight: number } | null>(
+    null,
+  )
 
   const { data: menuItems = [] } = useQuery({
     queryKey: ['menuItemsAll'],
@@ -200,10 +205,45 @@ export const AddItemModal = () => {
         : 'border-zinc-200 hover:border-zinc-300'
     }`
 
+  // Anchor the cart panel to the main dialog's *actual* rendered box instead of assuming its
+  // `sm:max-w-6xl` width — the assumption breaks (and misaligns the pair) on narrower viewports.
+  // Capping maxHeight to the dialog's own height also means the panel's real height follows its
+  // content up to that cap, instead of always looking the same regardless of order size.
+  const PANEL_WIDTH = 320 // matches w-80
+  const PANEL_GAP = 16
+
+  useLayoutEffect(() => {
+    // Left stale while hidden is harmless — the panel is only rendered when `showCartPanel` is
+    // true, and this re-measures fresh every time it reopens.
+    if (!isOpen || !showCartPanel) return
+    const measure = () => {
+      const rect = dialogContentRef.current?.getBoundingClientRect()
+      if (!rect) return
+      setPanelAnchor({
+        top: rect.top,
+        left: Math.max(16, rect.left - PANEL_GAP - PANEL_WIDTH),
+        maxHeight: rect.height,
+      })
+    }
+    measure()
+    window.addEventListener('resize', measure)
+    return () => window.removeEventListener('resize', measure)
+  }, [isOpen, showCartPanel])
+
   return (
     <>
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-      <DialogContent className="sm:max-w-6xl rounded-3xl p-8">
+      <DialogContent
+        ref={dialogContentRef}
+        className="sm:max-w-6xl rounded-3xl p-8"
+        onInteractOutside={(e) => {
+          // The cart panel is a floating sibling, not part of this Dialog's own content node —
+          // without this, Radix treats any click inside it as "outside" and closes everything.
+          if (cartPanelRef.current?.contains(e.target as Node)) {
+            e.preventDefault()
+          }
+        }}
+      >
         <DialogHeader className="mb-2">
           <DialogTitle className="text-2xl font-bold text-zinc-800">
             {t('addItemModalTitle')}
@@ -392,14 +432,18 @@ export const AddItemModal = () => {
         )}
       </DialogContent>
     </Dialog>
-    {isOpen && showCartPanel && (
+    {isOpen && showCartPanel && panelAnchor && (
       // A floating panel, not a second Dialog: it stays open alongside the main modal (no
       // overlay, no focus trap) so the waiter can keep tapping "+" while reviewing the cart.
+      // Anchored to the main dialog's measured box (see the effect above) so the pair lines up
+      // and the panel never grows taller than the dialog itself.
       <div
+        ref={cartPanelRef}
         data-testid="client-cart-panel"
-        className="fixed top-1/2 z-[100] w-80 max-w-[calc(100%-2rem)] -translate-y-1/2 rounded-3xl bg-popover p-6 shadow-2xl ring-1 ring-foreground/10 left-[max(1rem,calc(50%-57rem))]"
+        style={{ top: panelAnchor.top, left: panelAnchor.left, maxHeight: panelAnchor.maxHeight }}
+        className="fixed z-[100] flex w-80 max-w-[calc(100%-2rem)] flex-col overflow-hidden rounded-3xl bg-popover p-6 shadow-2xl ring-1 ring-foreground/10"
       >
-        <div className="mb-4 flex items-center justify-between">
+        <div className="mb-4 flex shrink-0 items-center justify-between">
           <p className="text-base font-semibold text-zinc-800">
             {t('addItemCartHeading', { name: clientLabel(activeClient) })}
           </p>
@@ -415,23 +459,24 @@ export const AddItemModal = () => {
         {activeCart.length === 0 ? (
           <p className="text-sm text-zinc-400">{t('addItemEmptyCart')}</p>
         ) : (
-          <ul className="flex max-h-[55vh] flex-col gap-2 overflow-y-auto">
+          <ul className="flex flex-1 flex-col gap-2 overflow-y-auto pr-1">
             {activeCart.map((line) => (
               <li
                 key={line.key}
-                className="flex items-center justify-between gap-2 rounded-2xl bg-zinc-100 px-4 py-2.5"
+                className="flex items-center gap-3 rounded-2xl bg-zinc-100 px-3 py-2.5"
               >
-                <span className="min-w-0 truncate text-sm">
-                  {line.name} <span className="font-semibold">×{line.qty}</span>
+                <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-white text-xs font-semibold text-zinc-700 ring-1 ring-zinc-200">
+                  {line.qty}x
                 </span>
-                <button
-                  type="button"
+                <span className="min-w-0 flex-1 truncate text-sm">{line.name}</span>
+                <Button
+                  variant="destructive"
+                  size="icon"
                   aria-label={t('addItemRemoveLineAria', { name: line.name })}
                   onClick={() => removeLine(activeClient, line.key)}
-                  className="flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full text-zinc-500 hover:bg-zinc-200 hover:text-red-700"
                 >
-                  <Trash2 className="size-4" />
-                </button>
+                  <Trash2 />
+                </Button>
               </li>
             ))}
           </ul>

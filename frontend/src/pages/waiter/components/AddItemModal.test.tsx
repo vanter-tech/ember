@@ -128,7 +128,7 @@ describe('AddItemModal', () => {
 
     const panel = screen.getByTestId('client-cart-panel')
     expect(within(panel).getByText(/Pizza/)).toBeVisible()
-    expect(within(panel).getByText('×1')).toBeVisible()
+    expect(within(panel).getByText('1x')).toBeVisible()
   })
 
   test('tapping "+" again bumps the quantity in the cart', async () => {
@@ -138,7 +138,7 @@ describe('AddItemModal', () => {
     fireEvent.click(addButtonFor('Pizza'))
     openCartPanel()
 
-    expect(within(screen.getByTestId('client-cart-panel')).getByText('×2')).toBeVisible()
+    expect(within(screen.getByTestId('client-cart-panel')).getByText('2x')).toBeVisible()
   })
 
   test('each client keeps their own separate cart', async () => {
@@ -192,7 +192,7 @@ describe('AddItemModal', () => {
     openCartPanel()
 
     const panel = screen.getByTestId('client-cart-panel')
-    expect(within(panel).getByText('×2')).toBeVisible()
+    expect(within(panel).getByText('2x')).toBeVisible()
 
     fireEvent.click(within(panel).getByLabelText('Eliminar Pizza'))
     expect(within(panel).queryByText(/Pizza/)).not.toBeInTheDocument()
@@ -207,6 +207,24 @@ describe('AddItemModal', () => {
 
     fireEvent.click(screen.getByLabelText('Cerrar carrito'))
     expect(screen.queryByTestId('client-cart-panel')).not.toBeInTheDocument()
+  })
+
+  // The panel lives outside the Dialog's own content node (see report 545), so Radix's
+  // outside-pointerdown dismiss logic was mistaking any interaction inside it for a click outside
+  // the whole dialog and closing everything (report 546 review feedback).
+  test('interacting inside the cart panel does not close the whole modal', async () => {
+    wrap(<AddItemModal />)
+    await screen.findByText('Pizza')
+    fireEvent.click(addButtonFor('Pizza'))
+    openCartPanel()
+
+    const panel = screen.getByTestId('client-cart-panel')
+    const line = within(panel).getByText(/Pizza/)
+    fireEvent.pointerDown(line)
+    fireEvent.pointerUp(line)
+
+    expect(screen.getByRole('button', { name: /Ver pedido/ })).toBeInTheDocument()
+    expect(screen.getByTestId('client-cart-panel')).toBeInTheDocument()
   })
 
   test('confirm sends one addWaiterItem call per unit, across every client', async () => {
