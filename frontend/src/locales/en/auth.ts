@@ -38,4 +38,14 @@ export const auth = {
   quickLoginPinNotSetHint: "You don't have a PIN set. Enter your password.",
   quickLoginPinLockedHint: 'Too many attempts. Enter your password.',
   quickLoginSubmit: 'Sign in',
+  forcePasswordChangeTitle: 'Set a new password',
+  forcePasswordChangeDescription:
+    'An administrator reset your password. Set a new one to continue.',
+  currentPasswordLabel: 'Temporary password',
+  newPasswordLabel: 'New password',
+  confirmPasswordLabel: 'Confirm new password',
+  passwordMismatchError: "Passwords don't match",
+  forcePasswordChangeSubmit: 'Save and continue',
+  forcePasswordChangeSuccessToast: 'Password updated',
+  forcePasswordChangeErrorToast: 'Could not update the password',
 }

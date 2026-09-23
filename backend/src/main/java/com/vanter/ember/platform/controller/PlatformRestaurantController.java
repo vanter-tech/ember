@@ -1,5 +1,6 @@
 package com.vanter.ember.platform.controller;
 
+import com.vanter.ember.platform.model.dto.PlatformAdminPasswordResetRequest;
 import com.vanter.ember.platform.model.dto.PlatformRestaurantCreateRequest;
 import com.vanter.ember.platform.model.dto.PlatformRestaurantDetailResponse;
 import com.vanter.ember.platform.model.dto.PlatformRestaurantModeUpdateRequest;
@@ -53,6 +54,17 @@ public class PlatformRestaurantController {
     @PostMapping(value = "/{id}/hub-license", produces = MediaType.TEXT_PLAIN_VALUE)
     public ResponseEntity<String> issueHubLicense(@PathVariable UUID id, Authentication authentication) {
         return ResponseEntity.ok(platformRestaurantService.issueHubLicense(id, authentication.getName()));
+    }
+
+    @Operation(summary = "Reset a locked-out restaurant ADMIN's password to an operator-chosen temp value")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @PostMapping("/{id}/reset-admin-password")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void resetAdminPassword(
+            @PathVariable UUID id,
+            @Valid @RequestBody PlatformAdminPasswordResetRequest request,
+            Authentication authentication) {
+        platformRestaurantService.resetAdminPassword(id, request, authentication.getName());
     }
 
     @Operation(summary = "List all tenants, paginated; soft-deleted excluded unless includeDeleted=true; optional mode filter")

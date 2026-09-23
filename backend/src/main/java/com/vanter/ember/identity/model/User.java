@@ -57,6 +57,13 @@ public class User {
     @Builder.Default
     private int tokenVersion = 0;
 
+    /** True after a platform operator resets this user's password (F-25): forces the frontend to
+     *  show a "set a new password" modal on next login before the app is usable. Cleared by
+     *  {@code AuthService#changePassword}. */
+    @Column(name = "must_change_password", nullable = false)
+    @Builder.Default
+    private Boolean mustChangePassword = false;
+
     /** True for a throwaway walk-in identity created by POST /sessions/join-as-guest. Guests
      *  behave like a CUSTOMER for the session but never get a loyalty account or visits. */
     @Column(nullable = false)

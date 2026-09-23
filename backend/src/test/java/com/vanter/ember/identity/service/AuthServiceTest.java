@@ -456,4 +456,39 @@ class AuthServiceTest {
         verify(pinAttemptGuard).recordFailure("admin@test.com");
         verify(pinAttemptGuard, never()).recordSuccess(any());
     }
+
+    @Test
+    void changePassword_clearsMustChangePasswordAndBumpsTokenVersion() {
+        User user = User.builder()
+                .id("user-1").name("Ana").email("ana@test.com")
+                .passwordHash("old-hashed").role(Role.ADMIN).tokenVersion(2)
+                .mustChangePassword(true).build();
+
+        when(userRepository.findByEmail("ana@test.com")).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("temp-pass", "old-hashed")).thenReturn(true);
+        when(passwordEncoder.encode("NewSecret1!")).thenReturn("new-hashed");
+        when(jwtService.generateToken(eq("ana@test.com"), anyMap())).thenReturn("jwt-token");
+
+        AuthResponse response = authService.changePassword("ana@test.com", "temp-pass", "NewSecret1!");
+
+        assertThat(user.getPasswordHash()).isEqualTo("new-hashed");
+        assertThat(user.getMustChangePassword()).isFalse();
+        assertThat(user.getTokenVersion()).isEqualTo(3);
+        assertThat(response.getToken()).isEqualTo("jwt-token");
+        assertThat(response.isMustChangePassword()).isFalse();
+        verify(userRepository).save(user);
+    }
+
+    @Test
+    void changePassword_throwsAndDoesNotSave_whenCurrentPasswordWrong() {
+        User user = User.builder()
+                .email("ana@test.com").passwordHash("old-hashed").role(Role.ADMIN).build();
+
+        when(userRepository.findByEmail("ana@test.com")).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("wrong", "old-hashed")).thenReturn(false);
+
+        assertThatThrownBy(() -> authService.changePassword("ana@test.com", "wrong", "NewSecret1!"))
+                .isInstanceOf(BadCredentialsException.class);
+        verify(userRepository, never()).save(any());
+    }
 }

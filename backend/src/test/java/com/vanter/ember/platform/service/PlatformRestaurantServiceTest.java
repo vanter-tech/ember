@@ -637,4 +637,64 @@ class PlatformRestaurantServiceTest {
                 .findByStatusNotAndDeploymentMode(RestaurantStatus.DELETED, DeploymentMode.HUB, pageable);
         org.mockito.Mockito.verify(restaurantRepository).findByDeploymentMode(DeploymentMode.HUB, pageable);
     }
+
+    @Test
+    void resetAdminPassword_updatesHashFlagsMustChangeAndWritesAuditLog() {
+        Restaurant restaurant = restaurant();
+        User admin = User.builder()
+                .id("admin-1").email("owner@tenant-grill.local")
+                .passwordHash("old-hashed").role(Role.ADMIN).tokenVersion(1)
+                .restaurantId(restaurant).build();
+        when(platformOperatorRepository.findByEmail("operator@ember.local")).thenReturn(Optional.of(operator()));
+        when(userRepository.findById("admin-1")).thenReturn(Optional.of(admin));
+        when(passwordEncoder.encode("TempPass1!")).thenReturn("temp-hashed");
+
+        platformRestaurantService.resetAdminPassword(
+                restaurant.getId(),
+                new com.vanter.ember.platform.model.dto.PlatformAdminPasswordResetRequest("admin-1", "TempPass1!"),
+                "operator@ember.local");
+
+        assertThat(admin.getPasswordHash()).isEqualTo("temp-hashed");
+        assertThat(admin.getMustChangePassword()).isTrue();
+        assertThat(admin.getTokenVersion()).isEqualTo(2);
+        org.mockito.Mockito.verify(userRepository).save(admin);
+
+        ArgumentCaptor<com.vanter.ember.platform.model.PlatformAuditLog> auditCaptor =
+                ArgumentCaptor.forClass(com.vanter.ember.platform.model.PlatformAuditLog.class);
+        org.mockito.Mockito.verify(platformAuditLogRepository).save(auditCaptor.capture());
+        assertThat(auditCaptor.getValue().getAction()).isEqualTo("ADMIN_PASSWORD_RESET");
+        assertThat(auditCaptor.getValue().getRestaurantId()).isEqualTo(restaurant.getId());
+    }
+
+    @Test
+    void resetAdminPassword_throwsWhenTargetBelongsToAnotherRestaurant() {
+        Restaurant otherRestaurant = Restaurant.builder().id(UUID.randomUUID()).build();
+        User admin = User.builder()
+                .id("admin-1").email("owner@other.local").role(Role.ADMIN)
+                .restaurantId(otherRestaurant).build();
+        when(platformOperatorRepository.findByEmail("operator@ember.local")).thenReturn(Optional.of(operator()));
+        when(userRepository.findById("admin-1")).thenReturn(Optional.of(admin));
+
+        assertThatThrownBy(() -> platformRestaurantService.resetAdminPassword(
+                UUID.randomUUID(),
+                new com.vanter.ember.platform.model.dto.PlatformAdminPasswordResetRequest("admin-1", "TempPass1!"),
+                "operator@ember.local"))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void resetAdminPassword_throwsWhenTargetIsNotAnAdmin() {
+        Restaurant restaurant = restaurant();
+        User waiter = User.builder()
+                .id("waiter-1").email("waiter@tenant-grill.local").role(Role.WAITER)
+                .restaurantId(restaurant).build();
+        when(platformOperatorRepository.findByEmail("operator@ember.local")).thenReturn(Optional.of(operator()));
+        when(userRepository.findById("waiter-1")).thenReturn(Optional.of(waiter));
+
+        assertThatThrownBy(() -> platformRestaurantService.resetAdminPassword(
+                restaurant.getId(),
+                new com.vanter.ember.platform.model.dto.PlatformAdminPasswordResetRequest("waiter-1", "TempPass1!"),
+                "operator@ember.local"))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
 }

@@ -2535,6 +2535,7 @@ export interface components {
             restaurantId?: string;
             name?: string;
             role?: string;
+            mustChangePassword?: boolean;
         };
         LoginRequest: {
             email: string;

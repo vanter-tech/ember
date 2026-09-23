@@ -192,6 +192,13 @@ export const userProfileService = {
     const { data } = await api.patch<UserProfileResponse>('/users/me', { bannerKey })
     return data
   },
+  changePassword: async (body: {
+    currentPassword: string
+    newPassword: string
+  }): Promise<LoginResponse> => {
+    const { data } = await api.post<LoginResponse>('/users/me/password', body)
+    return data
+  },
 }
 
 export const categoryService = {

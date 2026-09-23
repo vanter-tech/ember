@@ -16,6 +16,7 @@ export const useAuthStore = create<AuthState>()(
       restaurantId: undefined,
       name: undefined,
       role: undefined,
+      mustChangePassword: undefined,
 
       // Clearing here (not just on logout) covers every identity transition that never calls
       // logout() first — e.g. logging in as a different tenant's admin in a tab that already had
@@ -34,6 +35,7 @@ export const useAuthStore = create<AuthState>()(
           restaurantId: undefined,
           name: undefined,
           role: undefined,
+          mustChangePassword: undefined,
         })
       },
     }),

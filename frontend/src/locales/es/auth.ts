@@ -40,4 +40,14 @@ export const auth = {
   quickLoginPinNotSetHint: 'No tienes un PIN configurado. Ingresa tu contraseña.',
   quickLoginPinLockedHint: 'Demasiados intentos. Ingresa tu contraseña.',
   quickLoginSubmit: 'Entrar',
+  forcePasswordChangeTitle: 'Configura una nueva contraseña',
+  forcePasswordChangeDescription:
+    'Un administrador reinició tu contraseña. Configura una nueva para continuar.',
+  currentPasswordLabel: 'Contraseña temporal',
+  newPasswordLabel: 'Nueva contraseña',
+  confirmPasswordLabel: 'Confirma la nueva contraseña',
+  passwordMismatchError: 'Las contraseñas no coinciden',
+  forcePasswordChangeSubmit: 'Guardar y continuar',
+  forcePasswordChangeSuccessToast: 'Contraseña actualizada',
+  forcePasswordChangeErrorToast: 'No se pudo actualizar la contraseña',
 } satisfies typeof enAuth

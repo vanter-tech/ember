@@ -229,6 +229,17 @@ export const platformRestaurantService = {
     const { data } = await platformApi.post<string>(`/platform/restaurants/${id}/hub-license`)
     return data
   },
+
+  resetAdminPassword: async (
+    id: string,
+    userId: string,
+    newPassword: string
+  ): Promise<void> => {
+    await platformApi.post(`/platform/restaurants/${id}/reset-admin-password`, {
+      userId,
+      newPassword,
+    })
+  },
 }
 
 export const platformAuditLogService = {

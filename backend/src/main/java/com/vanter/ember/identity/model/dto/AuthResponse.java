@@ -13,4 +13,5 @@ public class AuthResponse {
     private UUID restaurantId;
     private String name;
     private String role;
+    private boolean mustChangePassword;
 }

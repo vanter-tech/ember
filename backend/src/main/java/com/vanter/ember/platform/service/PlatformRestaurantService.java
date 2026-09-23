@@ -8,6 +8,7 @@ import com.vanter.ember.licensing.model.HubActivation;
 import com.vanter.ember.licensing.repository.HubActivationRepository;
 import com.vanter.ember.platform.model.PlatformAuditLog;
 import com.vanter.ember.platform.model.PlatformOperator;
+import com.vanter.ember.platform.model.dto.PlatformAdminPasswordResetRequest;
 import com.vanter.ember.platform.model.dto.PlatformRestaurantAdminResponse;
 import com.vanter.ember.platform.model.dto.PlatformRestaurantCreateRequest;
 import com.vanter.ember.platform.model.dto.PlatformRestaurantDetailResponse;
@@ -354,5 +355,42 @@ public class PlatformRestaurantService {
                 .build());
 
         return licenseKey;
+    }
+
+    /**
+     * Operator-assisted recovery (F-25) for a locked-out restaurant ADMIN: no self-service email
+     * flow exists yet (no mail infra in the backend), so a SUPER_ADMIN sets a temp password
+     * directly, same shape as {@link #create}'s admin-password field. Flags {@code
+     * mustChangePassword} so the ADMIN is forced through {@code AuthService#changePassword} on
+     * next login, and bumps {@code tokenVersion} to invalidate any session still valid under the
+     * old password.
+     */
+    @Transactional
+    public void resetAdminPassword(
+            UUID restaurantId, PlatformAdminPasswordResetRequest request, String operatorEmail) {
+        PlatformOperator operator = platformOperatorRepository.findByEmail(operatorEmail)
+                .orElseThrow(() -> new BadCredentialsException("Invalid credentials"));
+
+        User admin = userRepository.findById(request.userId())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + request.userId()));
+        if (admin.getRestaurantId() == null || !admin.getRestaurantId().getId().equals(restaurantId)) {
+            throw new ResourceNotFoundException("User not found: " + request.userId());
+        }
+        if (admin.getRole() != Role.ADMIN) {
+            throw new IllegalArgumentException("Target user is not an ADMIN of this restaurant");
+        }
+
+        admin.setPasswordHash(passwordEncoder.encode(request.newPassword()));
+        admin.setMustChangePassword(true);
+        admin.setTokenVersion(admin.getTokenVersion() + 1);
+        userRepository.save(admin);
+
+        platformAuditLogRepository.save(PlatformAuditLog.builder()
+                .operatorId(operator.getId())
+                .operatorEmail(operator.getEmail())
+                .restaurantId(restaurantId)
+                .action("ADMIN_PASSWORD_RESET")
+                .newValue(admin.getEmail())
+                .build());
     }
 }

@@ -166,6 +166,30 @@ public class AuthService {
                 .name(user.getName())
                 .role(user.getRole().name())
                 .restaurantId(restaurantId)
+                .mustChangePassword(Boolean.TRUE.equals(user.getMustChangePassword()))
                 .build();
+    }
+
+    /**
+     * Self-service password change (F-25). The only way a user can clear {@code
+     * mustChangePassword} after a platform-operator reset — also usable as an ordinary voluntary
+     * change. Requires the current password like any self-service credential change; bumps {@code
+     * tokenVersion} so older sessions stop working, and returns a fresh token bound to the new
+     * version so the caller doesn't get logged out by their own request.
+     */
+    public AuthResponse changePassword(String email, String currentPassword, String newPassword) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new BadCredentialsException("Invalid credentials"));
+
+        if (!passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
+            throw new BadCredentialsException("Invalid credentials");
+        }
+
+        user.setPasswordHash(passwordEncoder.encode(newPassword));
+        user.setMustChangePassword(false);
+        user.setTokenVersion(user.getTokenVersion() + 1);
+        userRepository.save(user);
+
+        return buildResponse(user, tenantIdOf(user));
     }
 }

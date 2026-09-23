@@ -52,4 +52,15 @@ describe('ProtectedRoute', () => {
 
     expect(screen.getByText('Admin content')).toBeInTheDocument()
   })
+
+  // F-25: an operator-issued temp password blocks the outlet entirely, even for an otherwise
+  // fully-authorized caller, until they set a real password.
+  test('blocks the outlet behind the force-password-change modal when mustChangePassword is true', () => {
+    useAuthStore.setState({ token: 'a-token', role: 'ADMIN', mustChangePassword: true })
+
+    renderProtected(['ADMIN'])
+
+    expect(screen.queryByText('Admin content')).not.toBeInTheDocument()
+    expect(screen.getByLabelText('Contraseña temporal')).toBeInTheDocument()
+  })
 })

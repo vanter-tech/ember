@@ -1,7 +1,10 @@
 package com.vanter.ember.identity.controller;
 
+import com.vanter.ember.identity.dto.ChangePasswordRequest;
 import com.vanter.ember.identity.dto.UpdateProfileRequest;
 import com.vanter.ember.identity.dto.UserProfileResponse;
+import com.vanter.ember.identity.model.dto.AuthResponse;
+import com.vanter.ember.identity.service.AuthService;
 import com.vanter.ember.identity.service.UserProfileService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -10,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -21,6 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class UserProfileController {
 
     private final UserProfileService userProfileService;
+    private final AuthService authService;
 
     @Operation(summary = "The caller's own profile (name, email, chosen banner preset)")
     @GetMapping("/me")
@@ -33,5 +38,13 @@ public class UserProfileController {
     public UserProfileResponse updateMe(
             Authentication authentication, @Valid @RequestBody UpdateProfileRequest request) {
         return userProfileService.updateBanner(authentication.getName(), request.bannerKey());
+    }
+
+    @Operation(summary = "Change the caller's own password; returns a fresh token")
+    @PostMapping("/me/password")
+    public AuthResponse changePassword(
+            Authentication authentication, @Valid @RequestBody ChangePasswordRequest request) {
+        return authService.changePassword(
+                authentication.getName(), request.currentPassword(), request.newPassword());
     }
 }

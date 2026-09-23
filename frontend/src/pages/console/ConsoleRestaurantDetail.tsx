@@ -7,6 +7,7 @@ import {
   platformAuditLogService,
   platformRestaurantService,
   type DeploymentMode,
+  type PlatformRestaurantAdmin,
   type PlatformRestaurantDetail,
 } from '@/lib/platformApi'
 import { PaginationControls } from '@/components/PaginationControls'
@@ -70,6 +71,8 @@ export default function ConsoleRestaurantDetail() {
   const [slugInput, setSlugInput] = useState('')
   const [showModeConfirm, setShowModeConfirm] = useState(false)
   const [modeSlugInput, setModeSlugInput] = useState('')
+  const [resetPasswordAdmin, setResetPasswordAdmin] = useState<PlatformRestaurantAdmin | null>(null)
+  const [resetPasswordValue, setResetPasswordValue] = useState('')
 
   const {
     data: restaurant,
@@ -164,6 +167,27 @@ export default function ConsoleRestaurantDetail() {
       link.click()
       document.body.removeChild(link)
       URL.revokeObjectURL(url)
+    },
+  })
+
+  const resetAdminPassword = useMutation({
+    mutationFn: () =>
+      platformRestaurantService.resetAdminPassword(id!, resetPasswordAdmin!.id, resetPasswordValue),
+    onSuccess: () => {
+      toast.success(`Contraseña temporal asignada a ${resetPasswordAdmin?.email}`)
+      setResetPasswordAdmin(null)
+      setResetPasswordValue('')
+    },
+    onError: (error) => {
+      const detail =
+        axios.isAxiosError(error) &&
+        typeof (error.response?.data as { detail?: unknown })?.detail === 'string'
+          ? (error.response!.data as { detail: string }).detail
+          : undefined
+      toast.error(detail ?? 'No se pudo resetear la contraseña', {
+        id: 'console-reset-password-error',
+        duration: 5000,
+      })
     },
   })
 
@@ -329,6 +353,7 @@ export default function ConsoleRestaurantDetail() {
               <TableRow>
                 <TableHead>Nombre</TableHead>
                 <TableHead>Email</TableHead>
+                <TableHead />
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -336,11 +361,16 @@ export default function ConsoleRestaurantDetail() {
                 <TableRow key={admin.id}>
                   <TableCell className="font-medium text-zinc-800">{admin.name}</TableCell>
                   <TableCell className="text-zinc-500">{admin.email}</TableCell>
+                  <TableCell className="text-right">
+                    <Button variant="outline" size="sm" onClick={() => setResetPasswordAdmin(admin)}>
+                      Resetear contraseña
+                    </Button>
+                  </TableCell>
                 </TableRow>
               ))}
               {restaurant.admins.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={2} className="py-6 text-center text-zinc-400">
+                  <TableCell colSpan={3} className="py-6 text-center text-zinc-400">
                     Sin administradores.
                   </TableCell>
                 </TableRow>
@@ -504,6 +534,56 @@ export default function ConsoleRestaurantDetail() {
               onClick={() => deleteRestaurant.mutate()}
             >
               Confirmar eliminación
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={resetPasswordAdmin !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setResetPasswordAdmin(null)
+            setResetPasswordValue('')
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Resetear contraseña</DialogTitle>
+            <DialogDescription>
+              Define una contraseña temporal para{' '}
+              <span className="font-medium">{resetPasswordAdmin?.email}</span>. Deberá cambiarla
+              al iniciar sesión — compártesela por un canal aparte de este panel.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="reset-password-value" className="text-sm text-zinc-600">
+              Contraseña temporal
+            </Label>
+            <input
+              id="reset-password-value"
+              type="text"
+              className="rounded-md border border-zinc-300 px-2 py-1 text-sm"
+              value={resetPasswordValue}
+              onChange={(e) => setResetPasswordValue(e.target.value)}
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setResetPasswordAdmin(null)
+                setResetPasswordValue('')
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button
+              disabled={resetPasswordValue.length < 8 || resetAdminPassword.isPending}
+              onClick={() => resetAdminPassword.mutate()}
+            >
+              {resetAdminPassword.isPending ? 'Reseteando...' : 'Confirmar reseteo'}
             </Button>
           </DialogFooter>
         </DialogContent>

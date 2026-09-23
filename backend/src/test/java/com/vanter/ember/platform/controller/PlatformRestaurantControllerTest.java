@@ -547,4 +547,38 @@ class PlatformRestaurantControllerTest {
         mockMvc.perform(get("/platform/restaurants/" + id).header("Authorization", "Bearer " + TOKEN))
                 .andExpect(status().isOk());
     }
+
+    @Test
+    void resetAdminPassword_returns204ForSuperAdmin() throws Exception {
+        authenticate();
+        UUID id = UUID.randomUUID();
+
+        mockMvc.perform(post("/platform/restaurants/" + id + "/reset-admin-password")
+                        .header("Authorization", "Bearer " + TOKEN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"userId\":\"admin-1\",\"newPassword\":\"TempPass1!\"}"))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void resetAdminPassword_returns403ForSupportOperator() throws Exception {
+        authenticateAs("SUPPORT");
+
+        mockMvc.perform(post("/platform/restaurants/" + UUID.randomUUID() + "/reset-admin-password")
+                        .header("Authorization", "Bearer " + TOKEN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"userId\":\"admin-1\",\"newPassword\":\"TempPass1!\"}"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void resetAdminPassword_returns400WhenNewPasswordTooWeak() throws Exception {
+        authenticate();
+
+        mockMvc.perform(post("/platform/restaurants/" + UUID.randomUUID() + "/reset-admin-password")
+                        .header("Authorization", "Bearer " + TOKEN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"userId\":\"admin-1\",\"newPassword\":\"weak\"}"))
+                .andExpect(status().isBadRequest());
+    }
 }
