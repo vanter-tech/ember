@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button'
 import { useUIStore } from '@/store/uiStore'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { inventoryMenuItemService, SessionTableService, type MenuItemResponse } from '@/lib/api'
-import { Armchair, Minus, Plus, User, UtensilsCrossed } from 'lucide-react'
+import { Armchair, Plus, ShoppingCart, Trash2, User, UtensilsCrossed, X } from 'lucide-react'
 import toast from 'react-hot-toast'
 import axios from 'axios'
 import { useTranslation } from '@/lib/i18n'
@@ -52,6 +52,7 @@ export const AddItemModal = () => {
   const [cart, setCart] = useState<Cart>({})
   const [pendingItem, setPendingItem] = useState<MenuItemResponse | null>(null)
   const [optionIds, setOptionIds] = useState<Record<number, number[]>>({})
+  const [showCartPanel, setShowCartPanel] = useState(false)
 
   const { data: menuItems = [] } = useQuery({
     queryKey: ['menuItemsAll'],
@@ -91,6 +92,7 @@ export const AddItemModal = () => {
     setCart({})
     setPendingItem(null)
     setOptionIds({})
+    setShowCartPanel(false)
   }
 
   const handleClose = () => {
@@ -143,29 +145,17 @@ export const AddItemModal = () => {
     })
   }
 
-  const decrementLine = (clientKey: string, lineKey: string) => {
-    setCart((prev) => {
-      const lines = prev[clientKey] ?? []
-      const line = lines.find((l) => l.key === lineKey)
-      if (!line) return prev
-      const nextLines =
-        line.qty <= 1
-          ? lines.filter((l) => l.key !== lineKey)
-          : lines.map((l) => (l.key === lineKey ? { ...l, qty: l.qty - 1 } : l))
-      return { ...prev, [clientKey]: nextLines }
-    })
-  }
-
-  const incrementLine = (clientKey: string, lineKey: string) => {
+  // The cart panel only ever removes a whole line — bumping quantity happens by tapping "+"
+  // again on the product card (see report 545).
+  const removeLine = (clientKey: string, lineKey: string) => {
     setCart((prev) => ({
       ...prev,
-      [clientKey]: (prev[clientKey] ?? []).map((l) =>
-        l.key === lineKey ? { ...l, qty: l.qty + 1 } : l,
-      ),
+      [clientKey]: (prev[clientKey] ?? []).filter((l) => l.key !== lineKey),
     }))
   }
 
   const activeCart = cart[activeClient] ?? []
+  const activeCartCount = activeCart.reduce((s, l) => s + l.qty, 0)
   const totalCount = Object.values(cart).reduce(
     (sum, lines) => sum + lines.reduce((s, l) => s + l.qty, 0),
     0,
@@ -204,13 +194,14 @@ export const AddItemModal = () => {
     key === MESA_KEY ? t('addItemParticipantMesa') : key
 
   const clientChipClass = (key: string) =>
-    `flex items-center gap-3 rounded-2xl border-2 px-4 py-3 text-left transition-colors ${
+    `flex cursor-pointer items-center gap-3 rounded-2xl border-2 px-4 py-3 text-left transition-colors ${
       activeClient === key
         ? 'border-[#8B0000] bg-[#8B0000]/5'
         : 'border-zinc-200 hover:border-zinc-300'
     }`
 
   return (
+    <>
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
       <DialogContent className="sm:max-w-6xl rounded-3xl p-8">
         <DialogHeader className="mb-2">
@@ -307,6 +298,17 @@ export const AddItemModal = () => {
               </div>
 
               <div className="flex min-w-0 flex-col gap-4">
+                <div className="flex items-center justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setShowCartPanel(true)}
+                    className="flex cursor-pointer items-center gap-2 rounded-full border-2 border-zinc-200 px-4 py-2 text-sm font-medium text-zinc-600 transition-colors hover:border-zinc-300"
+                  >
+                    <ShoppingCart className="size-4" />
+                    {t('addItemViewCartButton')}
+                    {activeCartCount > 0 && <Badge>{activeCartCount}</Badge>}
+                  </button>
+                </div>
                 <input
                   type="text"
                   value={search}
@@ -321,7 +323,7 @@ export const AddItemModal = () => {
                         key={cat.id}
                         type="button"
                         onClick={() => setActiveCategory(cat.id)}
-                        className={`shrink-0 whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+                        className={`shrink-0 cursor-pointer whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition-colors ${
                           activeCategory === cat.id
                             ? 'bg-[#8B0000] text-white'
                             : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
@@ -332,7 +334,7 @@ export const AddItemModal = () => {
                     ))}
                   </div>
                 )}
-                <div className="grid grid-cols-2 gap-4 max-h-[55vh] overflow-y-auto pr-1 sm:grid-cols-3">
+                <div className="grid grid-cols-2 gap-5 max-h-[55vh] overflow-y-auto pr-1">
                   {visibleItems.map((item) => (
                     // Deliberately not a single big button: a card this dense on a touch screen is
                     // an easy misclick, so only the "+" adds — the rest is inert display.
@@ -340,7 +342,7 @@ export const AddItemModal = () => {
                       key={item.id}
                       className="flex flex-col overflow-hidden rounded-2xl border-2 border-zinc-200"
                     >
-                      <div className="h-28 w-full bg-zinc-100">
+                      <div className="h-40 w-full bg-zinc-100">
                         {item.imageUrl ? (
                           <img
                             src={item.imageUrl}
@@ -352,64 +354,28 @@ export const AddItemModal = () => {
                             data-testid={`menu-item-placeholder-${item.id}`}
                             className="flex h-full items-center justify-center text-zinc-300"
                           >
-                            <UtensilsCrossed className="size-8" />
+                            <UtensilsCrossed className="size-10" />
                           </div>
                         )}
                       </div>
-                      <div className="flex items-center justify-between gap-2 p-3">
+                      <div className="flex items-center justify-between gap-2 p-4">
                         <div className="min-w-0">
-                          <p className="truncate font-semibold">{item.name}</p>
-                          <p className="text-sm text-zinc-500">${(item.price ?? 0).toFixed(2)}</p>
+                          <p className="truncate text-base font-semibold">{item.name}</p>
+                          <p className="text-base text-zinc-500">${(item.price ?? 0).toFixed(2)}</p>
                         </div>
                         <button
                           type="button"
                           aria-label={t('addItemAddAria', { name: item.name ?? '' })}
                           onClick={() => handleTapItem(item)}
-                          className="flex size-11 shrink-0 items-center justify-center rounded-full bg-[#8B0000] text-white shadow-sm transition-colors hover:bg-[#6a1111] active:scale-95"
+                          className="flex size-12 shrink-0 cursor-pointer items-center justify-center rounded-full bg-[#8B0000] text-white shadow-sm transition-colors hover:bg-[#6a1111] active:scale-95"
                         >
-                          <Plus className="size-5" />
+                          <Plus className="size-6" />
                         </button>
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
-            </div>
-
-            <div className="border-t border-zinc-100 pt-3" data-testid="active-client-cart">
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                {t('addItemCartHeading', { name: clientLabel(activeClient) })}
-              </p>
-              {activeCart.length === 0 ? (
-                <p className="text-sm text-zinc-400">{t('addItemEmptyCart')}</p>
-              ) : (
-                <div className="flex flex-wrap gap-2">
-                  {activeCart.map((line) => (
-                    <span
-                      key={line.key}
-                      className="flex items-center gap-1.5 rounded-full bg-zinc-100 py-1 pl-3 pr-1 text-sm"
-                    >
-                      {line.name} <span className="font-semibold">×{line.qty}</span>
-                      <button
-                        type="button"
-                        aria-label={t('addItemDecrementAria', { name: line.name })}
-                        onClick={() => decrementLine(activeClient, line.key)}
-                        className="flex size-6 items-center justify-center rounded-full hover:bg-zinc-200"
-                      >
-                        <Minus className="size-3.5" />
-                      </button>
-                      <button
-                        type="button"
-                        aria-label={t('addItemIncrementAria', { name: line.name })}
-                        onClick={() => incrementLine(activeClient, line.key)}
-                        className="flex size-6 items-center justify-center rounded-full hover:bg-zinc-200"
-                      >
-                        <Plus className="size-3.5" />
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              )}
             </div>
 
             <DialogFooter>
@@ -426,5 +392,52 @@ export const AddItemModal = () => {
         )}
       </DialogContent>
     </Dialog>
+    {isOpen && showCartPanel && (
+      // A floating panel, not a second Dialog: it stays open alongside the main modal (no
+      // overlay, no focus trap) so the waiter can keep tapping "+" while reviewing the cart.
+      <div
+        data-testid="client-cart-panel"
+        className="fixed top-1/2 z-[100] w-80 max-w-[calc(100%-2rem)] -translate-y-1/2 rounded-3xl bg-popover p-6 shadow-2xl ring-1 ring-foreground/10 left-[max(1rem,calc(50%-57rem))]"
+      >
+        <div className="mb-4 flex items-center justify-between">
+          <p className="text-base font-semibold text-zinc-800">
+            {t('addItemCartHeading', { name: clientLabel(activeClient) })}
+          </p>
+          <button
+            type="button"
+            aria-label={t('addItemCartPanelCloseAria')}
+            onClick={() => setShowCartPanel(false)}
+            className="flex size-8 cursor-pointer items-center justify-center rounded-full hover:bg-zinc-100"
+          >
+            <X className="size-4" />
+          </button>
+        </div>
+        {activeCart.length === 0 ? (
+          <p className="text-sm text-zinc-400">{t('addItemEmptyCart')}</p>
+        ) : (
+          <ul className="flex max-h-[55vh] flex-col gap-2 overflow-y-auto">
+            {activeCart.map((line) => (
+              <li
+                key={line.key}
+                className="flex items-center justify-between gap-2 rounded-2xl bg-zinc-100 px-4 py-2.5"
+              >
+                <span className="min-w-0 truncate text-sm">
+                  {line.name} <span className="font-semibold">×{line.qty}</span>
+                </span>
+                <button
+                  type="button"
+                  aria-label={t('addItemRemoveLineAria', { name: line.name })}
+                  onClick={() => removeLine(activeClient, line.key)}
+                  className="flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full text-zinc-500 hover:bg-zinc-200 hover:text-red-700"
+                >
+                  <Trash2 className="size-4" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    )}
+    </>
   )
 }

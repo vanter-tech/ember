@@ -24,6 +24,10 @@ const wrap = (ui: ReactNode) => {
 // the card (image, name, price) is deliberately inert so a stray touch can't queue an order.
 const addButtonFor = (name: string) => screen.getByRole('button', { name: `Agregar ${name}` })
 
+// The active client's draft cart lives in a floating panel opened via "Ver pedido" (see report
+// 545) — there's no inline cart section in the main view any more.
+const openCartPanel = () => fireEvent.click(screen.getByRole('button', { name: /Ver pedido/ }))
+
 const pizza = {
   id: 10,
   name: 'Pizza',
@@ -112,17 +116,19 @@ describe('AddItemModal', () => {
     fireEvent.click(await screen.findByText('Pizza'))
     fireEvent.click(screen.getByText('$12.00'))
 
-    expect(within(screen.getByTestId('active-client-cart')).queryByText(/Pizza/)).not.toBeInTheDocument()
+    openCartPanel()
+    expect(within(screen.getByTestId('client-cart-panel')).queryByText(/Pizza/)).not.toBeInTheDocument()
   })
 
   test('the "+" button adds an item with no modifiers straight to the active client cart', async () => {
     wrap(<AddItemModal />)
     await screen.findByText('Pizza')
     fireEvent.click(addButtonFor('Pizza'))
+    openCartPanel()
 
-    const cart = screen.getByTestId('active-client-cart')
-    expect(within(cart).getByText(/Pizza/)).toBeVisible()
-    expect(within(cart).getByText('×1')).toBeVisible()
+    const panel = screen.getByTestId('client-cart-panel')
+    expect(within(panel).getByText(/Pizza/)).toBeVisible()
+    expect(within(panel).getByText('×1')).toBeVisible()
   })
 
   test('tapping "+" again bumps the quantity in the cart', async () => {
@@ -130,9 +136,9 @@ describe('AddItemModal', () => {
     await screen.findByText('Pizza')
     fireEvent.click(addButtonFor('Pizza'))
     fireEvent.click(addButtonFor('Pizza'))
+    openCartPanel()
 
-    const cart = screen.getByTestId('active-client-cart')
-    expect(within(cart).getByText('×2')).toBeVisible()
+    expect(within(screen.getByTestId('client-cart-panel')).getByText('×2')).toBeVisible()
   })
 
   test('each client keeps their own separate cart', async () => {
@@ -143,13 +149,14 @@ describe('AddItemModal', () => {
     fireEvent.click(screen.getByRole('button', { name: /Ana/ }))
     fireEvent.click(screen.getByRole('button', { name: 'Entradas' }))
     fireEvent.click(addButtonFor('Ensalada'))
+    openCartPanel()
 
-    const cart = screen.getByTestId('active-client-cart')
-    expect(within(cart).getByText(/Ensalada/)).toBeVisible()
-    expect(within(cart).queryByText(/Pizza/)).not.toBeInTheDocument()
+    const panel = screen.getByTestId('client-cart-panel')
+    expect(within(panel).getByText(/Ensalada/)).toBeVisible()
+    expect(within(panel).queryByText(/Pizza/)).not.toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: /Mesa \(general\)/ }))
-    expect(within(screen.getByTestId('active-client-cart')).getByText(/Pizza/)).toBeVisible()
+    expect(within(screen.getByTestId('client-cart-panel')).getByText(/Pizza/)).toBeVisible()
   })
 
   test('an item with modifier groups opens a picker before it reaches the cart', async () => {
@@ -159,22 +166,47 @@ describe('AddItemModal', () => {
     await screen.findByText('Helado')
     fireEvent.click(addButtonFor('Helado'))
 
-    expect(screen.queryByTestId('active-client-cart')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Ver pedido/ })).not.toBeInTheDocument()
     fireEvent.click(screen.getByLabelText('Chocolate'))
     fireEvent.click(screen.getByText('Agregar'))
 
-    const cart = screen.getByTestId('active-client-cart')
-    expect(within(cart).getByText(/Helado/)).toBeVisible()
+    openCartPanel()
+    expect(within(screen.getByTestId('client-cart-panel')).getByText(/Helado/)).toBeVisible()
   })
 
-  test('the minus stepper removes the line once it reaches zero', async () => {
+  test('opening the cart panel with nothing added shows the empty state', async () => {
+    wrap(<AddItemModal />)
+    await screen.findByText('Pizza')
+    openCartPanel()
+
+    expect(
+      within(screen.getByTestId('client-cart-panel')).getByText(/Todavía no hay platillos/),
+    ).toBeVisible()
+  })
+
+  test('the trash button on a cart panel line removes it entirely, regardless of quantity', async () => {
     wrap(<AddItemModal />)
     await screen.findByText('Pizza')
     fireEvent.click(addButtonFor('Pizza'))
+    fireEvent.click(addButtonFor('Pizza')) // qty 2
+    openCartPanel()
 
-    const cart = screen.getByTestId('active-client-cart')
-    fireEvent.click(within(cart).getByLabelText('Quitar uno de Pizza'))
-    expect(within(cart).queryByText(/Pizza/)).not.toBeInTheDocument()
+    const panel = screen.getByTestId('client-cart-panel')
+    expect(within(panel).getByText('×2')).toBeVisible()
+
+    fireEvent.click(within(panel).getByLabelText('Eliminar Pizza'))
+    expect(within(panel).queryByText(/Pizza/)).not.toBeInTheDocument()
+    expect(within(panel).getByText(/Todavía no hay platillos/)).toBeVisible()
+  })
+
+  test('the close button on the cart panel hides it', async () => {
+    wrap(<AddItemModal />)
+    await screen.findByText('Pizza')
+    openCartPanel()
+    expect(screen.getByTestId('client-cart-panel')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByLabelText('Cerrar carrito'))
+    expect(screen.queryByTestId('client-cart-panel')).not.toBeInTheDocument()
   })
 
   test('confirm sends one addWaiterItem call per unit, across every client', async () => {
