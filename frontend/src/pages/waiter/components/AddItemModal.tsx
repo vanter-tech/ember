@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button'
 import { useUIStore } from '@/store/uiStore'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { inventoryMenuItemService, SessionTableService, type MenuItemResponse } from '@/lib/api'
-import { Armchair, Minus, Plus, User } from 'lucide-react'
+import { Armchair, Minus, Plus, User, UtensilsCrossed } from 'lucide-react'
 import toast from 'react-hot-toast'
 import axios from 'axios'
 import { useTranslation } from '@/lib/i18n'
@@ -204,7 +204,7 @@ export const AddItemModal = () => {
     key === MESA_KEY ? t('addItemParticipantMesa') : key
 
   const clientChipClass = (key: string) =>
-    `flex items-center gap-2 rounded-2xl border-2 px-3 py-2.5 text-left transition-colors ${
+    `flex items-center gap-3 rounded-2xl border-2 px-4 py-3 text-left transition-colors ${
       activeClient === key
         ? 'border-[#8B0000] bg-[#8B0000]/5'
         : 'border-zinc-200 hover:border-zinc-300'
@@ -212,7 +212,7 @@ export const AddItemModal = () => {
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-      <DialogContent className="sm:max-w-3xl rounded-3xl p-6">
+      <DialogContent className="sm:max-w-6xl rounded-3xl p-8">
         <DialogHeader className="mb-2">
           <DialogTitle className="text-2xl font-bold text-zinc-800">
             {t('addItemModalTitle')}
@@ -264,8 +264,8 @@ export const AddItemModal = () => {
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-[minmax(160px,220px)_1fr] gap-4">
-              <div className="flex flex-col gap-2 max-h-[50vh] overflow-y-auto pr-1">
+            <div className="grid grid-cols-[minmax(180px,240px)_1fr] gap-10">
+              <div className="flex flex-col gap-3 max-h-[65vh] overflow-y-auto border-r border-zinc-100 pr-6">
                 <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
                   {t('addItemParticipantLabel')}
                 </p>
@@ -275,8 +275,8 @@ export const AddItemModal = () => {
                   onClick={() => setActiveClient(MESA_KEY)}
                   className={clientChipClass(MESA_KEY)}
                 >
-                  <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-zinc-100">
-                    <Armchair className="size-4 text-zinc-600" />
+                  <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-zinc-100">
+                    <Armchair className="size-5 text-zinc-600" />
                   </span>
                   <span className="min-w-0 flex-1 truncate text-sm font-medium">
                     {t('addItemParticipantMesa')}
@@ -295,8 +295,8 @@ export const AddItemModal = () => {
                       onClick={() => setActiveClient(p.name)}
                       className={clientChipClass(p.name)}
                     >
-                      <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-red-100">
-                        <User className="size-4 text-red-700" />
+                      <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-red-100">
+                        <User className="size-5 text-red-700" />
                       </span>
                       <span className="min-w-0 flex-1 truncate text-sm font-medium">{p.name}</span>
                       {(cart[p.name]?.length ?? 0) > 0 && (
@@ -306,7 +306,7 @@ export const AddItemModal = () => {
                   ))}
               </div>
 
-              <div className="flex min-w-0 flex-col gap-3">
+              <div className="flex min-w-0 flex-col gap-4">
                 <input
                   type="text"
                   value={search}
@@ -332,17 +332,45 @@ export const AddItemModal = () => {
                     ))}
                   </div>
                 )}
-                <div className="grid grid-cols-2 gap-2 max-h-[38vh] overflow-y-auto pr-1">
+                <div className="grid grid-cols-2 gap-4 max-h-[55vh] overflow-y-auto pr-1 sm:grid-cols-3">
                   {visibleItems.map((item) => (
-                    <button
+                    // Deliberately not a single big button: a card this dense on a touch screen is
+                    // an easy misclick, so only the "+" adds — the rest is inert display.
+                    <div
                       key={item.id}
-                      type="button"
-                      onClick={() => handleTapItem(item)}
-                      className="rounded-2xl border-2 border-zinc-200 px-4 py-3 text-left transition-colors hover:border-zinc-300"
+                      className="flex flex-col overflow-hidden rounded-2xl border-2 border-zinc-200"
                     >
-                      <span className="font-semibold block">{item.name}</span>
-                      <span className="text-sm text-zinc-500">${(item.price ?? 0).toFixed(2)}</span>
-                    </button>
+                      <div className="h-28 w-full bg-zinc-100">
+                        {item.imageUrl ? (
+                          <img
+                            src={item.imageUrl}
+                            alt={item.name}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <div
+                            data-testid={`menu-item-placeholder-${item.id}`}
+                            className="flex h-full items-center justify-center text-zinc-300"
+                          >
+                            <UtensilsCrossed className="size-8" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex items-center justify-between gap-2 p-3">
+                        <div className="min-w-0">
+                          <p className="truncate font-semibold">{item.name}</p>
+                          <p className="text-sm text-zinc-500">${(item.price ?? 0).toFixed(2)}</p>
+                        </div>
+                        <button
+                          type="button"
+                          aria-label={t('addItemAddAria', { name: item.name ?? '' })}
+                          onClick={() => handleTapItem(item)}
+                          className="flex size-11 shrink-0 items-center justify-center rounded-full bg-[#8B0000] text-white shadow-sm transition-colors hover:bg-[#6a1111] active:scale-95"
+                        >
+                          <Plus className="size-5" />
+                        </button>
+                      </div>
+                    </div>
                   ))}
                 </div>
               </div>

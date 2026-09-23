@@ -20,6 +20,10 @@ const wrap = (ui: ReactNode) => {
   return render(<QueryClientProvider client={qc}>{ui}</QueryClientProvider>)
 }
 
+// The "+" is the only interactive add-trigger on a product card (see report 544) — the rest of
+// the card (image, name, price) is deliberately inert so a stray touch can't queue an order.
+const addButtonFor = (name: string) => screen.getByRole('button', { name: `Agregar ${name}` })
+
 const pizza = {
   id: 10,
   name: 'Pizza',
@@ -27,6 +31,7 @@ const pizza = {
   available: true,
   modifierGroups: [],
   category: { id: 1, name: 'Platos fuertes' },
+  imageUrl: 'https://cdn.example.com/pizza.jpg',
 }
 const ensalada = {
   id: 11,
@@ -102,20 +107,29 @@ describe('AddItemModal', () => {
     expect(screen.queryByText('Ensalada')).not.toBeInTheDocument()
   })
 
-  test('tapping an item with no modifiers adds it straight to the active client cart', async () => {
+  test('tapping the card itself does not add anything — only the "+" button does', async () => {
     wrap(<AddItemModal />)
     fireEvent.click(await screen.findByText('Pizza'))
+    fireEvent.click(screen.getByText('$12.00'))
+
+    expect(within(screen.getByTestId('active-client-cart')).queryByText(/Pizza/)).not.toBeInTheDocument()
+  })
+
+  test('the "+" button adds an item with no modifiers straight to the active client cart', async () => {
+    wrap(<AddItemModal />)
+    await screen.findByText('Pizza')
+    fireEvent.click(addButtonFor('Pizza'))
 
     const cart = screen.getByTestId('active-client-cart')
     expect(within(cart).getByText(/Pizza/)).toBeVisible()
     expect(within(cart).getByText('×1')).toBeVisible()
   })
 
-  test('tapping the same item again bumps its quantity in the cart', async () => {
+  test('tapping "+" again bumps the quantity in the cart', async () => {
     wrap(<AddItemModal />)
-    const pizzaTile = await screen.findByRole('button', { name: /Pizza/ })
-    fireEvent.click(pizzaTile)
-    fireEvent.click(pizzaTile)
+    await screen.findByText('Pizza')
+    fireEvent.click(addButtonFor('Pizza'))
+    fireEvent.click(addButtonFor('Pizza'))
 
     const cart = screen.getByTestId('active-client-cart')
     expect(within(cart).getByText('×2')).toBeVisible()
@@ -123,11 +137,12 @@ describe('AddItemModal', () => {
 
   test('each client keeps their own separate cart', async () => {
     wrap(<AddItemModal />)
-    fireEvent.click(await screen.findByRole('button', { name: /Pizza/ }))
+    await screen.findByText('Pizza')
+    fireEvent.click(addButtonFor('Pizza'))
 
     fireEvent.click(screen.getByRole('button', { name: /Ana/ }))
     fireEvent.click(screen.getByRole('button', { name: 'Entradas' }))
-    fireEvent.click(screen.getByRole('button', { name: /Ensalada/ }))
+    fireEvent.click(addButtonFor('Ensalada'))
 
     const cart = screen.getByTestId('active-client-cart')
     expect(within(cart).getByText(/Ensalada/)).toBeVisible()
@@ -141,7 +156,8 @@ describe('AddItemModal', () => {
     wrap(<AddItemModal />)
     await screen.findByText('Pizza')
     fireEvent.click(screen.getByRole('button', { name: 'Postres' }))
-    fireEvent.click(await screen.findByRole('button', { name: /Helado/ }))
+    await screen.findByText('Helado')
+    fireEvent.click(addButtonFor('Helado'))
 
     expect(screen.queryByTestId('active-client-cart')).not.toBeInTheDocument()
     fireEvent.click(screen.getByLabelText('Chocolate'))
@@ -153,7 +169,8 @@ describe('AddItemModal', () => {
 
   test('the minus stepper removes the line once it reaches zero', async () => {
     wrap(<AddItemModal />)
-    fireEvent.click(await screen.findByText('Pizza'))
+    await screen.findByText('Pizza')
+    fireEvent.click(addButtonFor('Pizza'))
 
     const cart = screen.getByTestId('active-client-cart')
     fireEvent.click(within(cart).getByLabelText('Quitar uno de Pizza'))
@@ -163,13 +180,13 @@ describe('AddItemModal', () => {
   test('confirm sends one addWaiterItem call per unit, across every client', async () => {
     vi.mocked(SessionTableService.addWaiterItem).mockResolvedValue(undefined)
     wrap(<AddItemModal />)
-    const pizzaTile = await screen.findByRole('button', { name: /Pizza/ })
-    fireEvent.click(pizzaTile)
-    fireEvent.click(pizzaTile) // Mesa: 2x Pizza
+    await screen.findByText('Pizza')
+    fireEvent.click(addButtonFor('Pizza'))
+    fireEvent.click(addButtonFor('Pizza')) // Mesa: 2x Pizza
 
     fireEvent.click(screen.getByRole('button', { name: /Ana/ }))
     fireEvent.click(screen.getByRole('button', { name: 'Entradas' }))
-    fireEvent.click(screen.getByRole('button', { name: /Ensalada/ })) // Ana: 1x Ensalada
+    fireEvent.click(addButtonFor('Ensalada')) // Ana: 1x Ensalada
 
     fireEvent.click(screen.getByText(/Confirmar pedido/))
 
@@ -190,5 +207,14 @@ describe('AddItemModal', () => {
     wrap(<AddItemModal />)
     await screen.findByText('Pizza')
     expect(screen.getByText(/Confirmar pedido/)).toBeDisabled()
+  })
+
+  test('shows the item photo when available, a placeholder icon otherwise', async () => {
+    wrap(<AddItemModal />)
+    const photo = await screen.findByAltText('Pizza') // has imageUrl in the fixture
+    expect(photo).toHaveAttribute('src', 'https://cdn.example.com/pizza.jpg')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Entradas' }))
+    expect(screen.getByTestId('menu-item-placeholder-11')).toBeInTheDocument() // Ensalada, no photo
   })
 })

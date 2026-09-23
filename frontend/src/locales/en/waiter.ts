@@ -208,6 +208,7 @@ export const waiter = {
   addItemEmptyCart: 'No items yet for this customer.',
   addItemDecrementAria: 'Remove one {{name}}',
   addItemIncrementAria: 'Add one more {{name}}',
+  addItemAddAria: 'Add {{name}}',
   addItemModifierCancel: 'Cancel',
   addItemModifierConfirm: 'Add',
   addItemSubmit: 'Confirm order',
