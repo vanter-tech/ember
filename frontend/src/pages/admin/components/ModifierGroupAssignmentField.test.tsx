@@ -81,3 +81,14 @@ describe('ModifierGroupAssignmentField', () => {
     expect(screen.queryByPlaceholderText('Buscar grupo...')).not.toBeInTheDocument()
   })
 })
+
+describe('ModifierGroupAssignmentField colors', () => {
+  test('gives different groups different badge colors', async () => {
+    vi.mocked(modifierGroupService.getAll).mockResolvedValue(makeGroups(3) as never)
+    renderField()
+
+    const first = await screen.findByRole('button', { name: /Grupo 1/ })
+    const second = screen.getByRole('button', { name: /Grupo 2/ })
+    expect(first.className).not.toBe(second.className)
+  })
+})
