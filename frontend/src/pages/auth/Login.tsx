@@ -114,6 +114,78 @@ export const Login = () => {
         className="pointer-events-none absolute -bottom-[8%] -left-[12%] h-[40rem] w-[40rem] rounded-full bg-[#920703] opacity-[0.09] blur-[90px]"
         aria-hidden="true"
       />
+      {chipsVisible ? (
+        <div className="relative z-10 flex w-full max-w-5xl flex-col items-center gap-8">
+          <div className="absolute -top-2 right-0">
+            <LanguageSwitcher />
+          </div>
+          <div className="text-center">
+            <h1 className="text-4xl font-bold text-[#920703]">
+              {tCommon('brandFallback')}
+              <br />
+              {tAuth('loginTagline')}
+            </h1>
+            <p className="mt-2 text-sm text-zinc-500">{tAuth('loginDescription')}</p>
+          </div>
+          <div className="flex w-full flex-col gap-4">
+            <div className="flex items-center justify-between px-2">
+              <span className="text-base font-semibold text-zinc-700">
+                {tAuth('quickStartTitle')}
+              </span>
+              <button
+                type="button"
+                className="text-sm text-zinc-500 hover:underline"
+                onClick={() => setEditing((e) => !e)}
+              >
+                {editing ? tAuth('doneEditingChips') : tAuth('editChips')}
+              </button>
+            </div>
+            <div className="flex flex-row flex-nowrap gap-5 overflow-x-auto px-2 py-3 md:justify-center">
+              {profiles.map((p) => (
+                <div key={p.email} className="relative shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setActiveChip(p)}
+                    className="flex h-44 w-44 flex-col items-center justify-center gap-3 rounded-3xl border bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                  >
+                    <span
+                      className="flex h-20 w-20 items-center justify-center rounded-full text-white text-2xl font-bold"
+                      style={{ backgroundColor: `hsl(${p.colorSeed} 55% 45%)` }}
+                    >
+                      {p.initials}
+                    </span>
+                    <span className="flex w-full flex-col items-center text-center">
+                      <span className="w-full text-base font-medium text-zinc-800 truncate">
+                        {p.name}
+                      </span>
+                      <span className="text-[11px] uppercase tracking-wide text-zinc-400">
+                        {p.role}
+                      </span>
+                    </span>
+                  </button>
+                  {editing && (
+                    <button
+                      type="button"
+                      aria-label={tAuth('removeChipAria', { name: p.name })}
+                      onClick={() => forget(p.email)}
+                      className="absolute right-2 top-2 h-6 w-6 rounded-full bg-zinc-700 text-white text-sm"
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+            <button
+              type="button"
+              className="mx-auto text-sm text-zinc-600 hover:underline"
+              onClick={() => setShowForm(true)}
+            >
+              {tAuth('useAnotherAccount')}
+            </button>
+          </div>
+        </div>
+      ) : (
       <Card className="w-full max-w-md shadow-lg relative z-10">
         <div className="absolute top-4 right-4">
           <LanguageSwitcher />
@@ -129,70 +201,10 @@ export const Login = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {profiles.length > 0 && (
-            <div className="mb-6" hidden={showForm}>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-semibold text-zinc-600">
-                  {tAuth('quickStartTitle')}
-                </span>
-                <button
-                  type="button"
-                  className="text-xs text-zinc-500 hover:underline"
-                  onClick={() => setEditing((e) => !e)}
-                >
-                  {editing ? tAuth('doneEditingChips') : tAuth('editChips')}
-                </button>
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {profiles.map((p) => (
-                  <div key={p.email} className="relative">
-                    <button
-                      type="button"
-                      onClick={() => setActiveChip(p)}
-                      className="w-full aspect-square flex flex-col items-center justify-center gap-2 rounded-3xl border bg-white p-3 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
-                    >
-                      <span
-                        className="flex h-16 w-16 items-center justify-center rounded-full text-white text-xl font-bold"
-                        style={{ backgroundColor: `hsl(${p.colorSeed} 55% 45%)` }}
-                      >
-                        {p.initials}
-                      </span>
-                      <span className="flex w-full flex-col items-center text-center">
-                        <span className="w-full text-sm font-medium text-zinc-800 truncate">
-                          {p.name}
-                        </span>
-                        <span className="text-[10px] uppercase tracking-wide text-zinc-400">
-                          {p.role}
-                        </span>
-                      </span>
-                    </button>
-                    {editing && (
-                      <button
-                        type="button"
-                        aria-label={tAuth('removeChipAria', { name: p.name })}
-                        onClick={() => forget(p.email)}
-                        className="absolute right-1 top-1 h-5 w-5 rounded-full bg-zinc-700 text-white text-xs"
-                      >
-                        ×
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-              <button
-                type="button"
-                className="mt-3 text-sm text-zinc-600 hover:underline"
-                onClick={() => setShowForm(true)}
-              >
-                {tAuth('useAnotherAccount')}
-              </button>
-            </div>
-          )}
           <Form {...form}>
             <form
               onSubmit={form.handleSubmit(onSubmit)}
               className="space-y-6"
-              hidden={chipsVisible}
             >
               <FormField
                 control={form.control}
@@ -297,14 +309,12 @@ export const Login = () => {
               )}
             </form>
           </Form>
-          {activeChip && (
-            <QuickLoginModal
-              profile={activeChip}
-              onClose={() => setActiveChip(null)}
-            />
-          )}
         </CardContent>
       </Card>
+      )}
+      {activeChip && (
+        <QuickLoginModal profile={activeChip} onClose={() => setActiveChip(null)} />
+      )}
     </div>
   )
 }
