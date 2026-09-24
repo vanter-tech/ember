@@ -49,7 +49,6 @@ export const Login = () => {
   const navigate = useNavigate()
   const { setAuth } = useAuthStore()
   const { t: tAuth } = useTranslation('auth')
-  const { t: tCommon } = useTranslation('common')
   const loginSchema = useMemo(() => createLoginSchema(tAuth), [tAuth])
 
   const { profiles, forget, remember } = useQuickAccessStore()
@@ -107,8 +106,6 @@ export const Login = () => {
           </div>
           <div className="text-center">
             <h1 className="text-4xl font-bold text-[#920703]">
-              {tCommon('brandFallback')}
-              <br />
               {tAuth('loginTagline')}
             </h1>
             <p className="mt-2 text-sm text-zinc-500">{tAuth('loginDescription')}</p>
@@ -178,8 +175,6 @@ export const Login = () => {
         </div>
         <CardHeader className="px-8">
           <CardTitle className="text-3xl text-center text-[#920703] font-bold">
-            {tCommon('brandFallback')}
-            <br />
             {tAuth('loginTagline')}
           </CardTitle>
           <CardDescription className="text-center">
