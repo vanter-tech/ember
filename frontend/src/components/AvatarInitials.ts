@@ -26,8 +26,26 @@ export const tablesColor = [
   'border-rose-500 '
 ]
 
-export const AvatarColors = [
-  'bg-zinc-800 text-white border-zinc-900',
-  'bg-zinc-200 text-zinc-700 border-white',
-  'bg-zinc-300 text-zinc-800 border-white',
+
+const AVATAR_PALETTE = [
+  'bg-rose-200 text-rose-800 border-white',
+  'bg-orange-200 text-orange-800 border-white',
+  'bg-amber-200 text-amber-800 border-white',
+  'bg-lime-200 text-lime-800 border-white',
+  'bg-emerald-200 text-emerald-800 border-white',
+  'bg-teal-200 text-teal-800 border-white',
+  'bg-sky-200 text-sky-800 border-white',
+  'bg-indigo-200 text-indigo-800 border-white',
+  'bg-violet-200 text-violet-800 border-white',
+  'bg-fuchsia-200 text-fuchsia-800 border-white',
 ]
+
+/** Deterministic per-person avatar colors: the same seed (id or name) always maps to the same palette entry. */
+export const getAvatarColor = (seed?: string | null) => {
+  if (!seed) return AVATAR_PALETTE[0]
+  let hash = 0
+  for (let i = 0; i < seed.length; i++) {
+    hash = (hash * 31 + seed.charCodeAt(i)) >>> 0
+  }
+  return AVATAR_PALETTE[hash % AVATAR_PALETTE.length]
+}

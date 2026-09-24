@@ -1,6 +1,6 @@
 import { useSessionStore } from '@/store/sessionStore'
 import { useState } from 'react'
-import { AvatarInitials, AvatarColors } from '@/components/AvatarInitials'
+import { AvatarInitials, getAvatarColor } from '@/components/AvatarInitials'
 import { ParticipantsList } from './ParticipantsList'
 import { useTranslation } from '@/lib/i18n'
 
@@ -32,7 +32,7 @@ export const ParticipantsPopUp = () => {
           {visibleParticipants.map((participant, index) => (
             <div
               key={index}
-              className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 ${AvatarColors[index % AvatarColors.length]}`}
+              className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 ${getAvatarColor(participant.name)}`}
             >
               {AvatarInitials(participant.name?.toString() || '')}
             </div>

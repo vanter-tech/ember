@@ -9,7 +9,7 @@ import {
   Trash,
 } from 'lucide-react'
 
-import { AvatarInitials, AvatarColors } from '@/components/AvatarInitials'
+import { AvatarInitials, getAvatarColor } from '@/components/AvatarInitials'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Link } from 'react-router-dom'
@@ -181,7 +181,7 @@ export const ComandaView = () => {
                 <CardTitle className="flex justify-between items-center">
                   <div className="flex flex-row gap-4 p-5 items-center">
                     <div
-                      className={`w-11 h-11 p-4 rounded-full flex items-center justify-center text-xs font-bold border-2 ${AvatarColors[index % AvatarColors.length]}`}
+                      className={`w-11 h-11 p-4 rounded-full flex items-center justify-center text-xs font-bold border-2 ${getAvatarColor(person.name)}`}
                     >
                       {AvatarInitials(person.name ?? '')}
                     </div>
