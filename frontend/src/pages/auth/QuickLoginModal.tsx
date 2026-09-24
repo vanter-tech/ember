@@ -11,7 +11,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { PasswordInput } from '@/components/PasswordInput'
 import { cn } from '@/lib/utils'
 import { authService } from '@/lib/api'
@@ -165,11 +164,7 @@ export const QuickLoginModal = ({
               <label htmlFor="quicklogin-field" className="text-sm font-medium">
                 {fieldLabel}
               </label>
-              {mode === 'pin' ? (
-                <Input type="text" {...fieldProps} />
-              ) : (
-                <PasswordInput {...fieldProps} />
-              )}
+              <PasswordInput key={mode} {...fieldProps} />
               {error && <p className="text-sm text-red-600">{error}</p>}
             </>
           )}
