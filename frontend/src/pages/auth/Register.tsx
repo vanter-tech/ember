@@ -9,6 +9,8 @@ import { useAuthStore } from '../../store/authStore'
 import { authService } from '@/lib/api'
 import { useTranslation } from '@/lib/i18n'
 
+import { AuthBackground } from './AuthBackground'
+import { PoweredByVanter } from './PoweredByVanter'
 import { Button } from '../../components/ui/button'
 import { Input } from '../../components/ui/input'
 import {
@@ -66,8 +68,9 @@ export const Register = () => {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-slate-50">
-      <Card className="w-full max-w-md shadow-lg">
+    <div className="relative flex items-center justify-center min-h-screen overflow-hidden bg-white p-4 pb-12">
+      <AuthBackground />
+      <Card className="w-full max-w-md shadow-lg relative z-10">
         <CardHeader>
           <CardTitle className="text-2xl font-bold text-center text-[#920703] ">
             {tAuth('registerTitle')}
@@ -227,6 +230,7 @@ export const Register = () => {
           </Form>
         </CardContent>
       </Card>
+      <PoweredByVanter />
     </div>
   )
 }

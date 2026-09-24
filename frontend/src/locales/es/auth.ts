@@ -34,6 +34,7 @@ export const auth = {
   removeChipAria: 'Quitar {{name}}',
   quickStartPrevAria: 'Anterior',
   quickStartNextAria: 'Siguiente',
+  poweredBy: 'Desarrollado por',
   quickLoginDialogDescription: 'Ingresa tu PIN o contraseña para continuar.',
   quickLoginPinLabel: 'PIN',
   quickLoginPasswordLabel: 'Contraseña',

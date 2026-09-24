@@ -13,6 +13,8 @@ import {
 import { authService } from '@/lib/api'
 import { navigateForRole } from './navigateForRole'
 import { QuickLoginModal } from './QuickLoginModal'
+import { AuthBackground } from './AuthBackground'
+import { PoweredByVanter } from './PoweredByVanter'
 import { QuickStartCarousel } from './QuickStartCarousel'
 import { LanguageSwitcher } from '@/components/LanguageSwitcher'
 import { useTranslation } from '@/lib/i18n'
@@ -96,25 +98,8 @@ export const Login = () => {
   }
 
   return (
-    <div className="relative flex items-center justify-center min-h-screen overflow-hidden bg-white p-4">
-      <div
-        className="pointer-events-none absolute inset-0 opacity-55"
-        aria-hidden="true"
-        style={{
-          backgroundImage: 'radial-gradient(circle, #e5e5e5 1px, transparent 1px)',
-          backgroundSize: '26px 26px',
-          maskImage: 'radial-gradient(60% 55% at 50% 40%, #000 0%, transparent 100%)',
-          WebkitMaskImage: 'radial-gradient(60% 55% at 50% 40%, #000 0%, transparent 100%)',
-        }}
-      />
-      <div
-        className="pointer-events-none absolute -right-[6%] top-[8%] h-[46rem] w-[46rem] rounded-full bg-[#920703] opacity-[0.12] blur-[90px]"
-        aria-hidden="true"
-      />
-      <div
-        className="pointer-events-none absolute -bottom-[8%] -left-[12%] h-[40rem] w-[40rem] rounded-full bg-[#920703] opacity-[0.09] blur-[90px]"
-        aria-hidden="true"
-      />
+    <div className="relative flex items-center justify-center min-h-screen overflow-hidden bg-white p-4 pb-12">
+      <AuthBackground />
       {chipsVisible ? (
         <div className="relative z-10 flex w-full max-w-5xl flex-col items-center gap-8">
           <div className="absolute -top-2 right-0">
@@ -316,6 +301,7 @@ export const Login = () => {
       {activeChip && (
         <QuickLoginModal profile={activeChip} onClose={() => setActiveChip(null)} />
       )}
+      <PoweredByVanter />
     </div>
   )
 }
