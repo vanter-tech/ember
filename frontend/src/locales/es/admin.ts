@@ -389,7 +389,7 @@ export const admin = {
   showTipLabel: 'Línea de propina',
   showTipDescription: 'Agrega al final del recibo la línea "PROPINA:" para que el mesero la escriba a mano.',
   showTaxBreakdownMissingHint: 'No hay impuesto configurado: defínelo en Facturación para que aparezca.',
-  showBusinessHoursMissingHint: 'Falta el horario: configúralo en Branding (apertura y cierre) o en Horario de atención.',
+  showBusinessHoursMissingHint: 'Aún no hay horario guardado. En la pestaña Horario de atención se muestra uno propuesto que no cuenta hasta pulsar Guardar; también puedes definir apertura y cierre en Branding.',
   ticketPreviewTipLine: 'PROPINA:',
   ticketPreviewTaxLabel: 'Impuesto',
   ticketPreviewTaxMissing: 'Impuesto: sin configurar',

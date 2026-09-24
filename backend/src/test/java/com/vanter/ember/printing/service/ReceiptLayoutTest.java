@@ -43,17 +43,19 @@ class ReceiptLayoutTest {
     }
 
     @Test
-    void render_tipLine_isTheLastLine_withARoomToWriteInPen() {
+    void render_tipLine_sitsBeforeTheFooter_withARoomToWriteInPen() {
         ReceiptLayout.Data data = base(32).total(new BigDecimal("32.48")).tipLine(true).build();
 
-        String out = ReceiptLayout.render(data);
+        String[] lines = ReceiptLayout.render(data).split("\n", -1);
 
-        String[] lines = out.split("\n", -1);
-        // ... footer, a blank spacer, then the tip line, then the trailing newline
+        // TOTAL, a blank spacer, the tip line, the rule and finally the footer as the very last line
         assertThat(lines[lines.length - 1]).isEmpty();
-        assertThat(lines[lines.length - 2]).isEqualTo("PROPINA: " + "_".repeat(23));
-        assertThat(lines[lines.length - 2]).hasSize(32);
-        assertThat(lines[lines.length - 3]).isEmpty();
+        assertThat(lines[lines.length - 2]).isEqualTo(sp(5) + "Gracias por visitarnos");
+        assertThat(lines[lines.length - 3]).isEqualTo(rule(32));
+        assertThat(lines[lines.length - 4]).isEqualTo("PROPINA: " + "_".repeat(23));
+        assertThat(lines[lines.length - 4]).hasSize(32);
+        assertThat(lines[lines.length - 5]).isEmpty();
+        assertThat(lines[lines.length - 6]).startsWith("TOTAL");
     }
 
     @Test
@@ -65,8 +67,8 @@ class ReceiptLayoutTest {
     void render_tipLine_fillsTheWidthOf80mmPaperToo() {
         String out = ReceiptLayout.render(base(42).tipLine(true).build());
 
-        String[] lines = out.split("\n");
-        assertThat(lines[lines.length - 1]).isEqualTo("PROPINA: " + "_".repeat(33));
+        assertThat(out).contains("PROPINA: " + "_".repeat(33));
+        assertThat(out.stripTrailing()).endsWith("Gracias por visitarnos");
     }
 
     @Test

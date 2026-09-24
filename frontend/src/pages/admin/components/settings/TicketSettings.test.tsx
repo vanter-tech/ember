@@ -123,7 +123,7 @@ describe('TicketSettings preview: tax, hours and the tip line', () => {
     vi.mocked(SettingsService.getSettings).mockResolvedValue({
       branding: { businessName: 'Ember Grill' },
       billing: { currencySymbol: '$', taxRate: 0, taxRules: [] },
-      ticket: { paperWidth: 'MM_80' },
+      ticket: { paperWidth: 'MM_80', footerMessage: 'Gracias por visitarnos' },
       ...overrides,
     } as never)
   }
@@ -156,6 +156,9 @@ describe('TicketSettings preview: tax, hours and the tip line', () => {
 
     const tipLine = await screen.findByTestId('ticket-preview-tip-line')
     expect(tipLine).toHaveTextContent('PROPINA:')
+    // the footer message stays the very last thing on the receipt
+    const footer = screen.getByText('Gracias por visitarnos')
+    expect(tipLine.compareDocumentPosition(footer) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     expect(screen.queryByText(/Propina sugerida/)).not.toBeInTheDocument()
   })
 

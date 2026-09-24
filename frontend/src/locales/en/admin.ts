@@ -391,7 +391,7 @@ export const admin = {
   showTipLabel: 'Tip line',
   showTipDescription: 'Adds a "PROPINA:" line at the end of the receipt for the waiter to fill in by hand.',
   showTaxBreakdownMissingHint: 'No tax is configured: set it in Billing for it to appear.',
-  showBusinessHoursMissingHint: 'Opening hours are missing: set them in Branding (opening and closing) or in Business hours.',
+  showBusinessHoursMissingHint: 'No opening hours are saved yet. The Business hours tab shows a suggested schedule that does not count until you press Save; you can also set opening and closing in Branding.',
   ticketPreviewTipLine: 'PROPINA:',
   ticketPreviewTaxLabel: 'Tax',
   ticketPreviewTaxMissing: 'Tax: not configured',

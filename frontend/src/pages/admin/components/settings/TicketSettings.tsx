@@ -364,15 +364,15 @@ export const TicketSettings = () => {
                   </div>
                 </div>
 
-                {currentFooterMessage && (
-                  <p className="text-center border-t border-dashed border-zinc-300 pt-2 whitespace-pre-wrap">{currentFooterMessage}</p>
-                )}
-
                 {currentShowTip && (
                   <div className="flex items-end gap-2 pt-4" data-testid="ticket-preview-tip-line">
                     <span className="font-bold">{t('ticketPreviewTipLine')}</span>
                     <span className="flex-1 border-b border-zinc-900" />
                   </div>
+                )}
+
+                {currentFooterMessage && (
+                  <p className="text-center border-t border-dashed border-zinc-300 pt-2 whitespace-pre-wrap">{currentFooterMessage}</p>
                 )}
               </div>
             )}

@@ -142,15 +142,17 @@ class ReceiptRendererTest {
     }
 
     @Test
-    void render_endsWithTheTipLine_whenTheTipSettingIsOn() {
+    void render_putsTheTipLineBeforeTheFooter_whenTheTipSettingIsOn() {
         givenBill("10.00", item("Pizza", "10.00", OrderItemStatus.DELIVERED));
         settings.getBilling().setTaxRate(0.0);
         settings.getTicket().setShowTip(true);
 
         String out = renderer.render(12L, settings);
 
-        assertThat(out.stripTrailing()).endsWith("PROPINA: " + "_".repeat(33));
-        assertThat(out.indexOf("Gracias por visitarnos")).isLessThan(out.indexOf("PROPINA:"));
+        assertThat(out).contains("PROPINA: " + "_".repeat(33));
+        assertThat(out.indexOf("TOTAL")).isLessThan(out.indexOf("PROPINA:"));
+        assertThat(out.indexOf("PROPINA:")).isLessThan(out.indexOf("Gracias por visitarnos"));
+        assertThat(out.stripTrailing()).endsWith("Gracias por visitarnos");
     }
 
     @Test

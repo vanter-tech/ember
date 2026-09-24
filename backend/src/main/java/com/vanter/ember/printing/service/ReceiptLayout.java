@@ -66,7 +66,7 @@ final class ReceiptLayout {
             Builder width(int v) { this.width = v; return this; }
             /** One line of the business-info block under the header (wrapped and centered on render). */
             Builder infoLine(String v) { this.infoLines.add(v); return this; }
-            /** Ends the receipt with a "PROPINA: ____" line the waiter fills in by hand. */
+            /** A "PROPINA: ____" line, after the totals and before the footer, for the waiter to fill in by hand. */
             Builder tipLine(boolean v) { this.tipLine = v; return this; }
 
             Data build() {
@@ -112,6 +112,9 @@ final class ReceiptLayout {
             }
             out.append(twoCols("TOTAL", money(d.currency(), d.total()), w)).append('\n');
         }
+        if (d.tipLine()) {
+            out.append('\n').append(tipLine(w)).append('\n');
+        }
         List<String> footer = wrap(d.footer(), w);
         if (!footer.isEmpty()) {
             if (hasItems || hasTotal) {
@@ -120,9 +123,6 @@ final class ReceiptLayout {
             for (String line : footer) {
                 out.append(center(line, w)).append('\n');
             }
-        }
-        if (d.tipLine()) {
-            out.append('\n').append(tipLine(w)).append('\n');
         }
         return out.toString();
     }
