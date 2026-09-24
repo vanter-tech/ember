@@ -13,6 +13,7 @@ import {
 import { authService } from '@/lib/api'
 import { navigateForRole } from './navigateForRole'
 import { QuickLoginModal } from './QuickLoginModal'
+import { QuickStartCarousel } from './QuickStartCarousel'
 import { LanguageSwitcher } from '@/components/LanguageSwitcher'
 import { useTranslation } from '@/lib/i18n'
 import { isHubBuild } from '@/lib/isHubBuild'
@@ -140,9 +141,9 @@ export const Login = () => {
                 {editing ? tAuth('doneEditingChips') : tAuth('editChips')}
               </button>
             </div>
-            <div className="flex flex-row flex-nowrap gap-5 overflow-x-auto px-2 py-3 md:justify-center">
+            <QuickStartCarousel itemCount={profiles.length}>
               {profiles.map((p) => (
-                <div key={p.email} className="relative shrink-0">
+                <div key={p.email} className="relative shrink-0 snap-center">
                   <button
                     type="button"
                     onClick={() => setActiveChip(p)}
@@ -175,7 +176,7 @@ export const Login = () => {
                   )}
                 </div>
               ))}
-            </div>
+            </QuickStartCarousel>
             <button
               type="button"
               className="mx-auto text-sm text-zinc-600 hover:underline"

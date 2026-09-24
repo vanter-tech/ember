@@ -32,6 +32,8 @@ export const auth = {
   editChips: 'Editar',
   doneEditingChips: 'Listo',
   removeChipAria: 'Quitar {{name}}',
+  quickStartPrevAria: 'Anterior',
+  quickStartNextAria: 'Siguiente',
   quickLoginDialogDescription: 'Ingresa tu PIN o contraseña para continuar.',
   quickLoginPinLabel: 'PIN',
   quickLoginPasswordLabel: 'Contraseña',
