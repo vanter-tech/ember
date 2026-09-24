@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { SettingsService } from '@/lib/api';
+import { SettingsService, ticketLogoService } from '@/lib/api';
 import type { components } from '@/lib/backend-types';
 import { FileText, Loader2, Receipt, ChefHat } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -37,6 +37,20 @@ export const TicketSettings = () => {
 
   const [draftTicket, setDraftTicket] = useState<Partial<TicketSettings> | undefined>(undefined);
   const [previewOpen, setPreviewOpen] = useState<PreviewKind | null>(null);
+
+  // Same query as TicketLogoField, so this shares its cache: the customer-receipt preview shows
+  // the logo the way it prints (the kitchen ticket never carries one).
+  const { data: logoBlob } = useQuery({
+    queryKey: ['ticketLogo'],
+    queryFn: () => ticketLogoService.get(),
+  });
+  const logoPreviewUrl = useMemo(() => (logoBlob ? URL.createObjectURL(logoBlob) : null), [logoBlob]);
+  useEffect(
+    () => () => {
+      if (logoPreviewUrl) URL.revokeObjectURL(logoPreviewUrl);
+    },
+    [logoPreviewUrl],
+  );
 
   const currentHeaderMessage = draftTicket?.headerMessage ?? settings?.ticket?.headerMessage ?? '';
   const currentFooterMessage = draftTicket?.footerMessage ?? settings?.ticket?.footerMessage ?? '';
@@ -247,6 +261,14 @@ export const TicketSettings = () => {
               <div
                 className={`${paperWidthClass} w-full font-mono bg-white text-zinc-900 border border-zinc-200 shadow-sm p-4 space-y-2`}
               >
+                {logoPreviewUrl && (
+                  <img
+                    src={logoPreviewUrl}
+                    alt={t('ticketLogoPreviewAlt')}
+                    data-testid="ticket-preview-logo"
+                    className="mx-auto max-h-24 max-w-full object-contain"
+                  />
+                )}
                 {currentHeaderMessage && (
                   <p className="text-center font-semibold whitespace-pre-wrap">{currentHeaderMessage}</p>
                 )}
