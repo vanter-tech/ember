@@ -7,12 +7,23 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.Iterator;
+import java.util.Locale;
+import java.util.Set;
 import javax.imageio.ImageIO;
+import javax.imageio.ImageReader;
+import javax.imageio.stream.ImageInputStream;
 
 /**
- * Pure image work for the receipt logo: normalize an uploaded picture once, then turn it into
- * the 1-bit (black/white) bitmap a thermal printer actually prints, sized to the paper width.
+ * Pure image work for the receipt logo: validate and normalize an uploaded picture once, then turn
+ * it into the 1-bit (black/white) bitmap a thermal printer actually prints, sized to the paper.
  * Thermal heads have no grays, so tones are simulated with Floyd-Steinberg dithering.
+ *
+ * <p>The upload is untrusted input, so it is never stored as received: the file signature must be
+ * PNG, JPEG or GIF (not merely "something ImageIO can read"), the declared dimensions are checked
+ * <em>before</em> any pixel is decoded (a tiny file can claim gigapixels), and the pixels are
+ * re-encoded as a fresh PNG, which discards metadata, comments and any bytes appended after the
+ * image. Every failure surfaces as {@link IllegalArgumentException} with a generic message.
  */
 public final class TicketLogoProcessor {
 
@@ -20,20 +31,39 @@ public final class TicketLogoProcessor {
     public static final int WIDTH_58MM_DOTS = 384;
     public static final int WIDTH_80MM_DOTS = 576;
 
+    /** Largest accepted upload, in either dimension and in total pixels (decode memory ~ 4 bytes each). */
+    static final int MAX_DIMENSION = 4096;
+    static final long MAX_PIXELS = 12_000_000L;
+    /** More GIF frames than any sane logo needs; only the first one is ever used. */
+    static final int MAX_GIF_FRAMES = 100;
+    /** Cap on the stored (re-encoded) PNG. */
+    static final int MAX_STORED_BYTES = 1024 * 1024;
+
     private static final int STORED_MAX_WIDTH = 1024;
     /** The printed logo takes at most this share of the paper width, and stays a compact header. */
     private static final double PRINT_WIDTH_FRACTION = 0.5;
     private static final int PRINT_MAX_HEIGHT = 120;
     private static final int THRESHOLD = 128;
 
+    private static final Set<String> ALLOWED_FORMATS = Set.of("png", "jpeg", "gif");
+
+    static {
+        // Never spool a decoded image to a temp file on disk.
+        ImageIO.setUseCache(false);
+    }
+
     private TicketLogoProcessor() {}
 
-    /** Decode any ImageIO-readable upload, flatten transparency onto white, cap the size, re-encode as PNG. */
+    /** Validate any PNG/JPEG/GIF upload, flatten transparency onto white, cap the size, re-encode as PNG. */
     public static byte[] normalize(byte[] source) {
         BufferedImage decoded = decode(source);
         BufferedImage flat = flattenOnWhite(decoded);
         BufferedImage capped = scaleToFit(flat, STORED_MAX_WIDTH, STORED_MAX_WIDTH);
-        return encodePng(capped);
+        byte[] png = encodePng(capped);
+        if (png.length > MAX_STORED_BYTES) {
+            throw new IllegalArgumentException("The image is too complex; use a simpler or smaller logo");
+        }
+        return png;
     }
 
     /**
@@ -46,16 +76,77 @@ public final class TicketLogoProcessor {
         return encodePng(dither(scaled));
     }
 
-    private static BufferedImage decode(byte[] bytes) {
-        try {
-            BufferedImage image = ImageIO.read(new ByteArrayInputStream(bytes));
-            if (image == null) {
-                throw new IllegalArgumentException("Unsupported or corrupt image (use PNG, JPG or GIF)");
-            }
-            return image;
-        } catch (IOException e) {
-            throw new IllegalArgumentException("Could not read the image: " + e.getMessage(), e);
+    /** {@code png}, {@code jpeg} or {@code gif} by file signature; null for anything else. */
+    static String detectFormat(byte[] b) {
+        if (b == null || b.length < 12) {
+            return null;
         }
+        if ((b[0] & 0xFF) == 0x89 && b[1] == 'P' && b[2] == 'N' && b[3] == 'G'
+                && b[4] == 0x0D && b[5] == 0x0A && b[6] == 0x1A && b[7] == 0x0A) {
+            return "png";
+        }
+        if ((b[0] & 0xFF) == 0xFF && (b[1] & 0xFF) == 0xD8 && (b[2] & 0xFF) == 0xFF) {
+            return "jpeg";
+        }
+        if (b[0] == 'G' && b[1] == 'I' && b[2] == 'F' && b[3] == '8' && (b[4] == '7' || b[4] == '9') && b[5] == 'a') {
+            return "gif";
+        }
+        return null;
+    }
+
+    private static BufferedImage decode(byte[] bytes) {
+        String format = detectFormat(bytes);
+        if (format == null) {
+            throw new IllegalArgumentException("Unsupported image type (use PNG, JPG or GIF)");
+        }
+        try (ImageInputStream in = ImageIO.createImageInputStream(new ByteArrayInputStream(bytes))) {
+            ImageReader reader = readerFor(in, format);
+            try {
+                reader.setInput(in, false, true);
+                // Dimensions come from the header alone: nothing is allocated for pixels yet.
+                int width = reader.getWidth(0);
+                int height = reader.getHeight(0);
+                if (width <= 0 || height <= 0 || width > MAX_DIMENSION || height > MAX_DIMENSION
+                        || (long) width * height > MAX_PIXELS) {
+                    throw new IllegalArgumentException("The image is too large (max "
+                            + MAX_DIMENSION + "x" + MAX_DIMENSION + " pixels)");
+                }
+                if ("gif".equals(format) && reader.getNumImages(true) > MAX_GIF_FRAMES) {
+                    throw new IllegalArgumentException("Animated images with that many frames are not supported");
+                }
+                BufferedImage image = reader.read(0);
+                if (image == null) {
+                    throw new IllegalArgumentException("Could not read the image");
+                }
+                return image;
+            } finally {
+                reader.dispose();
+            }
+        } catch (IllegalArgumentException e) {
+            throw e;
+        } catch (IOException | RuntimeException | OutOfMemoryError e) {
+            // Corrupt or hostile data: report generically, never echo decoder internals.
+            throw new IllegalArgumentException("Could not read the image");
+        }
+    }
+
+    private static ImageReader readerFor(ImageInputStream in, String format) {
+        Iterator<ImageReader> readers = ImageIO.getImageReaders(in);
+        while (readers.hasNext()) {
+            ImageReader reader = readers.next();
+            String name;
+            try {
+                name = reader.getFormatName().toLowerCase(Locale.ROOT);
+            } catch (IOException e) {
+                reader.dispose();
+                continue;
+            }
+            if (ALLOWED_FORMATS.contains(name) && name.equals(format)) {
+                return reader;
+            }
+            reader.dispose();
+        }
+        throw new IllegalArgumentException("Unsupported image type (use PNG, JPG or GIF)");
     }
 
     private static BufferedImage flattenOnWhite(BufferedImage src) {
