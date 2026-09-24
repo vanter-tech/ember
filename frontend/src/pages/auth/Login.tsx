@@ -19,7 +19,6 @@ import { QuickStartCarousel } from './QuickStartCarousel'
 import { LanguageSwitcher } from '@/components/LanguageSwitcher'
 import { useTranslation } from '@/lib/i18n'
 import { isHubBuild } from '@/lib/isHubBuild'
-import { cn } from '@/lib/utils'
 
 import { Button } from '../../components/ui/button'
 import { Input } from '../../components/ui/input'
@@ -133,10 +132,7 @@ export const Login = () => {
                   <button
                     type="button"
                     onClick={() => setActiveChip(p)}
-                    className={cn(
-                      'flex h-44 w-44 flex-col items-center justify-center gap-3 rounded-3xl border bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md',
-                      p.role === 'ADMIN' && 'border-2 border-[#8c1717]',
-                    )}
+                    className="flex h-44 w-44 flex-col items-center justify-center gap-3 rounded-3xl border bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
                   >
                     <span
                       className="flex h-20 w-20 items-center justify-center rounded-full text-white text-2xl font-bold"
