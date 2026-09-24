@@ -59,7 +59,7 @@ export const StaffCard = ({ member, onViewProfile, onDeactivate }: StaffCardProp
 
         <div className="flex flex-col gap-0.5">
           <p className="text-base font-semibold text-foreground">{name}</p>
-          <p className="text-sm text-muted-foreground">{member.jobTitle || member.email}</p>
+          <p className="text-sm text-muted-foreground">{member.email}</p>
         </div>
 
         {metadata.length > 0 && (

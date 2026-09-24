@@ -11,7 +11,6 @@ public record StaffMemberResponse(
         Role role,
         Instant createdAt,
         Boolean active,
-        String jobTitle,
         String shift,
         String contractType,
         String location,

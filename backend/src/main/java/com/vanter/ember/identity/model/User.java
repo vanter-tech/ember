@@ -70,9 +70,6 @@ public class User {
     @Builder.Default
     private Boolean guest = false;
 
-    @Column(name = "job_title")
-    private String jobTitle;
-
     private String shift;
 
     @Column(name = "contract_type")

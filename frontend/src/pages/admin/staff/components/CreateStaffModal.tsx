@@ -45,7 +45,6 @@ const createStaffSchemaFactory = (t: ReturnType<typeof useTranslation<'admin'>>[
       .min(8, t('staffPasswordMinLengthError'))
       .regex(PASSWORD_REGEX, t('staffPasswordComplexityError')),
     role: z.enum(['WAITER', 'KITCHEN', 'ADMIN', 'ACCOUNTANT']),
-    jobTitle: z.string().min(1, t('staffJobTitleRequiredError')),
     shift: z.string().min(1, t('staffShiftRequiredError')),
     contractType: z.string().min(1, t('staffContractTypeRequiredError')),
     location: z.string().min(1, t('staffLocationRequiredError')),
@@ -67,7 +66,6 @@ export const CreateStaffModal = () => {
       email: '',
       password: '',
       role: 'WAITER',
-      jobTitle: '',
       shift: '',
       contractType: '',
       location: '',
@@ -184,23 +182,6 @@ export const CreateStaffModal = () => {
                       <SelectItem value="ADMIN">{ROLE_LABELS.ADMIN}</SelectItem>
                     </SelectContent>
                   </Select>
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="jobTitle"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t('jobTitleLabel')}</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder={t('jobTitlePlaceholder')}
-                      className="rounded-xl"
-                      {...field}
-                    />
-                  </FormControl>
                 </FormItem>
               )}
             />

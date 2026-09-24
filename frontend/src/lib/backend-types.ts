@@ -2551,7 +2551,6 @@ export interface components {
             password: string;
             /** @enum {string} */
             role: "CUSTOMER" | "WAITER" | "KITCHEN" | "ADMIN" | "ACCOUNTANT";
-            jobTitle: string;
             shift: string;
             contractType: string;
             location: string;
@@ -2565,7 +2564,6 @@ export interface components {
             /** Format: date-time */
             createdAt?: string;
             active?: boolean;
-            jobTitle?: string;
             shift?: string;
             contractType?: string;
             location?: string;
@@ -2703,7 +2701,6 @@ export interface components {
             role?: "CUSTOMER" | "WAITER" | "KITCHEN" | "ADMIN" | "ACCOUNTANT";
             active?: boolean;
             guest?: boolean;
-            jobTitle?: string;
             shift?: string;
             contractType?: string;
             location?: string;
@@ -2718,7 +2715,6 @@ export interface components {
         };
         UpdateStaffProfileRequest: {
             active?: boolean;
-            jobTitle?: string;
             shift?: string;
             contractType?: string;
             location?: string;

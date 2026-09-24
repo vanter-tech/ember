@@ -84,7 +84,7 @@ class UserAdminServiceTest {
         var result = userAdminService.create(
                 TENANT_A, new CreateStaffRequest(
                         "Ana", "ana@test.com", "Sup3r$ecret", Role.WAITER,
-                        "Mesera", "Mañana", "Tiempo completo", "Sucursal Centro"));
+                        "Mañana", "Tiempo completo", "Sucursal Centro"));
 
         ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
         verify(userRepository).save(captor.capture());
@@ -101,7 +101,7 @@ class UserAdminServiceTest {
         assertThatThrownBy(() -> userAdminService.create(
                 TENANT_A, new CreateStaffRequest(
                         "Ana", "ana@test.com", "Sup3r$ecret", Role.CUSTOMER,
-                        "Mesera", "Mañana", "Tiempo completo", "Sucursal Centro")))
+                        "Mañana", "Tiempo completo", "Sucursal Centro")))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("CUSTOMER");
     }
@@ -113,7 +113,7 @@ class UserAdminServiceTest {
         assertThatThrownBy(() -> userAdminService.create(
                 TENANT_A, new CreateStaffRequest(
                         "Ana", "ana@test.com", "Sup3r$ecret", Role.WAITER,
-                        "Mesera", "Mañana", "Tiempo completo", "Sucursal Centro")))
+                        "Mañana", "Tiempo completo", "Sucursal Centro")))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Email already in use");
     }
@@ -126,7 +126,7 @@ class UserAdminServiceTest {
         assertThatThrownBy(() -> userAdminService.create(
                 TENANT_A, new CreateStaffRequest(
                         "Ana", "ana@test.com", "Sup3r$ecret", Role.WAITER,
-                        "Mesera", "Mañana", "Tiempo completo", "Sucursal Centro")))
+                        "Mañana", "Tiempo completo", "Sucursal Centro")))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
@@ -141,7 +141,7 @@ class UserAdminServiceTest {
         assertThatThrownBy(() -> userAdminService.create(
                 TENANT_A, new CreateStaffRequest(
                         "Cook", "cook@test.com", "Sup3r$ecret", Role.KITCHEN,
-                        "Cocinero", "Mañana", "Tiempo completo", "Sucursal Centro")))
+                        "Mañana", "Tiempo completo", "Sucursal Centro")))
                 .isInstanceOf(com.vanter.ember.restaurant.exception.PlanLimitExceededException.class);
     }
 
@@ -156,7 +156,7 @@ class UserAdminServiceTest {
         assertThatThrownBy(() -> userAdminService.create(
                 TENANT_A, new CreateStaffRequest(
                         "Acc", "acc@test.com", "Sup3r$ecret", Role.ACCOUNTANT,
-                        "Contador", "Mañana", "Tiempo completo", "Sucursal Centro")))
+                        "Mañana", "Tiempo completo", "Sucursal Centro")))
                 .isInstanceOf(com.vanter.ember.restaurant.exception.PlanLimitExceededException.class);
     }
 
@@ -169,7 +169,7 @@ class UserAdminServiceTest {
 
         userAdminService.create(TENANT_A, new CreateStaffRequest(
                 "Wai", "w@test.com", "Sup3r$ecret", Role.WAITER,
-                "Mesera", "Mañana", "Tiempo completo", "Sucursal Centro"));
+                "Mañana", "Tiempo completo", "Sucursal Centro"));
 
         verify(planGateService, org.mockito.Mockito.never()).requirePlanAtLeast(any(), any(), any());
     }
@@ -253,7 +253,7 @@ class UserAdminServiceTest {
 
         var result = userAdminService.updateProfile(
                 "u-1", TENANT_A,
-                new UpdateStaffProfileRequest(false, null, null, null, null, null, null, null, null));
+                new UpdateStaffProfileRequest(false, null, null, null, null, null, null, null));
 
         assertThat(result.active()).isFalse();
         assertThat(result.shift()).isEqualTo("Mañana");
@@ -268,14 +268,13 @@ class UserAdminServiceTest {
 
         var result = userAdminService.updateProfile(
                 "u-1", TENANT_A,
-                new UpdateStaffProfileRequest(null, null, null, null, null, null, null, null, null));
+                new UpdateStaffProfileRequest(null, null, null, null, null, null, null, null));
 
         assertThat(result.id()).isEqualTo(existing.getId());
         assertThat(result.name()).isEqualTo(existing.getName());
         assertThat(result.email()).isEqualTo(existing.getEmail());
         assertThat(result.role()).isEqualTo(existing.getRole());
         assertThat(result.active()).isEqualTo(existing.getActive());
-        assertThat(result.jobTitle()).isEqualTo(existing.getJobTitle());
         assertThat(result.shift()).isEqualTo(existing.getShift());
         assertThat(result.contractType()).isEqualTo(existing.getContractType());
         assertThat(result.location()).isEqualTo(existing.getLocation());
@@ -291,7 +290,7 @@ class UserAdminServiceTest {
         when(userRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         var result = userAdminService.updateProfile("u-1", TENANT_A, new UpdateStaffProfileRequest(
-                null, null, null, null, null, null, null, "Ana Nueva", "ana.new@test.com"));
+                null, null, null, null, null, null, "Ana Nueva", "ana.new@test.com"));
 
         assertThat(result.name()).isEqualTo("Ana Nueva");
         assertThat(result.email()).isEqualTo("ana.new@test.com");
@@ -304,7 +303,7 @@ class UserAdminServiceTest {
         when(userRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         var result = userAdminService.updateProfile("u-1", TENANT_A, new UpdateStaffProfileRequest(
-                null, null, null, null, null, null, null, null, "ana@test.com"));
+                null, null, null, null, null, null, null, "ana@test.com"));
 
         assertThat(result.email()).isEqualTo("ana@test.com");
     }
@@ -316,7 +315,7 @@ class UserAdminServiceTest {
         when(userRepository.existsByEmail("taken@test.com")).thenReturn(true);
 
         assertThatThrownBy(() -> userAdminService.updateProfile("u-1", TENANT_A, new UpdateStaffProfileRequest(
-                null, null, null, null, null, null, null, null, "taken@test.com")))
+                null, null, null, null, null, null, null, "taken@test.com")))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Email already in use");
     }
@@ -327,7 +326,7 @@ class UserAdminServiceTest {
 
         assertThatThrownBy(() -> userAdminService.updateProfile(
                 "u-1", TENANT_A,
-                new UpdateStaffProfileRequest(false, null, null, null, null, null, null, null, null)))
+                new UpdateStaffProfileRequest(false, null, null, null, null, null, null, null)))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
@@ -337,7 +336,7 @@ class UserAdminServiceTest {
 
         assertThatThrownBy(() -> userAdminService.updateProfile(
                 "missing", TENANT_A,
-                new UpdateStaffProfileRequest(false, null, null, null, null, null, null, null, null)))
+                new UpdateStaffProfileRequest(false, null, null, null, null, null, null, null)))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
@@ -350,7 +349,7 @@ class UserAdminServiceTest {
 
         assertThatThrownBy(() -> userAdminService.updateProfile(
                 "a-1", TENANT_A,
-                new UpdateStaffProfileRequest(false, null, null, null, null, null, null, null, null)))
+                new UpdateStaffProfileRequest(false, null, null, null, null, null, null, null)))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("last active administrator");
 
@@ -367,7 +366,7 @@ class UserAdminServiceTest {
 
         var result = userAdminService.updateProfile(
                 "a-1", TENANT_A,
-                new UpdateStaffProfileRequest(false, null, null, null, null, null, null, null, null));
+                new UpdateStaffProfileRequest(false, null, null, null, null, null, null, null));
 
         assertThat(result.active()).isFalse();
     }
@@ -449,7 +448,7 @@ class UserAdminServiceTest {
 
         var result = userAdminService.updateProfile(
                 "u-1", TENANT_A,
-                new UpdateStaffProfileRequest(false, null, null, null, null, null, null, null, null));
+                new UpdateStaffProfileRequest(false, null, null, null, null, null, null, null));
 
         assertThat(result.active()).isFalse();
         assertThat(existing.getTokenVersion()).isEqualTo(1);
@@ -463,7 +462,7 @@ class UserAdminServiceTest {
 
         userAdminService.updateProfile(
                 "u-1", TENANT_A,
-                new UpdateStaffProfileRequest(null, null, null, null, null, null, null, "Ana Nueva", null));
+                new UpdateStaffProfileRequest(null, null, null, null, null, null, "Ana Nueva", null));
 
         assertThat(existing.getTokenVersion()).isZero();
     }

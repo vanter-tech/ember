@@ -131,11 +131,11 @@ class UserAdminControllerTest {
         TenantContextHolder.setTenantId(TENANT_ID);
         when(userAdminService.create(eq(TENANT_ID), any())).thenReturn(new StaffMemberResponse(
                 "u-new", "Ana", "ana@test.com", Role.WAITER, Instant.now(),
-                true, null, null, null, null, null, BigDecimal.ZERO, false));
+                true, null, null, null, null, BigDecimal.ZERO, false));
 
         CreateStaffRequest request = new CreateStaffRequest(
                 "Ana", "ana@test.com", "Sup3r$ecret", Role.WAITER,
-                "Mesera", "Mañana", "Tiempo completo", "Sucursal Centro");
+                "Mañana", "Tiempo completo", "Sucursal Centro");
         mockMvc.perform(post("/admin/staff")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -150,7 +150,7 @@ class UserAdminControllerTest {
     void createStaff_forbiddenForWaiter() throws Exception {
         CreateStaffRequest request = new CreateStaffRequest(
                 "Ana", "ana@test.com", "Sup3r$ecret", Role.WAITER,
-                "Mesera", "Mañana", "Tiempo completo", "Sucursal Centro");
+                "Mañana", "Tiempo completo", "Sucursal Centro");
         mockMvc.perform(post("/admin/staff")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -161,7 +161,7 @@ class UserAdminControllerTest {
     void createStaff_unauthenticatedReturns401() throws Exception {
         CreateStaffRequest request = new CreateStaffRequest(
                 "Ana", "ana@test.com", "Sup3r$ecret", Role.WAITER,
-                "Mesera", "Mañana", "Tiempo completo", "Sucursal Centro");
+                "Mañana", "Tiempo completo", "Sucursal Centro");
         mockMvc.perform(post("/admin/staff")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -173,19 +173,7 @@ class UserAdminControllerTest {
     void createStaff_returns400ForWeakPassword() throws Exception {
         CreateStaffRequest request = new CreateStaffRequest(
                 "Ana", "ana@test.com", "weak", Role.WAITER,
-                "Mesera", "Mañana", "Tiempo completo", "Sucursal Centro");
-        mockMvc.perform(post("/admin/staff")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    @WithMockUser(roles = "ADMIN")
-    void createStaff_returns400ForBlankJobTitle() throws Exception {
-        CreateStaffRequest request = new CreateStaffRequest(
-                "Ana", "ana@test.com", "Sup3r$ecret", Role.WAITER,
-                "", "Mañana", "Tiempo completo", "Sucursal Centro");
+                "Mañana", "Tiempo completo", "Sucursal Centro");
         mockMvc.perform(post("/admin/staff")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -198,7 +186,7 @@ class UserAdminControllerTest {
         TenantContextHolder.setTenantId(TENANT_ID);
         when(userAdminService.getStaff(TENANT_ID)).thenReturn(List.of(new StaffMemberResponse(
                 "u-1", "Ana", "ana@test.com", Role.WAITER, Instant.now(),
-                true, "Mesera", "Mañana", "Tiempo completo", null, null, BigDecimal.ZERO, false)));
+                true, "Mañana", "Tiempo completo", null, null, BigDecimal.ZERO, false)));
 
         mockMvc.perform(get("/admin/staff"))
                 .andExpect(status().isOk())
@@ -228,7 +216,7 @@ class UserAdminControllerTest {
         when(userAdminService.updateProfile(eq("u-1"), eq(TENANT_ID), any())).thenReturn(
                 new StaffMemberResponse(
                         "u-1", "Ana", "ana@test.com", Role.WAITER, Instant.now(),
-                        false, "Mesera", null, null, null, null, BigDecimal.ZERO, false));
+                        false, null, null, null, null, BigDecimal.ZERO, false));
 
         mockMvc.perform(patch("/admin/staff/u-1")
                         .contentType(MediaType.APPLICATION_JSON)

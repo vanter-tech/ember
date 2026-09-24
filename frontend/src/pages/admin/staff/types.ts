@@ -9,14 +9,14 @@ export type StaffFilter = 'ALL' | StaffRole
 export const STAFF_FILTERS: { value: StaffFilter; label: string }[] = [
   { value: 'ALL', label: 'Todos' },
   { value: 'KITCHEN', label: 'Cocina' },
-  { value: 'WAITER', label: 'Comedor' },
+  { value: 'WAITER', label: 'Mesero' },
   { value: 'ACCOUNTANT', label: 'Contador' },
   { value: 'ADMIN', label: 'Administración' },
 ]
 
 export const ROLE_LABELS: Record<string, string> = {
   KITCHEN: 'Cocina',
-  WAITER: 'Comedor',
+  WAITER: 'Mesero',
   ADMIN: 'Administración',
   ACCOUNTANT: 'Contador',
 }

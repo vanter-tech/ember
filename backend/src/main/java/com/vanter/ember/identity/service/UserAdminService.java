@@ -73,7 +73,6 @@ public class UserAdminService {
                 .email(request.email())
                 .passwordHash(passwordEncoder.encode(request.password()))
                 .role(request.role())
-                .jobTitle(request.jobTitle())
                 .shift(request.shift())
                 .contractType(request.contractType())
                 .location(request.location())
@@ -117,7 +116,6 @@ public class UserAdminService {
             }
             user.setActive(request.active());
         }
-        if (request.jobTitle() != null) user.setJobTitle(request.jobTitle());
         if (request.shift() != null) user.setShift(request.shift());
         if (request.contractType() != null) user.setContractType(request.contractType());
         if (request.location() != null) user.setLocation(request.location());
@@ -198,7 +196,6 @@ public class UserAdminService {
                 user.getRole(),
                 user.getCreatedAt(),
                 user.getActive(),
-                user.getJobTitle(),
                 user.getShift(),
                 user.getContractType(),
                 user.getLocation(),
