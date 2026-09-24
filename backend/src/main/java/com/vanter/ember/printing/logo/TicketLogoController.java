@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-@Tag(name = "Ticket logo", description = "Receipt logo printed at the top of the bill ticket")
+@Tag(name = "Ticket logo", description = "Logo printed at the top of the bill receipt and the kitchen ticket")
 @RestController
 @RequestMapping("/settings/ticket-logo")
 @RequiredArgsConstructor

@@ -14,7 +14,7 @@ export const admin = {
   settingsSavedToast: 'Configuración guardada con éxito',
   settingsSaveErrorToast: 'Error al guardar la configuración',
   ticketLogoLabel: 'Logo del ticket',
-  ticketLogoDescription: 'Se imprime arriba del ticket de cuenta, en blanco y negro y ajustado al ancho del papel.',
+  ticketLogoDescription: 'Se imprime arriba del ticket de cuenta y de la comanda de cocina, en blanco y negro y ajustado al ancho del papel.',
   ticketLogoUploadButton: 'Subir logo',
   ticketLogoReplaceButton: 'Cambiar logo',
   ticketLogoRemoveButton: 'Quitar logo',

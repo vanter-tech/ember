@@ -16,7 +16,7 @@ export const admin = {
   settingsSavedToast: 'Settings saved successfully',
   settingsSaveErrorToast: 'Failed to save settings',
   ticketLogoLabel: 'Ticket logo',
-  ticketLogoDescription: 'Printed at the top of the customer receipt, in black and white and sized to the paper width.',
+  ticketLogoDescription: 'Printed at the top of the customer receipt and the kitchen ticket, in black and white and sized to the paper width.',
   ticketLogoUploadButton: 'Upload logo',
   ticketLogoReplaceButton: 'Change logo',
   ticketLogoRemoveButton: 'Remove logo',

@@ -41,7 +41,7 @@ export const TicketSettings = () => {
   const [logoWidthPct, setLogoWidthPct] = useState<number | null>(null);
 
   // Same query as TicketLogoField, so this shares its cache: the customer-receipt preview shows
-  // the logo the way it prints (the kitchen ticket never carries one).
+  // the logo the way it prints (on the bill receipt and the kitchen ticket).
   const { data: logoBlob } = useQuery({
     queryKey: ['ticketLogo'],
     queryFn: () => ticketLogoService.get(),
@@ -131,6 +131,23 @@ export const TicketSettings = () => {
     .reduce((sum, rule) => sum + subtotal * ((rule.rate ?? 0) / 100), 0);
   const total = subtotal + taxAmount;
   const tipAmount = tipPercentage ? subtotal * (tipPercentage / 100) : 0;
+
+  // The logo as it prints (already 1-bit and sized for the saved paper width, <= half of it), shared
+  // by both previews: bill receipt and kitchen ticket carry it alike.
+  const logoImage = logoPreviewUrl ? (
+    <img
+      src={logoPreviewUrl}
+      alt={t('ticketLogoPreviewAlt')}
+      data-testid="ticket-preview-logo"
+      className="mx-auto h-auto max-w-full"
+      style={logoWidthPct ? { width: `${logoWidthPct}%` } : undefined}
+      onLoad={(e) => {
+        // Its share of the saved paper is its share of the preview paper too.
+        const paperDots = settings?.ticket?.paperWidth === 'MM_58' ? 384 : 576;
+        setLogoWidthPct(Math.min(100, (e.currentTarget.naturalWidth / paperDots) * 100));
+      }}
+    />
+  ) : null;
 
   const paperWidthClass = currentPaperWidth === 'MM_58' ? 'max-w-[220px] text-[10px]' : 'max-w-[300px] text-xs';
 
@@ -294,21 +311,7 @@ export const TicketSettings = () => {
               <div
                 className={`${paperWidthClass} w-full font-mono bg-white text-zinc-900 border border-zinc-200 shadow-sm p-4 space-y-2`}
               >
-                {logoPreviewUrl && (
-                  <img
-                    src={logoPreviewUrl}
-                    alt={t('ticketLogoPreviewAlt')}
-                    data-testid="ticket-preview-logo"
-                    className="mx-auto h-auto max-w-full"
-                    style={logoWidthPct ? { width: `${logoWidthPct}%` } : undefined}
-                    onLoad={(e) => {
-                      // The bitmap is already sized for the saved paper width (<= half of it), so
-                      // its share of that paper is its share of the preview paper too.
-                      const paperDots = settings?.ticket?.paperWidth === 'MM_58' ? 384 : 576;
-                      setLogoWidthPct(Math.min(100, (e.currentTarget.naturalWidth / paperDots) * 100));
-                    }}
-                  />
-                )}
+                {logoImage}
                 {currentHeaderMessage && (
                   <p className="text-center font-semibold whitespace-pre-wrap">{currentHeaderMessage}</p>
                 )}
@@ -365,6 +368,7 @@ export const TicketSettings = () => {
               <div
                 className={`${paperWidthClass} w-full font-mono bg-white text-zinc-900 border border-zinc-200 shadow-sm p-4 space-y-2`}
               >
+                {logoImage}
                 {currentHeaderMessage && (
                   <p className="text-center font-semibold whitespace-pre-wrap">{currentHeaderMessage}</p>
                 )}

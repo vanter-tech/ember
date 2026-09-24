@@ -50,14 +50,14 @@ describe('TicketSettings previews', () => {
     expect(screen.queryByTestId('ticket-preview-logo')).not.toBeInTheDocument()
   })
 
-  test('the kitchen ticket preview never shows the logo', async () => {
+  test('the kitchen ticket preview shows the logo too', async () => {
     vi.mocked(ticketLogoService.get).mockResolvedValue(new Blob(['x'], { type: 'image/png' }))
     const user = userEvent.setup()
     renderSettings()
 
     await user.click(await screen.findByRole('button', { name: /Comanda de cocina/ }))
 
-    expect(screen.queryByTestId('ticket-preview-logo')).not.toBeInTheDocument()
+    expect(await screen.findByTestId('ticket-preview-logo')).toBeVisible()
   })
 })
 

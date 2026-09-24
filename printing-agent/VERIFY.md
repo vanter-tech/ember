@@ -92,8 +92,8 @@ Bugs found here become their own follow-up tasks — do **not** fix them during 
   above the ticket text**, in black/white dots, and the text below is **left-aligned as usual**
   (not centered). Then: (a) switch paper width 58 ↔ 80 mm and reprint — the logo re-scales with no
   re-upload; (b) **Quitar logo** and reprint — text only; (c) with the backend unreachable but the
-  logo printed once before, the ticket still prints (cached copy); (d) a kitchen ticket never
-  carries the logo; (e) on a `DRIVER`-mode inkjet queue the logo is drawn at the top of the page.
+  logo printed once before, the ticket still prints (cached copy); (d) a kitchen ticket
+  carries the same logo above its text; (e) on a `DRIVER`-mode inkjet queue the logo is drawn at the top of the page.
   Record the printer model — dot density other than ~203 dpi may need the width constants in the
   backend's `TicketLogoProcessor` adjusted.
 
