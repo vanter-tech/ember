@@ -95,8 +95,26 @@ export const Login = () => {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-slate-50 p-4">
-      <Card className="w-full max-w-md shadow-lg relative">
+    <div className="relative flex items-center justify-center min-h-screen overflow-hidden bg-white p-4">
+      <div
+        className="pointer-events-none absolute inset-0 opacity-55"
+        aria-hidden="true"
+        style={{
+          backgroundImage: 'radial-gradient(circle, #e5e5e5 1px, transparent 1px)',
+          backgroundSize: '26px 26px',
+          maskImage: 'radial-gradient(60% 55% at 50% 40%, #000 0%, transparent 100%)',
+          WebkitMaskImage: 'radial-gradient(60% 55% at 50% 40%, #000 0%, transparent 100%)',
+        }}
+      />
+      <div
+        className="pointer-events-none absolute -right-[6%] top-[8%] h-[46rem] w-[46rem] rounded-full bg-[#920703] opacity-[0.12] blur-[90px]"
+        aria-hidden="true"
+      />
+      <div
+        className="pointer-events-none absolute -bottom-[8%] -left-[12%] h-[40rem] w-[40rem] rounded-full bg-[#920703] opacity-[0.09] blur-[90px]"
+        aria-hidden="true"
+      />
+      <Card className="w-full max-w-md shadow-lg relative z-10">
         <div className="absolute top-4 right-4">
           <LanguageSwitcher />
         </div>
@@ -125,22 +143,22 @@ export const Login = () => {
                   {editing ? tAuth('doneEditingChips') : tAuth('editChips')}
                 </button>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {profiles.map((p) => (
                   <div key={p.email} className="relative">
                     <button
                       type="button"
                       onClick={() => setActiveChip(p)}
-                      className="w-full flex items-center gap-2 rounded-2xl border p-2 hover:bg-zinc-50"
+                      className="w-full aspect-square flex flex-col items-center justify-center gap-2 rounded-3xl border bg-white p-3 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
                     >
                       <span
-                        className="flex h-9 w-9 items-center justify-center rounded-full text-white text-sm font-bold"
+                        className="flex h-16 w-16 items-center justify-center rounded-full text-white text-xl font-bold"
                         style={{ backgroundColor: `hsl(${p.colorSeed} 55% 45%)` }}
                       >
                         {p.initials}
                       </span>
-                      <span className="flex flex-col text-left">
-                        <span className="text-sm font-medium text-zinc-800 truncate">
+                      <span className="flex w-full flex-col items-center text-center">
+                        <span className="w-full text-sm font-medium text-zinc-800 truncate">
                           {p.name}
                         </span>
                         <span className="text-[10px] uppercase tracking-wide text-zinc-400">
@@ -153,7 +171,7 @@ export const Login = () => {
                         type="button"
                         aria-label={tAuth('removeChipAria', { name: p.name })}
                         onClick={() => forget(p.email)}
-                        className="absolute -right-1 -top-1 h-5 w-5 rounded-full bg-zinc-700 text-white text-xs"
+                        className="absolute right-1 top-1 h-5 w-5 rounded-full bg-zinc-700 text-white text-xs"
                       >
                         ×
                       </button>
