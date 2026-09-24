@@ -16,6 +16,8 @@ import { EditMenuModal } from './components/EditMenuModal'
 import { GlobalDeleteModal } from '@/components/GlobalDeleteModal'
 import { PaginationControls } from '@/components/PaginationControls'
 import { useTranslation } from '@/lib/i18n'
+import { cn } from '@/lib/utils'
+import { colorForGroup } from '@/lib/modifierGroupColors'
 
 export const ListMenuItem = () => {
   const queryClient = useQueryClient()
@@ -40,6 +42,12 @@ export const ListMenuItem = () => {
     queryFn: () => menuItemService.getAll(Number(id), page),
   })
   const menuItems = menuItemsPage?.content ?? []
+
+  const selectionTypeLabel = (type?: string) => {
+    if (type === 'SINGLE_REQUIRED') return t('selectionTypeSingleRequired')
+    if (type === 'MULTI_LIMITED') return t('selectionTypeMultiLimited')
+    return t('selectionTypeMultiOptional')
+  }
 
   if (isLoading) {
     return <div className="p-6 text-zinc-500">{t('loadingMenuItems')}</div>
@@ -92,6 +100,22 @@ export const ListMenuItem = () => {
                 {menuItem.name}
               </CardTitle>
               <CardDescription>{menuItem.description}</CardDescription>
+              {(menuItem.modifierGroups ?? []).length > 0 && (
+                <div className="flex flex-wrap gap-1.5" data-testid="menu-item-modifier-groups">
+                  {(menuItem.modifierGroups ?? []).map((group) => (
+                    <span
+                      key={group.id}
+                      title={selectionTypeLabel(group.selectionType)}
+                      className={cn(
+                        'rounded-full border px-2.5 py-0.5 text-xs font-medium',
+                        colorForGroup(group.id).idle.replace(/\shover:\S+/g, '')
+                      )}
+                    >
+                      {group.name}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
             <div className="flex flex-col items-end gap-6 p-4">
               <div className="">

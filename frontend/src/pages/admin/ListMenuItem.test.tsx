@@ -42,3 +42,40 @@ describe('ListMenuItem empty state', () => {
     expect(screen.queryByText('Esta categoría no tiene platillos')).not.toBeInTheDocument()
   })
 })
+
+describe('ListMenuItem modifier group badges', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  test('shows the assigned modifier groups on the dish card', async () => {
+    vi.mocked(menuItemService.getAll).mockResolvedValue({
+      content: [
+        {
+          id: 1,
+          name: 'Hamburguesa',
+          description: '',
+          price: 10,
+          available: true,
+          imageUrl: null,
+          modifierGroups: [
+            { id: 3, name: 'Término de cocción', selectionType: 'SINGLE_REQUIRED' },
+            { id: 5, name: 'Extras', selectionType: 'MULTI_OPTIONAL' },
+          ],
+        },
+      ],
+      totalPages: 1,
+    } as never)
+    wrap()
+    expect(await screen.findByText('Término de cocción')).toBeVisible()
+    expect(screen.getByText('Extras')).toBeVisible()
+  })
+
+  test('shows no modifier badges when the dish has none', async () => {
+    vi.mocked(menuItemService.getAll).mockResolvedValue({
+      content: [{ id: 1, name: 'Hamburguesa', description: '', price: 10, available: true, imageUrl: null, modifierGroups: [] }],
+      totalPages: 1,
+    } as never)
+    wrap()
+    await screen.findByText('Hamburguesa')
+    expect(screen.queryByTestId('menu-item-modifier-groups')).not.toBeInTheDocument()
+  })
+})
