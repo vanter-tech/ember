@@ -89,6 +89,8 @@ describe('ModifierGroupAssignmentField colors', () => {
 
     const first = await screen.findByRole('button', { name: /Grupo 1/ })
     const second = screen.getByRole('button', { name: /Grupo 2/ })
-    expect(first.className).not.toBe(second.className)
+    const dotClass = (el: HTMLElement) => el.querySelector('span[aria-hidden="true"]')?.className
+    expect(dotClass(first)).toBeTruthy()
+    expect(dotClass(first)).not.toBe(dotClass(second))
   })
 })

@@ -82,14 +82,19 @@ export const ModifierGroupAssignmentField = ({ value, onChange }: Props) => {
               onClick={() => group.id && toggle(group.id)}
               className={cn(
                 'flex cursor-pointer flex-col items-start gap-0.5 rounded-2xl border px-3 py-2 text-left text-sm transition-colors',
-                selected ? color.selected : color.idle
+                selected
+                  ? 'border-[#8c1717] bg-[#8c1717]/5 text-[#8c1717]'
+                  : 'border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50'
               )}
             >
               <span className="flex w-full items-center justify-between gap-2 font-medium">
-                <span className="truncate">{group.name}</span>
+                <span className="flex min-w-0 items-center gap-2">
+                  <span className={cn('h-2.5 w-2.5 shrink-0 rounded-full', color.dot)} aria-hidden="true" />
+                  <span className="truncate">{group.name}</span>
+                </span>
                 {selected && <Check className="h-4 w-4 shrink-0" aria-hidden="true" />}
               </span>
-              <span className={cn('text-xs', selected ? 'text-white/80' : 'opacity-75')}>
+              <span className="text-xs text-zinc-500">
                 {selectionTypeLabel(group.selectionType)} ·{' '}
                 {t('modifierGroupOptionsCount', { count: group.options?.length ?? 0 })}
               </span>
@@ -106,8 +111,9 @@ export const ModifierGroupAssignmentField = ({ value, onChange }: Props) => {
             return (
               <li
                 key={assignment.groupId}
-                className={cn('flex items-center gap-1 rounded-full border py-1 pl-3 pr-1 text-sm', color.pill)}
+                className="flex items-center gap-1.5 rounded-full border border-zinc-200 bg-zinc-50 py-1 pl-3 pr-1 text-sm text-zinc-700"
               >
+                <span className={cn('h-2.5 w-2.5 shrink-0 rounded-full', color.dot)} aria-hidden="true" />
                 <span className="font-semibold">{index + 1}.</span>
                 <span>{name}</span>
                 <button
@@ -115,7 +121,7 @@ export const ModifierGroupAssignmentField = ({ value, onChange }: Props) => {
                   aria-label={t('moveModifierGroupUpAria', { name })}
                   disabled={index === 0}
                   onClick={() => move(index, -1)}
-                  className="cursor-pointer rounded-full p-1 hover:bg-black/10 disabled:cursor-not-allowed disabled:opacity-30"
+                  className="cursor-pointer rounded-full p-1 hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-30"
                 >
                   <ArrowUp className="h-3.5 w-3.5" />
                 </button>
@@ -124,7 +130,7 @@ export const ModifierGroupAssignmentField = ({ value, onChange }: Props) => {
                   aria-label={t('moveModifierGroupDownAria', { name })}
                   disabled={index === ordered.length - 1}
                   onClick={() => move(index, 1)}
-                  className="cursor-pointer rounded-full p-1 hover:bg-black/10 disabled:cursor-not-allowed disabled:opacity-30"
+                  className="cursor-pointer rounded-full p-1 hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-30"
                 >
                   <ArrowDown className="h-3.5 w-3.5" />
                 </button>

@@ -13,12 +13,6 @@ import { useTranslation } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { colorForGroup } from '@/lib/modifierGroupColors'
 
-// Card, type badge and option chips share the group's color; hover styles are dropped (static).
-const tone = (id?: number) => {
-  const idle = colorForGroup(id).idle.replace(/\shover:\S+/g, '')
-  return { card: idle, badge: idle, chip: idle }
-}
-
 export const ModifierGroups = () => {
   const { openModal } = useUIStore()
   const { t } = useTranslation('admin')
@@ -68,7 +62,7 @@ export const ModifierGroups = () => {
         {groups.map((group) => (
           <Card
             key={group.id}
-            className={cn('p-4 rounded-3xl flex flex-col gap-2 border', tone(group.id).card)}
+            className={cn('flex flex-col gap-2 rounded-3xl border border-l-4 border-zinc-200 p-4', colorForGroup(group.id).accent)}
           >
             <div className="flex items-center justify-between">
               <CardTitle>{group.name}</CardTitle>
@@ -76,7 +70,7 @@ export const ModifierGroups = () => {
                 <Pencil className="h-4 w-4" />
               </Button>
             </div>
-            <Badge variant="outline" className={cn('w-fit', tone(group.id).badge)}>
+            <Badge variant="outline" className="w-fit text-zinc-600">
               {selectionTypeLabel(group.selectionType)}
             </Badge>
             <div className="flex flex-wrap gap-1.5">
@@ -85,11 +79,9 @@ export const ModifierGroups = () => {
                 .map((o) => (
                   <span
                     key={o.id}
-                    className={cn(
-                      'rounded-full border px-2.5 py-0.5 text-xs font-medium',
-                      tone(group.id).chip
-                    )}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-zinc-50 px-2.5 py-0.5 text-xs font-medium text-zinc-700"
                   >
+                    <span className={cn('h-2 w-2 rounded-full', colorForGroup(group.id).dot)} aria-hidden="true" />
                     {o.name}
                     {(o.priceDelta ?? 0) > 0 && ` +$${o.priceDelta}`}
                   </span>

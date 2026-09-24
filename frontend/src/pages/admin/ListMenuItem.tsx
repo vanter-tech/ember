@@ -106,11 +106,12 @@ export const ListMenuItem = () => {
                     <span
                       key={group.id}
                       title={selectionTypeLabel(group.selectionType)}
-                      className={cn(
-                        'rounded-full border px-2.5 py-0.5 text-xs font-medium',
-                        colorForGroup(group.id).idle.replace(/\shover:\S+/g, '')
-                      )}
+                      className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-zinc-50 px-2.5 py-0.5 text-xs font-medium text-zinc-700"
                     >
+                      <span
+                        className={cn('h-2 w-2 rounded-full', colorForGroup(group.id).dot)}
+                        aria-hidden="true"
+                      />
                       {group.name}
                     </span>
                   ))}
