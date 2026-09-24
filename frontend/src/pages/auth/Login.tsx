@@ -16,7 +16,7 @@ import { QuickLoginModal } from './QuickLoginModal'
 import { AuthBackground } from './AuthBackground'
 import { PoweredByVanter } from './PoweredByVanter'
 import { QuickStartCarousel } from './QuickStartCarousel'
-import { LanguageSwitcher } from '@/components/LanguageSwitcher'
+import { LanguageFab } from './LanguageFab'
 import { useTranslation } from '@/lib/i18n'
 import { isHubBuild } from '@/lib/isHubBuild'
 
@@ -101,9 +101,6 @@ export const Login = () => {
       <AuthBackground />
       {chipsVisible ? (
         <div className="relative z-10 flex w-full max-w-5xl flex-col items-center gap-8">
-          <div className="absolute -top-2 right-0">
-            <LanguageSwitcher />
-          </div>
           <div className="text-center">
             <h1 className="text-4xl font-bold text-[#920703]">
               {tAuth('loginTagline')}
@@ -170,9 +167,6 @@ export const Login = () => {
         </div>
       ) : (
       <Card className="w-full max-w-md gap-6 py-10 shadow-lg relative z-10">
-        <div className="absolute top-4 right-4">
-          <LanguageSwitcher />
-        </div>
         <CardHeader className="px-8">
           <CardTitle className="text-3xl text-center text-[#920703] font-bold">
             {tAuth('loginTagline')}
@@ -297,6 +291,7 @@ export const Login = () => {
         <QuickLoginModal profile={activeChip} onClose={() => setActiveChip(null)} />
       )}
       <PoweredByVanter />
+      <LanguageFab />
     </div>
   )
 }
