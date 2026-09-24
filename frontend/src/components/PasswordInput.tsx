@@ -14,7 +14,7 @@ export const PasswordInput = ({ className, ...props }: PasswordInputProps) => {
 
   return (
     <div className="relative w-full">
-      <Input {...props} type={visible ? 'text' : 'password'} className={cn('pr-11', className)} />
+      <Input {...props} type={visible ? 'text' : 'password'} className={cn('pr-11 [&::-ms-clear]:hidden [&::-ms-reveal]:hidden', className)} />
       <button
         type="button"
         tabIndex={-1}
