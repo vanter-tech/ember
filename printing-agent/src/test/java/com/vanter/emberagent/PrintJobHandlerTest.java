@@ -63,6 +63,39 @@ class PrintJobHandlerTest {
     }
 
     @Test
+    void handle_jobFlaggedWithALogo_fetchesItAndStillPrintsWhenThereIsNone() throws Exception {
+        server.enqueue(new MockResponse.Builder().code(200).body(PRINTER_JSON)
+                .addHeader("Content-Type", "application/json").build());
+        server.enqueue(new MockResponse.Builder().code(404).build());
+
+        PrintJobDispatcher dispatcher = new PrintJobDispatcher(
+                new NetworkPrinterSender(), new UsbPrinterSender(), new WindowsPrintQueueSender());
+        PrintJobHandler handler = new PrintJobHandler(
+                new PrinterConfigClient(), dispatcher, server.url("/").toString(), "fake-jwt");
+        List<Object[]> acks = new ArrayList<>();
+
+        handler.handle(new AgentConnection.PrintJobPayload("job-1", "KITCHEN", "payload-1", true),
+                (jobId, printerConfigId, result, error) -> acks.add(new Object[] {jobId, result}));
+
+        assertEquals(2, server.getRequestCount(), "printers list + logo");
+        assertEquals(1, acks.size(), "a missing logo must not stop the ticket");
+    }
+
+    @Test
+    void handle_jobWithoutTheLogoFlag_neverRequestsTheLogo() throws Exception {
+        server.enqueue(new MockResponse.Builder().code(200).body(PRINTER_JSON)
+                .addHeader("Content-Type", "application/json").build());
+
+        PrintJobDispatcher dispatcher = new PrintJobDispatcher(
+                new NetworkPrinterSender(), new UsbPrinterSender(), new WindowsPrintQueueSender());
+        new PrintJobHandler(new PrinterConfigClient(), dispatcher, server.url("/").toString(), "fake-jwt")
+                .handle(new AgentConnection.PrintJobPayload("job-1", "KITCHEN", "payload-1"),
+                        (jobId, printerConfigId, result, error) -> {});
+
+        assertEquals(1, server.getRequestCount());
+    }
+
+    @Test
     void handle_printerFetchFails_acksErrorInsteadOfThrowing() throws Exception {
         server.enqueue(new MockResponse.Builder().code(500).body("boom").build());
 

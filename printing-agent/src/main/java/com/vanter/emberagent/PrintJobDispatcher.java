@@ -37,6 +37,15 @@ public class PrintJobDispatcher {
             AgentConnection.PrintJobPayload job,
             List<PrinterConfigClient.PrinterConfigDto> printers,
             AckCallback ackCallback) {
+        dispatch(job, printers, null, ackCallback);
+    }
+
+    /** {@code logoPng} (nullable) is printed above the text on every matching printer. */
+    public void dispatch(
+            AgentConnection.PrintJobPayload job,
+            List<PrinterConfigClient.PrinterConfigDto> printers,
+            byte[] logoPng,
+            AckCallback ackCallback) {
         System.out.println("[print-agent] job recibido id=" + job.jobId() + " role=" + job.role()
                 + " impresoras conocidas=" + printers.size());
 
@@ -50,11 +59,11 @@ public class PrintJobDispatcher {
                     + printer.label() + "' (" + printer.connectionType() + ")");
             try {
                 if ("NETWORK".equals(printer.connectionType())) {
-                    networkPrinterSender.print(printer, job.payload());
+                    networkPrinterSender.print(printer, job.payload(), logoPng);
                 } else if ("WINDOWS_QUEUE".equals(printer.connectionType())) {
-                    windowsPrintQueueSender.print(printer, job.payload());
+                    windowsPrintQueueSender.print(printer, job.payload(), logoPng);
                 } else {
-                    usbPrinterSender.print(printer, job.payload());
+                    usbPrinterSender.print(printer, job.payload(), logoPng);
                 }
                 System.out.println("[print-agent] job " + job.jobId() + " impreso correctamente en '"
                         + printer.label() + "'");

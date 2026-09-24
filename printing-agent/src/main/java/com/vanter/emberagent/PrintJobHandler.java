@@ -24,6 +24,7 @@ public class PrintJobHandler {
     private final String backendBaseUrl;
     private final String jwt;
     private final StatusHub status;
+    private final TicketLogoClient logoClient = new TicketLogoClient();
 
     public PrintJobHandler(
             PrinterConfigClient printerConfigClient,
@@ -64,6 +65,8 @@ public class PrintJobHandler {
             recording.ack(job.jobId(), null, "ERROR", error);
             return;
         }
-        dispatcher.dispatch(job, printers, recording);
+        // Best effort: TicketLogoClient never throws, and a missing logo just means a text-only ticket.
+        byte[] logo = job.logo() ? logoClient.fetch(backendBaseUrl, jwt).orElse(null) : null;
+        dispatcher.dispatch(job, printers, logo, recording);
     }
 }
