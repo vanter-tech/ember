@@ -1,6 +1,8 @@
 export const kitchen = {
   loadingOrders: 'Cargando pedidos...',
   loadingOrdersError: 'No se pudieron cargar los pedidos.',
+  kdsEmptyTitle: 'No hay pedidos en cola',
+  kdsEmptyDescription: 'Los nuevos pedidos de las mesas aparecerán aquí en tiempo real.',
   connected: 'Conectado',
   disconnected: 'Desconectado',
   kdsSubtitle: 'Monitor de cocina - KDS',

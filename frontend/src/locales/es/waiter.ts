@@ -4,6 +4,8 @@ export const waiter = {
   statusOccupied: 'Ocupado',
   statusFree: 'Libre',
   needOpenCajaOverlay: 'Necesita abrir la caja para poder asignar mesa.',
+  tablesEmptyTitle: 'Todavía no hay mesas configuradas',
+  tablesEmptyDescription: 'Pide al administrador que agregue mesas desde la configuración del restaurante.',
   tableDetailsTitle: 'Detalles de mesa',
   waiterLabel: 'Mesero',
   unassignedLabel: 'Sin asignar',

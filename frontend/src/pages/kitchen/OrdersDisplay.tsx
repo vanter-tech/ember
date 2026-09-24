@@ -5,6 +5,8 @@ import { FocusedCard } from './components/FocusedCard'
 import { useWebsocketStore } from '@/store/websocket'
 import { Badge } from '@/components/ui/badge'
 import { LanguageSwitcher } from '@/components/LanguageSwitcher'
+import { EmptyState } from '@/components/EmptyState'
+import { ChefHat } from 'lucide-react'
 import { useTranslation } from '@/lib/i18n'
 
 export const OrdersDisplays = () => {
@@ -67,9 +69,13 @@ export const OrdersDisplays = () => {
         </span>
       </div>
       <div className="flex flex-1 items-start gap-6 overflow-x-auto p-6">
-        {orders.map((item, index) => (
-          <QueueCard key={item?.id ?? index} order={item!} />
-        ))}
+        {orders.length === 0 ? (
+          <div className="flex w-full items-center justify-center">
+            <EmptyState icon={ChefHat} title={t('kdsEmptyTitle')} description={t('kdsEmptyDescription')} />
+          </div>
+        ) : (
+          orders.map((item, index) => <QueueCard key={item?.id ?? index} order={item!} />)
+        )}
       </div>
       {orders.length > 0 && (
         <div className="w-full px-6 pb-6">

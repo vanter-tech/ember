@@ -10,6 +10,7 @@ import { Armchair, Users } from 'lucide-react'
 import { useUIStore } from '@/store/uiStore'
 import { Link } from 'react-router-dom'
 import { useTranslation } from '@/lib/i18n'
+import { EmptyState } from '@/components/EmptyState'
 import { WaiterTour } from './components/WaiterTour'
 
 export const Tables = () => {
@@ -96,6 +97,15 @@ export const Tables = () => {
               <span className="max-w-[80%] text-center text-lg font-semibold text-[#8c1717]">
                 {t('needOpenCajaOverlay')}
               </span>
+            </div>
+          )}
+          {isCajaOpen && (dashboardData?.length ?? 0) === 0 && (
+            <div className="col-span-full">
+              <EmptyState
+                icon={Armchair}
+                title={t('tablesEmptyTitle')}
+                description={t('tablesEmptyDescription')}
+              />
             </div>
           )}
           {dashboardData?.map((table) => (

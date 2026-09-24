@@ -8,7 +8,8 @@ import { useAuthStore } from '@/store/authStore'
 import { Card, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Pencil } from 'lucide-react'
+import { Pencil, Warehouse } from 'lucide-react'
+import { EmptyState } from '@/components/EmptyState'
 import { NewInventoryItemModal } from './components/NewInventoryItemModal'
 import { EditInventoryItemModal } from './components/EditInventoryItemModal'
 import { SectionTour } from '@/components/tours/SectionTour'
@@ -80,7 +81,14 @@ export const Inventory = () => {
 
   return (
     <div>
-      <div id="inventory-tour-grid" className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div id="inventory-tour-grid" className={items.length === 0 ? '' : 'grid grid-cols-1 md:grid-cols-2 gap-4'}>
+        {items.length === 0 && (
+          <EmptyState
+            icon={Warehouse}
+            title={t('inventoryEmptyTitle')}
+            description={t('inventoryEmptyDescription')}
+          />
+        )}
         {items.map((item) => (
           <Card key={item.id} className="p-4 rounded-3xl flex flex-col gap-2">
             <div className="flex items-center justify-between">

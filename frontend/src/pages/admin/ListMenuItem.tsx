@@ -5,7 +5,8 @@ import { menuItemService } from '@/lib/api'
 import { useUIStore } from '@/store/uiStore'
 import { Card, CardDescription, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Pencil, Trash2 } from 'lucide-react'
+import { Pencil, Trash2, UtensilsCrossed } from 'lucide-react'
+import { EmptyState } from '@/components/EmptyState'
 import { NewMenuModal } from '@/pages/admin/components/NewMenuModal'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
@@ -53,6 +54,13 @@ export const ListMenuItem = () => {
   return (
     <div className="p-6">
       <div className="grid grid:cols-1 gap-6">
+        {menuItems.length === 0 && (
+          <EmptyState
+            icon={UtensilsCrossed}
+            title={t('menuItemsEmptyTitle')}
+            description={t('menuItemsEmptyDescription')}
+          />
+        )}
         {menuItems.map((menuItem) => (
           <Card
             key={menuItem.id}

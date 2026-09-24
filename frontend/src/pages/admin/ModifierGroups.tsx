@@ -3,8 +3,9 @@ import { modifierGroupService } from '@/lib/api'
 import { useUIStore } from '@/store/uiStore'
 import { Card, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Pencil } from 'lucide-react'
+import { Pencil, SlidersHorizontal } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import { EmptyState } from '@/components/EmptyState'
 import { NewModifierGroupModal } from './components/NewModifierGroupModal'
 import { EditModifierGroupModal } from './components/EditModifierGroupModal'
 import { SectionTour } from '@/components/tours/SectionTour'
@@ -38,7 +39,17 @@ export const ModifierGroups = () => {
 
   return (
     <div>
-      <div id="modifiers-tour-grid" className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div
+        id="modifiers-tour-grid"
+        className={groups.length === 0 ? '' : 'grid grid-cols-1 md:grid-cols-2 gap-4'}
+      >
+        {groups.length === 0 && (
+          <EmptyState
+            icon={SlidersHorizontal}
+            title={t('modifierGroupsEmptyTitle')}
+            description={t('modifierGroupsEmptyDescription')}
+          />
+        )}
         {groups.map((group) => (
           <Card key={group.id} className="p-4 rounded-3xl flex flex-col gap-2">
             <div className="flex items-center justify-between">

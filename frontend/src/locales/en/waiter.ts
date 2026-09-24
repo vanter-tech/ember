@@ -6,6 +6,8 @@ export const waiter = {
   statusOccupied: 'Occupied',
   statusFree: 'Free',
   needOpenCajaOverlay: 'You need to open the register to assign a table.',
+  tablesEmptyTitle: 'No tables set up yet',
+  tablesEmptyDescription: 'Ask an admin to add tables from the restaurant settings.',
   tableDetailsTitle: 'Table details',
   waiterLabel: 'Waiter',
   unassignedLabel: 'Unassigned',

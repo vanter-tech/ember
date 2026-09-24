@@ -2,9 +2,10 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { categoryService } from '@/lib/api'
 import { Button } from '../../components/ui/button'
-import { Pencil, Trash2 } from 'lucide-react'
+import { Pencil, Trash2, FolderOpen } from 'lucide-react'
 
 import { useUIStore } from '@/store/uiStore'
+import { EmptyState } from '@/components/EmptyState'
 
 import { NewCategoryModal } from '@/pages/admin/components/NewCategoryModal'
 import { EditCategoryModal } from '@/pages/admin/components/EditCategoryModal'
@@ -57,7 +58,17 @@ export const Category = () => {
 
   return (
     <div>
-      <div id="category-tour-grid" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div
+        id="category-tour-grid"
+        className={categories.length === 0 ? '' : 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'}
+      >
+        {categories.length === 0 && (
+          <EmptyState
+            icon={FolderOpen}
+            title={t('categoriesEmptyTitle')}
+            description={t('categoriesEmptyDescription')}
+          />
+        )}
         {categories.map((Category) => (
           <Link key={Category.id} to={Category.id + '/items'}>
             <div
