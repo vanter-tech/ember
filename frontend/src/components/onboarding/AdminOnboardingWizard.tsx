@@ -12,7 +12,7 @@ import { useTranslation } from '@/lib/i18n'
 type SettingsPayload = components['schemas']['SettingsPayload']
 type WizardStep = 'welcome' | 'businessName' | 'tables' | 'done'
 
-export const AdminOnboardingWizard = () => {
+export const AdminOnboardingWizard = ({ onFinish }: { onFinish?: () => void }) => {
   const { t } = useTranslation('admin')
   const queryClient = useQueryClient()
   const { data: settings } = useQuery({
@@ -124,7 +124,7 @@ export const AdminOnboardingWizard = () => {
           <div className="space-y-6 text-center">
             <h1 className="text-2xl font-bold text-[#7a1315]">{t('onboardingDoneTitle')}</h1>
             <p className="text-zinc-600">{t('onboardingDoneDescription')}</p>
-            <Link to="/admin/settings">
+            <Link to="/admin/analytics" onClick={onFinish}>
               <Button className="w-full">{t('onboardingFinishButton')}</Button>
             </Link>
           </div>
