@@ -37,6 +37,7 @@ export const TicketSettings = () => {
 
   const [draftTicket, setDraftTicket] = useState<Partial<TicketSettings> | undefined>(undefined);
   const [previewOpen, setPreviewOpen] = useState<PreviewKind | null>(null);
+  const [logoWidthPct, setLogoWidthPct] = useState<number | null>(null);
 
   // Same query as TicketLogoField, so this shares its cache: the customer-receipt preview shows
   // the logo the way it prints (the kitchen ticket never carries one).
@@ -266,7 +267,14 @@ export const TicketSettings = () => {
                     src={logoPreviewUrl}
                     alt={t('ticketLogoPreviewAlt')}
                     data-testid="ticket-preview-logo"
-                    className="mx-auto max-h-24 max-w-full object-contain"
+                    className="mx-auto h-auto max-w-full"
+                    style={logoWidthPct ? { width: `${logoWidthPct}%` } : undefined}
+                    onLoad={(e) => {
+                      // The bitmap is already sized for the saved paper width (<= half of it), so
+                      // its share of that paper is its share of the preview paper too.
+                      const paperDots = settings?.ticket?.paperWidth === 'MM_58' ? 384 : 576;
+                      setLogoWidthPct(Math.min(100, (e.currentTarget.naturalWidth / paperDots) * 100));
+                    }}
                   />
                 )}
                 {currentHeaderMessage && (

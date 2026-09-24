@@ -21,7 +21,9 @@ public final class TicketLogoProcessor {
     public static final int WIDTH_80MM_DOTS = 576;
 
     private static final int STORED_MAX_WIDTH = 1024;
-    private static final int PRINT_MAX_HEIGHT = 300;
+    /** The printed logo takes at most this share of the paper width, and stays a compact header. */
+    private static final double PRINT_WIDTH_FRACTION = 0.5;
+    private static final int PRINT_MAX_HEIGHT = 120;
     private static final int THRESHOLD = 128;
 
     private TicketLogoProcessor() {}
@@ -34,9 +36,13 @@ public final class TicketLogoProcessor {
         return encodePng(capped);
     }
 
-    /** 1-bit PNG no wider than {@code widthDots} (and no taller than a sane header), dithered. */
-    public static byte[] toBitonalPng(byte[] normalizedPng, int widthDots) {
-        BufferedImage scaled = scaleToFit(flattenOnWhite(decode(normalizedPng)), widthDots, PRINT_MAX_HEIGHT);
+    /**
+     * 1-bit PNG for a paper {@code paperWidthDots} wide: at most half that width and 120 dots
+     * tall, aspect preserved, never upscaled, dithered. The agent centers it on the line.
+     */
+    public static byte[] toBitonalPng(byte[] normalizedPng, int paperWidthDots) {
+        int maxWidth = (int) Math.round(paperWidthDots * PRINT_WIDTH_FRACTION);
+        BufferedImage scaled = scaleToFit(flattenOnWhite(decode(normalizedPng)), maxWidth, PRINT_MAX_HEIGHT);
         return encodePng(dither(scaled));
     }
 

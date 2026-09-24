@@ -45,13 +45,13 @@ class TicketLogoProcessorTest {
     }
 
     @Test
-    void toBitonalPng_scalesDownToPaperWidthKeepingAspectRatio() throws Exception {
+    void toBitonalPng_scalesDownToHalfThePaperWidthKeepingAspectRatio() throws Exception {
         byte[] wide = TicketLogoProcessor.normalize(png(1000, 250, Color.BLACK, false));
 
         BufferedImage out = read(TicketLogoProcessor.toBitonalPng(wide, TicketLogoProcessor.WIDTH_58MM_DOTS));
 
-        assertThat(out.getWidth()).isEqualTo(384);
-        assertThat(out.getHeight()).isEqualTo(96);
+        assertThat(out.getWidth()).isEqualTo(192);
+        assertThat(out.getHeight()).isEqualTo(48);
     }
 
     @Test
@@ -67,7 +67,7 @@ class TicketLogoProcessorTest {
     void toBitonalPng_capsTheHeightOfATallLogo() throws Exception {
         BufferedImage out = read(TicketLogoProcessor.toBitonalPng(png(200, 900, Color.BLACK, false), 576));
 
-        assertThat(out.getHeight()).isLessThanOrEqualTo(300);
+        assertThat(out.getHeight()).isLessThanOrEqualTo(120);
     }
 
     @Test
