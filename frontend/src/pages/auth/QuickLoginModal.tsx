@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Hash, Lock } from 'lucide-react'
 import axios from 'axios'
 import toast from 'react-hot-toast'
 import { useNavigate } from 'react-router-dom'
@@ -120,15 +121,22 @@ export const QuickLoginModal = ({
               aria-pressed={mode === m}
               onClick={() => pickMode(m)}
               className={cn(
-                'rounded-xl border px-3 py-2 text-sm font-medium transition-colors',
+                'flex cursor-pointer items-center justify-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium transition-colors',
                 mode === m
                   ? 'border-[#920703] bg-[#920703]/5 text-[#920703]'
                   : 'border-input text-zinc-600 hover:bg-zinc-50'
               )}
             >
-              {m === 'pin'
-                ? tAuth('quickLoginPinLabel')
-                : tAuth('quickLoginPasswordLabel')}
+              {m === 'pin' ? (
+                <Hash className="h-4 w-4" aria-hidden="true" />
+              ) : (
+                <Lock className="h-4 w-4" aria-hidden="true" />
+              )}
+              <span>
+                {m === 'pin'
+                  ? tAuth('quickLoginPinLabel')
+                  : tAuth('quickLoginPasswordLabel')}
+              </span>
             </button>
           ))}
         </div>
@@ -168,7 +176,11 @@ export const QuickLoginModal = ({
               {error && <p className="text-sm text-red-600">{error}</p>}
             </>
           )}
-          <Button type="submit" disabled={busy || !mode || value.length < 4}>
+          <Button
+            type="submit"
+            className="disabled:cursor-not-allowed"
+            disabled={busy || !mode || value.length < 4}
+          >
             {tAuth('quickLoginSubmit')}
           </Button>
         </form>

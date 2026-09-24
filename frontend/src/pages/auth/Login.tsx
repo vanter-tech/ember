@@ -117,7 +117,7 @@ export const Login = () => {
               </span>
               <button
                 type="button"
-                className="text-sm text-zinc-500 hover:underline"
+                className="cursor-pointer text-sm text-zinc-500 hover:underline"
                 onClick={() => setEditing((e) => !e)}
               >
                 {editing ? tAuth('doneEditingChips') : tAuth('editChips')}
@@ -151,7 +151,7 @@ export const Login = () => {
                       type="button"
                       aria-label={tAuth('removeChipAria', { name: p.name })}
                       onClick={() => forget(p.email)}
-                      className="absolute right-2 top-2 h-6 w-6 rounded-full bg-zinc-700 text-white text-sm"
+                      className="absolute right-2 top-2 h-6 w-6 rounded-full cursor-pointer bg-zinc-700 text-white text-sm"
                     >
                       ×
                     </button>
@@ -161,7 +161,7 @@ export const Login = () => {
             </QuickStartCarousel>
             <button
               type="button"
-              className="mx-auto text-sm text-zinc-600 hover:underline"
+              className="mx-auto cursor-pointer text-sm text-zinc-600 hover:underline"
               onClick={() => setShowForm(true)}
             >
               {tAuth('useAnotherAccount')}
