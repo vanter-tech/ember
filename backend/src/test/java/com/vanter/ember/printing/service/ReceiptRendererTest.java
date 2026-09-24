@@ -142,6 +142,27 @@ class ReceiptRendererTest {
     }
 
     @Test
+    void render_endsWithTheTipLine_whenTheTipSettingIsOn() {
+        givenBill("10.00", item("Pizza", "10.00", OrderItemStatus.DELIVERED));
+        settings.getBilling().setTaxRate(0.0);
+        settings.getTicket().setShowTip(true);
+
+        String out = renderer.render(12L, settings);
+
+        assertThat(out.stripTrailing()).endsWith("PROPINA: " + "_".repeat(33));
+        assertThat(out.indexOf("Gracias por visitarnos")).isLessThan(out.indexOf("PROPINA:"));
+    }
+
+    @Test
+    void render_hasNoTipLine_whenTheTipSettingIsOff() {
+        givenBill("10.00", item("Pizza", "10.00", OrderItemStatus.DELIVERED));
+        settings.getBilling().setTaxRate(0.0);
+        settings.getTicket().setShowTip(false);
+
+        assertThat(renderer.render(12L, settings)).doesNotContain("PROPINA");
+    }
+
+    @Test
     void render_hidesTheTaxBreakdown_whenSettingsSayNo() {
         givenBill("57.50", item("Hamburguesa", "50.00", OrderItemStatus.DELIVERED));
         settings.getTicket().setShowTaxBreakdown(false);

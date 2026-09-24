@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useTranslation } from '@/lib/i18n';
 import { TicketLogoField } from './TicketLogoField';
-import { businessInfoLines } from '@/lib/receiptBusinessInfo';
+import { businessInfoLines, hoursLines } from '@/lib/receiptBusinessInfo';
 
 type SettingsPayload = components['schemas']['SettingsPayload'];
 type TicketSettings = components['schemas']['TicketSettings'];
@@ -122,15 +122,23 @@ export const TicketSettings = () => {
     showInfo: currentShowBusinessInfo,
   });
   const currencySymbol = settings?.billing?.currencySymbol ?? 'S/';
+  const taxRate = settings?.billing?.taxRate ?? 0;
   const taxRules = settings?.billing?.taxRules ?? [];
-  const tipPercentage = settings?.billing?.suggestedTipPercentage?.[0];
+  // The printed ticket uses the single tax rate; explicit rules, when defined, are listed one by one.
+  const taxRows =
+    taxRules.length > 0
+      ? taxRules
+      : taxRate > 0
+        ? [{ name: t('ticketPreviewTaxLabel'), rate: taxRate, includedInPrice: false }]
+        : [];
+  const taxMissing = currentShowTaxBreakdown && taxRows.length === 0;
+  const hoursMissing = currentShowBusinessHours && hoursLines(settings).length === 0;
 
   const subtotal = SAMPLE_ITEMS.reduce((sum, item) => sum + item.qty * item.price, 0);
-  const taxAmount = taxRules
+  const taxAmount = taxRows
     .filter((rule) => !rule.includedInPrice)
     .reduce((sum, rule) => sum + subtotal * ((rule.rate ?? 0) / 100), 0);
   const total = subtotal + taxAmount;
-  const tipAmount = tipPercentage ? subtotal * (tipPercentage / 100) : 0;
 
   // The logo as it prints (already 1-bit and sized for the saved paper width, <= half of it), shared
   // by both previews: bill receipt and kitchen ticket carry it alike.
@@ -212,6 +220,7 @@ export const TicketSettings = () => {
             <div className="space-y-0.5">
               <Label htmlFor="showTaxBreakdown">{t('showTaxBreakdownLabel')}</Label>
               <p className="text-xs text-muted-foreground">{t('showTaxBreakdownDescription')}</p>
+              {taxMissing && <p className="text-xs text-amber-600">{t('showTaxBreakdownMissingHint')}</p>}
             </div>
             <Switch
               id="showTaxBreakdown"
@@ -236,6 +245,7 @@ export const TicketSettings = () => {
             <div className="space-y-0.5">
               <Label htmlFor="showBusinessHours">{t('showBusinessHoursLabel')}</Label>
               <p className="text-xs text-muted-foreground">{t('showBusinessHoursDescription')}</p>
+              {hoursMissing && <p className="text-xs text-amber-600">{t('showBusinessHoursMissingHint')}</p>}
             </div>
             <Switch
               id="showBusinessHours"
@@ -320,6 +330,7 @@ export const TicketSettings = () => {
                   {infoLines.map((line, index) => (
                     <p key={index}>{line}</p>
                   ))}
+                  {hoursMissing && <p className="italic text-zinc-400">{t('ticketPreviewHoursMissing')}</p>}
                 </div>
                 <p className="border-t border-dashed border-zinc-300 pt-2">{t('ticketPreviewDateLabel')}</p>
                 <p>{t('ticketPreviewTableLabel', { table: 5 })}</p>
@@ -338,7 +349,7 @@ export const TicketSettings = () => {
                     <span>{t('ticketPreviewSubtotalLabel')}</span>
                     <span>{currencySymbol}{subtotal.toFixed(2)}</span>
                   </div>
-                  {currentShowTaxBreakdown && taxRules.map((rule, index) => (
+                  {currentShowTaxBreakdown && taxRows.map((rule, index) => (
                     <div key={index} className="flex justify-between text-zinc-500">
                       <span>{rule.name} ({rule.rate}%){rule.includedInPrice ? ` — ${t('taxIncludedLabel')}` : ''}</span>
                       {!rule.includedInPrice && (
@@ -346,20 +357,22 @@ export const TicketSettings = () => {
                       )}
                     </div>
                   ))}
+                  {taxMissing && <p className="italic text-zinc-400">{t('ticketPreviewTaxMissing')}</p>}
                   <div className="flex justify-between font-bold border-t border-dashed border-zinc-300 pt-1">
                     <span>{t('ticketPreviewTotalLabel')}</span>
                     <span>{currencySymbol}{total.toFixed(2)}</span>
                   </div>
-                  {currentShowTip && tipPercentage != null && (
-                    <div className="flex justify-between text-zinc-500">
-                      <span>{t('ticketPreviewTipLabel', { percent: tipPercentage })}</span>
-                      <span>{currencySymbol}{tipAmount.toFixed(2)}</span>
-                    </div>
-                  )}
                 </div>
 
                 {currentFooterMessage && (
                   <p className="text-center border-t border-dashed border-zinc-300 pt-2 whitespace-pre-wrap">{currentFooterMessage}</p>
+                )}
+
+                {currentShowTip && (
+                  <div className="flex items-end gap-2 pt-4" data-testid="ticket-preview-tip-line">
+                    <span className="font-bold">{t('ticketPreviewTipLine')}</span>
+                    <span className="flex-1 border-b border-zinc-900" />
+                  </div>
                 )}
               </div>
             )}

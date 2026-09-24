@@ -43,6 +43,33 @@ class ReceiptLayoutTest {
     }
 
     @Test
+    void render_tipLine_isTheLastLine_withARoomToWriteInPen() {
+        ReceiptLayout.Data data = base(32).total(new BigDecimal("32.48")).tipLine(true).build();
+
+        String out = ReceiptLayout.render(data);
+
+        String[] lines = out.split("\n", -1);
+        // ... footer, a blank spacer, then the tip line, then the trailing newline
+        assertThat(lines[lines.length - 1]).isEmpty();
+        assertThat(lines[lines.length - 2]).isEqualTo("PROPINA: " + "_".repeat(23));
+        assertThat(lines[lines.length - 2]).hasSize(32);
+        assertThat(lines[lines.length - 3]).isEmpty();
+    }
+
+    @Test
+    void render_withoutTheTipLine_hasNoPropina() {
+        assertThat(ReceiptLayout.render(base(32).total(new BigDecimal("32.48")).build())).doesNotContain("PROPINA");
+    }
+
+    @Test
+    void render_tipLine_fillsTheWidthOf80mmPaperToo() {
+        String out = ReceiptLayout.render(base(42).tipLine(true).build());
+
+        String[] lines = out.split("\n");
+        assertThat(lines[lines.length - 1]).isEqualTo("PROPINA: " + "_".repeat(33));
+    }
+
+    @Test
     void render_fullReceipt_on32Columns() {
         ReceiptLayout.Data data = base(32)
                 .line(new ReceiptLayout.Line(2, "Hamburguesa", List.of(), new BigDecimal("25.00")))

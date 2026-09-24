@@ -113,3 +113,61 @@ describe('TicketSettings business info in the receipt preview', () => {
     expect(screen.queryByText('Horario: 12:00 - 23:00')).not.toBeInTheDocument()
   })
 })
+
+describe('TicketSettings preview: tax, hours and the tip line', () => {
+  const withSettings = (overrides: Record<string, unknown> = {}) => {
+    vi.clearAllMocks()
+    URL.createObjectURL = vi.fn(() => 'blob:logo')
+    URL.revokeObjectURL = vi.fn()
+    vi.mocked(ticketLogoService.get).mockResolvedValue(null)
+    vi.mocked(SettingsService.getSettings).mockResolvedValue({
+      branding: { businessName: 'Ember Grill' },
+      billing: { currencySymbol: '$', taxRate: 0, taxRules: [] },
+      ticket: { paperWidth: 'MM_80' },
+      ...overrides,
+    } as never)
+  }
+  const openCustomerPreview = async () => {
+    const user = userEvent.setup()
+    renderSettings()
+    await user.click(await screen.findByRole('button', { name: /Recibo del cliente/ }))
+    return user
+  }
+
+  test('with nothing configured, the active options say what is missing instead of vanishing', async () => {
+    withSettings()
+    await openCustomerPreview()
+
+    expect(await screen.findByText('Horario: sin configurar')).toBeVisible()
+    expect(screen.getByText('Impuesto: sin configurar')).toBeVisible()
+  })
+
+  test('a configured tax rate shows the tax row like the printed ticket does', async () => {
+    withSettings({ billing: { currencySymbol: '$', taxRate: 15, taxRules: [] } })
+    await openCustomerPreview()
+
+    expect(await screen.findByText(/Impuesto \(15%\)/)).toBeVisible()
+    expect(screen.queryByText('Impuesto: sin configurar')).not.toBeInTheDocument()
+  })
+
+  test('the tip option ends the receipt with a PROPINA line to write on', async () => {
+    withSettings()
+    await openCustomerPreview()
+
+    const tipLine = await screen.findByTestId('ticket-preview-tip-line')
+    expect(tipLine).toHaveTextContent('PROPINA:')
+    expect(screen.queryByText(/Propina sugerida/)).not.toBeInTheDocument()
+  })
+
+  test('switching the tip option off removes the PROPINA line', async () => {
+    withSettings()
+    const user = userEvent.setup()
+    renderSettings()
+
+    await user.click(await screen.findByLabelText('Línea de propina'))
+    await user.click(screen.getByRole('button', { name: /Recibo del cliente/ }))
+
+    await screen.findByText('Ember Grill')
+    expect(screen.queryByTestId('ticket-preview-tip-line')).not.toBeInTheDocument()
+  })
+})
