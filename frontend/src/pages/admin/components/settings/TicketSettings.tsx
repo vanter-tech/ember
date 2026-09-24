@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useTranslation } from '@/lib/i18n';
+import { TicketLogoField } from './TicketLogoField';
 
 type SettingsPayload = components['schemas']['SettingsPayload'];
 type TicketSettings = components['schemas']['TicketSettings'];
@@ -48,6 +49,8 @@ export const TicketSettings = () => {
     onSuccess: () => {
       setDraftTicket(undefined);
       queryClient.invalidateQueries({ queryKey: ['restaurantSettings'] });
+      // The logo is dithered to the saved paper width, so its preview must be refetched too.
+      queryClient.invalidateQueries({ queryKey: ['ticketLogo'] });
       toast.success(t('settingsSavedToast'));
     },
     onError: () => {
@@ -160,6 +163,8 @@ export const TicketSettings = () => {
               </SelectContent>
             </Select>
           </div>
+
+          <TicketLogoField />
         </div>
 
         <div className="flex flex-col space-y-6">
