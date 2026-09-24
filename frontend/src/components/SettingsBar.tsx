@@ -210,7 +210,7 @@ export const SettingsBar = ({
                 <Button
                   key={node.kind === 'leaf' ? node.type : node.group}
                   variant={isActive ? 'default' : 'ghost'}
-                  className="justify-center px-2"
+                  className="size-10 shrink-0 justify-center rounded-full p-0"
                   title={t(labelKey)}
                   onClick={() =>
                     node.kind === 'leaf'

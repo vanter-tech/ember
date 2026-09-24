@@ -79,7 +79,7 @@ export const CashRegisterBar = ({
       <nav className={`hidden md:flex flex-col gap-2 ${collapsed ? 'w-fit' : 'w-64'}`}>
         <Button
           variant="default"
-          className={collapsed ? 'justify-center px-2' : 'justify-start'}
+          className={collapsed ? 'size-10 shrink-0 justify-center rounded-full p-0' : 'justify-start'}
           title={collapsed ? t('cashRegisterTab') : undefined}
         >
           <Banknote className={collapsed ? 'h-6 w-6' : 'mr-2 h-6 w-6'} />
