@@ -51,6 +51,7 @@ public class ReceiptRenderer {
                 .header(ticket.getHeaderMessage())
                 .footer(ticket.getFooterMessage())
                 .currency(settings.getBilling().getCurrencySymbol());
+        ReceiptBusinessInfo.lines(settings).forEach(data::infoLine);
 
         Optional<Bill> found = billRepository.findById(billId);
         if (found.isPresent()) {

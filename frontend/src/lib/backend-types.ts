@@ -1977,6 +1977,8 @@ export interface components {
             paperWidth?: "MM_58" | "MM_80";
             showTaxBreakdown?: boolean;
             showTip?: boolean;
+            showBusinessHours?: boolean;
+            showBusinessInfo?: boolean;
         };
         MenuItemRequest: {
             name: string;

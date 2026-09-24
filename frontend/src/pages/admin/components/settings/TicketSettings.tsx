@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useTranslation } from '@/lib/i18n';
 import { TicketLogoField } from './TicketLogoField';
+import { businessInfoLines } from '@/lib/receiptBusinessInfo';
 
 type SettingsPayload = components['schemas']['SettingsPayload'];
 type TicketSettings = components['schemas']['TicketSettings'];
@@ -58,6 +59,8 @@ export const TicketSettings = () => {
   const currentPaperWidth: PaperWidth = draftTicket?.paperWidth ?? settings?.ticket?.paperWidth ?? 'MM_80';
   const currentShowTaxBreakdown = draftTicket?.showTaxBreakdown ?? settings?.ticket?.showTaxBreakdown ?? true;
   const currentShowTip = draftTicket?.showTip ?? settings?.ticket?.showTip ?? true;
+  const currentShowBusinessHours = draftTicket?.showBusinessHours ?? settings?.ticket?.showBusinessHours ?? true;
+  const currentShowBusinessInfo = draftTicket?.showBusinessInfo ?? settings?.ticket?.showBusinessInfo ?? false;
 
   const updateSettingsMutation = useMutation({
     mutationFn: (updatedPayload: SettingsPayload) => SettingsService.updateSettings(updatedPayload),
@@ -80,6 +83,8 @@ export const TicketSettings = () => {
       paperWidth: currentPaperWidth,
       showTaxBreakdown: currentShowTaxBreakdown,
       showTip: currentShowTip,
+      showBusinessHours: currentShowBusinessHours,
+      showBusinessInfo: currentShowBusinessInfo,
       ...patch,
     });
   };
@@ -95,6 +100,8 @@ export const TicketSettings = () => {
         paperWidth: currentPaperWidth,
         showTaxBreakdown: currentShowTaxBreakdown,
         showTip: currentShowTip,
+        showBusinessHours: currentShowBusinessHours,
+        showBusinessInfo: currentShowBusinessInfo,
       }
     };
 
@@ -110,9 +117,10 @@ export const TicketSettings = () => {
   }
 
   const businessName = settings?.branding?.businessName || 'Ember';
-  const ruc = settings?.branding?.ruc;
-  const address = settings?.branding?.address;
-  const phone = settings?.branding?.phone;
+  const infoLines = businessInfoLines(settings, {
+    showHours: currentShowBusinessHours,
+    showInfo: currentShowBusinessInfo,
+  });
   const currencySymbol = settings?.billing?.currencySymbol ?? 'S/';
   const taxRules = settings?.billing?.taxRules ?? [];
   const tipPercentage = settings?.billing?.suggestedTipPercentage?.[0];
@@ -207,6 +215,30 @@ export const TicketSettings = () => {
             />
           </div>
 
+          <div className="flex items-center justify-between rounded-xl border border-zinc-200 p-4">
+            <div className="space-y-0.5">
+              <Label htmlFor="showBusinessHours">{t('showBusinessHoursLabel')}</Label>
+              <p className="text-xs text-muted-foreground">{t('showBusinessHoursDescription')}</p>
+            </div>
+            <Switch
+              id="showBusinessHours"
+              checked={currentShowBusinessHours}
+              onCheckedChange={(checked) => updateDraft({ showBusinessHours: checked })}
+            />
+          </div>
+
+          <div className="flex items-center justify-between rounded-xl border border-zinc-200 p-4">
+            <div className="space-y-0.5">
+              <Label htmlFor="showBusinessInfo">{t('showBusinessInfoLabel')}</Label>
+              <p className="text-xs text-muted-foreground">{t('showBusinessInfoDescription')}</p>
+            </div>
+            <Switch
+              id="showBusinessInfo"
+              checked={currentShowBusinessInfo}
+              onCheckedChange={(checked) => updateDraft({ showBusinessInfo: checked })}
+            />
+          </div>
+
           <div className="space-y-2">
             <Label>{t('ticketPreviewLabel')}</Label>
             <div className="flex flex-wrap gap-3">
@@ -282,9 +314,9 @@ export const TicketSettings = () => {
                 )}
                 <div className="text-center space-y-0.5">
                   <p className="font-bold">{businessName}</p>
-                  {ruc && <p>RUC: {ruc}</p>}
-                  {address && <p>{address}</p>}
-                  {phone && <p>{phone}</p>}
+                  {infoLines.map((line, index) => (
+                    <p key={index}>{line}</p>
+                  ))}
                 </div>
                 <p className="border-t border-dashed border-zinc-300 pt-2">{t('ticketPreviewDateLabel')}</p>
                 <p>{t('ticketPreviewTableLabel', { table: 5 })}</p>

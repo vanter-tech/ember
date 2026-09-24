@@ -26,6 +26,23 @@ class ReceiptLayoutTest {
     }
 
     @Test
+    void render_centersTheInfoLinesUnderTheHeader_andWrapsTheLongOnes() {
+        ReceiptLayout.Data data = base(32)
+                .infoLine("Horario: Lun-Dom 12:00-23:00")
+                .infoLine("Calle Principal 123, Colonia Centro, Managua")
+                .build();
+
+        String out = ReceiptLayout.render(data);
+
+        String[] lines = out.split("\n");
+        assertThat(lines[0]).isEqualTo(sp(13) + "EMBER");
+        assertThat(lines[1]).isEqualTo(sp(2) + "Horario: Lun-Dom 12:00-23:00");
+        assertThat(lines[2]).isEqualTo(sp(2) + "Calle Principal 123, Colonia");
+        assertThat(lines[3]).isEqualTo(sp(8) + "Centro, Managua");
+        assertThat(lines).allSatisfy(l -> assertThat(l.length()).isLessThanOrEqualTo(32));
+    }
+
+    @Test
     void render_fullReceipt_on32Columns() {
         ReceiptLayout.Data data = base(32)
                 .line(new ReceiptLayout.Line(2, "Hamburguesa", List.of(), new BigDecimal("25.00")))
