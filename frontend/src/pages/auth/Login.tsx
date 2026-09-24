@@ -172,11 +172,11 @@ export const Login = () => {
           </div>
         </div>
       ) : (
-      <Card className="w-full max-w-md shadow-lg relative z-10">
+      <Card className="w-full max-w-md gap-6 py-10 shadow-lg relative z-10">
         <div className="absolute top-4 right-4">
           <LanguageSwitcher />
         </div>
-        <CardHeader>
+        <CardHeader className="px-8">
           <CardTitle className="text-3xl text-center text-[#920703] font-bold">
             {tCommon('brandFallback')}
             <br />
@@ -186,7 +186,7 @@ export const Login = () => {
             {tAuth('loginDescription')}
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-8">
           <Form {...form}>
             <form
               onSubmit={form.handleSubmit(onSubmit)}

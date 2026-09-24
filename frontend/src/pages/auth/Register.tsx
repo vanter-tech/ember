@@ -70,8 +70,8 @@ export const Register = () => {
   return (
     <div className="relative flex items-center justify-center min-h-screen overflow-hidden bg-white p-4 pb-12">
       <AuthBackground />
-      <Card className="w-full max-w-md shadow-lg relative z-10">
-        <CardHeader>
+      <Card className="w-full max-w-md gap-6 py-10 shadow-lg relative z-10">
+        <CardHeader className="px-8">
           <CardTitle className="text-2xl font-bold text-center text-[#920703] ">
             {tAuth('registerTitle')}
           </CardTitle>
@@ -79,7 +79,7 @@ export const Register = () => {
             {tAuth('registerDescription')}
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-8">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <FormField
