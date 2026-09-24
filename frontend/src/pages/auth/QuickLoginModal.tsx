@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { PasswordInput } from '@/components/PasswordInput'
 import { cn } from '@/lib/utils'
 import { authService } from '@/lib/api'
 import { useAuthStore } from '@/store/authStore'
@@ -90,6 +91,18 @@ export const QuickLoginModal = ({
   const fieldLabel =
     mode === 'pin' ? tAuth('quickLoginPinLabel') : tAuth('passwordPlaceholder')
 
+  const fieldProps = {
+    id: 'quicklogin-field',
+    'aria-label': fieldLabel,
+    inputMode: mode === 'pin' ? ('numeric' as const) : undefined,
+    maxLength: mode === 'pin' ? 6 : undefined,
+    autoFocus: true,
+    value,
+    onChange: (e: React.ChangeEvent<HTMLInputElement>) =>
+      setValue(mode === 'pin' ? e.target.value.replace(/D/g, '') : e.target.value),
+    placeholder: mode === 'pin' ? tAuth('quickLoginPinPlaceholder') : tAuth('passwordPlaceholder'),
+  }
+
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="sm:max-w-sm rounded-3xl p-6">
@@ -152,27 +165,11 @@ export const QuickLoginModal = ({
               <label htmlFor="quicklogin-field" className="text-sm font-medium">
                 {fieldLabel}
               </label>
-              <Input
-                id="quicklogin-field"
-                aria-label={fieldLabel}
-                type={mode === 'pin' ? 'text' : 'password'}
-                inputMode={mode === 'pin' ? 'numeric' : undefined}
-                maxLength={mode === 'pin' ? 6 : undefined}
-                autoFocus
-                value={value}
-                onChange={(e) =>
-                  setValue(
-                    mode === 'pin'
-                      ? e.target.value.replace(/\D/g, '')
-                      : e.target.value
-                  )
-                }
-                placeholder={
-                  mode === 'pin'
-                    ? tAuth('quickLoginPinPlaceholder')
-                    : tAuth('passwordPlaceholder')
-                }
-              />
+              {mode === 'pin' ? (
+                <Input type="text" {...fieldProps} />
+              ) : (
+                <PasswordInput {...fieldProps} />
+              )}
               {error && <p className="text-sm text-red-600">{error}</p>}
             </>
           )}

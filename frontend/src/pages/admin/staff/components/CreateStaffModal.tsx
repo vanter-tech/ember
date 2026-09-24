@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { PasswordInput } from '@/components/PasswordInput'
 import {
   Select,
   SelectContent,
@@ -157,7 +158,7 @@ export const CreateStaffModal = () => {
                 <FormItem>
                   <FormLabel>{t('passwordLabel')}</FormLabel>
                   <FormControl>
-                    <Input type="password" className="rounded-xl" {...field} />
+                    <PasswordInput className="rounded-xl" {...field} />
                   </FormControl>
                 </FormItem>
               )}

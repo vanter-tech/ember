@@ -9,7 +9,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { PasswordInput } from '@/components/PasswordInput'
 import { userProfileService } from '@/lib/api'
 import { useAuthStore } from '@/store/authStore'
 import { useTranslation } from '@/lib/i18n'
@@ -71,9 +71,8 @@ export const ForcePasswordChangeModal = () => {
             <label htmlFor="force-pwd-current" className="text-sm font-medium">
               {tAuth('currentPasswordLabel')}
             </label>
-            <Input
+            <PasswordInput
               id="force-pwd-current"
-              type="password"
               autoFocus
               value={currentPassword}
               onChange={(e) => setCurrentPassword(e.target.value)}
@@ -83,9 +82,8 @@ export const ForcePasswordChangeModal = () => {
             <label htmlFor="force-pwd-new" className="text-sm font-medium">
               {tAuth('newPasswordLabel')}
             </label>
-            <Input
+            <PasswordInput
               id="force-pwd-new"
-              type="password"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
             />
@@ -94,9 +92,8 @@ export const ForcePasswordChangeModal = () => {
             <label htmlFor="force-pwd-confirm" className="text-sm font-medium">
               {tAuth('confirmPasswordLabel')}
             </label>
-            <Input
+            <PasswordInput
               id="force-pwd-confirm"
-              type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
             />

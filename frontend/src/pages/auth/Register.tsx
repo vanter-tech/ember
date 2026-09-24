@@ -13,6 +13,7 @@ import { AuthBackground } from './AuthBackground'
 import { PoweredByVanter } from './PoweredByVanter'
 import { Button } from '../../components/ui/button'
 import { Input } from '../../components/ui/input'
+import { PasswordInput } from '@/components/PasswordInput'
 import {
   Card,
   CardContent,
@@ -203,8 +204,8 @@ export const Register = () => {
                             ></path>{' '}
                           </g>
                         </svg>
-                        <Input
-                          type="password"
+                        <PasswordInput
+                          
                           className="pl-10"
                           placeholder={tAuth('registerPasswordPlaceholder')}
                           {...field}

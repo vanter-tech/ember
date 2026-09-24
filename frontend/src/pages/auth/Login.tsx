@@ -22,6 +22,7 @@ import { isHubBuild } from '@/lib/isHubBuild'
 
 import { Button } from '../../components/ui/button'
 import { Input } from '../../components/ui/input'
+import { PasswordInput } from '@/components/PasswordInput'
 import {
   Card,
   CardContent,
@@ -255,10 +256,9 @@ export const Login = () => {
                             ></path>{' '}
                           </g>
                         </svg>
-                        <Input
+                        <PasswordInput
                           className="pl-10"
                           placeholder={tAuth('passwordPlaceholder')}
-                          type="password"
                           autoComplete="current-password"
                           {...field}
                         />
