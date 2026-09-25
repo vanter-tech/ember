@@ -10,7 +10,7 @@ import { useSessionStore } from '@/store/sessionStore'
 import { SessionTableService, type LoginResponse } from '@/lib/api'
 import { PENDING_QR_TOKEN_KEY, sessionIdFromQrToken } from '@/lib/qrToken'
 import { useTranslation } from '@/lib/i18n'
-import { LogIn, User, UtensilsCrossed } from 'lucide-react'
+import { LogIn, User } from 'lucide-react'
 import { JoinShell } from './components/JoinShell'
 
 /**
@@ -160,9 +160,6 @@ export const MenuJoin = () => {
       <JoinShell>
         <Card className="relative z-10 w-full max-w-sm gap-6 rounded-3xl py-10 shadow-lg">
           <CardHeader className="items-center px-8 text-center">
-            <div className="mb-2 flex size-16 items-center justify-center rounded-full bg-[#920703]/10 ring-8 ring-[#920703]/5">
-              <UtensilsCrossed className="size-8 text-[#920703]" aria-hidden="true" />
-            </div>
             <CardTitle className="text-2xl font-bold text-[#920703]">{t('qrJoinTitle')}</CardTitle>
             <p className="text-sm text-gray-500">
               {guestMode ? t('qrJoinGuestNameLabel') : t('qrJoinChoiceSubtitle')}
