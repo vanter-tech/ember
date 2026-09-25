@@ -167,7 +167,7 @@ describe('AddItemModal', () => {
     fireEvent.click(addButtonFor('Helado'))
 
     expect(screen.queryByRole('button', { name: /Ver pedido/ })).not.toBeInTheDocument()
-    fireEvent.click(screen.getByLabelText('Chocolate'))
+    fireEvent.click(screen.getByText('Chocolate'))
     fireEvent.click(screen.getByText('Agregar'))
 
     openCartPanel()

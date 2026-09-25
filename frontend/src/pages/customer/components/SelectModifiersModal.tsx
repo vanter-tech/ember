@@ -6,8 +6,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog'
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
-import { Checkbox } from '@/components/ui/checkbox'
+import { ModifierOptionBadges } from '@/components/ModifierOptionBadges'
 import { Button } from '@/components/ui/button'
 import { useTranslation } from '@/lib/i18n'
 import type { MenuItemResponse } from '@/lib/api'
@@ -75,29 +74,17 @@ export const SelectModifiersModal = ({ item, open, onOpenChange, onConfirm, isPe
                     ? t('requiredSelectionHint')
                     : null}
               </p>
-              {group.selectionType === 'SINGLE_REQUIRED' ? (
-                <RadioGroup
-                  value={String(selected[group.id!]?.[0] ?? '')}
-                  onValueChange={(v) => toggleSingle(group.id!, Number(v))}
-                >
-                  {(group.options ?? []).map((option) => (
-                    <label key={option.id} className="flex items-center gap-2">
-                      <RadioGroupItem value={String(option.id)} />
-                      {option.name} {option.priceDelta ? `(+$${option.priceDelta.toFixed(2)})` : ''}
-                    </label>
-                  ))}
-                </RadioGroup>
-              ) : (
-                (group.options ?? []).map((option) => (
-                  <label key={option.id} className="flex items-center gap-2">
-                    <Checkbox
-                      checked={selected[group.id!]?.includes(option.id!) ?? false}
-                      onCheckedChange={() => toggleMulti(group.id!, option.id!, group.maxSelections)}
-                    />
-                    {option.name} {option.priceDelta ? `(+$${option.priceDelta.toFixed(2)})` : ''}
-                  </label>
-                ))
-              )}
+              <ModifierOptionBadges
+                groupId={group.id}
+                options={group.options ?? []}
+                selectedIds={selected[group.id!] ?? []}
+                single={group.selectionType === 'SINGLE_REQUIRED'}
+                onToggle={(optionId) =>
+                  group.selectionType === 'SINGLE_REQUIRED'
+                    ? toggleSingle(group.id!, optionId)
+                    : toggleMulti(group.id!, optionId, group.maxSelections)
+                }
+              />
             </div>
           ))}
         </div>
