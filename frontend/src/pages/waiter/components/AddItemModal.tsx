@@ -206,7 +206,9 @@ export const AddItemModal = () => {
   // to its left) instead of a floating sibling — Radix's outside-interaction dismiss logic only
   // ever sees "inside the dialog" for anything inside it, closing button included. `top-0
   // bottom-0` on the panel stretches it to match the dialog's own rendered height exactly.
-  const PANEL_SHIFT = 216 // half of (panel width 416px + gap 16px) — recenters the pair as one
+  // Side-by-side (dialog shifted right, panel to its left) only fits from 1920px up; below that
+  // — iPad and most laptops — the panel overlays the right side of the dialog instead. 216px is
+  // half of (panel width 416px + gap 16px), recentering the pair as one.
 
   useEffect(() => {
     if (!showCartPanel) return
@@ -217,13 +219,9 @@ export const AddItemModal = () => {
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
       <DialogContent
-        className="rounded-3xl p-8 sm:max-w-[min(95vw,88rem)]"
-        style={{
-          marginLeft: showCartPanel ? PANEL_SHIFT : 0,
-          transitionProperty: 'margin-left',
-          transitionDuration: '300ms',
-          transitionTimingFunction: 'ease-out',
-        }}
+        className={`rounded-3xl p-8 transition-[margin-left] duration-300 ease-out sm:max-w-[min(95vw,88rem)] ${
+          showCartPanel ? 'min-[1920px]:ml-[216px]' : ''
+        }`}
       >
         <DialogHeader className="mb-2">
           <DialogTitle className="text-2xl font-bold text-zinc-800">
@@ -235,7 +233,7 @@ export const AddItemModal = () => {
         {(
           <>
             <div className="grid grid-cols-[minmax(180px,240px)_1fr] gap-10">
-              <div className="flex flex-col gap-3 max-h-[78vh] overflow-y-auto border-r border-zinc-100 pr-6">
+              <div className="flex flex-col gap-3 max-h-[calc(100dvh-16rem)] overflow-y-auto border-r border-zinc-100 pr-6">
                 <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
                   {t('addItemParticipantLabel')}
                 </p>
@@ -313,7 +311,7 @@ export const AddItemModal = () => {
                     ))}
                   </div>
                 )}
-                <div className="grid grid-cols-2 gap-5 max-h-[68vh] overflow-y-auto pr-1">
+                <div className="grid grid-cols-2 gap-5 max-h-[calc(100dvh-26rem)] overflow-y-auto pr-1">
                   {visibleItems.map((item) => (
                     // Deliberately not a single big button: a card this dense on a touch screen is
                     // an easy misclick, so only the "+" adds — the rest is inert display.
@@ -417,7 +415,7 @@ export const AddItemModal = () => {
           // `top-0 bottom-0` stretches it to match this dialog's own rendered height exactly.
           <div
             data-testid="client-cart-panel"
-            className={`absolute top-0 bottom-0 right-[calc(100%+1rem)] flex w-[26rem] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-3xl bg-popover p-6 shadow-2xl ring-1 ring-foreground/10 transition-all duration-300 ease-out ${
+            className={`absolute top-0 bottom-0 right-0 z-10 flex w-[min(26rem,100%)] flex-col min-[1920px]:right-[calc(100%+1rem)] overflow-hidden rounded-3xl bg-popover p-6 shadow-2xl ring-1 ring-foreground/10 transition-all duration-300 ease-out ${
               panelEntered ? 'translate-x-0 opacity-100' : '-translate-x-4 opacity-0'
             }`}
           >
