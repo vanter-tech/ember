@@ -12,6 +12,7 @@ import { Link } from 'react-router-dom'
 import { useTranslation } from '@/lib/i18n'
 import { EmptyState } from '@/components/EmptyState'
 import { WaiterTour } from './components/WaiterTour'
+import { AvatarInitials, getAvatarColor } from '@/components/AvatarInitials'
 
 export const Tables = () => {
   const { t } = useTranslation('waiter')
@@ -117,6 +118,14 @@ export const Tables = () => {
                 ${isCajaOpen ? 'cursor-pointer' : 'pointer-events-none cursor-not-allowed blur-sm'}
                 ${table.isOccupied ? 'border-2 bg-[#8c1717] text-white' : 'bg-white text-black'}`}
             >
+              {table.isOccupied && table.currentSession?.waiterName && (
+                <div
+                  title={table.currentSession.waiterName}
+                  className={`absolute bottom-4 left-4 z-10 flex size-7 animate-pulse items-center justify-center rounded-full text-[11px] font-bold ${getAvatarColor(table.currentSession.waiterName)}`}
+                >
+                  {AvatarInitials(table.currentSession.waiterName)}
+                </div>
+              )}
               <CardHeader className="p-4 pb-0 flex justify-between">
                 <span className=" text-2xl font-bold">
                   M{table.tableNumber}
