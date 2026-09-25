@@ -10,6 +10,7 @@ import { useSessionStore } from '@/store/sessionStore'
 import { SessionTableService, type LoginResponse } from '@/lib/api'
 import { PENDING_QR_TOKEN_KEY, sessionIdFromQrToken } from '@/lib/qrToken'
 import { useTranslation } from '@/lib/i18n'
+import { LogIn, User, UtensilsCrossed } from 'lucide-react'
 import { JoinShell } from './components/JoinShell'
 
 /**
@@ -158,7 +159,10 @@ export const MenuJoin = () => {
     return (
       <JoinShell>
         <Card className="relative z-10 w-full max-w-sm gap-6 rounded-3xl py-10 shadow-lg">
-          <CardHeader className="px-8">
+          <CardHeader className="items-center px-8 text-center">
+            <div className="mb-2 flex size-16 items-center justify-center rounded-full bg-[#920703]/10 ring-8 ring-[#920703]/5">
+              <UtensilsCrossed className="size-8 text-[#920703]" aria-hidden="true" />
+            </div>
             <CardTitle className="text-2xl font-bold text-[#920703]">{t('qrJoinTitle')}</CardTitle>
             <p className="text-sm text-gray-500">
               {guestMode ? t('qrJoinGuestNameLabel') : t('qrJoinChoiceSubtitle')}
@@ -188,19 +192,39 @@ export const MenuJoin = () => {
               </>
             ) : (
               <>
-                <Button
-                  className="h-12 w-full text-lg font-bold hover:bg-[#6a1111]"
+                <button
+                  type="button"
+                  aria-label={t('qrJoinSignInCta')}
                   onClick={() => navigate('/login', { replace: true })}
+                  className="flex w-full cursor-pointer items-center gap-4 rounded-2xl bg-[#920703] p-4 text-left text-white shadow-sm transition hover:bg-[#6a1111] active:scale-[0.99]"
                 >
-                  {t('qrJoinSignInCta')}
-                </Button>
-                <Button
-                  variant="outline"
-                  className="h-12 w-full text-lg font-bold"
+                  <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-white/15">
+                    <LogIn className="size-5" aria-hidden="true" />
+                  </span>
+                  <span className="flex flex-col">
+                    <span className="text-base font-bold">{t('qrJoinSignInCta')}</span>
+                    <span className="text-xs text-white/80">{t('qrJoinSignInHint')}</span>
+                  </span>
+                </button>
+                <div className="flex items-center gap-3 text-xs uppercase tracking-wide text-zinc-400">
+                  <span className="h-px flex-1 bg-zinc-200" />
+                  {t('qrJoinOr')}
+                  <span className="h-px flex-1 bg-zinc-200" />
+                </div>
+                <button
+                  type="button"
+                  aria-label={t('qrJoinGuestCta')}
                   onClick={() => setGuestMode(true)}
+                  className="flex w-full cursor-pointer items-center gap-4 rounded-2xl border-2 border-zinc-200 bg-white p-4 text-left transition hover:border-[#920703]/40 hover:bg-zinc-50 active:scale-[0.99]"
                 >
-                  {t('qrJoinGuestCta')}
-                </Button>
+                  <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-zinc-100">
+                    <User className="size-5 text-zinc-600" aria-hidden="true" />
+                  </span>
+                  <span className="flex flex-col">
+                    <span className="text-base font-bold text-zinc-800">{t('qrJoinGuestCta')}</span>
+                    <span className="text-xs text-zinc-500">{t('qrJoinGuestHint')}</span>
+                  </span>
+                </button>
               </>
             )}
           </CardContent>
