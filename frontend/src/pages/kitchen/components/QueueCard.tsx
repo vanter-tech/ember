@@ -3,7 +3,6 @@ import {
   CardHeader,
   CardTitle,
   CardContent,
-  CardFooter,
 } from '@/components/ui/card'
 import { getColorForTable } from '@/components/AvatarInitials'
 import { kitchenServices, type kitchenOrders, type OrderItemStatus } from '@/lib/api'
@@ -75,11 +74,6 @@ export const QueueCard = ({order}: {order: kitchenOrders}) => {
                 })}
             </ul>
         </CardContent>
-        <CardFooter className='mt-auto'>
-            <Button className='w-full py-2 hover:bg-red-800 font-medium transition-colors'>
-                {t('viewDetails')}
-            </Button>
-        </CardFooter>
     </Card>
     </>
   )

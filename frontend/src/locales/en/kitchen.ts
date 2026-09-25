@@ -9,7 +9,6 @@ export const kitchen = {
   disconnected: 'Disconnected',
   kdsSubtitle: 'Kitchen monitor - KDS',
   ticketLabel: 'Ticket: #{{code}}',
-  viewDetails: 'View details',
   orderDetailsHeading: 'Order Details - M{{tableNumber}}',
   entryTimeLabel: 'Entry: {{time}}',
   printButton: 'Print',
