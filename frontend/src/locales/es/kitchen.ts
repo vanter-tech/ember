@@ -6,6 +6,8 @@ export const kitchen = {
   connected: 'Conectado',
   disconnected: 'Desconectado',
   kdsSubtitle: 'Monitor de cocina - KDS',
+  kdsColumnEmpty: 'Sin platos',
+  elapsedMinutes: '{{minutes}} min',
   ticketLabel: 'Ticket: #{{code}}',
   orderDetailsHeading: 'Detalles de Orden - M{{tableNumber}}',
   entryTimeLabel: 'Ingreso: {{time}}',
