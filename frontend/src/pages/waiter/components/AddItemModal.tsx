@@ -7,6 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover'
 import { ModifierOptionBadges } from '@/components/ModifierOptionBadges'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -231,33 +232,7 @@ export const AddItemModal = () => {
           <DialogDescription className="sr-only">{t('addItemModalTitle')}</DialogDescription>
         </DialogHeader>
 
-        {pendingItem ? (
-          <div className="space-y-4">
-            <p className="font-semibold">{pendingItem.name}</p>
-            {(pendingItem.modifierGroups ?? []).map((group) => (
-              <div key={group.id} className="space-y-2">
-                <p className="font-semibold text-sm">{group.name}</p>
-                <ModifierOptionBadges
-                  groupId={group.id}
-                  options={group.options ?? []}
-                  selectedIds={optionIds[group.id!] ?? []}
-                  single={group.selectionType === 'SINGLE_REQUIRED'}
-                  onToggle={(optionId) =>
-                    group.selectionType === 'SINGLE_REQUIRED'
-                      ? toggleSingle(group.id!, optionId)
-                      : toggleMulti(group.id!, optionId, group.maxSelections)
-                  }
-                />
-              </div>
-            ))}
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setPendingItem(null)}>
-                {t('addItemModifierCancel')}
-              </Button>
-              <Button onClick={confirmModifiers}>{t('addItemModifierConfirm')}</Button>
-            </DialogFooter>
-          </div>
-        ) : (
+        {(
           <>
             <div className="grid grid-cols-[minmax(180px,240px)_1fr] gap-10">
               <div className="flex flex-col gap-3 max-h-[65vh] overflow-y-auto border-r border-zinc-100 pr-6">
@@ -342,10 +317,13 @@ export const AddItemModal = () => {
                   {visibleItems.map((item) => (
                     // Deliberately not a single big button: a card this dense on a touch screen is
                     // an easy misclick, so only the "+" adds — the rest is inert display.
-                    <div
+                    <Popover
                       key={item.id}
-                      className="flex flex-col overflow-hidden rounded-2xl border-2 border-zinc-200"
+                      open={pendingItem?.id === item.id}
+                      onOpenChange={(open) => !open && setPendingItem(null)}
                     >
+                    <PopoverAnchor asChild>
+                    <div className="flex flex-col overflow-hidden rounded-2xl border-2 border-zinc-200">
                       <div className="h-40 w-full bg-zinc-100">
                         {item.imageUrl ? (
                           <img
@@ -377,6 +355,44 @@ export const AddItemModal = () => {
                         </button>
                       </div>
                     </div>
+                    </PopoverAnchor>
+                    <PopoverContent
+                      side="right"
+                      align="start"
+                      collisionPadding={16}
+                      data-testid="modifiers-panel"
+                      className="flex w-80 flex-col gap-3 p-4"
+                      style={{ height: 'var(--radix-popover-trigger-height)' }}
+                    >
+                      <p className="shrink-0 font-semibold">{item.name}</p>
+                      <div className="flex-1 space-y-4 overflow-y-auto pr-1">
+                        {(item.modifierGroups ?? []).map((group) => (
+                          <div key={group.id} className="space-y-2">
+                            <p className="text-sm font-semibold">{group.name}</p>
+                            <ModifierOptionBadges
+                              groupId={group.id}
+                              options={group.options ?? []}
+                              selectedIds={optionIds[group.id!] ?? []}
+                              single={group.selectionType === 'SINGLE_REQUIRED'}
+                              onToggle={(optionId) =>
+                                group.selectionType === 'SINGLE_REQUIRED'
+                                  ? toggleSingle(group.id!, optionId)
+                                  : toggleMulti(group.id!, optionId, group.maxSelections)
+                              }
+                            />
+                          </div>
+                        ))}
+                      </div>
+                      <div className="flex shrink-0 justify-end gap-2">
+                        <Button variant="outline" size="sm" onClick={() => setPendingItem(null)}>
+                          {t('addItemModifierCancel')}
+                        </Button>
+                        <Button size="sm" onClick={confirmModifiers}>
+                          {t('addItemModifierConfirm')}
+                        </Button>
+                      </div>
+                    </PopoverContent>
+                    </Popover>
                   ))}
                 </div>
               </div>
