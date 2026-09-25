@@ -12,7 +12,7 @@ Show the assigned waiter's avatar on the bottom-left corner of each occupied tab
 - `frontend/src/pages/waiter/Tables.tsx`
 
 ## 4. What Changed?
-- Occupied table cards with `currentSession.waiterName` render a circular badge (`absolute bottom-4 left-4`, `size-7`) with the waiter's initials (`AvatarInitials`) (per-waiter color via `getAvatarColor`) with `animate-pulse`, no background ring; `title` holds the full name.
+- Occupied table cards with `currentSession.waiterName` render a circular badge (`absolute bottom-4 left-4`, `size-7`) with the waiter's initials (`AvatarInitials`) (per-waiter color via `getAvatarColor`), no background ring, no animation; `title` holds the full name.
 - Free tables and sessions without a waiter render nothing.
 
 ## 5. Why It Changed?
