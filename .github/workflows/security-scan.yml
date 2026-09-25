@@ -43,8 +43,10 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
           cache: maven
-      - name: Cache de la base NVD
-        uses: actions/cache@v4
+      # restore + save por separado: actions/cache solo guarda si el job termina en verde, y este
+      # falla justamente cuando hay CVEs, asi que la base NVD (~13 min de descarga) nunca se cacheaba.
+      - name: Restaurar la base NVD
+        uses: actions/cache/restore@v4
         with:
           path: ~/.m2/repository/org/owasp/dependency-check-data
           key: nvd-${{ github.run_id }}
@@ -57,6 +59,12 @@ jobs:
         run: >
           mvn -B org.owasp:dependency-check-maven:check -f ./backend/pom.xml
           -DfailBuildOnCVSS=7 -DnvdApiKey="$NVD_API_KEY" -Dformat=HTML
+      - name: Guardar la base NVD
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.m2/repository/org/owasp/dependency-check-data
+          key: nvd-${{ github.run_id }}
       - name: Subir reporte
         if: always()
         uses: actions/upload-artifact@v4

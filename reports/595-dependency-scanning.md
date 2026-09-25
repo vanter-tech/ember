@@ -11,6 +11,7 @@ Get automatic warning about dependencies with known vulnerabilities (the CI only
 ## 3. Modified Files
 - `.github/dependabot.yml` (new)
 - `.github/workflows/security-scan.yml` (new)
+- `.github/workflows/lint.yml` (rust-cache in `build-print-agent`)
 
 ## 4. What Changed?
 - Dependabot, weekly, minor/patch grouped per ecosystem: maven (`backend`, `printing-agent`), npm (`frontend`, `landing`, `ember-hub/ui`, `printing-agent/ui`), cargo (both `src-tauri`), github-actions.
@@ -23,3 +24,8 @@ Backend handles money and tenant data; a vulnerable library (JWT, deserializatio
 Owner action: add repo secret `NVD_API_KEY` (free at nvd.nist.gov) or the first OWASP run may be very slow / rate-limited.
 
 Verification: both YAML files parse; the workflow itself is validated by its first run on the PR. No app code or tests touched.
+
+## First run findings and speed fixes
+- First CI run: `audit-frontend` found 22 vulns (8 high, 14 moderate); `audit-backend` (13 min, NVD download) found high/critical CVEs in `tomcat-embed-core` and `spring-security-core`. Real findings, tracked as a separate dependency-upgrade task.
+- NVD cache: `actions/cache` only saves when the job passes, and this job fails when CVEs exist, so the DB was never cached. Now `actions/cache/restore` + `actions/cache/save` with `if: always()`.
+- `build-print-agent` took ~19 min compiling tauri-cli/Tauri from scratch; added `Swatinem/rust-cache@v2` (workspace `printing-agent/src-tauri`).
