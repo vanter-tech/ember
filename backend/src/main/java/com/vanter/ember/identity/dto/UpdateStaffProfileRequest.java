@@ -10,7 +10,6 @@ import java.math.BigDecimal;
 /** Every field optional — a PATCH only applies the ones the caller actually sent. */
 public record UpdateStaffProfileRequest(
         Boolean active,
-        @Size(max = 255) String jobTitle,
         @Size(max = 255) String shift,
         @Size(max = 255) String contractType,
         @Size(max = 255) String location,

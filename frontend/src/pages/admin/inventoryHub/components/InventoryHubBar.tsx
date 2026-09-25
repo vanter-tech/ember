@@ -82,7 +82,7 @@ export const InventoryHubBar = ({
       >
         <Button
           variant="default"
-          className={collapsed ? 'justify-center px-2' : 'justify-start'}
+          className={collapsed ? 'size-10 shrink-0 justify-center rounded-full p-0' : 'justify-start'}
           title={collapsed ? t('catalogLabel') : undefined}
         >
           <Boxes className={collapsed ? 'h-6 w-6' : 'mr-2 h-6 w-6'} />

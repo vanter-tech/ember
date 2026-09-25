@@ -125,6 +125,10 @@ public class SettingsPayload {
         private PaperWidth paperWidth = PaperWidth.MM_80;
         private boolean showTaxBreakdown = true;
         private boolean showTip = true;
+        /** Opening hours under the header of the printed receipt (on by default). */
+        private boolean showBusinessHours = true;
+        /** RUC, address and phone under the header of the printed receipt (off by default). */
+        private boolean showBusinessInfo = false;
     }
 
     public enum PaperWidth {

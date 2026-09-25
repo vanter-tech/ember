@@ -63,7 +63,7 @@ describe('FocusedCard bulk status selection', () => {
     expect(screen.getByText('Cambiar estado a...')).toBeInTheDocument()
 
     await userEvent.click(screen.getByRole('combobox'))
-    await userEvent.click(screen.getByText('Listo'))
+    await userEvent.click(screen.getByRole('option', { name: 'Listo' }))
 
     await waitFor(() =>
       expect(kitchenServices.updateItemsStatus).toHaveBeenCalledWith('ko-1', ['item-1'], 'READY'),
@@ -82,7 +82,7 @@ describe('FocusedCard bulk status selection', () => {
 
     await userEvent.click(screen.getByText('Seleccionar todo'))
     await userEvent.click(screen.getByRole('combobox'))
-    await userEvent.click(screen.getByText('Listo'))
+    await userEvent.click(screen.getByRole('option', { name: 'Listo' }))
 
     await waitFor(() =>
       expect(kitchenServices.updateItemsStatus).toHaveBeenCalledWith('ko-1', ['item-1', 'item-2'], 'READY'),
@@ -95,7 +95,7 @@ describe('FocusedCard bulk status selection', () => {
 
     await userEvent.click(screen.getByText('Seleccionar todo'))
     await userEvent.click(screen.getByRole('combobox'))
-    await userEvent.click(screen.getByText('Listo'))
+    await userEvent.click(screen.getByRole('option', { name: 'Listo' }))
 
     await waitFor(() => expect(screen.queryByText('Cambiar estado a...')).not.toBeInTheDocument())
     expect(screen.getByText('Seleccionar todo')).toBeInTheDocument()

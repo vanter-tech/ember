@@ -8,6 +8,7 @@ import java.awt.print.PageFormat;
 import java.awt.print.Printable;
 import java.awt.print.PrinterException;
 import java.awt.print.PrinterJob;
+import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import javax.print.DocFlavor;
@@ -40,8 +41,15 @@ public class WindowsPrintQueueSender {
 
     /** Factored out from {@link #print} so the ESC/POS rendering is testable without a real queue. */
     byte[] renderToBytes(String payload) throws IOException {
+        return renderToBytes(payload, null);
+    }
+
+    byte[] renderToBytes(String payload, byte[] logoPng) throws IOException {
         try (ByteArrayOutputStream buffer = new ByteArrayOutputStream();
              EscPos escPos = new EscPos(buffer)) {
+            if (logoPng != null) {
+                TicketLogoRenderer.write(escPos, logoPng);
+            }
             escPos.writeLF(payload);
             escPos.feed(3).cut(EscPos.CutMode.FULL);
             return buffer.toByteArray();
@@ -54,7 +62,13 @@ public class WindowsPrintQueueSender {
      * printer or {@link PrinterJob}.
      */
     Printable renderToPrintable(String payload) {
+        return renderToPrintable(payload, null);
+    }
+
+    /** Driver mode: the logo (nullable) is drawn centered at the top, scaled to the imageable width. */
+    Printable renderToPrintable(String payload, byte[] logoPng) {
         String[] lines = payload.split("\n", -1);
+        BufferedImage logo = TicketLogoRenderer.decode(logoPng);
         return (Graphics graphics, PageFormat pageFormat, int pageIndex) -> {
             if (pageIndex > 0) {
                 return Printable.NO_SUCH_PAGE;
@@ -65,6 +79,14 @@ public class WindowsPrintQueueSender {
             g2d.setFont(font);
             int lineHeight = g2d.getFontMetrics(font).getHeight();
             int y = lineHeight;
+            if (logo != null) {
+                // The bitmap is in printer dots (~203 dpi); a Printable's unit is 1/72 in.
+                double width = Math.min(pageFormat.getImageableWidth(), logo.getWidth() * 72.0 / 203.0);
+                double height = width * logo.getHeight() / logo.getWidth();
+                int x = (int) Math.round((pageFormat.getImageableWidth() - width) / 2);
+                g2d.drawImage(logo, x, 0, (int) Math.round(width), (int) Math.round(height), null);
+                y += (int) Math.round(height) + lineHeight;
+            }
             for (String line : lines) {
                 g2d.drawString(line, 0, y);
                 y += lineHeight;
@@ -75,26 +97,32 @@ public class WindowsPrintQueueSender {
 
     public void print(PrinterConfigClient.PrinterConfigDto printer, String payload)
             throws IOException, PrintException {
+        print(printer, payload, null);
+    }
+
+    public void print(PrinterConfigClient.PrinterConfigDto printer, String payload, byte[] logoPng)
+            throws IOException, PrintException {
         PrintService service = findService(printer.windowsQueueName());
         if ("DRIVER".equals(printer.renderMode())) {
-            printViaDriver(service, payload);
+            printViaDriver(service, payload, logoPng);
         } else {
-            printRaw(service, payload);
+            printRaw(service, payload, logoPng);
         }
     }
 
-    private void printRaw(PrintService service, String payload) throws IOException, PrintException {
-        byte[] bytes = renderToBytes(payload);
+    private void printRaw(PrintService service, String payload, byte[] logoPng)
+            throws IOException, PrintException {
+        byte[] bytes = renderToBytes(payload, logoPng);
         DocPrintJob job = service.createPrintJob();
         SimpleDoc doc = new SimpleDoc(bytes, DocFlavor.BYTE_ARRAY.AUTOSENSE, null);
         job.print(doc, null);
     }
 
-    private void printViaDriver(PrintService service, String payload) throws IOException {
+    private void printViaDriver(PrintService service, String payload, byte[] logoPng) throws IOException {
         PrinterJob job = PrinterJob.getPrinterJob();
         try {
             job.setPrintService(service);
-            job.setPrintable(renderToPrintable(payload));
+            job.setPrintable(renderToPrintable(payload, logoPng));
             job.print();
         } catch (PrinterException e) {
             throw new IOException("Windows driver print failed for queue '"

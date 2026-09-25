@@ -41,7 +41,6 @@ class UserRepositoryStaffQueryTest extends AbstractTenantIsolationTest {
         assertThat(saved.getActive()).isTrue();
         assertThat(saved.getPendingHours()).isEqualByComparingTo(BigDecimal.ZERO);
         assertThat(saved.getShift()).isNull();
-        assertThat(saved.getJobTitle()).isNull();
     }
 
     @Test

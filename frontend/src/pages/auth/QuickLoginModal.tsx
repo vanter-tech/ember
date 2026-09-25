@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Hash, Lock } from 'lucide-react'
 import axios from 'axios'
 import toast from 'react-hot-toast'
 import { useNavigate } from 'react-router-dom'
@@ -10,7 +11,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { PasswordInput } from '@/components/PasswordInput'
 import { cn } from '@/lib/utils'
 import { authService } from '@/lib/api'
 import { useAuthStore } from '@/store/authStore'
@@ -89,6 +90,18 @@ export const QuickLoginModal = ({
   const fieldLabel =
     mode === 'pin' ? tAuth('quickLoginPinLabel') : tAuth('passwordPlaceholder')
 
+  const fieldProps = {
+    id: 'quicklogin-field',
+    'aria-label': fieldLabel,
+    inputMode: mode === 'pin' ? ('numeric' as const) : undefined,
+    maxLength: mode === 'pin' ? 6 : undefined,
+    autoFocus: true,
+    value,
+    onChange: (e: React.ChangeEvent<HTMLInputElement>) =>
+      setValue(mode === 'pin' ? e.target.value.replace(/D/g, '') : e.target.value),
+    placeholder: mode === 'pin' ? tAuth('quickLoginPinPlaceholder') : tAuth('passwordPlaceholder'),
+  }
+
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="sm:max-w-sm rounded-3xl p-6">
@@ -120,15 +133,22 @@ export const QuickLoginModal = ({
               aria-pressed={mode === m}
               onClick={() => pickMode(m)}
               className={cn(
-                'rounded-xl border px-3 py-2 text-sm font-medium transition-colors',
+                'flex cursor-pointer items-center justify-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium transition-colors',
                 mode === m
                   ? 'border-[#920703] bg-[#920703]/5 text-[#920703]'
                   : 'border-input text-zinc-600 hover:bg-zinc-50'
               )}
             >
-              {m === 'pin'
-                ? tAuth('quickLoginPinLabel')
-                : tAuth('quickLoginPasswordLabel')}
+              {m === 'pin' ? (
+                <Hash className="h-4 w-4" aria-hidden="true" />
+              ) : (
+                <Lock className="h-4 w-4" aria-hidden="true" />
+              )}
+              <span>
+                {m === 'pin'
+                  ? tAuth('quickLoginPinLabel')
+                  : tAuth('quickLoginPasswordLabel')}
+              </span>
             </button>
           ))}
         </div>
@@ -144,31 +164,15 @@ export const QuickLoginModal = ({
               <label htmlFor="quicklogin-field" className="text-sm font-medium">
                 {fieldLabel}
               </label>
-              <Input
-                id="quicklogin-field"
-                aria-label={fieldLabel}
-                type={mode === 'pin' ? 'text' : 'password'}
-                inputMode={mode === 'pin' ? 'numeric' : undefined}
-                maxLength={mode === 'pin' ? 6 : undefined}
-                autoFocus
-                value={value}
-                onChange={(e) =>
-                  setValue(
-                    mode === 'pin'
-                      ? e.target.value.replace(/\D/g, '')
-                      : e.target.value
-                  )
-                }
-                placeholder={
-                  mode === 'pin'
-                    ? tAuth('quickLoginPinPlaceholder')
-                    : tAuth('passwordPlaceholder')
-                }
-              />
+              <PasswordInput key={mode} {...fieldProps} />
               {error && <p className="text-sm text-red-600">{error}</p>}
             </>
           )}
-          <Button type="submit" disabled={busy || !mode || value.length < 4}>
+          <Button
+            type="submit"
+            className="disabled:cursor-not-allowed"
+            disabled={busy || !mode || value.length < 4}
+          >
             {tAuth('quickLoginSubmit')}
           </Button>
         </form>

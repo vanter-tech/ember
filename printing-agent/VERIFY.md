@@ -86,6 +86,17 @@ Bugs found here become their own follow-up tasks — do **not** fix them during 
   (the spec §7 orphan-process risk was flagged as accepted-but-unverified, not fully closed by
   Task 4's normal-exit kill path).
 
+- [ ] **14. Ticket logo (new, needs a real thermal printer).**
+  In the web app: Ajustes → Ticket → **Subir logo** (PNG/JPG ≤ 2 MB) on a plan with branding, with the
+  paper width matching the printer. Print a bill receipt from a table. The logo prints **centered
+  above the ticket text**, in black/white dots, and the text below is **left-aligned as usual**
+  (not centered). Then: (a) switch paper width 58 ↔ 80 mm and reprint — the logo re-scales with no
+  re-upload; (b) **Quitar logo** and reprint — text only; (c) with the backend unreachable but the
+  logo printed once before, the ticket still prints (cached copy); (d) a kitchen ticket
+  carries the same logo above its text; (e) on a `DRIVER`-mode inkjet queue the logo is drawn at the top of the page.
+  Record the printer model — dot density other than ~203 dpi may need the width constants in the
+  backend's `TicketLogoProcessor` adjusted.
+
 ---
 
 ## Result

@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
+import { getAvatarColor } from '@/components/AvatarInitials'
 import type { StaffMemberResponse } from '@/lib/api'
 import { ROLE_BADGE_CLASSNAMES, ROLE_LABELS } from '../types'
 import { useTranslation } from '@/lib/i18n'
@@ -42,7 +43,7 @@ export const StaffCard = ({ member, onViewProfile, onDeactivate }: StaffCardProp
         <div className="flex items-start justify-between gap-2">
           <div className="relative">
             <Avatar className="h-12 w-12">
-              <AvatarFallback>{getInitials(name)}</AvatarFallback>
+              <AvatarFallback className={getAvatarColor(member.id ?? name)}>{getInitials(name)}</AvatarFallback>
             </Avatar>
             <span
               className={cn(
@@ -59,7 +60,7 @@ export const StaffCard = ({ member, onViewProfile, onDeactivate }: StaffCardProp
 
         <div className="flex flex-col gap-0.5">
           <p className="text-base font-semibold text-foreground">{name}</p>
-          <p className="text-sm text-muted-foreground">{member.jobTitle || member.email}</p>
+          <p className="text-sm text-muted-foreground">{member.email}</p>
         </div>
 
         {metadata.length > 0 && (

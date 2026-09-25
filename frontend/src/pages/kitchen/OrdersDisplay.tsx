@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { kitchenServices } from '@/lib/api'
 import { useQuery } from '@tanstack/react-query'
 import { QueueCard } from './components/QueueCard'
@@ -12,6 +13,12 @@ import { useTranslation } from '@/lib/i18n'
 export const OrdersDisplays = () => {
   const isConnected = useWebsocketStore((state) => state.isConnected)
   const { t } = useTranslation('kitchen')
+  const [now, setNow] = useState(() => Date.now())
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 30000)
+    return () => clearInterval(id)
+  }, [])
 
   const {
     data: info = [],
@@ -47,7 +54,7 @@ export const OrdersDisplays = () => {
   }
 
   return (
-    <div className="flex flex-col h-full p-2">
+    <div className="flex flex-col h-full overflow-y-auto p-2">
       <div className="flex items-center justify-center flex-col relative w-full h-20 shadow-sm rounded-3xl p-4">
         <Badge
           variant={isConnected ? 'default' : 'destructive'}
@@ -68,13 +75,13 @@ export const OrdersDisplays = () => {
           {t('kdsSubtitle')}
         </span>
       </div>
-      <div className="flex flex-1 items-start gap-6 overflow-x-auto p-6">
+      <div className="flex items-start gap-6 overflow-x-auto p-6">
         {orders.length === 0 ? (
           <div className="flex w-full items-center justify-center">
             <EmptyState icon={ChefHat} title={t('kdsEmptyTitle')} description={t('kdsEmptyDescription')} />
           </div>
         ) : (
-          orders.map((item, index) => <QueueCard key={item?.id ?? index} order={item!} />)
+          orders.map((item, index) => <QueueCard key={item?.id ?? index} order={item!} now={now} />)
         )}
       </div>
       {orders.length > 0 && (

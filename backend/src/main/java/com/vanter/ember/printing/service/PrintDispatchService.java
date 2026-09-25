@@ -5,6 +5,7 @@ import com.vanter.ember.config.TenantContextHolder;
 import com.vanter.ember.printing.dto.PrintJobAck;
 import com.vanter.ember.printing.dto.PrintJobMessage;
 import com.vanter.ember.printing.event.PrintAgentConnected;
+import com.vanter.ember.printing.logo.TicketLogoService;
 import com.vanter.ember.printing.model.PrintJob;
 import com.vanter.ember.printing.model.PrintJobStatus;
 import com.vanter.ember.printing.model.PrinterConfig;
@@ -35,6 +36,7 @@ public class PrintDispatchService {
     private final PrintJobRepository printJobRepository;
     private final PrintAgentConnectionRegistry connectionRegistry;
     private final SimpMessagingTemplate messagingTemplate;
+    private final TicketLogoService ticketLogoService;
 
     @Transactional
     public void dispatch(PrintJob job) {
@@ -148,8 +150,10 @@ public class PrintDispatchService {
     }
 
     private void sendTo(UUID agentId, PrintJob job) {
+        // Every ticket carries the restaurant logo when it has one (bill receipt and kitchen ticket).
+        boolean logo = job.getTenantId() != null && ticketLogoService.exists(job.getTenantId());
         messagingTemplate.convertAndSend(
                 "/topic/print-agent/" + agentId,
-                new PrintJobMessage(job.getId(), job.getRole().name(), job.getPayload()));
+                new PrintJobMessage(job.getId(), job.getRole().name(), job.getPayload(), logo));
     }
 }

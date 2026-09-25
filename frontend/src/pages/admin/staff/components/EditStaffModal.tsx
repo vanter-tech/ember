@@ -40,7 +40,6 @@ const editStaffSchemaFactory = (t: ReturnType<typeof useTranslation<'admin'>>['t
     name: z.string().min(2, t('staffNameMinLengthError')),
     email: z.string().email(t('staffEmailInvalidError')),
     role: z.enum(['WAITER', 'KITCHEN', 'ADMIN', 'ACCOUNTANT']),
-    jobTitle: z.string(),
     shift: z.string(),
     contractType: z.string(),
     location: z.string(),
@@ -194,7 +193,6 @@ export const EditStaffModal = () => {
       name: member?.name ?? '',
       email: member?.email ?? '',
       role: initialRole,
-      jobTitle: member?.jobTitle ?? '',
       shift: member?.shift ?? '',
       contractType: member?.contractType ?? '',
       location: member?.location ?? '',
@@ -287,23 +285,6 @@ export const EditStaffModal = () => {
                       <SelectItem value="ADMIN">{ROLE_LABELS.ADMIN}</SelectItem>
                     </SelectContent>
                   </Select>
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="jobTitle"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t('jobTitleLabel')}</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder={t('jobTitlePlaceholder')}
-                      className="rounded-xl"
-                      {...field}
-                    />
-                  </FormControl>
                 </FormItem>
               )}
             />

@@ -1,4 +1,4 @@
-import { AvatarInitials, AvatarColors } from '@/components/AvatarInitials'
+import { AvatarInitials, getAvatarColor } from '@/components/AvatarInitials'
 import type { participantDTO } from '@/lib/api'
 import { useTranslation } from '@/lib/i18n'
 
@@ -25,7 +25,7 @@ export const ParticipantsList = ({ participants }: ParticipantsListProps) => {
             className="flex items-center gap-3 p-2 rounded-xl hover:bg-zinc-50 transition-colors cursor-pointer"
           >
             <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 ${AvatarColors[index % AvatarColors.length]}`}
+              className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 ${getAvatarColor(participant.name)}`}
             >
               {AvatarInitials(participant.name?.toString() || '')}
             </div>

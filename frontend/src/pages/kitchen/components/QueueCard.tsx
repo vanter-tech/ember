@@ -3,18 +3,18 @@ import {
   CardHeader,
   CardTitle,
   CardContent,
-  CardFooter,
 } from '@/components/ui/card'
 import { getColorForTable } from '@/components/AvatarInitials'
 import { kitchenServices, type kitchenOrders, type OrderItemStatus } from '@/lib/api'
 import { Button } from '@/components/ui/button'
+import { Clock } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import { NEXT_ACTION_LABEL, NEXT_STATUS, STATUS_LABEL } from '../lib/itemStatus'
 import { useTranslation } from '@/lib/i18n'
 
-export const QueueCard = ({order}: {order: kitchenOrders}) => {
+export const QueueCard = ({order, now}: {order: kitchenOrders, now: number}) => {
   const queryClient = useQueryClient()
   const { t } = useTranslation('kitchen')
 
@@ -29,10 +29,13 @@ export const QueueCard = ({order}: {order: kitchenOrders}) => {
     },
   })
 
+  const minutes = Math.max(0, Math.floor((now - new Date(order.createdAt ?? now).getTime()) / 60000))
+  const isLate = minutes >= 15
+
   return(
     <>
     <Card className={`flex shrink-0 border-l-7 ${getColorForTable(order.sessionId!)} h-[300px]` }>
-        <CardHeader className='flex justify-between items-start'>
+        <CardHeader className='flex flex-col items-start gap-1'>
             <div>
                 <CardTitle className='text-2xl font-black tracking-tight'>
                     {order.tableNumber || "?"}
@@ -41,6 +44,10 @@ export const QueueCard = ({order}: {order: kitchenOrders}) => {
                     {t('ticketLabel', { code: order.id?.substring(0,6).toUpperCase() ?? '' })}
                 </p>
             </div>
+            <span className={`flex items-center gap-1 text-sm font-semibold ${isLate ? 'text-red-600' : 'text-gray-500'}`}>
+                <Clock className='size-4' />
+                {t('elapsedMinutes', { minutes })}
+            </span>
         </CardHeader>
         <CardContent className='flex-1 overflow-y-auto px-6'>
             <ul className='space-y-4'>
@@ -75,11 +82,6 @@ export const QueueCard = ({order}: {order: kitchenOrders}) => {
                 })}
             </ul>
         </CardContent>
-        <CardFooter className='mt-auto'>
-            <Button className='w-full py-2 hover:bg-red-800 font-medium transition-colors'>
-                {t('viewDetails')}
-            </Button>
-        </CardFooter>
     </Card>
     </>
   )

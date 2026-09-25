@@ -41,7 +41,7 @@ describe('Login quick-access chips', () => {
     expect(screen.getByText('Juan Perez')).toBeVisible()
     expect(
       screen.queryByPlaceholderText('Ingresa tu correo electrónico')
-    ).not.toBeVisible()
+    ).not.toBeInTheDocument()
     expect(screen.getByText('Usar otra cuenta')).toBeVisible()
   })
 })

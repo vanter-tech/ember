@@ -117,6 +117,54 @@ class ReceiptRendererTest {
     }
 
     @Test
+    void render_printsTheBusinessHoursUnderTheHeader() {
+        givenBill("10.00", item("Pizza", "10.00", OrderItemStatus.DELIVERED));
+        settings.getBilling().setTaxRate(0.0);
+        settings.getBranding().setOpeningTime("12:00");
+        settings.getBranding().setClosingTime("23:00");
+
+        String out = renderer.render(12L, settings);
+
+        assertThat(out).contains("Horario: 12:00 - 23:00");
+        assertThat(out.indexOf("EMBER")).isLessThan(out.indexOf("Horario:"));
+        assertThat(out.indexOf("Horario:")).isLessThan(out.indexOf("Mesa 5"));
+    }
+
+    @Test
+    void render_omitsTheHoursWhenTheyAreSwitchedOff() {
+        givenBill("10.00", item("Pizza", "10.00", OrderItemStatus.DELIVERED));
+        settings.getBilling().setTaxRate(0.0);
+        settings.getBranding().setOpeningTime("12:00");
+        settings.getBranding().setClosingTime("23:00");
+        settings.getTicket().setShowBusinessHours(false);
+
+        assertThat(renderer.render(12L, settings)).doesNotContain("Horario");
+    }
+
+    @Test
+    void render_putsTheTipLineBeforeTheFooter_whenTheTipSettingIsOn() {
+        givenBill("10.00", item("Pizza", "10.00", OrderItemStatus.DELIVERED));
+        settings.getBilling().setTaxRate(0.0);
+        settings.getTicket().setShowTip(true);
+
+        String out = renderer.render(12L, settings);
+
+        assertThat(out).contains("PROPINA: " + "_".repeat(33));
+        assertThat(out.indexOf("TOTAL")).isLessThan(out.indexOf("PROPINA:"));
+        assertThat(out.indexOf("PROPINA:")).isLessThan(out.indexOf("Gracias por visitarnos"));
+        assertThat(out.stripTrailing()).endsWith("Gracias por visitarnos");
+    }
+
+    @Test
+    void render_hasNoTipLine_whenTheTipSettingIsOff() {
+        givenBill("10.00", item("Pizza", "10.00", OrderItemStatus.DELIVERED));
+        settings.getBilling().setTaxRate(0.0);
+        settings.getTicket().setShowTip(false);
+
+        assertThat(renderer.render(12L, settings)).doesNotContain("PROPINA");
+    }
+
+    @Test
     void render_hidesTheTaxBreakdown_whenSettingsSayNo() {
         givenBill("57.50", item("Hamburguesa", "50.00", OrderItemStatus.DELIVERED));
         settings.getTicket().setShowTaxBreakdown(false);

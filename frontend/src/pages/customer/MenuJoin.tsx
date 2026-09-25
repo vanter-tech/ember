@@ -10,6 +10,8 @@ import { useSessionStore } from '@/store/sessionStore'
 import { SessionTableService, type LoginResponse } from '@/lib/api'
 import { PENDING_QR_TOKEN_KEY, sessionIdFromQrToken } from '@/lib/qrToken'
 import { useTranslation } from '@/lib/i18n'
+import { LogIn, User } from 'lucide-react'
+import { JoinShell } from './components/JoinShell'
 
 /**
  * Landing page for the table QR (`/menu/join?token=…`). The QR is scanned with the phone's own
@@ -101,24 +103,24 @@ export const MenuJoin = () => {
 
   if (!qrToken || !sessionId) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
-        <Card className="w-full max-w-sm rounded-3xl">
-          <CardContent className="flex flex-col items-center gap-4 py-10 text-center">
+      <JoinShell>
+        <Card className="relative z-10 w-full max-w-sm gap-6 rounded-3xl py-10 shadow-lg">
+          <CardContent className="flex flex-col items-center gap-4 px-8 text-center">
             <p className="text-gray-500">{t('qrJoinInvalidLink')}</p>
             <Button asChild variant="outline" className="rounded-2xl">
               <Link to="/customer">{t('qrJoinBackHome')}</Link>
             </Button>
           </CardContent>
         </Card>
-      </div>
+      </JoinShell>
     )
   }
 
   if (isAuthenticatedCustomer && accountName) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
-        <Card className="w-full max-w-sm rounded-3xl">
-          <CardContent className="flex flex-col items-center gap-4 py-10 text-center">
+      <JoinShell>
+        <Card className="relative z-10 w-full max-w-sm gap-6 rounded-3xl py-10 shadow-lg">
+          <CardContent className="flex flex-col items-center gap-4 px-8 text-center">
             {joinFailed ? (
               <>
                 <p className="text-gray-500">{t('qrJoinGenericErrorToast')}</p>
@@ -135,7 +137,7 @@ export const MenuJoin = () => {
             )}
           </CardContent>
         </Card>
-      </div>
+      </JoinShell>
     )
   }
 
@@ -155,15 +157,15 @@ export const MenuJoin = () => {
     }
 
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
-        <Card className="w-full max-w-sm rounded-3xl py-6">
-          <CardHeader>
-            <CardTitle className="text-2xl font-bold text-[#8c1717]">{t('qrJoinTitle')}</CardTitle>
+      <JoinShell>
+        <Card className="relative z-10 w-full max-w-sm gap-6 rounded-3xl py-10 shadow-lg">
+          <CardHeader className="items-center px-8 text-center">
+            <CardTitle className="text-2xl font-bold text-[#920703]">{t('qrJoinTitle')}</CardTitle>
             <p className="text-sm text-gray-500">
               {guestMode ? t('qrJoinGuestNameLabel') : t('qrJoinChoiceSubtitle')}
             </p>
           </CardHeader>
-          <CardContent className="flex flex-col gap-3">
+          <CardContent className="flex flex-col px-8 gap-3">
             {guestMode ? (
               <>
                 <Input
@@ -187,39 +189,59 @@ export const MenuJoin = () => {
               </>
             ) : (
               <>
-                <Button
-                  className="h-12 w-full text-lg font-bold hover:bg-[#6a1111]"
+                <button
+                  type="button"
+                  aria-label={t('qrJoinSignInCta')}
                   onClick={() => navigate('/login', { replace: true })}
+                  className="flex w-full cursor-pointer items-center gap-4 rounded-2xl bg-[#920703] p-4 text-left text-white shadow-sm transition hover:bg-[#6a1111] active:scale-[0.99]"
                 >
-                  {t('qrJoinSignInCta')}
-                </Button>
-                <Button
-                  variant="outline"
-                  className="h-12 w-full text-lg font-bold"
+                  <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-white/15">
+                    <LogIn className="size-5" aria-hidden="true" />
+                  </span>
+                  <span className="flex flex-col">
+                    <span className="text-base font-bold">{t('qrJoinSignInCta')}</span>
+                    <span className="text-xs text-white/80">{t('qrJoinSignInHint')}</span>
+                  </span>
+                </button>
+                <div className="flex items-center gap-3 text-xs uppercase tracking-wide text-zinc-400">
+                  <span className="h-px flex-1 bg-zinc-200" />
+                  {t('qrJoinOr')}
+                  <span className="h-px flex-1 bg-zinc-200" />
+                </div>
+                <button
+                  type="button"
+                  aria-label={t('qrJoinGuestCta')}
                   onClick={() => setGuestMode(true)}
+                  className="flex w-full cursor-pointer items-center gap-4 rounded-2xl border-2 border-zinc-200 bg-white p-4 text-left transition hover:border-[#920703]/40 hover:bg-zinc-50 active:scale-[0.99]"
                 >
-                  {t('qrJoinGuestCta')}
-                </Button>
+                  <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-zinc-100">
+                    <User className="size-5 text-zinc-600" aria-hidden="true" />
+                  </span>
+                  <span className="flex flex-col">
+                    <span className="text-base font-bold text-zinc-800">{t('qrJoinGuestCta')}</span>
+                    <span className="text-xs text-zinc-500">{t('qrJoinGuestHint')}</span>
+                  </span>
+                </button>
               </>
             )}
           </CardContent>
         </Card>
-      </div>
+      </JoinShell>
     )
   }
 
   // Rare edge case: authenticated as CUSTOMER but the account has no name on file — the only
   // remaining path that still needs to ask, since the backend requires a non-blank userName.
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
-      <Card className="w-full max-w-sm rounded-3xl py-6">
-        <CardHeader>
-          <CardTitle className="text-2xl font-bold text-[#8c1717]">
+    <JoinShell>
+      <Card className="relative z-10 w-full max-w-sm gap-6 rounded-3xl py-10 shadow-lg">
+        <CardHeader className="px-8">
+          <CardTitle className="text-2xl font-bold text-[#920703]">
             {t('qrJoinTitle')}
           </CardTitle>
           <p className="text-sm text-gray-500">{t('qrJoinSubtitle')}</p>
         </CardHeader>
-        <CardContent className="flex flex-col gap-4">
+        <CardContent className="flex flex-col px-8 gap-4">
           <label className="flex flex-col gap-1 text-sm font-medium text-gray-700">
             {t('qrJoinNameLabel')}
             <Input
@@ -240,6 +262,6 @@ export const MenuJoin = () => {
           </Button>
         </CardContent>
       </Card>
-    </div>
+    </JoinShell>
   )
 }

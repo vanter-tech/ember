@@ -915,3 +915,26 @@ export const billingService = {
     return data
   },
 }
+
+export const ticketLogoService = {
+  /** The logo as it prints (1-bit, sized to the paper width), or null when none is set. */
+  get: async (): Promise<Blob | null> => {
+    try {
+      const { data } = await api.get<Blob>('/settings/ticket-logo', { responseType: 'blob' })
+      return data
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response?.status === 404) return null
+      throw error
+    }
+  },
+  upload: async (file: File): Promise<void> => {
+    const form = new FormData()
+    form.append('file', file)
+    await api.post('/settings/ticket-logo', form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+  },
+  remove: async (): Promise<void> => {
+    await api.delete('/settings/ticket-logo')
+  },
+}

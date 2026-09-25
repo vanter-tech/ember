@@ -37,6 +37,7 @@ class PrintDispatchServiceTest {
     @Mock PrintJobRepository printJobRepository;
     @Mock PrintAgentConnectionRegistry connectionRegistry;
     @Mock SimpMessagingTemplate messagingTemplate;
+    @Mock com.vanter.ember.printing.logo.TicketLogoService ticketLogoService;
     @InjectMocks PrintDispatchService printDispatchService;
 
     private static final UUID TENANT_ID = UUID.randomUUID();
@@ -263,5 +264,57 @@ class PrintDispatchServiceTest {
         assertThat(cancelled).isEqualTo(2);
         assertThat(a.getStatus()).isEqualTo(PrintJobStatus.CANCELED);
         assertThat(b.getStatus()).isEqualTo(PrintJobStatus.CANCELED);
+    }
+
+    @Test
+    void dispatch_billReceiptJob_flagsTheLogoWhenTheTenantHasOne() {
+        PrintJob job = receiptJobFor(AGENT_ID);
+        job.setSourceType(PrintJobSourceType.BILL_RECEIPT);
+        when(printerConfigRepository.findByTenantIdAndRoleAndActiveTrue(TENANT_ID, PrinterRole.RECEIPT))
+                .thenReturn(List.of(receiptPrinterOf(AGENT_ID)));
+        when(connectionRegistry.isConnected(AGENT_ID)).thenReturn(true);
+        when(ticketLogoService.exists(TENANT_ID)).thenReturn(true);
+        when(printJobRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        printDispatchService.dispatch(job);
+
+        verify(messagingTemplate).convertAndSend(
+                "/topic/print-agent/" + AGENT_ID,
+                new com.vanter.ember.printing.dto.PrintJobMessage(
+                        job.getId(), job.getRole().name(), job.getPayload(), true));
+    }
+
+    @Test
+    void dispatch_kitchenTicket_flagsTheLogoToo() {
+        PrintJob job = kitchenJob();
+        when(printerConfigRepository.findByTenantIdAndRoleAndActiveTrue(TENANT_ID, PrinterRole.KITCHEN))
+                .thenReturn(List.of(kitchenPrinter()));
+        when(connectionRegistry.isConnected(AGENT_ID)).thenReturn(true);
+        when(ticketLogoService.exists(TENANT_ID)).thenReturn(true);
+        when(printJobRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        printDispatchService.dispatch(job);
+
+        verify(messagingTemplate).convertAndSend(
+                "/topic/print-agent/" + AGENT_ID,
+                new com.vanter.ember.printing.dto.PrintJobMessage(
+                        job.getId(), job.getRole().name(), job.getPayload(), true));
+    }
+
+    @Test
+    void dispatch_noLogoConfigured_neverFlagsIt() {
+        PrintJob job = kitchenJob();
+        when(printerConfigRepository.findByTenantIdAndRoleAndActiveTrue(TENANT_ID, PrinterRole.KITCHEN))
+                .thenReturn(List.of(kitchenPrinter()));
+        when(connectionRegistry.isConnected(AGENT_ID)).thenReturn(true);
+        when(ticketLogoService.exists(TENANT_ID)).thenReturn(false);
+        when(printJobRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        printDispatchService.dispatch(job);
+
+        verify(messagingTemplate).convertAndSend(
+                "/topic/print-agent/" + AGENT_ID,
+                new com.vanter.ember.printing.dto.PrintJobMessage(
+                        job.getId(), job.getRole().name(), job.getPayload(), false));
     }
 }

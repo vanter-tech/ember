@@ -7,8 +7,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
-import { Checkbox } from '@/components/ui/checkbox'
+import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover'
+import { ModifierOptionBadges } from '@/components/ModifierOptionBadges'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useUIStore } from '@/store/uiStore'
@@ -196,7 +196,7 @@ export const AddItemModal = () => {
     key === MESA_KEY ? t('addItemParticipantMesa') : key
 
   const clientChipClass = (key: string) =>
-    `flex cursor-pointer items-center gap-3 rounded-2xl border-2 px-4 py-3 text-left transition-colors ${
+    `flex min-h-11 shrink-0 cursor-pointer items-center gap-2 rounded-2xl border-2 px-3 py-2 text-left transition-colors sm:gap-3 sm:px-4 sm:py-3 ${
       activeClient === key
         ? 'border-[#8B0000] bg-[#8B0000]/5'
         : 'border-zinc-200 hover:border-zinc-300'
@@ -206,7 +206,9 @@ export const AddItemModal = () => {
   // to its left) instead of a floating sibling — Radix's outside-interaction dismiss logic only
   // ever sees "inside the dialog" for anything inside it, closing button included. `top-0
   // bottom-0` on the panel stretches it to match the dialog's own rendered height exactly.
-  const PANEL_SHIFT = 168 // half of (panel width 320px + gap 16px) — recenters the pair as one
+  // Side-by-side (dialog shifted right, panel to its left) only fits from 1920px up; below that
+  // — iPad and most laptops — the panel overlays the right side of the dialog instead. 216px is
+  // half of (panel width 416px + gap 16px), recentering the pair as one.
 
   useEffect(() => {
     if (!showCartPanel) return
@@ -217,13 +219,9 @@ export const AddItemModal = () => {
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
       <DialogContent
-        className="sm:max-w-6xl rounded-3xl p-8"
-        style={{
-          marginLeft: showCartPanel ? PANEL_SHIFT : 0,
-          transitionProperty: 'margin-left',
-          transitionDuration: '300ms',
-          transitionTimingFunction: 'ease-out',
-        }}
+        className={`gap-3 rounded-3xl p-4 sm:gap-4 sm:p-8 transition-[margin-left] duration-300 ease-out sm:max-w-[min(95vw,88rem)] ${
+          showCartPanel ? 'min-[1920px]:ml-[216px]' : ''
+        }`}
       >
         <DialogHeader className="mb-2">
           <DialogTitle className="text-2xl font-bold text-zinc-800">
@@ -232,53 +230,11 @@ export const AddItemModal = () => {
           <DialogDescription className="sr-only">{t('addItemModalTitle')}</DialogDescription>
         </DialogHeader>
 
-        {pendingItem ? (
-          <div className="space-y-4">
-            <p className="font-semibold">{pendingItem.name}</p>
-            {(pendingItem.modifierGroups ?? []).map((group) => (
-              <div key={group.id} className="space-y-2">
-                <p className="font-semibold text-sm">{group.name}</p>
-                {group.selectionType === 'SINGLE_REQUIRED' ? (
-                  <RadioGroup
-                    value={String(optionIds[group.id!]?.[0] ?? '')}
-                    onValueChange={(v) => toggleSingle(group.id!, Number(v))}
-                  >
-                    {(group.options ?? []).map((option) => (
-                      <label key={option.id} className="flex items-center gap-2 text-sm">
-                        <RadioGroupItem value={String(option.id)} />
-                        {option.name}{' '}
-                        {option.priceDelta ? `(+$${option.priceDelta.toFixed(2)})` : ''}
-                      </label>
-                    ))}
-                  </RadioGroup>
-                ) : (
-                  (group.options ?? []).map((option) => (
-                    <label key={option.id} className="flex items-center gap-2 text-sm">
-                      <Checkbox
-                        checked={optionIds[group.id!]?.includes(option.id!) ?? false}
-                        onCheckedChange={() =>
-                          toggleMulti(group.id!, option.id!, group.maxSelections)
-                        }
-                      />
-                      {option.name}{' '}
-                      {option.priceDelta ? `(+$${option.priceDelta.toFixed(2)})` : ''}
-                    </label>
-                  ))
-                )}
-              </div>
-            ))}
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setPendingItem(null)}>
-                {t('addItemModifierCancel')}
-              </Button>
-              <Button onClick={confirmModifiers}>{t('addItemModifierConfirm')}</Button>
-            </DialogFooter>
-          </div>
-        ) : (
+        {(
           <>
-            <div className="grid grid-cols-[minmax(180px,240px)_1fr] gap-10">
-              <div className="flex flex-col gap-3 max-h-[65vh] overflow-y-auto border-r border-zinc-100 pr-6">
-                <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(180px,240px)_1fr] sm:gap-10">
+              <div className="no-scrollbar flex flex-row gap-2 overflow-x-auto pb-1 sm:max-h-[calc(100dvh-16rem)] sm:flex-col sm:gap-3 sm:overflow-y-auto sm:overflow-x-visible sm:border-r sm:border-zinc-100 sm:pb-0 sm:pr-6">
+                <p className="hidden text-xs font-semibold uppercase tracking-wider text-zinc-500 sm:block">
                   {t('addItemParticipantLabel')}
                 </p>
                 <button
@@ -323,7 +279,7 @@ export const AddItemModal = () => {
                   <button
                     type="button"
                     onClick={() => setShowCartPanel(true)}
-                    className="flex cursor-pointer items-center gap-2 rounded-full border-2 border-zinc-200 px-4 py-2 text-sm font-medium text-zinc-600 transition-colors hover:border-zinc-300"
+                    className="flex min-h-11 cursor-pointer items-center gap-2 rounded-full border-2 border-zinc-200 px-4 py-2 text-sm font-medium text-zinc-600 transition-colors hover:border-zinc-300"
                   >
                     <ShoppingCart className="size-4" />
                     {t('addItemViewCartButton')}
@@ -335,7 +291,7 @@ export const AddItemModal = () => {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder={t('addItemSearchPlaceholder')}
-                  className="w-full rounded-2xl border-2 border-zinc-200 px-4 py-2 outline-none focus:border-[#8B0000]"
+                  className="min-h-11 w-full rounded-2xl border-2 border-zinc-200 px-4 py-2 outline-none focus:border-[#8B0000]"
                 />
                 {!search.trim() && (
                   <div className="flex gap-2 overflow-x-auto pb-1">
@@ -344,7 +300,7 @@ export const AddItemModal = () => {
                         key={cat.id}
                         type="button"
                         onClick={() => setActiveCategory(cat.id)}
-                        className={`shrink-0 cursor-pointer whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+                        className={`min-h-10 shrink-0 cursor-pointer whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition-colors ${
                           activeCategory === cat.id
                             ? 'bg-[#8B0000] text-white'
                             : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
@@ -355,15 +311,18 @@ export const AddItemModal = () => {
                     ))}
                   </div>
                 )}
-                <div className="grid grid-cols-2 gap-5 max-h-[55vh] overflow-y-auto pr-1">
+                <div className="grid max-h-[calc(100dvh-23rem)] grid-cols-2 gap-3 overflow-y-auto pr-1 sm:max-h-[calc(100dvh-26rem)] sm:gap-5">
                   {visibleItems.map((item) => (
                     // Deliberately not a single big button: a card this dense on a touch screen is
                     // an easy misclick, so only the "+" adds — the rest is inert display.
-                    <div
+                    <Popover
                       key={item.id}
-                      className="flex flex-col overflow-hidden rounded-2xl border-2 border-zinc-200"
+                      open={pendingItem?.id === item.id}
+                      onOpenChange={(open) => !open && setPendingItem(null)}
                     >
-                      <div className="h-40 w-full bg-zinc-100">
+                    <PopoverAnchor asChild>
+                    <div className="flex flex-col overflow-hidden rounded-2xl border-2 border-zinc-200">
+                      <div className="h-28 w-full bg-zinc-100 sm:h-52">
                         {item.imageUrl ? (
                           <img
                             src={item.imageUrl}
@@ -379,21 +338,58 @@ export const AddItemModal = () => {
                           </div>
                         )}
                       </div>
-                      <div className="flex items-center justify-between gap-2 p-4">
+                      <div className="flex items-center justify-between gap-2 p-3 sm:p-4">
                         <div className="min-w-0">
-                          <p className="truncate text-base font-semibold">{item.name}</p>
-                          <p className="text-base text-zinc-500">${(item.price ?? 0).toFixed(2)}</p>
+                          <p className="truncate text-sm font-semibold sm:text-base">{item.name}</p>
+                          <p className="text-sm text-zinc-500 sm:text-base">${(item.price ?? 0).toFixed(2)}</p>
                         </div>
                         <button
                           type="button"
                           aria-label={t('addItemAddAria', { name: item.name ?? '' })}
                           onClick={() => handleTapItem(item)}
-                          className="flex size-12 shrink-0 cursor-pointer items-center justify-center rounded-full bg-[#8B0000] text-white shadow-sm transition-colors hover:bg-[#6a1111] active:scale-95"
+                          className="flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-full bg-[#8B0000] sm:size-12 text-white shadow-sm transition-colors hover:bg-[#6a1111] active:scale-95"
                         >
                           <Plus className="size-6" />
                         </button>
                       </div>
                     </div>
+                    </PopoverAnchor>
+                    <PopoverContent
+                      side="right"
+                      align="start"
+                      collisionPadding={16}
+                      data-testid="modifiers-panel"
+                      className="flex max-h-[70dvh] w-[min(24rem,calc(100vw-2rem))] flex-col gap-3 p-4 sm:h-[var(--radix-popover-trigger-height)]"
+                    >
+                      <p className="shrink-0 font-semibold">{item.name}</p>
+                      <div className="no-scrollbar flex-1 space-y-4 overflow-y-auto">
+                        {(item.modifierGroups ?? []).map((group) => (
+                          <div key={group.id} className="space-y-2">
+                            <p className="text-sm font-semibold">{group.name}</p>
+                            <ModifierOptionBadges
+                              groupId={group.id}
+                              options={group.options ?? []}
+                              selectedIds={optionIds[group.id!] ?? []}
+                              single={group.selectionType === 'SINGLE_REQUIRED'}
+                              onToggle={(optionId) =>
+                                group.selectionType === 'SINGLE_REQUIRED'
+                                  ? toggleSingle(group.id!, optionId)
+                                  : toggleMulti(group.id!, optionId, group.maxSelections)
+                              }
+                            />
+                          </div>
+                        ))}
+                      </div>
+                      <div className="flex shrink-0 justify-end gap-2">
+                        <Button variant="outline" size="sm" onClick={() => setPendingItem(null)}>
+                          {t('addItemModifierCancel')}
+                        </Button>
+                        <Button size="sm" onClick={confirmModifiers}>
+                          {t('addItemModifierConfirm')}
+                        </Button>
+                      </div>
+                    </PopoverContent>
+                    </Popover>
                   ))}
                 </div>
               </div>
@@ -401,7 +397,7 @@ export const AddItemModal = () => {
 
             <DialogFooter>
               <Button
-                className="w-full"
+                className="h-11 w-full sm:h-auto"
                 onClick={() => mutation.mutate()}
                 disabled={totalCount === 0 || mutation.isPending}
               >
@@ -418,7 +414,7 @@ export const AddItemModal = () => {
           // `top-0 bottom-0` stretches it to match this dialog's own rendered height exactly.
           <div
             data-testid="client-cart-panel"
-            className={`absolute top-0 bottom-0 right-[calc(100%+1rem)] flex w-80 max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-3xl bg-popover p-6 shadow-2xl ring-1 ring-foreground/10 transition-all duration-300 ease-out ${
+            className={`absolute top-0 bottom-0 right-0 z-10 flex w-[min(26rem,100%)] flex-col min-[1920px]:right-[calc(100%+1rem)] overflow-hidden rounded-3xl bg-popover p-4 sm:p-6 shadow-2xl ring-1 ring-foreground/10 transition-all duration-300 ease-out ${
               panelEntered ? 'translate-x-0 opacity-100' : '-translate-x-4 opacity-0'
             }`}
           >

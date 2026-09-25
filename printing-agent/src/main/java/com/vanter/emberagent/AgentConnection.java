@@ -26,7 +26,12 @@ public class AgentConnection {
 
     public interface PrintJobHandler extends Consumer<PrintJobPayload> {}
 
-    public record PrintJobPayload(String jobId, String role, String payload) {}
+    /** {@code logo}: the restaurant has a receipt logo to print above this ticket (absent = false). */
+    public record PrintJobPayload(String jobId, String role, String payload, boolean logo) {
+        public PrintJobPayload(String jobId, String role, String payload) {
+            this(jobId, role, payload, false);
+        }
+    }
 
     public StompSession connect(String wsBaseUrl, String jwt, String agentId, PrintJobHandler handler)
             throws Exception {

@@ -3,6 +3,8 @@ import type { common as esCommon } from '../es/common'
 export const common = {
   planGateUpgradeToast: 'This feature requires the {{plan}} plan or higher.',
   languageSwitcherLabel: 'Language',
+  showPasswordAria: 'Show password',
+  hidePasswordAria: 'Hide password',
   languageSpanish: 'Español',
   languageEnglish: 'English',
   brandFallback: 'Ember',

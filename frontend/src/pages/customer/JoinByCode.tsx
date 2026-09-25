@@ -9,6 +9,7 @@ import { useAuthStore } from '@/store/authStore'
 import { useSessionStore } from '@/store/sessionStore'
 import { SessionTableService } from '@/lib/api'
 import { useTranslation } from '@/lib/i18n'
+import { JoinShell } from './components/JoinShell'
 
 const CODE_LENGTH = 5
 
@@ -51,13 +52,13 @@ export const JoinByCode = () => {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
-      <Card className="w-full max-w-sm rounded-3xl py-6">
-        <CardHeader>
-          <CardTitle className="text-2xl font-bold text-[#8c1717]">{t('codeJoinTitle')}</CardTitle>
+    <JoinShell>
+      <Card className="relative z-10 w-full max-w-sm gap-6 rounded-3xl py-10 shadow-lg">
+        <CardHeader className="px-8">
+          <CardTitle className="text-2xl font-bold text-[#920703]">{t('codeJoinTitle')}</CardTitle>
           <p className="text-sm text-gray-500">{t('codeJoinSubtitle')}</p>
         </CardHeader>
-        <CardContent className="flex flex-col gap-3">
+        <CardContent className="flex flex-col px-8 gap-3">
           <Input
             autoFocus
             value={code}
@@ -86,6 +87,6 @@ export const JoinByCode = () => {
           </Button>
         </CardContent>
       </Card>
-    </div>
+    </JoinShell>
   )
 }

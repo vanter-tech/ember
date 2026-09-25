@@ -212,18 +212,18 @@ export const TableInformation = () => {
           {billData ? t('tablePaidClosedBanner') : t('tableClosedNoOrderBanner')}
         </div>
       )}
-      <div className="flex justify-between items-start mb-6">
+      <div className="flex flex-col gap-4 md:flex-row md:justify-between md:items-start mb-6">
         <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-4 p-5 pb-0">
+          <div className="flex flex-wrap items-center gap-3 p-2 sm:gap-4 sm:p-5 sm:pb-0">
             <Link to={'/waiter/tables'}>
               <Button
                 variant="ghost"
-                className=" h-13 w-13 rounded-full bg-gray-100 hover:bg-gray-200"
+                className="h-11 w-11 sm:h-13 sm:w-13 rounded-full bg-gray-100 hover:bg-gray-200"
               >
                 <ArrowLeft className="w-5 h-5" />
               </Button>
             </Link>
-            <h1 className="text-4xl font-bold">
+            <h1 className="text-2xl sm:text-4xl font-bold">
               {t('tableHeading', { number: sessionData?.tableNumber ?? '' })}
             </h1>
             {sessionData?.isOccupied ? (
@@ -234,18 +234,18 @@ export const TableInformation = () => {
               ''
             )}
           </div>
-          <div className="flex items-center gap-2 text-gray-500 pl-9">
+          <div className="flex items-center gap-2 text-gray-500 pl-2 sm:pl-9">
             <User className="w-6 h-6" />
             <span className="text-m">{sessionData?.waiterId} {t('waiterRoleLabel')}</span>
           </div>
         </div>
-        <div id="table-tour-actions" className="flex items-center gap-3 pr-7">
+        <div id="table-tour-actions" className="flex flex-wrap items-center gap-2 sm:gap-3 sm:pr-7">
           <Popover open={qrPopoverOpen} onOpenChange={setQrPopoverOpen}>
             <PopoverTrigger asChild>
               <Button
                 variant="secondary"
                 size="icon"
-                className="rounded-full bg-gray-100 hover:bg-gray-200 h-18 w-18"
+                className="rounded-full bg-gray-100 hover:bg-gray-200 h-12 w-12 sm:h-18 sm:w-18"
                 disabled={actionsDisabled}
                 title={t('tableQrInfoLabel')}
               >
@@ -273,7 +273,7 @@ export const TableInformation = () => {
           </Popover>
           <Button
             variant="secondary"
-            className="rounded-full bg-gray-100 hover:bg-gray-200 text-1xl px-6 h-18"
+            className="rounded-full bg-gray-100 hover:bg-gray-200 text-1xl px-4 h-12 sm:px-6 sm:h-18"
             disabled={
               !billData ||
               sessionData?.status !== 'CLOSED' ||
@@ -285,7 +285,7 @@ export const TableInformation = () => {
           </Button>
           <Button
             variant="secondary"
-            className="rounded-full bg-gray-100 hover:bg-gray-200 text-1xl px-6 h-18"
+            className="rounded-full bg-gray-100 hover:bg-gray-200 text-1xl px-4 h-12 sm:px-6 sm:h-18"
             disabled={actionsDisabled}
             onClick={() =>
               openModal('TRANSFER_TABLE', {
@@ -298,7 +298,7 @@ export const TableInformation = () => {
           </Button>
           {/* Botón principal rojo */}
           <Button
-            className="rounded-full bg-[#8B0000] hover:bg-[#700000] text-1xl text-white px-6 h-18"
+            className="rounded-full bg-[#8B0000] hover:bg-[#700000] text-1xl text-white px-4 h-12 sm:px-6 sm:h-18"
             disabled={actionsDisabled}
             onClick={() =>
               openModal('ADD_ITEM', {

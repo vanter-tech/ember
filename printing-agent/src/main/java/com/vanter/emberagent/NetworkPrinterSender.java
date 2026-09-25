@@ -24,9 +24,18 @@ public class NetworkPrinterSender {
     private static final int CONNECT_TIMEOUT_MS = 5000;
 
     public void print(PrinterConfigClient.PrinterConfigDto printer, String payload) throws IOException {
+        print(printer, payload, null);
+    }
+
+    /** {@code logoPng} (nullable) is printed centered above the text. */
+    public void print(PrinterConfigClient.PrinterConfigDto printer, String payload, byte[] logoPng)
+            throws IOException {
         try (Socket socket = new Socket()) {
             socket.connect(new InetSocketAddress(printer.host(), printer.port()), CONNECT_TIMEOUT_MS);
             try (EscPos escPos = new EscPos(socket.getOutputStream())) {
+                if (logoPng != null) {
+                    TicketLogoRenderer.write(escPos, logoPng);
+                }
                 escPos.writeLF(payload);
                 escPos.feed(3).cut(EscPos.CutMode.FULL);
             }

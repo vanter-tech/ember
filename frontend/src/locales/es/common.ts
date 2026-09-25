@@ -1,6 +1,8 @@
 export const common = {
   planGateUpgradeToast: 'Esta función requiere el plan {{plan}} o superior.',
   languageSwitcherLabel: 'Idioma',
+  showPasswordAria: 'Mostrar contraseña',
+  hidePasswordAria: 'Ocultar contraseña',
   languageSpanish: 'Español',
   languageEnglish: 'English',
   brandFallback: 'Ember',

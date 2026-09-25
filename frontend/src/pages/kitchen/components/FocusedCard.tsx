@@ -12,6 +12,7 @@ import toast from 'react-hot-toast'
 import { NEXT_ACTION_LABEL, NEXT_STATUS, STATUS_LABEL } from '../lib/itemStatus'
 import { useTranslation } from '@/lib/i18n'
 
+const COLUMNS: OrderItemStatus[] = ['PENDING', 'PREPARING', 'READY']
 const BULK_TARGET_STATUSES: OrderItemStatus[] = ['PENDING', 'PREPARING', 'READY', 'DELIVERED']
 
 export const FocusedCard = ({ order }: { order: kitchenOrders }) => {
@@ -124,50 +125,57 @@ export const FocusedCard = ({ order }: { order: kitchenOrders }) => {
             </div>
           </CardHeader>
           <CardContent>
-            <ul className="flex flex-wrap gap-3">
-              {visibleItems.map((item) => {
-                const status = item.status ?? 'PENDING'
-                const next = NEXT_STATUS[status]
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              {COLUMNS.map((column) => {
+                const columnItems = visibleItems.filter((item) => (item.status ?? 'PENDING') === column)
+                const next = NEXT_STATUS[column]
                 return (
-                  <li
-                    key={item.itemId}
-                    className="flex items-center gap-3 rounded-2xl border border-gray-200 px-4 py-2"
-                  >
-                    <Checkbox
-                      className="rounded-full"
-                      aria-label={t('kdsSelectItemAriaLabel', { name: item.name ?? '' })}
-                      checked={selectedIds.has(item.itemId!)}
-                      onCheckedChange={() => toggleItem(item.itemId!)}
-                    />
-                    <div className="flex flex-col gap-1">
-                      <span className="text-sm font-semibold text-gray-800">
-                        {item.name}
-                      </span>
-                      {item.modifiers && item.modifiers.length > 0 && (
-                        <span className="text-xs text-gray-500">
-                          {item.modifiers.join(', ')}
-                        </span>
-                      )}
-                      <Badge variant="outline" className="w-fit">
-                        {STATUS_LABEL[status]}
-                      </Badge>
-                    </div>
-                    {next && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        disabled={updateItemStatusMutation.isPending}
-                        onClick={() =>
-                          updateItemStatusMutation.mutate({ itemId: item.itemId!, status: next })
-                        }
-                      >
-                        {NEXT_ACTION_LABEL[status]}
-                      </Button>
+                  <section key={column} className="flex flex-col gap-3 rounded-2xl bg-gray-50 p-3">
+                    <header className="flex items-center justify-between px-1">
+                      <h3 className="text-lg font-bold text-gray-800">{STATUS_LABEL[column]}</h3>
+                      <Badge variant="secondary">{columnItems.length}</Badge>
+                    </header>
+                    {columnItems.length === 0 ? (
+                      <p className="py-4 text-center text-sm text-gray-400">{t('kdsColumnEmpty')}</p>
+                    ) : (
+                      <ul className="flex flex-col gap-3">
+                        {columnItems.map((item) => (
+                          <li
+                            key={item.itemId}
+                            className="flex items-center gap-3 rounded-2xl border border-gray-200 bg-white px-4 py-2"
+                          >
+                            <Checkbox
+                              className="rounded-full"
+                              aria-label={t('kdsSelectItemAriaLabel', { name: item.name ?? '' })}
+                              checked={selectedIds.has(item.itemId!)}
+                              onCheckedChange={() => toggleItem(item.itemId!)}
+                            />
+                            <div className="flex flex-1 flex-col gap-1">
+                              <span className="text-sm font-semibold text-gray-800">{item.name}</span>
+                              {item.modifiers && item.modifiers.length > 0 && (
+                                <span className="text-xs text-gray-500">{item.modifiers.join(', ')}</span>
+                              )}
+                            </div>
+                            {next && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                disabled={updateItemStatusMutation.isPending}
+                                onClick={() =>
+                                  updateItemStatusMutation.mutate({ itemId: item.itemId!, status: next })
+                                }
+                              >
+                                {NEXT_ACTION_LABEL[column]}
+                              </Button>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
                     )}
-                  </li>
+                  </section>
                 )
               })}
-            </ul>
+            </div>
           </CardContent>
         </Card>
       </div>

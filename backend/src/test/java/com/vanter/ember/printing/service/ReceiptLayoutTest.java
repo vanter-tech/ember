@@ -26,6 +26,52 @@ class ReceiptLayoutTest {
     }
 
     @Test
+    void render_centersTheInfoLinesUnderTheHeader_andWrapsTheLongOnes() {
+        ReceiptLayout.Data data = base(32)
+                .infoLine("Horario: Lun-Dom 12:00-23:00")
+                .infoLine("Calle Principal 123, Colonia Centro, Managua")
+                .build();
+
+        String out = ReceiptLayout.render(data);
+
+        String[] lines = out.split("\n");
+        assertThat(lines[0]).isEqualTo(sp(13) + "EMBER");
+        assertThat(lines[1]).isEqualTo(sp(2) + "Horario: Lun-Dom 12:00-23:00");
+        assertThat(lines[2]).isEqualTo(sp(2) + "Calle Principal 123, Colonia");
+        assertThat(lines[3]).isEqualTo(sp(8) + "Centro, Managua");
+        assertThat(lines).allSatisfy(l -> assertThat(l.length()).isLessThanOrEqualTo(32));
+    }
+
+    @Test
+    void render_tipLine_sitsBeforeTheFooter_withARoomToWriteInPen() {
+        ReceiptLayout.Data data = base(32).total(new BigDecimal("32.48")).tipLine(true).build();
+
+        String[] lines = ReceiptLayout.render(data).split("\n", -1);
+
+        // TOTAL, a blank spacer, the tip line, the rule and finally the footer as the very last line
+        assertThat(lines[lines.length - 1]).isEmpty();
+        assertThat(lines[lines.length - 2]).isEqualTo(sp(5) + "Gracias por visitarnos");
+        assertThat(lines[lines.length - 3]).isEqualTo(rule(32));
+        assertThat(lines[lines.length - 4]).isEqualTo("PROPINA: " + "_".repeat(23));
+        assertThat(lines[lines.length - 4]).hasSize(32);
+        assertThat(lines[lines.length - 5]).isEmpty();
+        assertThat(lines[lines.length - 6]).startsWith("TOTAL");
+    }
+
+    @Test
+    void render_withoutTheTipLine_hasNoPropina() {
+        assertThat(ReceiptLayout.render(base(32).total(new BigDecimal("32.48")).build())).doesNotContain("PROPINA");
+    }
+
+    @Test
+    void render_tipLine_fillsTheWidthOf80mmPaperToo() {
+        String out = ReceiptLayout.render(base(42).tipLine(true).build());
+
+        assertThat(out).contains("PROPINA: " + "_".repeat(33));
+        assertThat(out.stripTrailing()).endsWith("Gracias por visitarnos");
+    }
+
+    @Test
     void render_fullReceipt_on32Columns() {
         ReceiptLayout.Data data = base(32)
                 .line(new ReceiptLayout.Line(2, "Hamburguesa", List.of(), new BigDecimal("25.00")))

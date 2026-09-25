@@ -166,9 +166,9 @@ describe('AddItemModal', () => {
     await screen.findByText('Helado')
     fireEvent.click(addButtonFor('Helado'))
 
-    expect(screen.queryByRole('button', { name: /Ver pedido/ })).not.toBeInTheDocument()
-    fireEvent.click(screen.getByLabelText('Chocolate'))
-    fireEvent.click(screen.getByText('Agregar'))
+    expect(await screen.findByTestId('modifiers-panel')).toBeVisible()
+    fireEvent.click(screen.getByText('Chocolate'))
+    fireEvent.click(screen.getByText('Aceptar'))
 
     openCartPanel()
     expect(within(screen.getByTestId('client-cart-panel')).getByText(/Helado/)).toBeVisible()

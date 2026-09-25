@@ -9,8 +9,11 @@ import { useAuthStore } from '../../store/authStore'
 import { authService } from '@/lib/api'
 import { useTranslation } from '@/lib/i18n'
 
+import { AuthBackground } from './AuthBackground'
+import { PoweredByVanter } from './PoweredByVanter'
 import { Button } from '../../components/ui/button'
 import { Input } from '../../components/ui/input'
+import { PasswordInput } from '@/components/PasswordInput'
 import {
   Card,
   CardContent,
@@ -66,9 +69,10 @@ export const Register = () => {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-slate-50">
-      <Card className="w-full max-w-md shadow-lg">
-        <CardHeader>
+    <div className="relative flex items-center justify-center min-h-screen overflow-hidden bg-white p-4 pb-12">
+      <AuthBackground />
+      <Card className="w-full max-w-md gap-6 py-10 shadow-lg relative z-10">
+        <CardHeader className="px-8">
           <CardTitle className="text-2xl font-bold text-center text-[#920703] ">
             {tAuth('registerTitle')}
           </CardTitle>
@@ -76,7 +80,7 @@ export const Register = () => {
             {tAuth('registerDescription')}
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-8">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <FormField
@@ -200,8 +204,8 @@ export const Register = () => {
                             ></path>{' '}
                           </g>
                         </svg>
-                        <Input
-                          type="password"
+                        <PasswordInput
+                          
                           className="pl-10"
                           placeholder={tAuth('registerPasswordPlaceholder')}
                           {...field}
@@ -227,6 +231,7 @@ export const Register = () => {
           </Form>
         </CardContent>
       </Card>
+      <PoweredByVanter />
     </div>
   )
 }

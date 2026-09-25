@@ -30,7 +30,7 @@ final class ReceiptLayout {
     record Data(
             String header, Integer tableNumber, Long billId, LocalDateTime when, List<Line> lines,
             BigDecimal subtotal, String taxLabel, BigDecimal tax, BigDecimal total,
-            String currency, String footer, int width) {
+            String currency, String footer, int width, List<String> infoLines, boolean tipLine) {
 
         static Builder builder() {
             return new Builder();
@@ -49,6 +49,8 @@ final class ReceiptLayout {
             private String currency;
             private String footer;
             private int width = 42;
+            private final List<String> infoLines = new ArrayList<>();
+            private boolean tipLine;
 
             Builder header(String v) { this.header = v; return this; }
             Builder tableNumber(Integer v) { this.tableNumber = v; return this; }
@@ -62,10 +64,14 @@ final class ReceiptLayout {
             Builder currency(String v) { this.currency = v; return this; }
             Builder footer(String v) { this.footer = v; return this; }
             Builder width(int v) { this.width = v; return this; }
+            /** One line of the business-info block under the header (wrapped and centered on render). */
+            Builder infoLine(String v) { this.infoLines.add(v); return this; }
+            /** A "PROPINA: ____" line, after the totals and before the footer, for the waiter to fill in by hand. */
+            Builder tipLine(boolean v) { this.tipLine = v; return this; }
 
             Data build() {
                 return new Data(header, tableNumber, billId, when, List.copyOf(lines), subtotal, taxLabel,
-                        tax, total, currency, footer, width);
+                        tax, total, currency, footer, width, List.copyOf(infoLines), tipLine);
             }
         }
     }
@@ -76,6 +82,11 @@ final class ReceiptLayout {
 
         for (String line : wrap(d.header(), w)) {
             out.append(center(line, w)).append('\n');
+        }
+        for (String info : d.infoLines()) {
+            for (String line : wrap(info, w)) {
+                out.append(center(line, w)).append('\n');
+            }
         }
         if (d.tableNumber() != null) {
             out.append("Mesa ").append(d.tableNumber()).append('\n');
@@ -100,6 +111,9 @@ final class ReceiptLayout {
                 out.append(twoCols(d.taxLabel(), money(d.currency(), d.tax()), w)).append('\n');
             }
             out.append(twoCols("TOTAL", money(d.currency(), d.total()), w)).append('\n');
+        }
+        if (d.tipLine()) {
+            out.append('\n').append(tipLine(w)).append('\n');
         }
         List<String> footer = wrap(d.footer(), w);
         if (!footer.isEmpty()) {
@@ -134,6 +148,12 @@ final class ReceiptLayout {
                 out.append(i == 0 ? "  + " : "    ").append(parts.get(i)).append('\n');
             }
         }
+    }
+
+    /** "PROPINA: " then underscores to the edge of the paper: the space to write the tip with a pen. */
+    static String tipLine(int w) {
+        String label = "PROPINA: ";
+        return label + "_".repeat(Math.max(1, w - label.length()));
     }
 
     private static String rule(int w) {
