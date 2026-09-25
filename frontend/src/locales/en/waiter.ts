@@ -62,7 +62,6 @@ export const waiter = {
   recordMovementButton: 'Record movement',
   closeCajaButton: 'Close register (Reconciliation)',
   cashSalesLabel: 'Cash sales',
-  digitalSalesLabel: 'Digital sales',
   cashInTotalLabel: 'Cash in',
   cashOutTotalLabel: 'Cash out',
   expectedCashLabel: 'Expected cash in register',

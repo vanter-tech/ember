@@ -61,7 +61,6 @@ export const waiter = {
   recordMovementButton: 'Registrar movimiento',
   closeCajaButton: 'Cerrar caja (Arqueo)',
   cashSalesLabel: 'Ventas en efectivo',
-  digitalSalesLabel: 'Ventas digitales',
   cashInTotalLabel: 'Entradas de efectivo',
   cashOutTotalLabel: 'Salidas de efectivo',
   expectedCashLabel: 'Efectivo esperado en caja',

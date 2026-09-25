@@ -58,7 +58,6 @@ export const CashRegister = () => {
   const confirmed = payments.filter((p) => p.status !== 'PENDING')
   // Same formula the backend uses when closing the shift (gross confirmed cash, refunds not netted).
   const cashSales = confirmed.filter((p) => p.method === 'PHYSICAL').reduce((s, p) => s + (p.amount ?? 0), 0)
-  const digitalSales = confirmed.filter((p) => p.method !== 'PHYSICAL').reduce((s, p) => s + (p.amount ?? 0), 0)
   const cashIn = movements.filter((m) => m.type === 'CASH_IN').reduce((s, m) => s + (m.amount ?? 0), 0)
   const cashOut = movements.filter((m) => m.type !== 'CASH_IN').reduce((s, m) => s + (m.amount ?? 0), 0)
   const refundedTotal = payments.reduce((s, p) => s + (p.refundedAmount ?? 0), 0)
@@ -114,7 +113,7 @@ export const CashRegister = () => {
                   </span>
                 )}
               </div>
-              <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
+              <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
                 <div className="rounded-2xl bg-zinc-50 p-4">
                   <p className="text-xs text-muted-foreground">{t('openingFloatLabel')}</p>
                   <p className="text-lg font-bold">{formatCurrency(shift.openingFloat ?? 0)}</p>
@@ -122,10 +121,6 @@ export const CashRegister = () => {
                 <div className="rounded-2xl bg-zinc-50 p-4">
                   <p className="text-xs text-muted-foreground">{t('cashSalesLabel')}</p>
                   <p className="text-lg font-bold">{formatCurrency(cashSales)}</p>
-                </div>
-                <div className="rounded-2xl bg-zinc-50 p-4">
-                  <p className="text-xs text-muted-foreground">{t('digitalSalesLabel')}</p>
-                  <p className="text-lg font-bold">{formatCurrency(digitalSales)}</p>
                 </div>
                 <div className="rounded-2xl bg-zinc-50 p-4">
                   <p className="text-xs text-muted-foreground">
@@ -279,7 +274,7 @@ export const CashRegister = () => {
               </Table>
               {payments.length > 0 && (
                 <p className="mt-3 text-right text-sm text-muted-foreground">
-                  {t('totalLabel')}: <span className="font-medium text-foreground">{formatCurrency(cashSales + digitalSales)}</span>
+                  {t('totalLabel')}: <span className="font-medium text-foreground">{formatCurrency(cashSales)}</span>
                   {refundedTotal > 0 && (
                     <>
                       {' · '}
