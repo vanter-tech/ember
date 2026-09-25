@@ -37,7 +37,7 @@ describe('OrdersDisplays empty state', () => {
     vi.mocked(kitchenServices.getOrdersByTables).mockResolvedValue([
       {
         orders: [
-          { id: '1', sessionId: 's1', createdAt: new Date().toISOString(), items: [{ itemId: 'i1', name: 'Ceviche', status: 'PENDING' }], tableNumber: 3, status: 'PENDING' },
+          { id: '1', sessionId: 's1', createdAt: new Date().toISOString(), items: [], tableNumber: 3, status: 'PENDING' },
         ],
       },
     ] as never)
