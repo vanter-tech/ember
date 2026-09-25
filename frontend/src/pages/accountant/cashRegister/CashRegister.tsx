@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { cashShiftService } from '@/lib/api'
 import { useUIStore } from '@/store/uiStore'
@@ -6,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { formatCurrency } from '@/lib/format'
-import { RotateCcw } from 'lucide-react'
+import { RotateCcw, Clock } from 'lucide-react'
 import { OpenShiftDialog } from './components/OpenShiftDialog'
 import { MovementDialog } from './components/MovementDialog'
 import { RefundPaymentModal } from '@/pages/waiter/components/RefundPaymentModal'
@@ -16,6 +17,12 @@ import { useTranslation } from '@/lib/i18n'
 export const CashRegister = () => {
   const { t } = useTranslation('waiter')
   const { openModal } = useUIStore()
+  const [now, setNow] = useState(() => Date.now())
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 30_000)
+    return () => clearInterval(id)
+  }, [])
 
   const tourSteps = [
     {
@@ -38,6 +45,26 @@ export const CashRegister = () => {
     enabled: !!shift?.id,
   })
 
+  const fmtTime = (iso?: string) =>
+    iso ? new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'
+  const fmtDuration = (ms: number) => {
+    const totalMin = Math.max(0, Math.floor(ms / 60000))
+    const h = Math.floor(totalMin / 60)
+    return h > 0 ? `${h}h ${totalMin % 60}m` : `${totalMin}m`
+  }
+
+  const movements = detail?.movements ?? []
+  const payments = detail?.payments ?? []
+  const confirmed = payments.filter((p) => p.status !== 'PENDING')
+  // Same formula the backend uses when closing the shift (gross confirmed cash, refunds not netted).
+  const cashSales = confirmed.filter((p) => p.method === 'PHYSICAL').reduce((s, p) => s + (p.amount ?? 0), 0)
+  const digitalSales = confirmed.filter((p) => p.method !== 'PHYSICAL').reduce((s, p) => s + (p.amount ?? 0), 0)
+  const cashIn = movements.filter((m) => m.type === 'CASH_IN').reduce((s, m) => s + (m.amount ?? 0), 0)
+  const cashOut = movements.filter((m) => m.type !== 'CASH_IN').reduce((s, m) => s + (m.amount ?? 0), 0)
+  const refundedTotal = payments.reduce((s, p) => s + (p.refundedAmount ?? 0), 0)
+  const expectedCash = (shift?.openingFloat ?? 0) + cashSales + cashIn - cashOut
+  const msLeft = shift?.effectiveDeadline ? new Date(shift.effectiveDeadline).getTime() - now : null
+
   if (isLoading) {
     return <div className="p-6 text-zinc-500">{t('loadingCashRegister')}</div>
   }
@@ -49,7 +76,7 @@ export const CashRegister = () => {
         <p className="text-sm text-muted-foreground">{t('cashRegisterSubtitle')}</p>
       </div>
 
-      <div id="waiter-cashregister-tour-content">
+      <div id="waiter-cashregister-tour-content" className="flex flex-col gap-6">
       {!shift ? (
         <Card className="border border-border/40 bg-background py-6 shadow-sm">
           <CardContent className="flex flex-col items-center gap-4 py-10">
@@ -64,17 +91,55 @@ export const CashRegister = () => {
               <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 {t('shiftNumberLabel', { number: shift.shiftNumber ?? '' })}
               </CardTitle>
-              <Badge variant="secondary">{shift.status === 'OPEN' ? t('shiftStatusOpen') : t('shiftStatusClosed')}</Badge>
+              <div className="flex items-center gap-2">
+                {shift.overdue && <Badge variant="destructive">{t('shiftOverdueBadge')}</Badge>}
+                <Badge variant="secondary">{shift.status === 'OPEN' ? t('shiftStatusOpen') : t('shiftStatusClosed')}</Badge>
+              </div>
             </CardHeader>
-            <CardContent className="flex flex-col gap-4">
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-                <div>
+            <CardContent className="flex flex-col gap-6">
+              <div className="flex flex-wrap items-center gap-x-6 gap-y-1 text-sm text-muted-foreground">
+                <span>
+                  {t('openedByLabel')}: <span className="font-medium text-foreground">{shift.openedByName}</span>
+                </span>
+                <span>
+                  {t('openedAtLabel')}: <span className="font-medium text-foreground">{fmtTime(shift.openedAt)}</span>
+                </span>
+                {shift.effectiveDeadline && (
+                  <span className="flex items-center gap-1">
+                    <Clock className="size-3.5" />
+                    {t('deadlineLabel')}: <span className="font-medium text-foreground">{fmtTime(shift.effectiveDeadline)}</span>
+                    {msLeft !== null && msLeft > 0 && (
+                      <span>({t('timeLeftLabel', { time: fmtDuration(msLeft) })})</span>
+                    )}
+                  </span>
+                )}
+              </div>
+              <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
+                <div className="rounded-2xl bg-zinc-50 p-4">
                   <p className="text-xs text-muted-foreground">{t('openingFloatLabel')}</p>
-                  <p className="text-lg font-bold text-primary">{formatCurrency(shift.openingFloat ?? 0)}</p>
+                  <p className="text-lg font-bold">{formatCurrency(shift.openingFloat ?? 0)}</p>
                 </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">{t('openedByLabel')}</p>
-                  <p className="text-sm font-medium">{shift.openedByName}</p>
+                <div className="rounded-2xl bg-zinc-50 p-4">
+                  <p className="text-xs text-muted-foreground">{t('cashSalesLabel')}</p>
+                  <p className="text-lg font-bold">{formatCurrency(cashSales)}</p>
+                </div>
+                <div className="rounded-2xl bg-zinc-50 p-4">
+                  <p className="text-xs text-muted-foreground">{t('digitalSalesLabel')}</p>
+                  <p className="text-lg font-bold">{formatCurrency(digitalSales)}</p>
+                </div>
+                <div className="rounded-2xl bg-zinc-50 p-4">
+                  <p className="text-xs text-muted-foreground">
+                    {t('cashInTotalLabel')} / {t('cashOutTotalLabel')}
+                  </p>
+                  <p className="text-lg font-bold">
+                    <span className="text-emerald-700">+{formatCurrency(cashIn)}</span>{' '}
+                    <span className="text-red-700">−{formatCurrency(cashOut)}</span>
+                  </p>
+                </div>
+                <div className="col-span-2 rounded-2xl bg-primary/10 p-4 lg:col-span-1">
+                  <p className="text-xs text-muted-foreground">{t('expectedCashLabel')}</p>
+                  <p className="text-xl font-bold text-primary">{formatCurrency(expectedCash)}</p>
+                  <p className="mt-1 text-[11px] text-muted-foreground">{t('expectedCashHint')}</p>
                 </div>
               </div>
               <div className="flex gap-2">
@@ -103,6 +168,7 @@ export const CashRegister = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead>{t('timeColumnLabel')}</TableHead>
                     <TableHead>{t('typeLabel')}</TableHead>
                     <TableHead>{t('amountLabel')}</TableHead>
                     <TableHead>{t('reasonLabel')}</TableHead>
@@ -112,13 +178,14 @@ export const CashRegister = () => {
                 <TableBody>
                   {(detail?.movements ?? []).length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center text-sm text-muted-foreground">
+                      <TableCell colSpan={5} className="text-center text-sm text-muted-foreground">
                         {t('noMovementsRegistered')}
                       </TableCell>
                     </TableRow>
                   ) : (
                     (detail!.movements ?? []).map((movement) => (
                       <TableRow key={movement.id}>
+                        <TableCell>{fmtTime(movement.createdAt)}</TableCell>
                         <TableCell>{movement.type === 'CASH_IN' ? t('cashInLabel') : t('cashOutLabel')}</TableCell>
                         <TableCell>{formatCurrency(movement.amount ?? 0)}</TableCell>
                         <TableCell>{movement.reason}</TableCell>
@@ -128,6 +195,13 @@ export const CashRegister = () => {
                   )}
                 </TableBody>
               </Table>
+              {movements.length > 0 && (
+                <p className="mt-3 text-right text-sm text-muted-foreground">
+                  {t('cashInTotalLabel')}: <span className="font-medium text-emerald-700">{formatCurrency(cashIn)}</span>
+                  {' · '}
+                  {t('cashOutTotalLabel')}: <span className="font-medium text-red-700">{formatCurrency(cashOut)}</span>
+                </p>
+              )}
             </CardContent>
           </Card>
 
@@ -141,7 +215,11 @@ export const CashRegister = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead>{t('timeColumnLabel')}</TableHead>
+                    <TableHead>{t('tableColumnLabel')}</TableHead>
                     <TableHead>{t('participantLabel')}</TableHead>
+                    <TableHead>{t('methodLabel')}</TableHead>
+                    <TableHead>{t('statusLabel')}</TableHead>
                     <TableHead>{t('amountLabel')}</TableHead>
                     <TableHead>{t('refundedLabel')}</TableHead>
                     <TableHead className="text-right">{t('actionLabel')}</TableHead>
@@ -150,19 +228,33 @@ export const CashRegister = () => {
                 <TableBody>
                   {(detail?.payments ?? []).length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center text-sm text-muted-foreground">
+                      <TableCell colSpan={8} className="text-center text-sm text-muted-foreground">
                         {t('noPaymentsRegistered')}
                       </TableCell>
                     </TableRow>
                   ) : (
                     (detail!.payments ?? []).map((payment) => (
                       <TableRow key={payment.id}>
+                        <TableCell>{fmtTime(payment.createdAt)}</TableCell>
+                        <TableCell>{payment.tableNumber ?? '—'}</TableCell>
                         <TableCell>{payment.participantName}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline">
+                            {payment.method === 'PHYSICAL' ? t('methodCash') : t('methodDigital')}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={payment.status === 'PENDING' ? 'secondary' : 'default'}>
+                            {payment.status === 'PENDING' ? t('paymentPending') : t('paymentConfirmed')}
+                          </Badge>
+                        </TableCell>
                         <TableCell>{formatCurrency(payment.amount ?? 0)}</TableCell>
                         <TableCell>
-                          {payment.refundedAmount && payment.refundedAmount > 0
-                            ? formatCurrency(payment.refundedAmount)
-                            : '—'}
+                          {payment.refundedAmount && payment.refundedAmount > 0 ? (
+                            <span className="font-medium text-red-700">{formatCurrency(payment.refundedAmount)}</span>
+                          ) : (
+                            '—'
+                          )}
                         </TableCell>
                         <TableCell className="text-right">
                           <Button
@@ -185,6 +277,17 @@ export const CashRegister = () => {
                   )}
                 </TableBody>
               </Table>
+              {payments.length > 0 && (
+                <p className="mt-3 text-right text-sm text-muted-foreground">
+                  {t('totalLabel')}: <span className="font-medium text-foreground">{formatCurrency(cashSales + digitalSales)}</span>
+                  {refundedTotal > 0 && (
+                    <>
+                      {' · '}
+                      {t('refundedTotalLabel')}: <span className="font-medium text-red-700">{formatCurrency(refundedTotal)}</span>
+                    </>
+                  )}
+                </p>
+              )}
             </CardContent>
           </Card>
         </>
