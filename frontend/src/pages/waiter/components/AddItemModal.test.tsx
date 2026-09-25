@@ -168,7 +168,7 @@ describe('AddItemModal', () => {
 
     expect(await screen.findByTestId('modifiers-panel')).toBeVisible()
     fireEvent.click(screen.getByText('Chocolate'))
-    fireEvent.click(screen.getByText('Agregar'))
+    fireEvent.click(screen.getByText('Aceptar'))
 
     openCartPanel()
     expect(within(screen.getByTestId('client-cart-panel')).getByText(/Helado/)).toBeVisible()

@@ -213,7 +213,7 @@ export const waiter = {
   addItemCartPanelCloseAria: 'Close cart',
   addItemAddAria: 'Add {{name}}',
   addItemModifierCancel: 'Cancel',
-  addItemModifierConfirm: 'Add',
+  addItemModifierConfirm: 'Accept',
   addItemSubmit: 'Confirm order',
   addItemSuccessToast: 'Item added and sent to the kitchen',
   addItemErrorToast: 'Could not add the item',

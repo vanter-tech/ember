@@ -213,7 +213,7 @@ export const waiter = {
   addItemCartPanelCloseAria: 'Cerrar carrito',
   addItemAddAria: 'Agregar {{name}}',
   addItemModifierCancel: 'Cancelar',
-  addItemModifierConfirm: 'Agregar',
+  addItemModifierConfirm: 'Aceptar',
   addItemSubmit: 'Confirmar pedido',
   addItemSuccessToast: 'Platillo agregado y enviado a cocina',
   addItemErrorToast: 'No se pudo agregar el platillo',

@@ -206,7 +206,7 @@ export const AddItemModal = () => {
   // to its left) instead of a floating sibling — Radix's outside-interaction dismiss logic only
   // ever sees "inside the dialog" for anything inside it, closing button included. `top-0
   // bottom-0` on the panel stretches it to match the dialog's own rendered height exactly.
-  const PANEL_SHIFT = 168 // half of (panel width 320px + gap 16px) — recenters the pair as one
+  const PANEL_SHIFT = 216 // half of (panel width 416px + gap 16px) — recenters the pair as one
 
   useEffect(() => {
     if (!showCartPanel) return
@@ -217,7 +217,7 @@ export const AddItemModal = () => {
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
       <DialogContent
-        className="sm:max-w-6xl rounded-3xl p-8"
+        className="rounded-3xl p-8 sm:max-w-[min(95vw,88rem)]"
         style={{
           marginLeft: showCartPanel ? PANEL_SHIFT : 0,
           transitionProperty: 'margin-left',
@@ -235,7 +235,7 @@ export const AddItemModal = () => {
         {(
           <>
             <div className="grid grid-cols-[minmax(180px,240px)_1fr] gap-10">
-              <div className="flex flex-col gap-3 max-h-[65vh] overflow-y-auto border-r border-zinc-100 pr-6">
+              <div className="flex flex-col gap-3 max-h-[78vh] overflow-y-auto border-r border-zinc-100 pr-6">
                 <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
                   {t('addItemParticipantLabel')}
                 </p>
@@ -313,7 +313,7 @@ export const AddItemModal = () => {
                     ))}
                   </div>
                 )}
-                <div className="grid grid-cols-2 gap-5 max-h-[55vh] overflow-y-auto pr-1">
+                <div className="grid grid-cols-2 gap-5 max-h-[68vh] overflow-y-auto pr-1">
                   {visibleItems.map((item) => (
                     // Deliberately not a single big button: a card this dense on a touch screen is
                     // an easy misclick, so only the "+" adds — the rest is inert display.
@@ -324,7 +324,7 @@ export const AddItemModal = () => {
                     >
                     <PopoverAnchor asChild>
                     <div className="flex flex-col overflow-hidden rounded-2xl border-2 border-zinc-200">
-                      <div className="h-40 w-full bg-zinc-100">
+                      <div className="h-52 w-full bg-zinc-100">
                         {item.imageUrl ? (
                           <img
                             src={item.imageUrl}
@@ -361,11 +361,11 @@ export const AddItemModal = () => {
                       align="start"
                       collisionPadding={16}
                       data-testid="modifiers-panel"
-                      className="flex w-80 flex-col gap-3 p-4"
+                      className="flex w-96 flex-col gap-3 p-4"
                       style={{ height: 'var(--radix-popover-trigger-height)' }}
                     >
                       <p className="shrink-0 font-semibold">{item.name}</p>
-                      <div className="flex-1 space-y-4 overflow-y-auto pr-1">
+                      <div className="no-scrollbar flex-1 space-y-4 overflow-y-auto">
                         {(item.modifierGroups ?? []).map((group) => (
                           <div key={group.id} className="space-y-2">
                             <p className="text-sm font-semibold">{group.name}</p>
@@ -417,7 +417,7 @@ export const AddItemModal = () => {
           // `top-0 bottom-0` stretches it to match this dialog's own rendered height exactly.
           <div
             data-testid="client-cart-panel"
-            className={`absolute top-0 bottom-0 right-[calc(100%+1rem)] flex w-80 max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-3xl bg-popover p-6 shadow-2xl ring-1 ring-foreground/10 transition-all duration-300 ease-out ${
+            className={`absolute top-0 bottom-0 right-[calc(100%+1rem)] flex w-[26rem] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-3xl bg-popover p-6 shadow-2xl ring-1 ring-foreground/10 transition-all duration-300 ease-out ${
               panelEntered ? 'translate-x-0 opacity-100' : '-translate-x-4 opacity-0'
             }`}
           >

@@ -32,9 +32,7 @@ export const ModifierOptionBadges = ({ groupId, options, selectedIds, single, on
             onClick={() => onToggle(option.id!)}
             className={cn(
               'flex cursor-pointer items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-colors',
-              selected
-                ? 'border-[#8c1717] bg-[#8c1717]/5 font-medium text-[#8c1717]'
-                : 'border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50'
+              selected ? cn(color.badgeOn, 'font-semibold') : cn(color.badge, 'hover:brightness-95')
             )}
           >
             <span className={cn('h-2.5 w-2.5 shrink-0 rounded-full', color.dot)} aria-hidden="true" />
