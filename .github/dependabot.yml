@@ -14,10 +14,10 @@ updates:
     ignore:
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]
-      # 8.6.0 pulls okhttp 5, whose classes are not on the compile classpath under Maven
-      # (MinioConfig fails with "class file for okhttp3.HttpUrl not found"). Revisit by hand.
+      # Updated by hand only: 8.6.0 pulls okhttp 5, whose classes are not on the compile
+      # classpath under Maven (MinioConfig fails with "class file for okhttp3.HttpUrl not
+      # found"), and it keeps reopening a PR for every new patch otherwise.
       - dependency-name: "io.minio:minio"
-        update-types: ["version-update:semver-minor"]
     groups:
       maven-minor-patch:
         update-types: ["minor", "patch"]
