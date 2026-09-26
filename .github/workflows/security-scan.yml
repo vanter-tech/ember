@@ -46,7 +46,7 @@ jobs:
       # restore + save por separado: actions/cache solo guarda si el job termina en verde, y este
       # falla justamente cuando hay CVEs, asi que la base NVD (~13 min de descarga) nunca se cacheaba.
       - name: Restaurar la base NVD
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: ~/.m2/repository/org/owasp/dependency-check-data
           key: nvd-${{ github.run_id }}
@@ -61,7 +61,7 @@ jobs:
           -DfailBuildOnCVSS=7 -DnvdApiKey="$NVD_API_KEY" -Dformat=HTML
       - name: Guardar la base NVD
         if: always()
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6
         with:
           path: ~/.m2/repository/org/owasp/dependency-check-data
           key: nvd-${{ github.run_id }}
