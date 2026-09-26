@@ -7,8 +7,12 @@ const body = `window.ENV = {\n  EMBW_API_URL: ${JSON.stringify(api)},\n  EMBW_WS
 writeFileSync('dist/env-config.js', body);
 console.log('wrote dist/env-config.js', { api, ws });
 
-// The shared index.html loads env-config.js with a RELATIVE src, required by the Hub build
-// (`vite build --base=/app/`). On Cloudflare Pages the SPA fallback then returns index.html
+// The shared index.html loads env-config.js with a RELATIVE src on purpose: Vite does not rewrite
+// plain <script src> refs for --base, so an absolute path would ignore the Hub build's
+// `--base=/app/` and request it from the server root. (The Hub build rewrites it to
+// "/app/env-config.js" in ember-hub/build-frontend.ps1, for the same deep-link reason below.)
+// The rationale lives here, not in index.html, because HTML comments ship to production.
+// On Cloudflare Pages the SPA fallback then returns index.html
 // for `/<route>/env-config.js` on any deep link or hard refresh, so the script body is HTML,
 // `window.ENV` never gets defined, and the API client falls back to http://localhost:8080.
 // This build is always served from the domain root, so pin the tag to an absolute path.

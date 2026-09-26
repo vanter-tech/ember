@@ -23,7 +23,7 @@ const rows = [
 			{t('cmp.title')}
 		</h2>
 
-		<!-- Desktop: comparison grid -->
+		{/* Desktop: comparison grid */}
 		<div class="mt-12 hidden overflow-hidden rounded-xl border border-border md:block">
 			<div class="grid grid-cols-[1.2fr_1fr_1fr_1fr]">
 				<div class="bg-muted/40 px-5 py-4"></div>
@@ -62,7 +62,7 @@ const rows = [
 			</div>
 		</div>
 
-		<!-- Mobile: one card per approach, Ember first -->
+		{/* Mobile: one card per approach, Ember first */}
 		<div class="mt-10 grid gap-4 md:hidden">
 			{[2, 0, 1].map((ci) => (
 				<div
