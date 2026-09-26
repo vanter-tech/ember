@@ -30,7 +30,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - name: Configurar pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         with:
           version: 10
       - name: Configurar Node.js
@@ -65,7 +65,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - name: Configurar pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         with:
           version: 10
       - name: Configurar Node.js
@@ -103,7 +103,7 @@ jobs:
       - name: Verificar que el lanzador existe
         run: if (-not (Test-Path "printing-agent/dist/app-image/Ember Agent/Ember Agent.exe")) { exit 1 }
       - name: Configurar pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         with:
           version: 10
       - name: Configurar Node
