@@ -14,7 +14,7 @@ tauri-plugin-dialog = "2"
 tauri-plugin-process = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-rand = "0.8"
+rand = "0.10"
 
 [[bin]]
 name = "ember-hub-shell"
