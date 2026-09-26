@@ -120,6 +120,11 @@ jobs:
           pnpm run build
       - name: Configurar Rust
         uses: dtolnay/rust-toolchain@stable
+      # Sin cache, tauri-cli y las dependencias de Tauri se compilan desde cero en cada PR (~15 min).
+      - name: Cache de cargo (registry, target y binarios instalados)
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: printing-agent/src-tauri
       - name: Instalar tauri-cli
         run: cargo install tauri-cli --version "^2" --locked
       - name: cargo tauri build (release + instalador NSIS)
