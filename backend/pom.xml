@@ -30,6 +30,9 @@
 		<java.version>17</java.version>
 		<!-- Boot 3.5.16 manages Tomcat 10.1.55; the security-constraint and digest-auth CVEs are fixed from 10.1.58. -->
 		<tomcat.version>10.1.60</tomcat.version>
+		<!-- Boot 3.5.16 manages postgresql 42.7.11 (channelBinding downgrade fixed after it) and log4j 2.24.3. -->
+		<postgresql.version>42.7.13</postgresql.version>
+		<log4j2.version>2.26.1</log4j2.version>
 	</properties>
 	<dependencies>
 		<dependency>
