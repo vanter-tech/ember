@@ -32,7 +32,7 @@ jobs:
           else
             echo "tags=ghcr.io/vanter-tech/ember-backend:${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
           fi
-      - uses: docker/build-push-action@v6
+      - uses: docker/build-push-action@v7
         with:
           context: backend
           push: true
