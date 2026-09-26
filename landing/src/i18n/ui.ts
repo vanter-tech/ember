@@ -585,7 +585,7 @@ export const ui: Record<Lang, Record<string, string>> = {
 		'privacy.date': '29 de agosto de 2026',
 		'privacy.s1.title': '1. Responsable del tratamiento',
 		'privacy.s1.body':
-			'Vanter, con domicilio en Managua, Nicaragua, es la responsable del tratamiento de los datos personales recolectados a través de Ember y este sitio.',
+			'Ember es un producto desarrollado y operado bajo el nombre comercial "Vanter". Vanter no es una sociedad constituida: es el nombre comercial de Fernando Obando, persona natural con domicilio en Managua, Nicaragua, quien presta este servicio y es responsable del tratamiento de los datos personales recolectados a través de Ember y este sitio. Toda mención a "Vanter" en esta política se entiende hecha a Fernando Obando.',
 		'privacy.s2.title': '2. Datos que recolectamos',
 		'privacy.s2.body':
 			'Recolectamos los datos que un restaurante y su personal ingresan al usar Ember (nombre, correo electrónico, rol, datos de facturación del negocio) y los datos que un comensal ingresa al unirse a una sesión de mesa (nombre visible, pedidos). También registramos datos técnicos básicos de navegación en este sitio (páginas visitadas, tipo de dispositivo) con fines de mejora del producto.',
@@ -603,16 +603,16 @@ export const ui: Record<Lang, Record<string, string>> = {
 			'Podés solicitar acceso, rectificación o eliminación de tus datos personales escribiendo a tofernandoband01@outlook.com. Responderemos dentro de los plazos establecidos por la Ley No. 787, Ley de Protección de Datos Personales de Nicaragua.',
 		'privacy.s7.title': '7. Contacto',
 		'privacy.s7.body':
-			'Para cualquier consulta sobre esta política, escribí a tofernandoband01@outlook.com o dirigite a Vanter, Managua, Nicaragua.',
+			'Para cualquier consulta sobre esta política, escribí a tofernandoband01@outlook.com o dirigite a Fernando Obando (Vanter), Managua, Nicaragua.',
 
 		// --- Legal: terms ---
 		'terms.title': 'Términos de servicio — Ember',
 		'terms.desc': 'Condiciones de uso de la plataforma Ember, operada por Vanter.',
 		'terms.h1': 'Términos de servicio',
 		'terms.date': '29 de agosto de 2026',
-		'terms.s1.title': '1. Aceptación de los términos',
+		'terms.s1.title': '1. Identificación del prestador y aceptación de los términos',
 		'terms.s1.body':
-			'Al crear una cuenta o usar Ember, el restaurante contratante y su personal aceptan estos Términos de Servicio y la Política de privacidad. Si no estás de acuerdo, no debés usar el servicio.',
+			'Ember es un producto desarrollado bajo el nombre comercial "Vanter", el cual no corresponde a una sociedad constituida sino al nombre comercial de Fernando Obando, persona natural con domicilio en Managua, Nicaragua. Toda referencia a "Vanter" en estos términos se entiende hecha a Fernando Obando. Al crear una cuenta o usar Ember, el restaurante contratante y su personal aceptan estos Términos de Servicio y la Política de privacidad. Si no estás de acuerdo, no debés usar el servicio.',
 		'terms.s2.title': '2. Descripción del servicio',
 		'terms.s2.body':
 			'Ember es una plataforma de gestión de restaurantes ofrecida por Vanter que incluye carrito colaborativo para comensales, comandas de cocina (KDS), gestión de piso/meseros, facturación y analítica administrativa, según el plan contratado.',
@@ -636,7 +636,7 @@ export const ui: Record<Lang, Record<string, string>> = {
 			'Estos términos se rigen por las leyes de la República de Nicaragua. Cualquier controversia se someterá a los jueces competentes de Managua, Nicaragua.',
 		'terms.s9.title': '9. Contacto',
 		'terms.s9.body':
-			'Consultas sobre estos términos: tofernandoband01@outlook.com — Vanter, Managua, Nicaragua.',
+			'Consultas sobre estos términos: tofernandoband01@outlook.com — Fernando Obando (Vanter), Managua, Nicaragua.',
 
 		// --- 404 ---
 		'404.title': 'Página no encontrada — Ember',
@@ -1224,7 +1224,7 @@ export const ui: Record<Lang, Record<string, string>> = {
 		'privacy.date': 'August 29, 2026',
 		'privacy.s1.title': '1. Data controller',
 		'privacy.s1.body':
-			'Vanter, with address in Managua, Nicaragua, is the controller of the personal data collected through Ember and this site.',
+			'Ember is a product developed and operated under the trade name "Vanter." Vanter is not an incorporated company: it is the trade name of Fernando Obando, a natural person domiciled in Managua, Nicaragua, who provides this service and is the controller of the personal data collected through Ember and this site. Any reference to "Vanter" in this policy refers to Fernando Obando.',
 		'privacy.s2.title': '2. Data we collect',
 		'privacy.s2.body':
 			'We collect the data a restaurant and its staff enter when using Ember (name, email, role, business billing details) and the data a guest enters when joining a table session (display name, orders). We also record basic technical browsing data on this site (pages visited, device type) to improve the product.',
@@ -1242,16 +1242,16 @@ export const ui: Record<Lang, Record<string, string>> = {
 			'You can request access, rectification or deletion of your personal data by writing to tofernandoband01@outlook.com. We will respond within the terms set by Law No. 787, the Personal Data Protection Law of Nicaragua.',
 		'privacy.s7.title': '7. Contact',
 		'privacy.s7.body':
-			'For any question about this policy, write to tofernandoband01@outlook.com or contact Vanter, Managua, Nicaragua.',
+			'For any question about this policy, write to tofernandoband01@outlook.com or contact Fernando Obando (Vanter), Managua, Nicaragua.',
 
 		// --- Legal: terms ---
 		'terms.title': 'Terms of service — Ember',
 		'terms.desc': 'Terms of use for the Ember platform, operated by Vanter.',
 		'terms.h1': 'Terms of service',
 		'terms.date': 'August 29, 2026',
-		'terms.s1.title': '1. Acceptance of terms',
+		'terms.s1.title': '1. Provider identification & acceptance of terms',
 		'terms.s1.body':
-			'By creating an account or using Ember, the contracting restaurant and its staff accept these Terms of Service and the Privacy Policy. If you do not agree, you must not use the service.',
+			'Ember is a product developed under the trade name "Vanter," which is not an incorporated company but the trade name of Fernando Obando, a natural person domiciled in Managua, Nicaragua. Any reference to "Vanter" in these terms refers to Fernando Obando. By creating an account or using Ember, the contracting restaurant and its staff accept these Terms of Service and the Privacy Policy. If you do not agree, you must not use the service.',
 		'terms.s2.title': '2. Description of the service',
 		'terms.s2.body':
 			'Ember is a restaurant management platform provided by Vanter that includes a collaborative guest cart, kitchen display (KDS), floor/server management, billing and admin analytics, according to the contracted plan.',
@@ -1275,7 +1275,7 @@ export const ui: Record<Lang, Record<string, string>> = {
 			'These terms are governed by the laws of the Republic of Nicaragua. Any dispute will be submitted to the competent courts of Managua, Nicaragua.',
 		'terms.s9.title': '9. Contact',
 		'terms.s9.body':
-			'Questions about these terms: tofernandoband01@outlook.com — Vanter, Managua, Nicaragua.',
+			'Questions about these terms: tofernandoband01@outlook.com — Fernando Obando (Vanter), Managua, Nicaragua.',
 
 		// --- 404 ---
 		'404.title': 'Page not found — Ember',
