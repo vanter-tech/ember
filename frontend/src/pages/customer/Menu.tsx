@@ -101,7 +101,7 @@ export const Menu = () => {
                 {t('menuSubtitle')}
               </p>
             </div>
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="hidden sm:flex flex-wrap items-center gap-3">
               <Badge className="p-6 text-md font-bold flex gap-3">
                 {' '}
                 {t('tableCodeLabel', { code: joinCode ?? '' })}

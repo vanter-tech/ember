@@ -43,6 +43,7 @@ export const customer = {
   menuTitle: 'Digital Menu',
   menuSubtitle: "Explore today's gourmet selection.",
   tableCodeLabel: 'Table code: {{code}}',
+  tableCodePanelTitle: 'Table code',
   viewBillLabel: 'View bill',
   loyaltyRewardsTitle: 'Rewards',
   loyaltyRewardLocked: '{{tierName}} tier required',
@@ -140,6 +141,7 @@ export const customer = {
 
   // MobileActionsIsland
   mobileActionsViewParticipants: 'View participants',
+  mobileActionsViewTableCode: 'View table code',
   mobileActionsViewRewards: 'View rewards',
   mobileActionsViewComanda: 'View order',
   mobileActionsAriaLabel: 'Table options',

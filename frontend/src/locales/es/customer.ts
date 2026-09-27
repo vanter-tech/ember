@@ -41,6 +41,7 @@ export const customer = {
   menuTitle: 'Carta Digital',
   menuSubtitle: 'Explora nuestra seleccion gourmet para hoy.',
   tableCodeLabel: 'Codigo de la mesa: {{code}}',
+  tableCodePanelTitle: 'Código de mesa',
   viewBillLabel: 'Ver cuenta',
   loyaltyRewardsTitle: 'Recompensas',
   loyaltyRewardLocked: 'Nivel {{tierName}} requerido',
@@ -139,6 +140,7 @@ export const customer = {
 
   // MobileActionsIsland
   mobileActionsViewParticipants: 'Ver participantes',
+  mobileActionsViewTableCode: 'Ver código de mesa',
   mobileActionsViewRewards: 'Ver recompensas',
   mobileActionsViewComanda: 'Ver comanda',
   mobileActionsAriaLabel: 'Opciones de mesa',
