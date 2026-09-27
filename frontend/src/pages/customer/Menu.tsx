@@ -11,11 +11,13 @@ import {
   CardHeader,
 } from '@/components/ui/card'
 import { useState } from 'react'
-import { ArrowLeft, Plus, Receipt } from 'lucide-react'
+import { ArrowLeft, ChevronRight, Clock, MapPin, Phone, Plus, Receipt, UtensilsCrossed } from 'lucide-react'
 import { LanguageSwitcher } from '@/components/LanguageSwitcher'
 import { LanguageFabButton } from '@/components/LanguageFabButton'
 import { useTranslation } from '@/lib/i18n'
 import { useSessionStore } from '@/store/sessionStore'
+import { useSettingStore } from '@/store/settingStore'
+import { hoursLines } from '@/lib/receiptBusinessInfo'
 import { ParticipantsPopUp } from '@/pages/customer/components/ParticipantsPopUp'
 import { ItemsFloatingIsland } from './components/ItemsFloatingIsland'
 import { LoyaltySection } from './components/LoyaltySection'
@@ -24,13 +26,19 @@ import { SelectModifiersModal } from './components/SelectModifiersModal'
 import { useNavigate } from 'react-router-dom'
 import type { MenuItemResponse } from '@/lib/api'
 
+type MenuStep = 'welcome' | 'categories' | 'items'
+
 export const Menu = () => {
   const [activeCategory, setActiveCategory] = useState<number | undefined>()
   const [selectingItem, setSelectingItem] = useState<MenuItemResponse | null>(null)
   const sessionId = useSessionStore((state) => state.id)
   const joinCode = useSessionStore((state) => state.joinCode)
+  const hasSeenMenuWelcome = useSessionStore((state) => state.hasSeenMenuWelcome)
+  const markMenuWelcomeSeen = useSessionStore((state) => state.markMenuWelcomeSeen)
+  const [step, setStep] = useState<MenuStep>(hasSeenMenuWelcome ? 'categories' : 'welcome')
   const navigate = useNavigate()
   const { t } = useTranslation('customer')
+  const { settings } = useSettingStore()
 
   const mutation = useMutation({
     mutationFn: async ({
@@ -73,20 +81,44 @@ export const Menu = () => {
   const itemsCategory =
     menuItems.find((item) => item.id == activeCategory)?.items || []
 
+  const businessName = settings?.branding?.businessName || 'Ember'
+  const phone = settings?.branding?.phone?.trim()
+  const address = settings?.branding?.address?.trim()
+  const schedule = hoursLines(settings)
 
+  const goToCategories = () => {
+    markMenuWelcomeSeen()
+    setStep('categories')
+  }
 
-  if (isLoading)
-    return <div className="p-6 text-zinc-500">{t('loadingItems')}</div>
-  if (isError)
-    return (
-      <div className="p-6 text-red-500">{t('loadingItemsError')}</div>
-    )
+  const goToItems = (categoryId?: number) => {
+    setActiveCategory(categoryId)
+    setStep('items')
+  }
+
+  const handleBack = () => {
+    if (step === 'items') setStep('categories')
+    else if (step === 'categories') setStep('welcome')
+    else navigate('/customer/home')
+  }
+
+  if (step !== 'welcome') {
+    if (isLoading)
+      return <div className="p-6 text-zinc-500">{t('loadingItems')}</div>
+    if (isError)
+      return (
+        <div className="p-6 text-red-500">{t('loadingItemsError')}</div>
+      )
+  }
 
   return (
     <>
       <div className="p-2">
         <div className="flex items-center w-full h-20 justify-items-start shadow-sm rounded-3xl p-4 gap-4">
-          <Button className="h-10 w-10 sm:h-13 sm:w-13 rounded-full hover:bg-gray-200">
+          <Button
+            className="h-10 w-10 sm:h-13 sm:w-13 rounded-full hover:bg-gray-200"
+            onClick={handleBack}
+          >
             <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
           </Button>
           <h1 className="text-3xl font-bold text-[#8c1717] tracking-tight">
@@ -101,94 +133,165 @@ export const Menu = () => {
             </div>
           </div>
         </div>
-        <div className="flex flex-col gap-4 p-4">
-          <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className=" flex flex-col">
-              <h1 className="text-3xl font-bold">{t('menuTitle')}</h1>
-              <p className="text-sm text-gray-500 mt-1">
-                {t('menuSubtitle')}
+
+        {step === 'welcome' && (
+          <div className="flex flex-col items-center justify-center gap-3 text-center px-6 py-16">
+            <h2 className="text-3xl font-bold text-[#8c1717]">{businessName}</h2>
+            {phone && (
+              <p className="flex items-center gap-2 text-sm text-gray-600">
+                <Phone className="w-4 h-4 shrink-0" /> {t('welcomePhoneLabel', { phone })}
               </p>
-            </div>
-            <div className="hidden sm:flex flex-wrap items-center gap-3">
-              <Badge className="p-6 text-md font-bold flex gap-3">
-                {' '}
-                {t('tableCodeLabel', { code: joinCode ?? '' })}
-              </Badge>
-              <Button
-                variant="secondary"
-                className="rounded-full h-13 px-5"
-                onClick={() => navigate(`${sessionId}/bill`)}
-              >
-                <Receipt className="w-4 h-4 mr-2" /> {t('viewBillLabel')}
-              </Button>
-            </div>
-          </div>
-          <LoyaltySection />
-          <div className="flex flex-row gap-3 p-2 pb-5 border-b overflow-x-auto">
-            {menuItems.map((categories) => (
-              <div
-                className={`w-auto shadow-sm p-4 rounded-3xl cursor-pointer 
-              shrink-0 ${activeCategory === categories.id ? 'bg-[#8c1717] text-white' : 'bg-white text-[#8c1717]'}`}
-                onClick={() => setActiveCategory(categories.id)}
-                key={categories.id}
-              >
-                {categories.name}
+            )}
+            {address && (
+              <p className="flex items-center gap-2 text-sm text-gray-600">
+                <MapPin className="w-4 h-4 shrink-0" /> {address}
+              </p>
+            )}
+            {schedule.length > 0 && (
+              <div className="flex flex-col items-center gap-0.5 text-sm text-gray-600">
+                {schedule.map((line, index) => (
+                  <p key={index} className="flex items-center gap-2">
+                    {index === 0 && <Clock className="w-4 h-4 shrink-0" />} {line}
+                  </p>
+                ))}
               </div>
-            ))}
-          </div>
-        </div>
-        <div className="p-4 grid grid-cols-1 md:grid-cols-4 lg:grid-cols-4 gap-4">
-          {itemsCategory.map((item, index) => (
-            <Card
-              key={item.id}
-              className={`rounded-4xl shadow-sm hover:shadow-md transition-shadow relative overflow-hidden min-h-75 ${index === 0 ? 'md:col-span-2 md:row-span-2' : ''} ${index === 1 ? 'md:col-span-2 md:row-span-1' : ''} `}
+            )}
+            <Button
+              className="mt-4 rounded-full h-auto px-10 py-6 text-lg font-semibold bg-[#8c1717] hover:bg-[#8c1717]/90"
+              onClick={goToCategories}
             >
-              <img
-                src={item.imageUrl}
-                alt={item.name}
-                className="absolute inset-0 w-full h-full object-cover z-0 "
-              />
-              <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/40 to-transparent z-10"></div>
-              <div className="absolute inset-0 flex justify-between items-end p-4 z-20 text-white">
-                <Badge
-                  className="absolute top-4 left-4 px-3 py-1 text-lg p-5
-                font-bold text-[#8c1717] bg-white rounded-full shadow-md"
-                >
-                  ${item.price?.toFixed(2)}
-                </Badge>
-                <CardHeader className="p-3">
-                  <CardTitle className="text-2xl font-bold ">
-                    {item.name}
-                  </CardTitle>
-                  <CardDescription>{item.description}</CardDescription>
-                </CardHeader>
-                <CardContent className="flex flex-col items-end gap-2 p-0">
-                  <Button
-                    className="bg-[#8c1717] hover:bg-[#8c1717]/90 text-white p-7 rounded-full shadow-md"
-                    onClick={() => {
-                      if (item.modifierGroups && item.modifierGroups.length > 0) {
-                        setSelectingItem(item)
-                      } else {
-                        mutation.mutate({ sessionId: sessionId ?? '', itemId: item.id ?? 0 })
-                      }
-                    }}
+              {t('welcomeOrderNowCta')}
+            </Button>
+          </div>
+        )}
+
+        {step === 'categories' && (
+          <div className="flex flex-col gap-4 p-4">
+            <div className="flex flex-col">
+              <h1 className="text-3xl font-bold">{t('menuTitle')}</h1>
+              <p className="text-sm text-gray-500 mt-1">{t('menuSubtitle')}</p>
+            </div>
+            {menuItems.length === 0 ? (
+              <p className="text-sm text-gray-400 text-center py-12">
+                {t('welcomeCategoriesEmpty')}
+              </p>
+            ) : (
+              <div className="flex flex-col gap-3">
+                {menuItems.map((category) => (
+                  <button
+                    key={category.id}
+                    type="button"
+                    className="flex items-center gap-4 p-3 rounded-3xl shadow-sm hover:shadow-md transition-shadow bg-white text-left cursor-pointer"
+                    onClick={() => goToItems(category.id)}
                   >
-                    <Plus className="w-5 h-5" />
-                  </Button>
-                </CardContent>
+                    <div className="w-16 h-16 rounded-2xl overflow-hidden shrink-0 bg-gray-100 flex items-center justify-center">
+                      {category.imgUrl ? (
+                        <img
+                          src={category.imgUrl}
+                          alt={category.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <UtensilsCrossed className="w-6 h-6 text-gray-300" />
+                      )}
+                    </div>
+                    <div className="flex flex-col flex-1 min-w-0">
+                      <span className="font-semibold text-lg truncate">{category.name}</span>
+                      {category.description && (
+                        <span className="text-sm text-gray-500 truncate">
+                          {category.description}
+                        </span>
+                      )}
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-gray-300 shrink-0" />
+                  </button>
+                ))}
               </div>
-            </Card>
-          ))}
-        </div>
-        <div className="fixed bottom-24 md:bottom-10 left-11 z-50 hidden sm:block">
-          <ParticipantsPopUp />
-        </div>
-        <div className="fixed bottom-24 md:bottom-10 right-11 z-50 hidden sm:block">
-          <ItemsFloatingIsland />
-        </div>
-        <div className="fixed bottom-24 right-6 z-50 sm:hidden">
-          <MobileActionsIsland />
-        </div>
+            )}
+          </div>
+        )}
+
+        {step === 'items' && (
+          <>
+            <div className="flex flex-col gap-4 p-4">
+              <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className=" flex flex-col">
+                  <h1 className="text-3xl font-bold">{t('menuTitle')}</h1>
+                  <p className="text-sm text-gray-500 mt-1">
+                    {t('menuSubtitle')}
+                  </p>
+                </div>
+                <div className="hidden sm:flex flex-wrap items-center gap-3">
+                  <Badge className="p-6 text-md font-bold flex gap-3">
+                    {' '}
+                    {t('tableCodeLabel', { code: joinCode ?? '' })}
+                  </Badge>
+                  <Button
+                    variant="secondary"
+                    className="rounded-full h-13 px-5"
+                    onClick={() => navigate(`${sessionId}/bill`)}
+                  >
+                    <Receipt className="w-4 h-4 mr-2" /> {t('viewBillLabel')}
+                  </Button>
+                </div>
+              </div>
+              <LoyaltySection />
+            </div>
+            <div className="p-4 grid grid-cols-1 md:grid-cols-4 lg:grid-cols-4 gap-4">
+              {itemsCategory.map((item, index) => (
+                <Card
+                  key={item.id}
+                  className={`rounded-4xl shadow-sm hover:shadow-md transition-shadow relative overflow-hidden min-h-75 ${index === 0 ? 'md:col-span-2 md:row-span-2' : ''} ${index === 1 ? 'md:col-span-2 md:row-span-1' : ''} `}
+                >
+                  <img
+                    src={item.imageUrl}
+                    alt={item.name}
+                    className="absolute inset-0 w-full h-full object-cover z-0 "
+                  />
+                  <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/40 to-transparent z-10"></div>
+                  <div className="absolute inset-0 flex justify-between items-end p-4 z-20 text-white">
+                    <Badge
+                      className="absolute top-4 left-4 px-3 py-1 text-lg p-5
+                    font-bold text-[#8c1717] bg-white rounded-full shadow-md"
+                    >
+                      ${item.price?.toFixed(2)}
+                    </Badge>
+                    <CardHeader className="p-3">
+                      <CardTitle className="text-2xl font-bold ">
+                        {item.name}
+                      </CardTitle>
+                      <CardDescription>{item.description}</CardDescription>
+                    </CardHeader>
+                    <CardContent className="flex flex-col items-end gap-2 p-0">
+                      <Button
+                        className="bg-[#8c1717] hover:bg-[#8c1717]/90 text-white p-7 rounded-full shadow-md"
+                        onClick={() => {
+                          if (item.modifierGroups && item.modifierGroups.length > 0) {
+                            setSelectingItem(item)
+                          } else {
+                            mutation.mutate({ sessionId: sessionId ?? '', itemId: item.id ?? 0 })
+                          }
+                        }}
+                      >
+                        <Plus className="w-5 h-5" />
+                      </Button>
+                    </CardContent>
+                  </div>
+                </Card>
+              ))}
+            </div>
+            <div className="fixed bottom-24 md:bottom-10 left-11 z-50 hidden sm:block">
+              <ParticipantsPopUp />
+            </div>
+            <div className="fixed bottom-24 md:bottom-10 right-11 z-50 hidden sm:block">
+              <ItemsFloatingIsland />
+            </div>
+            <div className="fixed bottom-24 right-6 z-50 sm:hidden">
+              <MobileActionsIsland />
+            </div>
+          </>
+        )}
+
         {selectingItem && (
           <SelectModifiersModal
             item={selectingItem}

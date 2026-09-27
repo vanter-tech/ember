@@ -8,7 +8,9 @@ import type { Bill, BillSplit } from '@/lib/api'
 interface sessionState extends sessionResponse {
   bill?: Bill
   billSplits?: BillSplit[]
+  hasSeenMenuWelcome?: boolean
   setSession: (data: sessionResponse) => void
+  markMenuWelcomeSeen: () => void
   clearSession: () => void
   updateSession: (data: Partial<sessionResponse>) => void
   addParticipant: (participant: participantDTO) => void
@@ -32,9 +34,11 @@ export const useSessionStore = create<sessionState>()(
       items: undefined,
       bill: undefined,
       billSplits: undefined,
+      hasSeenMenuWelcome: undefined,
 
 
       setSession: (data) => set(data),
+      markMenuWelcomeSeen: () => set({ hasSeenMenuWelcome: true }),
       updateSession: (data) => set(data),
       addParticipant: (participant) => {
         set((state) => ({
@@ -82,6 +86,7 @@ export const useSessionStore = create<sessionState>()(
           items: undefined,
           bill: undefined,
           billSplits: undefined,
+          hasSeenMenuWelcome: undefined,
         })
       },
     }),
