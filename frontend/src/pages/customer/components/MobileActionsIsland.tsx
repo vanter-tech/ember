@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import { ArrowRight, Gift, MoreHorizontal, Receipt, Users } from 'lucide-react'
 import { useSessionStore } from '@/store/sessionStore'
 import { ParticipantsList } from './ParticipantsList'
-import { RewardsList } from './LoyaltySection'
 import { useLoyaltyAccount } from './useLoyaltyAccount'
 import { useTranslation } from '@/lib/i18n'
 
@@ -12,34 +11,22 @@ export const MobileActionsIsland = () => {
   const navigate = useNavigate()
   const [isOpen, setIsOpen] = useState(false)
   const [showParticipants, setShowParticipants] = useState(false)
-  const [showRewards, setShowRewards] = useState(false)
   const { t } = useTranslation('customer')
   const { loyaltyEnabled, account } = useLoyaltyAccount()
-  const rewards = account?.rewards ?? []
-  const hasRewards = loyaltyEnabled && rewards.length > 0
+  const hasRewards = loyaltyEnabled && (account?.rewards?.length ?? 0) > 0
 
   if (!tableId) return null
 
   const close = () => {
     setIsOpen(false)
     setShowParticipants(false)
-    setShowRewards(false)
   }
 
   return (
     <div className="relative">
       {isOpen && (
-        <div
-          className={`absolute bottom-full right-0 mb-3 bg-white rounded-2xl shadow-xl border border-zinc-100 p-2 z-50 ${showRewards ? 'w-auto' : 'w-56'}`}
-        >
-          {showRewards ? (
-            <div className="px-1 pb-1">
-              <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider block px-1 pb-2">
-                {t('loyaltyRewardsTitle')}
-              </span>
-              <RewardsList rewards={rewards} />
-            </div>
-          ) : showParticipants ? (
+        <div className="absolute bottom-full right-0 mb-3 w-56 bg-white rounded-2xl shadow-xl border border-zinc-100 p-2 z-50">
+          {showParticipants ? (
             <ParticipantsList participants={participants ?? []} />
           ) : (
             <div className="flex flex-col gap-1">
@@ -57,7 +44,10 @@ export const MobileActionsIsland = () => {
                 <button
                   type="button"
                   className="flex items-center gap-3 p-2 rounded-xl text-left transition-colors hover:bg-zinc-50"
-                  onClick={() => setShowRewards(true)}
+                  onClick={() => {
+                    close()
+                    navigate(`${tableId}/rewards`)
+                  }}
                 >
                   <Gift className="h-4 w-4 text-zinc-500" />
                   <span className="text-sm font-medium text-zinc-700">

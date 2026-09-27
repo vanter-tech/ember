@@ -6,39 +6,49 @@ import { TIER_LABELS } from '@/pages/admin/components/settings/loyalty/types'
 import { useTranslation } from '@/lib/i18n'
 import { useLoyaltyAccount } from './useLoyaltyAccount'
 
-interface RewardsListProps {
-  rewards: NonNullable<LoyaltyAccountResponse['rewards']>
+type Reward = NonNullable<LoyaltyAccountResponse['rewards']>[number]
+
+interface RewardCardProps {
+  reward: Reward
+  className?: string
 }
 
-export const RewardsList = ({ rewards }: RewardsListProps) => {
+export const RewardCard = ({ reward, className = '' }: RewardCardProps) => {
   const { t } = useTranslation('customer')
 
   return (
-    <div className="flex flex-row gap-3 overflow-x-auto pb-2">
-      {rewards.map((reward) => (
-        <Card
-          key={reward.id}
-          className={`shrink-0 w-64 rounded-3xl ${reward.unlocked ? 'border-[#8c1717]/30' : 'opacity-60'}`}
-        >
-          <CardContent className="p-4 flex flex-col gap-2">
-            <div className="flex items-start justify-between gap-2">
-              <span className="font-semibold">{reward.name}</span>
-              {!reward.unlocked && <Lock className="w-4 h-4 text-gray-400 shrink-0" />}
-            </div>
-            {reward.description && (
-              <p className="text-sm text-gray-500">{reward.description}</p>
-            )}
-            <Badge variant={reward.unlocked ? 'default' : 'outline'} className="w-fit">
-              {reward.unlocked
-                ? t('loyaltyRewardUnlocked')
-                : t('loyaltyRewardLocked', { tierName: TIER_LABELS[reward.requiredTier!] })}
-            </Badge>
-          </CardContent>
-        </Card>
-      ))}
-    </div>
+    <Card
+      className={`rounded-3xl ${reward.unlocked ? 'border-[#8c1717]/30' : 'opacity-60'} ${className}`}
+    >
+      <CardContent className="p-4 flex flex-col gap-2">
+        <div className="flex items-start justify-between gap-2">
+          <span className="font-semibold">{reward.name}</span>
+          {!reward.unlocked && <Lock className="w-4 h-4 text-gray-400 shrink-0" />}
+        </div>
+        {reward.description && (
+          <p className="text-sm text-gray-500">{reward.description}</p>
+        )}
+        <Badge variant={reward.unlocked ? 'default' : 'outline'} className="w-fit">
+          {reward.unlocked
+            ? t('loyaltyRewardUnlocked')
+            : t('loyaltyRewardLocked', { tierName: TIER_LABELS[reward.requiredTier!] })}
+        </Badge>
+      </CardContent>
+    </Card>
   )
 }
+
+interface RewardsListProps {
+  rewards: Reward[]
+}
+
+export const RewardsList = ({ rewards }: RewardsListProps) => (
+  <div className="flex flex-row gap-3 overflow-x-auto pb-2">
+    {rewards.map((reward) => (
+      <RewardCard key={reward.id} reward={reward} className="shrink-0 w-64" />
+    ))}
+  </div>
+)
 
 // Rewards are catalog-display only (no points cost, no redemption flow — see
 // LoyaltyReward.java) so this only ever shows what's unlocked vs. locked by tier.

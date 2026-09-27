@@ -47,6 +47,7 @@ export const customer = {
   loyaltyRewardsTitle: 'Rewards',
   loyaltyRewardLocked: '{{tierName}} tier required',
   loyaltyRewardUnlocked: 'Available',
+  loyaltyNoRewards: 'No rewards available yet.',
 
   // Bill
   billTitle: 'My Bill',

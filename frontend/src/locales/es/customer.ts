@@ -45,6 +45,7 @@ export const customer = {
   loyaltyRewardsTitle: 'Recompensas',
   loyaltyRewardLocked: 'Nivel {{tierName}} requerido',
   loyaltyRewardUnlocked: 'Disponible',
+  loyaltyNoRewards: 'Aún no hay recompensas disponibles.',
 
   // Bill
   billTitle: 'Mi Cuenta',

@@ -38,6 +38,7 @@ const JoinByCode = lazy(() => import('./pages/customer/JoinByCode').then(m => ({
 const Menu = lazy(() => import('./pages/customer/Menu').then(m => ({ default: m.Menu })))
 const ComandaView = lazy(() => import('./pages/customer/ComandaView').then(m => ({ default: m.ComandaView })))
 const Bill = lazy(() => import('./pages/customer/Bill').then(m => ({ default: m.Bill })))
+const RewardsView = lazy(() => import('./pages/customer/RewardsView').then(m => ({ default: m.RewardsView })))
 
 // Code-split: the platform console is a separate audience (operators, not tenant users) and
 // must never land in the tenant app's main bundle.
@@ -136,6 +137,7 @@ export default function App() {
               <Route path='menu' element={<Suspense fallback={null}><Menu/></Suspense>}/>
               <Route path="menu/:id/comanda" element={<Suspense fallback={null}><ComandaView/></Suspense>} />
               <Route path="menu/:id/bill" element={<Suspense fallback={null}><Bill/></Suspense>} />
+              <Route path="menu/:id/rewards" element={<Suspense fallback={null}><RewardsView/></Suspense>} />
             </Route>
           </Route>
         )}
