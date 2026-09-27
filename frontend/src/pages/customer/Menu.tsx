@@ -13,6 +13,7 @@ import {
 import { useState } from 'react'
 import { ArrowLeft, Plus, Receipt } from 'lucide-react'
 import { LanguageSwitcher } from '@/components/LanguageSwitcher'
+import { LanguageFabButton } from '@/components/LanguageFabButton'
 import { useTranslation } from '@/lib/i18n'
 import { useSessionStore } from '@/store/sessionStore'
 import { ParticipantsPopUp } from '@/pages/customer/components/ParticipantsPopUp'
@@ -85,13 +86,20 @@ export const Menu = () => {
     <>
       <div className="p-2">
         <div className="flex items-center w-full h-20 justify-items-start shadow-sm rounded-3xl p-4 gap-4">
-          <Button className=" h-13 w-13 rounded-full hover:bg-gray-200">
-            <ArrowLeft className="w-5 h-5" />
+          <Button className="h-10 w-10 sm:h-13 sm:w-13 rounded-full hover:bg-gray-200">
+            <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
           </Button>
           <h1 className="text-3xl font-bold text-[#8c1717] tracking-tight">
             Ember
           </h1>
-          <LanguageSwitcher />
+          <div className="ml-auto sm:ml-0">
+            <div className="sm:hidden">
+              <LanguageFabButton side="bottom" />
+            </div>
+            <div className="hidden sm:block">
+              <LanguageSwitcher />
+            </div>
+          </div>
         </div>
         <div className="flex flex-col gap-4 p-4">
           <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
