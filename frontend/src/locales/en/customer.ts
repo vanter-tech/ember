@@ -40,8 +40,6 @@ export const customer = {
   // Menu
   loadingItems: 'Loading dishes...',
   loadingItemsError: 'Failed to load the dishes.',
-  menuTitle: 'Digital Menu',
-  menuSubtitle: "Explore today's gourmet selection.",
   welcomeGreeting: 'Welcome to {{name}}',
   welcomeViewMenuCta: 'View Menu',
   welcomePhoneLabel: 'Phone: {{phone}}',

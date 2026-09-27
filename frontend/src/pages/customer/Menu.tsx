@@ -214,26 +214,18 @@ export const Menu = () => {
         {step === 'items' && (
           <>
             <div className="flex flex-col gap-4 p-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
-              <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className=" flex flex-col">
-                  <h1 className="text-3xl font-bold">{t('menuTitle')}</h1>
-                  <p className="text-sm text-gray-500 mt-1">
-                    {t('menuSubtitle')}
-                  </p>
-                </div>
-                <div className="hidden sm:flex flex-wrap items-center gap-3">
-                  <Badge className="p-6 text-md font-bold flex gap-3">
-                    {' '}
-                    {t('tableCodeLabel', { code: joinCode ?? '' })}
-                  </Badge>
-                  <Button
-                    variant="secondary"
-                    className="rounded-full h-13 px-5"
-                    onClick={() => navigate(`${sessionId}/bill`)}
-                  >
-                    <Receipt className="w-4 h-4 mr-2" /> {t('viewBillLabel')}
-                  </Button>
-                </div>
+              <div className="hidden sm:flex flex-wrap items-center justify-end gap-3 p-4">
+                <Badge className="p-6 text-md font-bold flex gap-3">
+                  {' '}
+                  {t('tableCodeLabel', { code: joinCode ?? '' })}
+                </Badge>
+                <Button
+                  variant="secondary"
+                  className="rounded-full h-13 px-5"
+                  onClick={() => navigate(`${sessionId}/bill`)}
+                >
+                  <Receipt className="w-4 h-4 mr-2" /> {t('viewBillLabel')}
+                </Button>
               </div>
               <LoyaltySection />
             </div>

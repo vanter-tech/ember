@@ -38,8 +38,6 @@ export const customer = {
   // Menu
   loadingItems: 'Cargando platillos...',
   loadingItemsError: 'Error al cargar los platillos.',
-  menuTitle: 'Carta Digital',
-  menuSubtitle: 'Explora nuestra seleccion gourmet para hoy.',
   welcomeGreeting: 'Bienvenido a {{name}}',
   welcomeViewMenuCta: 'Ver Carta',
   welcomePhoneLabel: 'Tel: {{phone}}',
