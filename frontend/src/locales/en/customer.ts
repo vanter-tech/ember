@@ -139,6 +139,7 @@ export const customer = {
 
   // MobileActionsIsland
   mobileActionsViewParticipants: 'View participants',
+  mobileActionsViewRewards: 'View rewards',
   mobileActionsViewComanda: 'View order',
   mobileActionsAriaLabel: 'Table options',
   billPaymentSentToast: 'Payment sent. Wait for the waiter to confirm.',

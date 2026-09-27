@@ -138,6 +138,7 @@ export const customer = {
 
   // MobileActionsIsland
   mobileActionsViewParticipants: 'Ver participantes',
+  mobileActionsViewRewards: 'Ver recompensas',
   mobileActionsViewComanda: 'Ver comanda',
   mobileActionsAriaLabel: 'Opciones de mesa',
   billPaymentSentToast: 'Pago enviado. Espera la confirmación del mesero.',
