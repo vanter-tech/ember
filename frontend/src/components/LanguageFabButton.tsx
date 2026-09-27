@@ -11,10 +11,11 @@ const OPTIONS: { value: Locale; labelKey: 'languageSpanish' | 'languageEnglish' 
 
 interface LanguageFabButtonProps {
   side?: 'top' | 'bottom'
+  className?: string
 }
 
 /** Circular language picker button (locale code + popover of options). */
-export const LanguageFabButton = ({ side = 'top' }: LanguageFabButtonProps) => {
+export const LanguageFabButton = ({ side = 'top', className }: LanguageFabButtonProps) => {
   const { t, locale, setLocale } = useTranslation('common')
   const [open, setOpen] = useState(false)
 
@@ -25,7 +26,10 @@ export const LanguageFabButton = ({ side = 'top' }: LanguageFabButtonProps) => {
           type="button"
           data-testid="language-fab"
           aria-label={t('languageSwitcherLabel')}
-          className="flex h-12 w-12 cursor-pointer items-center justify-center rounded-full bg-[#8c1717] text-sm font-bold text-white shadow-lg transition hover:brightness-110"
+          className={cn(
+            'flex h-12 w-12 cursor-pointer items-center justify-center rounded-full bg-[#8c1717] text-sm font-bold text-white shadow-lg transition hover:brightness-110',
+            className
+          )}
         >
           {locale.toUpperCase()}
         </button>

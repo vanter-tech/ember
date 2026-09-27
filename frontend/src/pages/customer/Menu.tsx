@@ -94,7 +94,7 @@ export const Menu = () => {
           </h1>
           <div className="ml-auto sm:ml-0">
             <div className="sm:hidden">
-              <LanguageFabButton side="bottom" />
+              <LanguageFabButton side="bottom" className="h-10 w-10 text-xs" />
             </div>
             <div className="hidden sm:block">
               <LanguageSwitcher />
