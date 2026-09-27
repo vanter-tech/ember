@@ -40,7 +40,7 @@ export const customer = {
   loadingItemsError: 'Error al cargar los platillos.',
   menuTitle: 'Carta Digital',
   menuSubtitle: 'Explora nuestra seleccion gourmet para hoy.',
-  welcomeGreeting: 'Bienvenido a "{{name}}"',
+  welcomeGreeting: 'Bienvenido a {{name}}',
   welcomeViewMenuCta: 'Ver Carta',
   welcomePhoneLabel: 'Tel: {{phone}}',
   welcomeCategoriesEmpty: 'Aún no hay categorías disponibles.',
