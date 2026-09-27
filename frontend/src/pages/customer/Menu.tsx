@@ -135,8 +135,10 @@ export const Menu = () => {
         </div>
 
         {step === 'welcome' && (
-          <div className="flex flex-col items-center justify-center gap-3 text-center px-6 py-16">
-            <h2 className="text-3xl font-bold text-[#8c1717]">{businessName}</h2>
+          <div className="flex flex-col items-center justify-center gap-3 text-center px-6 min-h-[70vh]">
+            <h2 className="text-3xl font-bold text-[#8c1717]">
+              {t('welcomeGreeting', { name: businessName })}
+            </h2>
             {phone && (
               <p className="flex items-center gap-2 text-sm text-gray-600">
                 <Phone className="w-4 h-4 shrink-0" /> {t('welcomePhoneLabel', { phone })}
@@ -160,17 +162,14 @@ export const Menu = () => {
               className="mt-4 rounded-full h-auto px-10 py-6 text-lg font-semibold bg-[#8c1717] hover:bg-[#8c1717]/90"
               onClick={goToCategories}
             >
-              {t('welcomeOrderNowCta')}
+              {t('welcomeViewMenuCta')}
             </Button>
           </div>
         )}
 
         {step === 'categories' && (
           <div className="flex flex-col gap-4 p-4">
-            <div className="flex flex-col">
-              <h1 className="text-3xl font-bold">{t('menuTitle')}</h1>
-              <p className="text-sm text-gray-500 mt-1">{t('menuSubtitle')}</p>
-            </div>
+            <h1 className="text-3xl font-bold">{t('categoriesListTitle')}</h1>
             {menuItems.length === 0 ? (
               <p className="text-sm text-gray-400 text-center py-12">
                 {t('welcomeCategoriesEmpty')}
