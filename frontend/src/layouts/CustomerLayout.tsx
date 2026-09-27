@@ -1,5 +1,6 @@
 import { FloatingNav } from '@/components/FloatingNav'
-import { Outlet, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
+import { AnimatedOutlet } from '@/components/AnimatedOutlet'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useWebsocketStore } from '@/store/websocket'
 import { useSessionStore } from '@/store/sessionStore'
@@ -76,7 +77,7 @@ export const CustomerLayout = () => {
   return (
     <div className="min-h-screen bg-zinc-50/50 relative pb-32 p-6">
       <main className="w-full">
-        <Outlet />
+        <AnimatedOutlet />
       </main>
       <FloatingNav />
     </div>

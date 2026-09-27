@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { Link, Outlet, useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Menu } from 'lucide-react'
 import { usePlatformAuthStore } from '@/store/platformAuthStore'
 import { Button } from '@/components/ui/button'
 import { ConsoleSidebar } from '@/components/console/ConsoleSidebar'
+import { AnimatedOutlet } from '@/components/AnimatedOutlet'
 
 export const PlatformLayout = () => {
   const navigate = useNavigate()
@@ -52,7 +53,7 @@ export const PlatformLayout = () => {
           </div>
         </header>
         <main className="min-w-0 flex-1 p-4 md:p-6">
-          <Outlet />
+          <AnimatedOutlet />
         </main>
       </div>
     </div>
