@@ -195,15 +195,6 @@ export const FloatingNav = () => {
         ) : (
           ''
         ))}
-      {role === 'CUSTOMER' && (
-        <Link
-          to="/customer/home"
-          className={navItemClass('/customer/home')}
-          title={t('navHome')}
-        >
-          <Home strokeWidth={1.5} size={24} />
-        </Link>
-      )}
 
       {role === 'CUSTOMER' && amiIn && (
         <button
@@ -215,6 +206,16 @@ export const FloatingNav = () => {
         >
           <DoorOpen strokeWidth={1.5} size={24} />
         </button>
+      )}
+
+      {role === 'CUSTOMER' && (
+        <Link
+          to="/customer/home"
+          className={navItemClass('/customer/home')}
+          title={t('navHome')}
+        >
+          <Home strokeWidth={1.5} size={24} />
+        </Link>
       )}
       </div>
 
