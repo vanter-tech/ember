@@ -135,7 +135,7 @@ export const Menu = () => {
         </div>
 
         {step === 'welcome' && (
-          <div className="flex flex-col items-center justify-center gap-3 text-center px-6 min-h-[70vh]">
+          <div className="flex flex-col items-center justify-center gap-3 text-center px-6 min-h-[70vh] animate-in fade-in slide-in-from-bottom-2 duration-300">
             <h2 className="text-3xl font-bold text-[#8c1717]">
               {t('welcomeGreeting', { name: businessName })}
             </h2>
@@ -168,7 +168,7 @@ export const Menu = () => {
         )}
 
         {step === 'categories' && (
-          <div className="flex flex-col gap-4 p-4">
+          <div className="flex flex-col gap-4 p-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
             <h1 className="text-3xl font-bold">{t('categoriesListTitle')}</h1>
             {menuItems.length === 0 ? (
               <p className="text-sm text-gray-400 text-center py-12">
@@ -176,11 +176,12 @@ export const Menu = () => {
               </p>
             ) : (
               <div className="flex flex-col gap-3">
-                {menuItems.map((category) => (
+                {menuItems.map((category, index) => (
                   <button
                     key={category.id}
                     type="button"
-                    className="flex items-center gap-4 p-3 rounded-3xl shadow-sm hover:shadow-md transition-shadow bg-white text-left cursor-pointer"
+                    style={{ animationDelay: `${index * 40}ms` }}
+                    className="flex items-center gap-4 p-3 rounded-3xl shadow-sm hover:shadow-md transition-shadow bg-white text-left cursor-pointer animate-in fade-in slide-in-from-bottom-1 fill-mode-both duration-300"
                     onClick={() => goToItems(category.id)}
                   >
                     <div className="w-16 h-16 rounded-2xl overflow-hidden shrink-0 bg-gray-100 flex items-center justify-center">
@@ -212,7 +213,7 @@ export const Menu = () => {
 
         {step === 'items' && (
           <>
-            <div className="flex flex-col gap-4 p-4">
+            <div className="flex flex-col gap-4 p-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
               <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className=" flex flex-col">
                   <h1 className="text-3xl font-bold">{t('menuTitle')}</h1>
@@ -240,7 +241,8 @@ export const Menu = () => {
               {itemsCategory.map((item, index) => (
                 <Card
                   key={item.id}
-                  className={`rounded-4xl shadow-sm hover:shadow-md transition-shadow relative overflow-hidden min-h-75 ${index === 0 ? 'md:col-span-2 md:row-span-2' : ''} ${index === 1 ? 'md:col-span-2 md:row-span-1' : ''} `}
+                  style={{ animationDelay: `${Math.min(index, 10) * 40}ms` }}
+                  className={`rounded-4xl shadow-sm hover:shadow-md transition-shadow relative overflow-hidden min-h-75 animate-in fade-in slide-in-from-bottom-2 fill-mode-both duration-300 ${index === 0 ? 'md:col-span-2 md:row-span-2' : ''} ${index === 1 ? 'md:col-span-2 md:row-span-1' : ''} `}
                 >
                   <img
                     src={item.imageUrl}
