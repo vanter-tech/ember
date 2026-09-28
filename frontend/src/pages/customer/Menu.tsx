@@ -198,6 +198,9 @@ export const Menu = () => {
                           </span>
                         )}
                       </div>
+                      <Badge variant="outline" className="shrink-0 text-xs font-normal text-gray-500">
+                        {t('categoryItemCountLabel', { count: category.items?.length ?? 0 })}
+                      </Badge>
                       <ChevronRight className="w-5 h-5 text-gray-300 shrink-0" />
                     </button>
                   ))}
@@ -223,6 +226,9 @@ export const Menu = () => {
                         </div>
                       )}
                       <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/40 to-transparent z-10"></div>
+                      <Badge className="absolute top-4 right-4 px-3 py-1 text-xs font-bold text-[#8c1717] bg-white rounded-full shadow-md z-20">
+                        {t('categoryItemCountLabel', { count: category.items?.length ?? 0 })}
+                      </Badge>
                       <CardHeader className="absolute inset-0 flex flex-col justify-end p-4 z-20 text-white">
                         <CardTitle className="text-2xl font-bold">{category.name}</CardTitle>
                         {category.description && (

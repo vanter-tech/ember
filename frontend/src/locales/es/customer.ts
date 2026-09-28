@@ -43,6 +43,7 @@ export const customer = {
   welcomePhoneLabel: 'Tel: {{phone}}',
   welcomeCategoriesEmpty: 'Aún no hay categorías disponibles.',
   categoriesListTitle: 'Categorías',
+  categoryItemCountLabel: '{{count}} platillos',
   tableCodeLabel: 'Codigo de la mesa: {{code}}',
   tableCodePanelTitle: 'Código de mesa',
   viewBillLabel: 'Ver cuenta',

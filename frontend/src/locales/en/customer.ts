@@ -45,6 +45,7 @@ export const customer = {
   welcomePhoneLabel: 'Phone: {{phone}}',
   welcomeCategoriesEmpty: 'No categories available yet.',
   categoriesListTitle: 'Categories',
+  categoryItemCountLabel: '{{count}} dishes',
   tableCodeLabel: 'Table code: {{code}}',
   tableCodePanelTitle: 'Table code',
   viewBillLabel: 'View bill',
