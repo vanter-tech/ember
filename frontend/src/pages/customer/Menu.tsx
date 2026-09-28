@@ -18,6 +18,7 @@ import { useTranslation } from '@/lib/i18n'
 import { useSessionStore } from '@/store/sessionStore'
 import { useSettingStore } from '@/store/settingStore'
 import { hoursLines } from '@/lib/receiptBusinessInfo'
+import { cn } from '@/lib/utils'
 import { LoyaltySection } from './components/LoyaltySection'
 import { SelectModifiersModal } from './components/SelectModifiersModal'
 import { useNavigate } from 'react-router-dom'
@@ -30,16 +31,20 @@ interface CategoryCardProps {
   onClick: () => void
   variant?: 'hero' | 'grid'
   style?: React.CSSProperties
+  className?: string
 }
 
-const CategoryCard = ({ category, onClick, variant = 'grid', style }: CategoryCardProps) => {
+const CategoryCard = ({ category, onClick, variant = 'grid', style, className }: CategoryCardProps) => {
   const { t } = useTranslation('customer')
   const isHero = variant === 'hero'
 
   return (
     <Card
       style={style}
-      className={`rounded-4xl shadow-sm hover:shadow-md transition-shadow relative overflow-hidden cursor-pointer animate-in fade-in slide-in-from-bottom-2 fill-mode-both duration-300 ${isHero ? 'min-h-96' : 'min-h-56'}`}
+      className={cn(
+        `rounded-4xl shadow-sm hover:shadow-md transition-shadow relative overflow-hidden cursor-pointer animate-in fade-in slide-in-from-bottom-2 fill-mode-both duration-300 ${isHero ? 'min-h-96' : 'min-h-56'}`,
+        className
+      )}
       onClick={onClick}
     >
       {category.imgUrl ? (
@@ -267,14 +272,24 @@ export const Menu = () => {
                   />
                   {menuItems.length > 1 && (
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                      {menuItems.slice(1).map((category, index) => (
-                        <CategoryCard
-                          key={category.id}
-                          category={category}
-                          onClick={() => goToItems(category.id)}
-                          style={{ animationDelay: `${Math.min(index, 10) * 40}ms` }}
-                        />
-                      ))}
+                      {(() => {
+                        const restCategories = menuItems.slice(1)
+                        // A last row with exactly 3 of 4 columns filled leaves one empty slot —
+                        // stretch that row's last card across the remaining column instead.
+                        const lastRowHasOneGap = restCategories.length % 4 === 3
+                        return restCategories.map((category, index) => {
+                          const isLast = index === restCategories.length - 1
+                          return (
+                            <CategoryCard
+                              key={category.id}
+                              category={category}
+                              onClick={() => goToItems(category.id)}
+                              style={{ animationDelay: `${Math.min(index, 10) * 40}ms` }}
+                              className={isLast && lastRowHasOneGap ? 'lg:col-span-2' : undefined}
+                            />
+                          )
+                        })
+                      })()}
                     </div>
                   )}
                 </div>
