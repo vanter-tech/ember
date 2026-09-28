@@ -8,6 +8,9 @@ import { SessionTableService } from '@/lib/api'
 import { useEffect } from 'react'
 import toast from 'react-hot-toast'
 import { useTranslation } from '@/lib/i18n'
+import { ParticipantsPopUp } from '@/pages/customer/components/ParticipantsPopUp'
+import { ItemsFloatingIsland } from '@/pages/customer/components/ItemsFloatingIsland'
+import { MobileActionsIsland } from '@/pages/customer/components/MobileActionsIsland'
 
 export const CustomerLayout = () => {
 
@@ -79,6 +82,15 @@ export const CustomerLayout = () => {
       <main className="w-full">
         <AnimatedOutlet />
       </main>
+      <div className="fixed bottom-24 md:bottom-10 left-11 z-50 hidden sm:block">
+        <ParticipantsPopUp />
+      </div>
+      <div className="fixed bottom-24 md:bottom-10 right-11 z-50 hidden sm:block">
+        <ItemsFloatingIsland />
+      </div>
+      <div className="fixed bottom-24 right-6 z-50 sm:hidden">
+        <MobileActionsIsland />
+      </div>
       <FloatingNav />
     </div>
   )

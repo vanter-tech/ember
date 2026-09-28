@@ -24,7 +24,7 @@ interface sessionState extends sessionResponse {
 
 export const useSessionStore = create<sessionState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       id: undefined,
       tableId: undefined,
       waiterId: undefined,
@@ -37,7 +37,14 @@ export const useSessionStore = create<sessionState>()(
       hasSeenMenuWelcome: undefined,
 
 
-      setSession: (data) => set(data),
+      // Only a genuinely different table (a fresh join) should show the welcome screen again —
+      // resuming the same session (page reload, navigateForRole) must keep whatever this device
+      // already recorded for it, otherwise a plain refresh would replay it mid-visit.
+      setSession: (data) =>
+        set({
+          ...data,
+          hasSeenMenuWelcome: data.id === get().id ? get().hasSeenMenuWelcome : undefined,
+        }),
       markMenuWelcomeSeen: () => set({ hasSeenMenuWelcome: true }),
       updateSession: (data) => set(data),
       addParticipant: (participant) => {

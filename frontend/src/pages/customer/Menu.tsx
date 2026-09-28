@@ -18,10 +18,7 @@ import { useTranslation } from '@/lib/i18n'
 import { useSessionStore } from '@/store/sessionStore'
 import { useSettingStore } from '@/store/settingStore'
 import { hoursLines } from '@/lib/receiptBusinessInfo'
-import { ParticipantsPopUp } from '@/pages/customer/components/ParticipantsPopUp'
-import { ItemsFloatingIsland } from './components/ItemsFloatingIsland'
 import { LoyaltySection } from './components/LoyaltySection'
-import { MobileActionsIsland } from './components/MobileActionsIsland'
 import { SelectModifiersModal } from './components/SelectModifiersModal'
 import { useNavigate } from 'react-router-dom'
 import type { MenuItemResponse } from '@/lib/api'
@@ -272,15 +269,6 @@ export const Menu = () => {
                   </div>
                 </Card>
               ))}
-            </div>
-            <div className="fixed bottom-24 md:bottom-10 left-11 z-50 hidden sm:block">
-              <ParticipantsPopUp />
-            </div>
-            <div className="fixed bottom-24 md:bottom-10 right-11 z-50 hidden sm:block">
-              <ItemsFloatingIsland />
-            </div>
-            <div className="fixed bottom-24 right-6 z-50 sm:hidden">
-              <MobileActionsIsland />
             </div>
           </>
         )}
