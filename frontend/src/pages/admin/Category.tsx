@@ -60,7 +60,12 @@ export const Category = () => {
     <div>
       <div
         id="category-tour-grid"
-        className={categories.length === 0 ? '' : 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'}
+        key={page}
+        className={
+          categories.length === 0
+            ? ''
+            : 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-2 duration-300'
+        }
       >
         {categories.length === 0 && (
           <EmptyState
