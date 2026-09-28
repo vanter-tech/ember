@@ -1,5 +1,5 @@
 import { FloatingNav } from '@/components/FloatingNav'
-import {Outlet} from 'react-router-dom'
+import { AnimatedOutlet } from '@/components/AnimatedOutlet'
 import { useWebsocketStore } from '@/store/websocket'
 import { useAuthStore } from '@/store/authStore'
 import { useEffect } from 'react'
@@ -28,7 +28,7 @@ export const KitchenLayout = () => {
   return (
     <div className="min-h-screen bg-zinc-50/50 relative pb-32 p-6 flex flex-col">
       <main className="w-full flex flex-1 flex-col min-h-0">
-          <Outlet/>
+          <AnimatedOutlet className="flex flex-1 flex-col min-h-0" />
       </main>
       <FloatingNav />
     </div>

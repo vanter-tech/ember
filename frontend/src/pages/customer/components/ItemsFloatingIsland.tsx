@@ -16,7 +16,7 @@ const EMPTY_ITEMS: orderItemDTO[] = []
 export const ItemsFloatingIsland = () => {
     const navigate = useNavigate()
     const items = useSessionStore((state) => state.items ?? EMPTY_ITEMS)
-    const tableId = useSessionStore((state) => state.tableId)
+    const sessionId = useSessionStore((state) => state.id)
     const currentId = useAuthStore((state) => state.userId)
     const { t } = useTranslation('customer')
 
@@ -50,7 +50,7 @@ export const ItemsFloatingIsland = () => {
 
             <Button className="px-5 rounded-full text-sm font-semibold flex items-center gap-2"
             onClick={()=> {
-                navigate(`${tableId}/comanda`)
+                navigate(`/customer/menu/${sessionId}/comanda`)
             }}
             >
                 {t('itemsIslandViewComanda')}

@@ -38,13 +38,21 @@ export const customer = {
   // Menu
   loadingItems: 'Cargando platillos...',
   loadingItemsError: 'Error al cargar los platillos.',
-  menuTitle: 'Carta Digital',
-  menuSubtitle: 'Explora nuestra seleccion gourmet para hoy.',
+  welcomeGreeting: 'Bienvenido a {{name}}',
+  welcomeViewMenuCta: 'Ver Carta',
+  welcomePhoneLabel: 'Tel: {{phone}}',
+  welcomeCategoriesEmpty: 'Aún no hay categorías disponibles.',
+  categoriesListTitle: 'Categorías',
+  categoryItemCountLabel: '{{count}} platillos',
+  itemsCategoryEmptyTitle: 'Aún no hay platillos aquí',
+  itemsCategoryEmptyDescription: 'Esta categoría todavía no tiene platillos disponibles.',
   tableCodeLabel: 'Codigo de la mesa: {{code}}',
+  tableCodePanelTitle: 'Código de mesa',
   viewBillLabel: 'Ver cuenta',
   loyaltyRewardsTitle: 'Recompensas',
   loyaltyRewardLocked: 'Nivel {{tierName}} requerido',
   loyaltyRewardUnlocked: 'Disponible',
+  loyaltyNoRewards: 'Aún no hay recompensas disponibles.',
 
   // Bill
   billTitle: 'Mi Cuenta',
@@ -138,6 +146,8 @@ export const customer = {
 
   // MobileActionsIsland
   mobileActionsViewParticipants: 'Ver participantes',
+  mobileActionsViewTableCode: 'Ver código de mesa',
+  mobileActionsViewRewards: 'Ver recompensas',
   mobileActionsViewComanda: 'Ver comanda',
   mobileActionsAriaLabel: 'Opciones de mesa',
   billPaymentSentToast: 'Pago enviado. Espera la confirmación del mesero.',

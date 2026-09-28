@@ -40,13 +40,21 @@ export const customer = {
   // Menu
   loadingItems: 'Loading dishes...',
   loadingItemsError: 'Failed to load the dishes.',
-  menuTitle: 'Digital Menu',
-  menuSubtitle: "Explore today's gourmet selection.",
+  welcomeGreeting: 'Welcome to {{name}}',
+  welcomeViewMenuCta: 'View Menu',
+  welcomePhoneLabel: 'Phone: {{phone}}',
+  welcomeCategoriesEmpty: 'No categories available yet.',
+  categoriesListTitle: 'Categories',
+  categoryItemCountLabel: '{{count}} dishes',
+  itemsCategoryEmptyTitle: 'No dishes here yet',
+  itemsCategoryEmptyDescription: 'This category doesn\'t have any dishes available yet.',
   tableCodeLabel: 'Table code: {{code}}',
+  tableCodePanelTitle: 'Table code',
   viewBillLabel: 'View bill',
   loyaltyRewardsTitle: 'Rewards',
   loyaltyRewardLocked: '{{tierName}} tier required',
   loyaltyRewardUnlocked: 'Available',
+  loyaltyNoRewards: 'No rewards available yet.',
 
   // Bill
   billTitle: 'My Bill',
@@ -139,6 +147,8 @@ export const customer = {
 
   // MobileActionsIsland
   mobileActionsViewParticipants: 'View participants',
+  mobileActionsViewTableCode: 'View table code',
+  mobileActionsViewRewards: 'View rewards',
   mobileActionsViewComanda: 'View order',
   mobileActionsAriaLabel: 'Table options',
   billPaymentSentToast: 'Payment sent. Wait for the waiter to confirm.',

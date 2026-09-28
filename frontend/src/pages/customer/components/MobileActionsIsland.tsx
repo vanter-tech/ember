@@ -1,29 +1,37 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowRight, MoreHorizontal, Receipt, Users } from 'lucide-react'
+import { ArrowRight, Gift, Hash, MoreHorizontal, Receipt, Users } from 'lucide-react'
 import { useSessionStore } from '@/store/sessionStore'
 import { ParticipantsList } from './ParticipantsList'
+import { TableCodePanel } from './TableCodePanel'
+import { useLoyaltyAccount } from './useLoyaltyAccount'
 import { useTranslation } from '@/lib/i18n'
 
 export const MobileActionsIsland = () => {
-  const { id: tableId, participants } = useSessionStore()
+  const { id: tableId, participants, joinCode } = useSessionStore()
   const navigate = useNavigate()
   const [isOpen, setIsOpen] = useState(false)
   const [showParticipants, setShowParticipants] = useState(false)
+  const [showCode, setShowCode] = useState(false)
   const { t } = useTranslation('customer')
+  const { loyaltyEnabled, account } = useLoyaltyAccount()
+  const hasRewards = loyaltyEnabled && (account?.rewards?.length ?? 0) > 0
 
   if (!tableId) return null
 
   const close = () => {
     setIsOpen(false)
     setShowParticipants(false)
+    setShowCode(false)
   }
 
   return (
     <div className="relative">
       {isOpen && (
         <div className="absolute bottom-full right-0 mb-3 w-56 bg-white rounded-2xl shadow-xl border border-zinc-100 p-2 z-50">
-          {showParticipants ? (
+          {showCode ? (
+            <TableCodePanel code={joinCode ?? ''} />
+          ) : showParticipants ? (
             <ParticipantsList participants={participants ?? []} />
           ) : (
             <div className="flex flex-col gap-1">
@@ -40,9 +48,34 @@ export const MobileActionsIsland = () => {
               <button
                 type="button"
                 className="flex items-center gap-3 p-2 rounded-xl text-left transition-colors hover:bg-zinc-50"
+                onClick={() => setShowCode(true)}
+              >
+                <Hash className="h-4 w-4 text-zinc-500" />
+                <span className="text-sm font-medium text-zinc-700">
+                  {t('mobileActionsViewTableCode')}
+                </span>
+              </button>
+              {hasRewards && (
+                <button
+                  type="button"
+                  className="flex items-center gap-3 p-2 rounded-xl text-left transition-colors hover:bg-zinc-50"
+                  onClick={() => {
+                    close()
+                    navigate(`/customer/menu/${tableId}/rewards`)
+                  }}
+                >
+                  <Gift className="h-4 w-4 text-zinc-500" />
+                  <span className="text-sm font-medium text-zinc-700">
+                    {t('mobileActionsViewRewards')}
+                  </span>
+                </button>
+              )}
+              <button
+                type="button"
+                className="flex items-center gap-3 p-2 rounded-xl text-left transition-colors hover:bg-zinc-50"
                 onClick={() => {
                   close()
-                  navigate(`${tableId}/comanda`)
+                  navigate(`/customer/menu/${tableId}/comanda`)
                 }}
               >
                 <ArrowRight className="h-4 w-4 text-zinc-500" />
@@ -55,7 +88,7 @@ export const MobileActionsIsland = () => {
                 className="flex items-center gap-3 p-2 rounded-xl text-left transition-colors hover:bg-zinc-50"
                 onClick={() => {
                   close()
-                  navigate(`${tableId}/bill`)
+                  navigate(`/customer/menu/${tableId}/bill`)
                 }}
               >
                 <Receipt className="h-4 w-4 text-zinc-500" />
@@ -70,7 +103,7 @@ export const MobileActionsIsland = () => {
 
       <button
         type="button"
-        className="flex h-14 w-14 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-600 shadow-2xl transition-colors hover:bg-zinc-50"
+        className="flex h-14 w-14 items-center justify-center rounded-full bg-[#8c1717] text-white shadow-2xl transition-colors hover:bg-[#8c1717]/90"
         onClick={() => (isOpen ? close() : setIsOpen(true))}
         aria-label={t('mobileActionsAriaLabel')}
       >
