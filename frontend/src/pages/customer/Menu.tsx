@@ -120,7 +120,7 @@ export const Menu = () => {
           <h1 className="text-3xl font-bold text-[#8c1717] tracking-tight">
             Ember
           </h1>
-          <div className="ml-auto sm:ml-0">
+          <div className="ml-auto">
             <LanguageFabButton
               side="bottom"
               className="h-10 w-10 text-xs sm:h-13 sm:w-13 sm:text-sm"
