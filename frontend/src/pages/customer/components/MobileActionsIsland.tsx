@@ -103,7 +103,7 @@ export const MobileActionsIsland = () => {
 
       <button
         type="button"
-        className="flex h-14 w-14 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-600 shadow-2xl transition-colors hover:bg-zinc-50"
+        className="flex h-14 w-14 items-center justify-center rounded-full bg-[#8c1717] text-white shadow-2xl transition-colors hover:bg-[#8c1717]/90"
         onClick={() => (isOpen ? close() : setIsOpen(true))}
         aria-label={t('mobileActionsAriaLabel')}
       >
