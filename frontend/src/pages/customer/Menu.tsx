@@ -12,7 +12,6 @@ import {
 } from '@/components/ui/card'
 import { useState } from 'react'
 import { ArrowLeft, ChevronRight, Clock, MapPin, Phone, Plus, Receipt, UtensilsCrossed } from 'lucide-react'
-import { LanguageSwitcher } from '@/components/LanguageSwitcher'
 import { LanguageFabButton } from '@/components/LanguageFabButton'
 import { useTranslation } from '@/lib/i18n'
 import { useSessionStore } from '@/store/sessionStore'
@@ -122,12 +121,10 @@ export const Menu = () => {
             Ember
           </h1>
           <div className="ml-auto sm:ml-0">
-            <div className="sm:hidden">
-              <LanguageFabButton side="bottom" className="h-10 w-10 text-xs" />
-            </div>
-            <div className="hidden sm:block">
-              <LanguageSwitcher />
-            </div>
+            <LanguageFabButton
+              side="bottom"
+              className="h-10 w-10 text-xs sm:h-13 sm:w-13 sm:text-sm"
+            />
           </div>
         </div>
 
@@ -172,38 +169,72 @@ export const Menu = () => {
                 {t('welcomeCategoriesEmpty')}
               </p>
             ) : (
-              <div className="flex flex-col gap-3">
-                {menuItems.map((category, index) => (
-                  <button
-                    key={category.id}
-                    type="button"
-                    style={{ animationDelay: `${index * 40}ms` }}
-                    className="flex items-center gap-4 p-3 rounded-3xl shadow-sm hover:shadow-md transition-shadow bg-white text-left cursor-pointer animate-in fade-in slide-in-from-bottom-1 fill-mode-both duration-300"
-                    onClick={() => goToItems(category.id)}
-                  >
-                    <div className="w-16 h-16 rounded-2xl overflow-hidden shrink-0 bg-gray-100 flex items-center justify-center">
+              <>
+                <div className="flex flex-col gap-3 md:hidden">
+                  {menuItems.map((category, index) => (
+                    <button
+                      key={category.id}
+                      type="button"
+                      style={{ animationDelay: `${index * 40}ms` }}
+                      className="flex items-center gap-4 p-3 rounded-3xl shadow-sm hover:shadow-md transition-shadow bg-white text-left cursor-pointer animate-in fade-in slide-in-from-bottom-1 fill-mode-both duration-300"
+                      onClick={() => goToItems(category.id)}
+                    >
+                      <div className="w-16 h-16 rounded-2xl overflow-hidden shrink-0 bg-gray-100 flex items-center justify-center">
+                        {category.imgUrl ? (
+                          <img
+                            src={category.imgUrl}
+                            alt={category.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <UtensilsCrossed className="w-6 h-6 text-gray-300" />
+                        )}
+                      </div>
+                      <div className="flex flex-col flex-1 min-w-0">
+                        <span className="font-semibold text-lg truncate">{category.name}</span>
+                        {category.description && (
+                          <span className="text-sm text-gray-500 truncate">
+                            {category.description}
+                          </span>
+                        )}
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-gray-300 shrink-0" />
+                    </button>
+                  ))}
+                </div>
+
+                <div className="hidden md:grid grid-cols-1 md:grid-cols-4 lg:grid-cols-4 gap-4">
+                  {menuItems.map((category, index) => (
+                    <Card
+                      key={category.id}
+                      style={{ animationDelay: `${Math.min(index, 10) * 40}ms` }}
+                      className={`rounded-4xl shadow-sm hover:shadow-md transition-shadow relative overflow-hidden min-h-75 cursor-pointer animate-in fade-in slide-in-from-bottom-2 fill-mode-both duration-300 ${index === 0 ? 'md:col-span-2 md:row-span-2' : ''} ${index === 1 ? 'md:col-span-2 md:row-span-1' : ''}`}
+                      onClick={() => goToItems(category.id)}
+                    >
                       {category.imgUrl ? (
                         <img
                           src={category.imgUrl}
                           alt={category.name}
-                          className="w-full h-full object-cover"
+                          className="absolute inset-0 w-full h-full object-cover z-0"
                         />
                       ) : (
-                        <UtensilsCrossed className="w-6 h-6 text-gray-300" />
+                        <div className="absolute inset-0 flex items-center justify-center bg-gray-100 z-0">
+                          <UtensilsCrossed className="w-10 h-10 text-gray-300" />
+                        </div>
                       )}
-                    </div>
-                    <div className="flex flex-col flex-1 min-w-0">
-                      <span className="font-semibold text-lg truncate">{category.name}</span>
-                      {category.description && (
-                        <span className="text-sm text-gray-500 truncate">
-                          {category.description}
-                        </span>
-                      )}
-                    </div>
-                    <ChevronRight className="w-5 h-5 text-gray-300 shrink-0" />
-                  </button>
-                ))}
-              </div>
+                      <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/40 to-transparent z-10"></div>
+                      <CardHeader className="absolute inset-0 flex flex-col justify-end p-4 z-20 text-white">
+                        <CardTitle className="text-2xl font-bold">{category.name}</CardTitle>
+                        {category.description && (
+                          <CardDescription className="text-white/80">
+                            {category.description}
+                          </CardDescription>
+                        )}
+                      </CardHeader>
+                    </Card>
+                  ))}
+                </div>
+              </>
             )}
           </div>
         )}
