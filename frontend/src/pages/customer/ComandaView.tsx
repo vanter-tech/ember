@@ -153,8 +153,8 @@ export const ComandaView = () => {
         <header className="flex flex-row gap-5 pb-5 border-b-2">
           <div className="flex items-center gap-3">
             <Link to={'/customer/menu'}>
-              <Button className="w-15 h-15 rounded-full">
-                <ArrowLeft className="w-5 h-5" />
+              <Button className="h-10 w-10 sm:h-13 sm:w-13 rounded-full">
+                <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
               </Button>
             </Link>
           </div>
@@ -178,16 +178,16 @@ export const ComandaView = () => {
           {Participants.map((person, index) => (
             <Card className="relative overflow-hidden" key={index}>
               <CardHeader>
-                <CardTitle className="flex justify-between items-center">
-                  <div className="flex flex-row gap-4 p-5 items-center">
+                <CardTitle className="flex justify-between items-center gap-3">
+                  <div className="flex flex-row gap-4 p-5 items-center min-w-0 flex-1">
                     <div
-                      className={`w-11 h-11 p-4 rounded-full flex items-center justify-center text-xs font-bold border-2 ${getAvatarColor(person.name)}`}
+                      className={`w-11 h-11 p-4 rounded-full flex items-center justify-center text-xs font-bold border-2 shrink-0 ${getAvatarColor(person.name)}`}
                     >
                       {AvatarInitials(person.name ?? '')}
                     </div>
 
-                    <div className="flex flex-col gap-1 items-start">
-                      <h2 className="text-2xl font-bold ">{person.name}</h2>
+                    <div className="flex flex-col gap-1 items-start min-w-0">
+                      <h2 className="text-lg font-bold truncate w-full">{person.name}</h2>
 
                       {index === 0 ? (
                         <Badge className="p-3 text-sm">{t('comandaHost')}</Badge>
@@ -197,7 +197,7 @@ export const ComandaView = () => {
                     </div>
                   </div>
 
-                  <div className="flex gap-2 flex-col items-start">
+                  <div className="flex gap-2 flex-col items-start shrink-0">
                     <h2 className="text-sm text-gray-500 mt-1">{t('comandaSubtotalLabel')}</h2>
 
                     <span className="text-lg text-[#8c1717] font-bold">
