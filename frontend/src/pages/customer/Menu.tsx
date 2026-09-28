@@ -21,9 +21,57 @@ import { hoursLines } from '@/lib/receiptBusinessInfo'
 import { LoyaltySection } from './components/LoyaltySection'
 import { SelectModifiersModal } from './components/SelectModifiersModal'
 import { useNavigate } from 'react-router-dom'
-import type { MenuItemResponse } from '@/lib/api'
+import type { MenuItemResponse, menuResponse } from '@/lib/api'
 
 type MenuStep = 'welcome' | 'categories' | 'items'
+
+interface CategoryCardProps {
+  category: menuResponse
+  onClick: () => void
+  variant?: 'hero' | 'grid'
+  style?: React.CSSProperties
+}
+
+const CategoryCard = ({ category, onClick, variant = 'grid', style }: CategoryCardProps) => {
+  const { t } = useTranslation('customer')
+  const isHero = variant === 'hero'
+
+  return (
+    <Card
+      style={style}
+      className={`rounded-4xl shadow-sm hover:shadow-md transition-shadow relative overflow-hidden cursor-pointer animate-in fade-in slide-in-from-bottom-2 fill-mode-both duration-300 ${isHero ? 'min-h-96' : 'min-h-56'}`}
+      onClick={onClick}
+    >
+      {category.imgUrl ? (
+        <img
+          src={category.imgUrl}
+          alt={category.name}
+          className="absolute inset-0 w-full h-full object-cover z-0"
+        />
+      ) : (
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-100 z-0">
+          <UtensilsCrossed className={isHero ? 'w-14 h-14 text-gray-300' : 'w-8 h-8 text-gray-300'} />
+        </div>
+      )}
+      <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/40 to-transparent z-10"></div>
+      <Badge
+        className={`absolute top-4 right-4 font-bold text-[#8c1717] bg-white rounded-full shadow-md z-20 ${isHero ? 'text-sm px-4 py-1.5' : 'text-xs px-3 py-1'}`}
+      >
+        {t('categoryItemCountLabel', { count: category.items?.length ?? 0 })}
+      </Badge>
+      <CardHeader className={`absolute inset-0 flex flex-col justify-end z-20 text-white ${isHero ? 'p-8' : 'p-4'}`}>
+        <CardTitle className={isHero ? 'text-4xl font-bold' : 'text-xl font-bold'}>
+          {category.name}
+        </CardTitle>
+        {category.description && (
+          <CardDescription className={`text-white/80 ${isHero ? 'text-base max-w-lg' : 'text-sm'}`}>
+            {category.description}
+          </CardDescription>
+        )}
+      </CardHeader>
+    </Card>
+  )
+}
 
 export const Menu = () => {
   const [activeCategory, setActiveCategory] = useState<number | undefined>()
@@ -207,39 +255,24 @@ export const Menu = () => {
                   ))}
                 </div>
 
-                <div className="hidden md:grid grid-cols-1 md:grid-cols-4 lg:grid-cols-4 gap-4">
-                  {menuItems.map((category, index) => (
-                    <Card
-                      key={category.id}
-                      style={{ animationDelay: `${Math.min(index, 10) * 40}ms` }}
-                      className={`rounded-4xl shadow-sm hover:shadow-md transition-shadow relative overflow-hidden min-h-75 cursor-pointer animate-in fade-in slide-in-from-bottom-2 fill-mode-both duration-300 ${index === 0 ? 'md:col-span-2 md:row-span-2' : ''} ${index === 1 ? 'md:col-span-2 md:row-span-1' : ''}`}
-                      onClick={() => goToItems(category.id)}
-                    >
-                      {category.imgUrl ? (
-                        <img
-                          src={category.imgUrl}
-                          alt={category.name}
-                          className="absolute inset-0 w-full h-full object-cover z-0"
+                <div className="hidden md:flex md:flex-col gap-4">
+                  <CategoryCard
+                    category={menuItems[0]}
+                    variant="hero"
+                    onClick={() => goToItems(menuItems[0].id)}
+                  />
+                  {menuItems.length > 1 && (
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                      {menuItems.slice(1).map((category, index) => (
+                        <CategoryCard
+                          key={category.id}
+                          category={category}
+                          onClick={() => goToItems(category.id)}
+                          style={{ animationDelay: `${Math.min(index, 10) * 40}ms` }}
                         />
-                      ) : (
-                        <div className="absolute inset-0 flex items-center justify-center bg-gray-100 z-0">
-                          <UtensilsCrossed className="w-10 h-10 text-gray-300" />
-                        </div>
-                      )}
-                      <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/40 to-transparent z-10"></div>
-                      <Badge className="absolute top-4 right-4 px-3 py-1 text-xs font-bold text-[#8c1717] bg-white rounded-full shadow-md z-20">
-                        {t('categoryItemCountLabel', { count: category.items?.length ?? 0 })}
-                      </Badge>
-                      <CardHeader className="absolute inset-0 flex flex-col justify-end p-4 z-20 text-white">
-                        <CardTitle className="text-2xl font-bold">{category.name}</CardTitle>
-                        {category.description && (
-                          <CardDescription className="text-white/80">
-                            {category.description}
-                          </CardDescription>
-                        )}
-                      </CardHeader>
-                    </Card>
-                  ))}
+                      ))}
+                    </div>
+                  )}
                 </div>
               </>
             )}
