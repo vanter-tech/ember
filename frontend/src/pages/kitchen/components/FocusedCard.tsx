@@ -77,7 +77,7 @@ export const FocusedCard = ({ order }: { order: kitchenOrders }) => {
             <h2 className="text-2xl font-bold text-[#8c1717] tracking-tight">
               {t('orderDetailsHeading', { tableNumber: order.tableNumber ?? '' })}
             </h2>
-            <div className="w-full flex items-center justify-between">
+            <div className="w-full flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex gap-3">
                 <span className="flex items-center gap-2 text-xs text-gray-500 mt-1">
                   <TicketCheck />{' '}
@@ -88,7 +88,7 @@ export const FocusedCard = ({ order }: { order: kitchenOrders }) => {
                 </span>
               </div>
 
-              <div className="flex flex-row items-center gap-3">
+              <div className="flex flex-wrap items-center gap-3">
                 {selectedIds.size > 0 && (
                   <Select
                     disabled={bulkUpdateMutation.isPending}
