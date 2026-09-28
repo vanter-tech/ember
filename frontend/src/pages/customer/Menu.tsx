@@ -203,12 +203,22 @@ export const Menu = () => {
                   ))}
                 </div>
 
-                <div className="hidden md:grid grid-cols-1 md:grid-cols-4 lg:grid-cols-4 gap-4">
+                <div
+                  className={`hidden md:grid gap-4 ${
+                    menuItems.length >= 3
+                      ? 'grid-cols-1 md:grid-cols-4 lg:grid-cols-4'
+                      : 'grid-cols-1 sm:grid-cols-2 max-w-3xl'
+                  }`}
+                >
                   {menuItems.map((category, index) => (
                     <Card
                       key={category.id}
                       style={{ animationDelay: `${Math.min(index, 10) * 40}ms` }}
-                      className={`rounded-4xl shadow-sm hover:shadow-md transition-shadow relative overflow-hidden min-h-75 cursor-pointer animate-in fade-in slide-in-from-bottom-2 fill-mode-both duration-300 ${index === 0 ? 'md:col-span-2 md:row-span-2' : ''} ${index === 1 ? 'md:col-span-2 md:row-span-1' : ''}`}
+                      className={`rounded-4xl shadow-sm hover:shadow-md transition-shadow relative overflow-hidden cursor-pointer animate-in fade-in slide-in-from-bottom-2 fill-mode-both duration-300 ${
+                        menuItems.length >= 3
+                          ? `min-h-75 ${index === 0 ? 'md:col-span-2 md:row-span-2' : ''} ${index === 1 ? 'md:col-span-2 md:row-span-1' : ''}`
+                          : 'min-h-56'
+                      }`}
                       onClick={() => goToItems(category.id)}
                     >
                       {category.imgUrl ? (
