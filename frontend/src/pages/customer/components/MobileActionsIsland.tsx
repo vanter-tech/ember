@@ -61,7 +61,7 @@ export const MobileActionsIsland = () => {
                   className="flex items-center gap-3 p-2 rounded-xl text-left transition-colors hover:bg-zinc-50"
                   onClick={() => {
                     close()
-                    navigate(`${tableId}/rewards`)
+                    navigate(`/customer/menu/${tableId}/rewards`)
                   }}
                 >
                   <Gift className="h-4 w-4 text-zinc-500" />
@@ -75,7 +75,7 @@ export const MobileActionsIsland = () => {
                 className="flex items-center gap-3 p-2 rounded-xl text-left transition-colors hover:bg-zinc-50"
                 onClick={() => {
                   close()
-                  navigate(`${tableId}/comanda`)
+                  navigate(`/customer/menu/${tableId}/comanda`)
                 }}
               >
                 <ArrowRight className="h-4 w-4 text-zinc-500" />
@@ -88,7 +88,7 @@ export const MobileActionsIsland = () => {
                 className="flex items-center gap-3 p-2 rounded-xl text-left transition-colors hover:bg-zinc-50"
                 onClick={() => {
                   close()
-                  navigate(`${tableId}/bill`)
+                  navigate(`/customer/menu/${tableId}/bill`)
                 }}
               >
                 <Receipt className="h-4 w-4 text-zinc-500" />

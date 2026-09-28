@@ -1,5 +1,5 @@
 import { FloatingNav } from '@/components/FloatingNav'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { AnimatedOutlet } from '@/components/AnimatedOutlet'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useWebsocketStore } from '@/store/websocket'
@@ -27,6 +27,9 @@ export const CustomerLayout = () => {
   const sessionId = useSessionStore((state) => state.id)
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  // The circle/cart-preview belong to the ordering flow (menu, comanda, cuenta, recompensas) —
+  // not the customer's home landing page, even while still seated at the table.
+  const isHome = useLocation().pathname === '/customer/home'
 
   // The session topic (SPLIT_PAID / SESSION_CLOSED / cart frames) used to be subscribed only from
   // Menu.tsx, so a diner sitting on /comanda or /bill — or reloading there — never received it.
@@ -82,15 +85,19 @@ export const CustomerLayout = () => {
       <main className="w-full">
         <AnimatedOutlet />
       </main>
-      <div className="fixed bottom-24 md:bottom-10 left-11 z-50 hidden sm:block">
-        <ParticipantsPopUp />
-      </div>
-      <div className="fixed bottom-24 md:bottom-10 right-11 z-50 hidden sm:block">
-        <ItemsFloatingIsland />
-      </div>
-      <div className="fixed bottom-24 right-6 z-50 sm:hidden">
-        <MobileActionsIsland />
-      </div>
+      {!isHome && (
+        <>
+          <div className="fixed bottom-24 md:bottom-10 left-11 z-50 hidden sm:block">
+            <ParticipantsPopUp />
+          </div>
+          <div className="fixed bottom-24 md:bottom-10 right-11 z-50 hidden sm:block">
+            <ItemsFloatingIsland />
+          </div>
+          <div className="fixed bottom-24 right-6 z-50 sm:hidden">
+            <MobileActionsIsland />
+          </div>
+        </>
+      )}
       <FloatingNav />
     </div>
   )
