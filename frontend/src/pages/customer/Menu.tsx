@@ -230,36 +230,32 @@ export const Menu = () => {
                       key={category.id}
                       type="button"
                       style={{ animationDelay: `${index * 40}ms` }}
-                      className="flex flex-col gap-3 p-3 rounded-3xl shadow-sm hover:shadow-md transition-shadow bg-white text-left cursor-pointer animate-in fade-in slide-in-from-bottom-1 fill-mode-both duration-300"
+                      className="flex items-center gap-4 p-3 rounded-3xl shadow-sm hover:shadow-md transition-shadow bg-white text-left cursor-pointer animate-in fade-in slide-in-from-bottom-1 fill-mode-both duration-300"
                       onClick={() => goToItems(category.id)}
                     >
-                      <div className="flex items-center gap-4">
-                        <div className="w-16 h-16 rounded-2xl overflow-hidden shrink-0 bg-gray-100 flex items-center justify-center">
-                          {category.imgUrl ? (
-                            <img
-                              src={category.imgUrl}
-                              alt={category.name}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <UtensilsCrossed className="w-6 h-6 text-gray-300" />
-                          )}
-                        </div>
-                        <div className="flex flex-col flex-1 min-w-0">
-                          <span className="font-semibold text-lg truncate">{category.name}</span>
-                        </div>
-                        <Badge variant="outline" className="shrink-0 text-xs font-normal text-gray-500">
+                      <div className="w-16 h-16 rounded-2xl overflow-hidden shrink-0 bg-gray-100 flex items-center justify-center">
+                        {category.imgUrl ? (
+                          <img
+                            src={category.imgUrl}
+                            alt={category.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <UtensilsCrossed className="w-6 h-6 text-gray-300" />
+                        )}
+                      </div>
+                      <div className="flex flex-col flex-1 min-w-0 gap-1">
+                        <span className="font-semibold text-lg truncate">{category.name}</span>
+                        <Badge variant="outline" className="w-fit text-xs font-normal text-gray-500">
                           {t('categoryItemCountLabel', { count: category.items?.length ?? 0 })}
                         </Badge>
-                        <ChevronRight className="w-5 h-5 text-gray-300 shrink-0" />
-                      </div>
-                      {category.description && (
-                        <div className="rounded-xl bg-[#8c1717] px-3 py-2">
-                          <span className="text-xs text-white line-clamp-2">
+                        {category.description && (
+                          <span className="text-sm text-gray-500 line-clamp-2">
                             {category.description}
                           </span>
-                        </div>
-                      )}
+                        )}
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-gray-300 shrink-0" />
                     </button>
                   ))}
                 </div>
