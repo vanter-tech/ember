@@ -13,6 +13,7 @@ import {
 import { useState } from 'react'
 import { ArrowLeft, ChevronRight, Clock, MapPin, Phone, Plus, Receipt, UtensilsCrossed } from 'lucide-react'
 import { LanguageFabButton } from '@/components/LanguageFabButton'
+import { EmptyState } from '@/components/EmptyState'
 import { useTranslation } from '@/lib/i18n'
 import { useSessionStore } from '@/store/sessionStore'
 import { useSettingStore } from '@/store/settingStore'
@@ -266,6 +267,15 @@ export const Menu = () => {
               </div>
               <LoyaltySection />
             </div>
+            {itemsCategory.length === 0 ? (
+              <div className="p-4">
+                <EmptyState
+                  icon={UtensilsCrossed}
+                  title={t('itemsCategoryEmptyTitle')}
+                  description={t('itemsCategoryEmptyDescription')}
+                />
+              </div>
+            ) : (
             <div className="p-4 grid grid-cols-1 md:grid-cols-4 lg:grid-cols-4 gap-4">
               {itemsCategory.map((item, index) => (
                 <Card
@@ -310,6 +320,7 @@ export const Menu = () => {
                 </Card>
               ))}
             </div>
+            )}
           </>
         )}
 

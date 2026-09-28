@@ -46,6 +46,8 @@ export const customer = {
   welcomeCategoriesEmpty: 'No categories available yet.',
   categoriesListTitle: 'Categories',
   categoryItemCountLabel: '{{count}} dishes',
+  itemsCategoryEmptyTitle: 'No dishes here yet',
+  itemsCategoryEmptyDescription: 'This category doesn\'t have any dishes available yet.',
   tableCodeLabel: 'Table code: {{code}}',
   tableCodePanelTitle: 'Table code',
   viewBillLabel: 'View bill',
