@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from 'react'
 import { useSessionStore } from '@/store/sessionStore'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   ArrowLeft,
   Minus,
@@ -178,31 +178,21 @@ export const ComandaView = () => {
           {Participants.map((person, index) => (
             <Card className="relative overflow-hidden" key={index}>
               <CardHeader>
-                <CardTitle className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                  <div className="flex flex-row gap-4 p-3 sm:p-5 items-center min-w-0 sm:flex-1">
-                    <div
-                      className={`w-11 h-11 p-4 rounded-full flex items-center justify-center text-xs font-bold border-2 shrink-0 ${getAvatarColor(person.name)}`}
-                    >
-                      {AvatarInitials(person.name ?? '')}
-                    </div>
-
-                    <div className="flex flex-col gap-1 items-start min-w-0">
-                      <h2 className="text-lg font-bold truncate w-full">{person.name}</h2>
-
-                      {index === 0 ? (
-                        <Badge className="p-3 text-sm">{t('comandaHost')}</Badge>
-                      ) : (
-                        <Badge className="p-3 text-sm">{t('comandaParticipant')}</Badge>
-                      )}
-                    </div>
+                <CardTitle className="flex flex-row gap-4 p-3 sm:p-5 items-center min-w-0">
+                  <div
+                    className={`w-11 h-11 p-4 rounded-full flex items-center justify-center text-xs font-bold border-2 shrink-0 ${getAvatarColor(person.name)}`}
+                  >
+                    {AvatarInitials(person.name ?? '')}
                   </div>
 
-                  <div className="flex flex-row justify-between items-center px-3 sm:px-0 sm:flex-col sm:items-start sm:gap-2 shrink-0">
-                    <h2 className="text-sm text-gray-500 sm:mt-1">{t('comandaSubtotalLabel')}</h2>
+                  <div className="flex flex-col gap-1 items-start min-w-0">
+                    <h2 className="text-lg font-bold truncate w-full">{person.name}</h2>
 
-                    <span className="text-lg text-[#8c1717] font-bold">
-                      ${person.subtotal.toFixed(2)}
-                    </span>
+                    {index === 0 ? (
+                      <Badge className="p-3 text-sm">{t('comandaHost')}</Badge>
+                    ) : (
+                      <Badge className="p-3 text-sm">{t('comandaParticipant')}</Badge>
+                    )}
                   </div>
                 </CardTitle>
               </CardHeader>
@@ -276,6 +266,14 @@ export const ComandaView = () => {
                   )
                 )}
               </CardContent>
+
+              <CardFooter className="flex justify-between items-center border-t pt-4">
+                <h2 className="text-sm text-gray-500">{t('comandaSubtotalLabel')}</h2>
+
+                <span className="text-lg text-[#8c1717] font-bold">
+                  ${person.subtotal.toFixed(2)}
+                </span>
+              </CardFooter>
             </Card>
           ))}
         </div>
