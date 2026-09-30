@@ -30,6 +30,7 @@ import com.vanter.ember.session.repository.SessionRepository;
 import com.vanter.ember.settings.service.SettingService;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
@@ -123,14 +124,22 @@ public class CashShiftService {
         return movement;
     }
 
-    @Transactional
+    /** Default extension: one hour (the periodic reminder modal and older clients). */
     public CashShift prolongShift(Long shiftId, String userId) {
+        return prolongShift(shiftId, userId, (int) CashShiftDeadlineService.PROLONG_STEP.toMinutes());
+    }
+
+    @Transactional
+    public CashShift prolongShift(Long shiftId, String userId, int minutes) {
+        if (!CashShiftDeadlineService.ALLOWED_PROLONG_MINUTES.contains(minutes)) {
+            throw new IllegalArgumentException("A shift can be prolonged by 30, 60, 120, 180 or 240 minutes");
+        }
         CashShift shift = cashShiftRepository.findByIdForUpdate(shiftId)
                 .orElseThrow(() -> new ResourceNotFoundException("Cash shift not found: " + shiftId));
         if (shift.getStatus() != CashShiftStatus.OPEN) {
             throw new IllegalStateException("Cash shift is not open: " + shiftId);
         }
-        shift.setProlongedUntil(deadlineService.prolong(shift, LocalDateTime.now()));
+        shift.setProlongedUntil(deadlineService.prolong(shift, LocalDateTime.now(), Duration.ofMinutes(minutes)));
         shift.setProlongedBy(userId);
         shift.setProlongCount(shift.getProlongCount() + 1);
         CashShift saved = cashShiftRepository.save(shift);

@@ -1,5 +1,5 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Tables } from './Tables'
@@ -54,5 +54,44 @@ describe('Tables empty state', () => {
     wrap()
     expect(await screen.findByText('M1')).toBeVisible()
     expect(screen.queryByText('Todavía no hay mesas configuradas')).not.toBeInTheDocument()
+  })
+})
+
+describe('Tables with the caja closed', () => {
+  const occupied = [
+    {
+      tableId: 't3',
+      tableNumber: 3,
+      isOccupied: true,
+      currentSession: { sessionId: 'sess-3', waiterName: 'Fe', currentParticipant: 2 },
+    },
+  ]
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(cashShiftService.current).mockResolvedValue(null as never)
+    vi.mocked(DashboardService.getDashboardData).mockResolvedValue(occupied as never)
+  })
+
+  // A table stuck open for days is exactly the case where the caja is closed too, so the admin
+  // must still be able to open its detail (to close it) without a shift.
+  test('an ADMIN can still select an occupied table and reach its detail', async () => {
+    useAuthStore.setState({ restaurantId: 'restaurant-1', role: 'ADMIN' })
+    wrap()
+
+    fireEvent.click(await screen.findByText('M3'))
+
+    expect(await screen.findByRole('link', { name: 'Ver Informacion' })).toHaveAttribute('href', '/sess-3')
+    expect(screen.queryByText('Necesita abrir la caja para poder asignar mesa.')).not.toBeInTheDocument()
+  })
+
+  test('a WAITER still cannot select tables until the caja is open', async () => {
+    useAuthStore.setState({ restaurantId: 'restaurant-1', role: 'WAITER' })
+    wrap()
+
+    fireEvent.click(await screen.findByText('M3'))
+
+    expect(screen.getByText('Necesita abrir la caja para poder asignar mesa.')).toBeVisible()
+    expect(screen.queryByRole('link', { name: 'Ver Informacion' })).not.toBeInTheDocument()
   })
 })

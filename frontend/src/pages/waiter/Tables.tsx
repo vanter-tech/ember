@@ -16,7 +16,7 @@ import { AvatarInitials, getAvatarColor } from '@/components/AvatarInitials'
 
 export const Tables = () => {
   const { t } = useTranslation('waiter')
-  const { restaurantId } = useAuthStore()
+  const { restaurantId, role } = useAuthStore()
   const [selectedTable, setSelectedTable] = useState<string | undefined>(
     undefined
   )
@@ -36,6 +36,9 @@ export const Tables = () => {
   })
 
   const isCajaOpen = cashShift?.status === 'OPEN'
+  // An ADMIN can always browse tables (to inspect or close one that got stuck, which is usually
+  // also when the caja is closed); assigning a table still requires an open caja.
+  const canBrowse = isCajaOpen || role === 'ADMIN'
 
   const tableDetails = dashboardData?.find(
     (data) => data.tableId === selectedTable
@@ -93,7 +96,7 @@ export const Tables = () => {
         </div>
 
         <div id="waiter-tour-grid" className="grid grid-cols-2 sm:grid-cols-3 gap-4 relative">
-          {!isCajaOpen && (
+          {!canBrowse && (
             <div className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-white/40">
               <span className="max-w-[80%] text-center text-lg font-semibold text-[#8c1717]">
                 {t('needOpenCajaOverlay')}
@@ -112,10 +115,10 @@ export const Tables = () => {
           {dashboardData?.map((table) => (
             <Card
               key={table.tableId}
-              onClick={() => isCajaOpen && setSelectedTable(table.tableId)}
+              onClick={() => canBrowse && setSelectedTable(table.tableId)}
               className={`${table.tableId === selectedTable ? 'shadow-[0_0_8px_1px_rgba(140,23,23,0.35)]' : 'shadow-sm'} border-zinc-100
                 h-40 flex flex-col justify-between rounded-2xl relative
-                ${isCajaOpen ? 'cursor-pointer' : 'pointer-events-none cursor-not-allowed blur-sm'}
+                ${canBrowse ? 'cursor-pointer' : 'pointer-events-none cursor-not-allowed blur-sm'}
                 ${table.isOccupied ? 'border-2 bg-[#8c1717] text-white' : 'bg-white text-black'}`}
             >
               {table.tableId === selectedTable && (

@@ -11,4 +11,11 @@ public record CreatePrinterConfigRequest(
         String comPort,
         String windowsQueueName,
         String renderMode,
-        @NotBlank String label) {}
+        @NotBlank String label,
+        Boolean cashDrawer) {
+
+    public CreatePrinterConfigRequest(String role, String connectionType, String host, Integer port,
+            String comPort, String windowsQueueName, String renderMode, String label) {
+        this(role, connectionType, host, port, comPort, windowsQueueName, renderMode, label, null);
+    }
+}

@@ -7,6 +7,7 @@ import com.vanter.ember.printing.dto.PrintJobMessage;
 import com.vanter.ember.printing.event.PrintAgentConnected;
 import com.vanter.ember.printing.logo.TicketLogoService;
 import com.vanter.ember.printing.model.PrintJob;
+import com.vanter.ember.printing.model.PrintJobSourceType;
 import com.vanter.ember.printing.model.PrintJobStatus;
 import com.vanter.ember.printing.model.PrinterConfig;
 import com.vanter.ember.printing.repository.PrintJobRepository;
@@ -44,8 +45,14 @@ public class PrintDispatchService {
         // the request/event running the dispatch always has the tenant bound, so fall back to that
         // instead of looking for printers of "no tenant" and leaving the job PENDING.
         UUID tenantId = job.getTenantId() != null ? job.getTenantId() : TenantContextHolder.requireTenantId();
+        boolean isKick = job.getSourceType() == PrintJobSourceType.CASH_DRAWER_KICK;
         List<PrinterConfig> printers =
                 printerConfigRepository.findByTenantIdAndRoleAndActiveTrue(tenantId, job.getRole());
+        if (isKick) {
+            // Only the printer the drawer is wired to may receive the pulse; in cloud mode
+            // PrintTargetResolver does not route by source IP, so the role alone is not enough.
+            printers = printers.stream().filter(PrinterConfig::isCashDrawer).toList();
+        }
         if (job.getTargetAgentId() != null) {
             List<PrinterConfig> targeted = printers.stream()
                     .filter(p -> job.getTargetAgentId().equals(p.getAgentId()))
@@ -57,7 +64,11 @@ public class PrintDispatchService {
             }
         }
         if (printers.isEmpty()) {
-            printJobRepository.save(job);
+            if (isKick) {
+                failKick(job, "No hay una impresora con gaveta configurada");
+            } else {
+                printJobRepository.save(job);
+            }
             return;
         }
 
@@ -73,7 +84,26 @@ public class PrintDispatchService {
         }
 
         job.setAttempts(job.getAttempts() + 1);
-        job.setStatus(sentToAny ? PrintJobStatus.SENT : PrintJobStatus.PENDING);
+        if (sentToAny) {
+            job.setStatus(PrintJobStatus.SENT);
+            job.setUpdatedAt(LocalDateTime.now());
+            printJobRepository.save(job);
+        } else if (isKick) {
+            failKick(job, "El agente de impresión no está conectado");
+        } else {
+            job.setStatus(PrintJobStatus.PENDING);
+            job.setUpdatedAt(LocalDateTime.now());
+            printJobRepository.save(job);
+        }
+    }
+
+    /**
+     * A drawer kick must never stay {@code PENDING}: {@link #flushPendingFor} replays PENDING jobs
+     * when an agent reconnects, which would pop the drawer open long after the accountant asked.
+     */
+    private void failKick(PrintJob job, String reason) {
+        job.setStatus(PrintJobStatus.ERROR);
+        job.setLastError(reason);
         job.setUpdatedAt(LocalDateTime.now());
         printJobRepository.save(job);
     }
@@ -154,6 +184,7 @@ public class PrintDispatchService {
         boolean logo = job.getTenantId() != null && ticketLogoService.exists(job.getTenantId());
         messagingTemplate.convertAndSend(
                 "/topic/print-agent/" + agentId,
-                new PrintJobMessage(job.getId(), job.getRole().name(), job.getPayload(), logo));
+                new PrintJobMessage(job.getId(), job.getRole().name(), job.getPayload(), logo,
+                        job.getSourceType().name()));
     }
 }

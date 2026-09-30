@@ -25,6 +25,33 @@ class PrintJobLogoTest {
     }
 
     @Test
+    void payload_withSourceType_deserializesTheKickMarker_andOlderBackendsDefaultToNull() throws Exception {
+        AgentConnection.PrintJobPayload kick = mapper.readValue(
+                "{\"jobId\":\"j1\",\"role\":\"RECEIPT\",\"payload\":\"{}\",\"logo\":false,"
+                        + "\"sourceType\":\"CASH_DRAWER_KICK\"}",
+                AgentConnection.PrintJobPayload.class);
+        AgentConnection.PrintJobPayload legacy = mapper.readValue(
+                "{\"jobId\":\"j2\",\"role\":\"RECEIPT\",\"payload\":\"x\"}",
+                AgentConnection.PrintJobPayload.class);
+
+        assertEquals("CASH_DRAWER_KICK", kick.sourceType());
+        assertEquals(null, legacy.sourceType());
+    }
+
+    @Test
+    void printerDto_withCashDrawerFlag_deserializes_andOlderBackendsDefaultToFalse() throws Exception {
+        String base = "\"id\":\"p1\",\"agentId\":\"a1\",\"role\":\"RECEIPT\",\"connectionType\":\"NETWORK\","
+                + "\"host\":\"10.0.0.6\",\"port\":9100,\"renderMode\":\"RAW\",\"label\":\"Caja\",\"active\":true";
+        PrinterConfigClient.PrinterConfigDto withFlag = mapper.readValue(
+                "{" + base + ",\"cashDrawer\":true}", PrinterConfigClient.PrinterConfigDto.class);
+        PrinterConfigClient.PrinterConfigDto legacy = mapper.readValue(
+                "{" + base + "}", PrinterConfigClient.PrinterConfigDto.class);
+
+        assertTrue(withFlag.cashDrawer());
+        assertFalse(legacy.cashDrawer());
+    }
+
+    @Test
     void payload_fromAnOlderBackendWithoutTheFlag_defaultsToNoLogo() throws Exception {
         AgentConnection.PrintJobPayload job = mapper.readValue(
                 "{\"jobId\":\"j1\",\"role\":\"RECEIPT\",\"payload\":\"x\"}",

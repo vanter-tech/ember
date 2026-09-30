@@ -56,6 +56,6 @@ public class PrintAgentSelfController {
                 config.getId(), config.getAgentId(), config.getRole().name(),
                 config.getConnectionType().name(), config.getHost(), config.getPort(),
                 config.getComPort(), config.getWindowsQueueName(), config.getRenderMode().name(),
-                config.getLabel(), config.isActive());
+                config.getLabel(), config.isActive(), config.isCashDrawer());
     }
 }

@@ -22,6 +22,8 @@ public class CashShiftDeadlineService {
     public static final Duration GRACE = Duration.ofHours(2);
     public static final Duration CLOSED_DAY_FALLBACK = Duration.ofHours(12);
     public static final Duration PROLONG_STEP = Duration.ofHours(1);
+    /** The only durations (minutes) a shift can be extended by; 60 is the default step. */
+    public static final java.util.Set<Integer> ALLOWED_PROLONG_MINUTES = java.util.Set.of(30, 60, 120, 180, 240);
 
     public LocalDateTime computeExpiresAt(LocalDateTime openedAt, BusinessHoursSettings hours) {
         LocalTime closeTime = resolveCloseTime(openedAt, hours);
@@ -44,11 +46,16 @@ public class CashShiftDeadlineService {
     }
 
     public LocalDateTime prolong(CashShift shift, LocalDateTime now) {
+        return prolong(shift, now, PROLONG_STEP);
+    }
+
+    /** Extends from the current deadline, or from {@code now} when the shift is already overdue. */
+    public LocalDateTime prolong(CashShift shift, LocalDateTime now, Duration step) {
         LocalDateTime base = shift.effectiveDeadline();
         if (base == null || now.isAfter(base)) {
             base = now;
         }
-        return base.plus(PROLONG_STEP);
+        return base.plus(step);
     }
 
     private LocalTime resolveCloseTime(LocalDateTime openedAt, BusinessHoursSettings hours) {

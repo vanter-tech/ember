@@ -8,7 +8,6 @@ import com.vanter.ember.identity.dto.CreateStaffRequest;
 import com.vanter.ember.identity.dto.StaffMemberResponse;
 import com.vanter.ember.identity.dto.UpdateUserRoleRequest;
 import com.vanter.ember.identity.model.Role;
-import com.vanter.ember.identity.model.User;
 import com.vanter.ember.identity.service.JwtService;
 import com.vanter.ember.identity.service.UserAdminService;
 import com.vanter.ember.restaurant.repository.RestaurantRepository;
@@ -57,17 +56,13 @@ class UserAdminControllerTest {
         TenantContextHolder.clear();
     }
 
-    private User waiterUser() {
-        return User.builder()
-                .id("u-1").name("John").email("john@test.com").role(Role.WAITER)
-                .passwordHash("$2a$10$hashedpassword").build();
-    }
-
     @Test
     @WithMockUser(roles = "ADMIN")
     void updateRole_responseDoesNotExposePasswordHash() throws Exception {
         TenantContextHolder.setTenantId(TENANT_ID);
-        when(userAdminService.updateRole(eq("u-1"), eq(TENANT_ID), any())).thenReturn(waiterUser());
+        when(userAdminService.updateRole(eq("u-1"), eq(TENANT_ID), any())).thenReturn(new StaffMemberResponse(
+                "u-1", "John", "john@test.com", Role.WAITER, Instant.now(), true,
+                null, null, null, null, BigDecimal.ZERO, false));
 
         mockMvc.perform(patch("/admin/users/u-1/role")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -80,7 +75,9 @@ class UserAdminControllerTest {
     @WithMockUser(roles = "ADMIN")
     void updateRole_adminCanAssignWaiterRole() throws Exception {
         TenantContextHolder.setTenantId(TENANT_ID);
-        when(userAdminService.updateRole(eq("u-1"), eq(TENANT_ID), any())).thenReturn(waiterUser());
+        when(userAdminService.updateRole(eq("u-1"), eq(TENANT_ID), any())).thenReturn(new StaffMemberResponse(
+                "u-1", "John", "john@test.com", Role.WAITER, Instant.now(), true,
+                null, null, null, null, BigDecimal.ZERO, false));
 
         mockMvc.perform(patch("/admin/users/u-1/role")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -319,6 +316,49 @@ class UserAdminControllerTest {
     @Test
     void revokeSessions_unauthenticatedReturns401() throws Exception {
         mockMvc.perform(post("/admin/staff/u-1/revoke-sessions"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser(username = "admin@test.com", roles = "ADMIN")
+    void resetStaffPassword_noContentForAdmin_passingTheCallerEmail() throws Exception {
+        TenantContextHolder.setTenantId(TENANT_ID);
+
+        mockMvc.perform(post("/admin/staff/u-1/reset-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"newPassword\":\"Nuev0!Clave\"}"))
+                .andExpect(status().isNoContent());
+        verify(userAdminService).resetPassword("u-1", TENANT_ID, "admin@test.com", "Nuev0!Clave");
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void resetStaffPassword_returns400ForAWeakPassword() throws Exception {
+        TenantContextHolder.setTenantId(TENANT_ID);
+
+        mockMvc.perform(post("/admin/staff/u-1/reset-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"newPassword\":\"weakpass\"}"))
+                .andExpect(status().isBadRequest());
+        verify(userAdminService, org.mockito.Mockito.never()).resetPassword(any(), any(), any(), any());
+    }
+
+    @Test
+    @WithMockUser(roles = "WAITER")
+    void resetStaffPassword_forbiddenForWaiter() throws Exception {
+        TenantContextHolder.setTenantId(TENANT_ID);
+
+        mockMvc.perform(post("/admin/staff/u-1/reset-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"newPassword\":\"Nuev0!Clave\"}"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void resetStaffPassword_unauthenticatedReturns401() throws Exception {
+        mockMvc.perform(post("/admin/staff/u-1/reset-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"newPassword\":\"Nuev0!Clave\"}"))
                 .andExpect(status().isUnauthorized());
     }
 }

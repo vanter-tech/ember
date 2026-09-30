@@ -75,4 +75,30 @@ class RestaurantAdminControllerTest {
         mockMvc.perform(get("/admin/restaurant"))
                 .andExpect(status().isUnauthorized());
     }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void subscription_returnsPlanAndDatesButNoPrices() throws Exception {
+        TenantContextHolder.setTenantId(TENANT_ID);
+        Restaurant restaurant = restaurant(RestaurantPlan.STARTER, RestaurantStatus.ACTIVE);
+        restaurant.setPlanStartedAt(java.time.Instant.parse("2026-01-10T00:00:00Z"));
+        restaurant.setBillingPeriod(com.vanter.ember.restaurant.model.BillingPeriod.SEMESTRAL);
+        restaurant.setPlanPeriodEnd(java.time.Instant.parse("2026-07-10T00:00:00Z"));
+        when(restaurantService.getCurrent(TENANT_ID)).thenReturn(restaurant);
+
+        mockMvc.perform(get("/admin/restaurant/subscription"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.plan").value("STARTER"))
+                .andExpect(jsonPath("$.billingPeriod").value("SEMESTRAL"))
+                .andExpect(jsonPath("$.planPeriodEnd").exists())
+                .andExpect(jsonPath("$.price").doesNotExist());
+    }
+
+    @Test
+    @WithMockUser(roles = "WAITER")
+    void subscription_forbiddenForNonAdmin() throws Exception {
+        TenantContextHolder.setTenantId(TENANT_ID);
+
+        mockMvc.perform(get("/admin/restaurant/subscription")).andExpect(status().isForbidden());
+    }
 }

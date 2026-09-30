@@ -681,6 +681,27 @@ public class SessionService {
         ));
     }
 
+    /**
+     * Closes a table on an administrator's authority, whatever its consumption. Records who and why
+     * in the session's activity log first, then goes through {@link #closeSession} so the usual
+     * {@code SessionClosed} event still frees the table, notifies clients and clears kitchen tickets.
+     * Callers that must protect payments (see {@code TableForceCloseService}) check that beforehand.
+     */
+    public void closeByAdmin(String sessionId, String adminEmail, String reason) {
+        Session session = findById(sessionId);
+        if (session.getStatus() == SessionStatus.CLOSED) {
+            throw new IllegalStateException("The table is already closed: " + sessionId);
+        }
+        session.getActivityLog().add(SessionActivity.builder()
+                .type(SessionActivity.Type.CLOSED_BY_ADMIN)
+                .participantName(adminEmail)
+                .note(reason)
+                .timestamp(LocalDateTime.now())
+                .build());
+        sessionRepository.save(session);
+        closeSession(sessionId);
+    }
+
     public void closeEmptySession(String sessionId, String requestingWaiter){
         Session session = findById(sessionId);
 

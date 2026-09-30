@@ -1073,6 +1073,43 @@ class SessionServiceTest {
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
+    // --- closeByAdmin tests ---
+
+    @Test
+    void closeByAdmin_logsWhoAndWhy_thenClosesAndPublishesSessionClosed() {
+        Session session = Session.builder()
+                .id("sess-1").tenantId(RESTAURANT_ID).tableId(TABLE_ID).waiterId("waiter@test.com")
+                .status(SessionStatus.OPEN).maxParticipants(4)
+                .createdAt(LocalDateTime.now()).build();
+        when(sessionRepository.findByIdAndTenantId("sess-1", RESTAURANT_ID)).thenReturn(Optional.of(session));
+        when(sessionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        sessionService.closeByAdmin("sess-1", "admin@test.com", "el cliente se fue sin pagar");
+
+        assertThat(session.getStatus()).isEqualTo(SessionStatus.CLOSED);
+        com.vanter.ember.session.model.SessionActivity entry =
+                session.getActivityLog().get(session.getActivityLog().size() - 1);
+        assertThat(entry.getType()).isEqualTo(com.vanter.ember.session.model.SessionActivity.Type.CLOSED_BY_ADMIN);
+        assertThat(entry.getParticipantName()).isEqualTo("admin@test.com");
+        assertThat(entry.getNote()).isEqualTo("el cliente se fue sin pagar");
+        assertThat(entry.getTimestamp()).isNotNull();
+        verify(eventPublisher).publishEvent(any(com.vanter.ember.session.event.SessionClosed.class));
+    }
+
+    @Test
+    void closeByAdmin_rejectsAnAlreadyClosedSession() {
+        Session session = Session.builder()
+                .id("sess-1").tenantId(RESTAURANT_ID).tableId(TABLE_ID).waiterId("waiter@test.com")
+                .status(SessionStatus.CLOSED).maxParticipants(4)
+                .createdAt(LocalDateTime.now()).build();
+        when(sessionRepository.findByIdAndTenantId("sess-1", RESTAURANT_ID)).thenReturn(Optional.of(session));
+
+        assertThatThrownBy(() -> sessionService.closeByAdmin("sess-1", "admin@test.com", "x"))
+                .isInstanceOf(IllegalStateException.class);
+        verify(sessionRepository, never()).save(any());
+        verifyNoInteractions(eventPublisher);
+    }
+
     // --- closeEmptySession tests ---
 
     @Test

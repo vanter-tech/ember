@@ -195,9 +195,10 @@ class UserAdminServiceTest {
         when(userRepository.findById("u-1")).thenReturn(Optional.of(existing));
         when(userRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        User result = userAdminService.updateRole("u-1", TENANT_A, Role.KITCHEN);
+        com.vanter.ember.identity.dto.StaffMemberResponse result =
+                userAdminService.updateRole("u-1", TENANT_A, Role.KITCHEN);
 
-        assertThat(result.getRole()).isEqualTo(Role.KITCHEN);
+        assertThat(result.role()).isEqualTo(Role.KITCHEN);
     }
 
     @Test
@@ -239,9 +240,10 @@ class UserAdminServiceTest {
                 .thenReturn(List.of(admin, adminFor(TENANT_A, "a-2")));
         when(userRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        User result = userAdminService.updateRole("a-1", TENANT_A, Role.WAITER);
+        com.vanter.ember.identity.dto.StaffMemberResponse result =
+                userAdminService.updateRole("a-1", TENANT_A, Role.WAITER);
 
-        assertThat(result.getRole()).isEqualTo(Role.WAITER);
+        assertThat(result.role()).isEqualTo(Role.WAITER);
     }
 
     @Test
@@ -498,5 +500,100 @@ class UserAdminServiceTest {
                 .thenReturn(List.of(withPin));
 
         assertThat(userAdminService.getStaff(TENANT_A).get(0).hasPin()).isTrue();
+    }
+
+    // ---- resetPassword (admin resets a non-admin staff member's password; NOT temporary) ----
+
+    @Test
+    void resetPassword_setsTheNewHash_revokesSessions_recordsWhoAndWhen_andDoesNotForceAChange() {
+        User waiter = waiterFor(TENANT_A);
+        waiter.setTokenVersion(4);
+        when(userRepository.findById("u-1")).thenReturn(Optional.of(waiter));
+        when(passwordEncoder.encode("Nuev0!Clave")).thenReturn("newHash");
+
+        java.time.Instant before = java.time.Instant.now();
+        userAdminService.resetPassword("u-1", TENANT_A, "admin@test.com", "Nuev0!Clave");
+
+        ArgumentCaptor<User> saved = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(saved.capture());
+        User u = saved.getValue();
+        assertThat(u.getPasswordHash()).isEqualTo("newHash");
+        assertThat(u.getTokenVersion()).isEqualTo(5);
+        assertThat(u.getMustChangePassword()).isFalse();
+        assertThat(u.getPasswordResetBy()).isEqualTo("admin@test.com");
+        assertThat(u.getPasswordResetAt()).isBetween(before, java.time.Instant.now());
+    }
+
+    @Test
+    void resetPassword_isRejectedForAnAdminTarget() {
+        when(userRepository.findById("a-2")).thenReturn(Optional.of(adminFor(TENANT_A, "a-2")));
+
+        assertThatThrownBy(() -> userAdminService.resetPassword("a-2", TENANT_A, "admin@test.com", "Nuev0!Clave"))
+                .isInstanceOf(IllegalArgumentException.class);
+        verify(userRepository, org.mockito.Mockito.never()).save(any());
+    }
+
+    @Test
+    void resetPassword_isRejectedForANonStaffRole() {
+        User customer = waiterFor(TENANT_A);
+        customer.setRole(Role.CUSTOMER);
+        when(userRepository.findById("u-1")).thenReturn(Optional.of(customer));
+
+        assertThatThrownBy(() -> userAdminService.resetPassword("u-1", TENANT_A, "admin@test.com", "Nuev0!Clave"))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void resetPassword_throwsNotFoundForAUserOfAnotherTenant() {
+        when(userRepository.findById("u-1")).thenReturn(Optional.of(waiterFor(UUID.randomUUID())));
+
+        assertThatThrownBy(() -> userAdminService.resetPassword("u-1", TENANT_A, "admin@test.com", "Nuev0!Clave"))
+                .isInstanceOf(ResourceNotFoundException.class);
+        verify(userRepository, org.mockito.Mockito.never()).save(any());
+    }
+
+    @Test
+    void resetPassword_withinTheSixHourCooldown_isRefusedWith429_andChangesNothing() {
+        User waiter = waiterFor(TENANT_A);
+        waiter.setPasswordResetAt(java.time.Instant.now().minus(java.time.Duration.ofHours(5)));
+        when(userRepository.findById("u-1")).thenReturn(Optional.of(waiter));
+
+        assertThatThrownBy(() -> userAdminService.resetPassword("u-1", TENANT_A, "admin@test.com", "Nuev0!Clave"))
+                .isInstanceOfSatisfying(org.springframework.web.server.ResponseStatusException.class,
+                        e -> assertThat(e.getStatusCode().value()).isEqualTo(429));
+        verify(userRepository, org.mockito.Mockito.never()).save(any());
+        assertThat(waiter.getPasswordHash()).isEqualTo("hash");
+    }
+
+    @Test
+    void resetPassword_afterTheCooldown_isAllowedAgain() {
+        User waiter = waiterFor(TENANT_A);
+        waiter.setPasswordResetAt(java.time.Instant.now().minus(java.time.Duration.ofHours(7)));
+        when(userRepository.findById("u-1")).thenReturn(Optional.of(waiter));
+        when(passwordEncoder.encode("Nuev0!Clave")).thenReturn("newHash");
+
+        userAdminService.resetPassword("u-1", TENANT_A, "admin@test.com", "Nuev0!Clave");
+
+        verify(userRepository).save(any());
+    }
+
+    @Test
+    void getStaff_exposesWhenAPasswordResetIsAvailableAgain_orNullWhenItAlreadyIs() {
+        User locked = waiterFor(TENANT_A);
+        java.time.Instant resetAt = java.time.Instant.now().minus(java.time.Duration.ofHours(1));
+        locked.setPasswordResetAt(resetAt);
+        User free = waiterFor(TENANT_A);
+        free.setId("u-2");
+        User old = waiterFor(TENANT_A);
+        old.setId("u-3");
+        old.setPasswordResetAt(java.time.Instant.now().minus(java.time.Duration.ofHours(9)));
+        when(userRepository.findByRestaurantId_IdAndRoleNotOrderByNameAsc(TENANT_A, Role.CUSTOMER))
+                .thenReturn(List.of(locked, free, old));
+
+        List<com.vanter.ember.identity.dto.StaffMemberResponse> result = userAdminService.getStaff(TENANT_A);
+
+        assertThat(result.get(0).passwordResetAvailableAt()).isEqualTo(resetAt.plus(java.time.Duration.ofHours(6)));
+        assertThat(result.get(1).passwordResetAvailableAt()).isNull();
+        assertThat(result.get(2).passwordResetAvailableAt()).isNull();
     }
 }

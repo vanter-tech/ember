@@ -2,6 +2,7 @@ import { FloatingNav } from '@/components/FloatingNav'
 import { CashShiftSentinel } from '@/components/CashShiftSentinel'
 import { TopNav } from '@/components/TopNav'
 import { AnimatedOutlet } from '@/components/AnimatedOutlet'
+import { CashDrawerWatcher } from '@/pages/accountant/cashDrawer/CashDrawerWatcher'
 
 export const AccountantLayout = () => {
   return (
@@ -12,6 +13,7 @@ export const AccountantLayout = () => {
       </main>
       <FloatingNav />
       <CashShiftSentinel />
+      <CashDrawerWatcher />
     </div>
   )
 }

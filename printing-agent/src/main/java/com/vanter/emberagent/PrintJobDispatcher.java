@@ -23,14 +23,24 @@ public class PrintJobDispatcher {
     private final NetworkPrinterSender networkPrinterSender;
     private final UsbPrinterSender usbPrinterSender;
     private final WindowsPrintQueueSender windowsPrintQueueSender;
+    private final DrawerKicker drawerKicker;
 
     public PrintJobDispatcher(
             NetworkPrinterSender networkPrinterSender,
             UsbPrinterSender usbPrinterSender,
             WindowsPrintQueueSender windowsPrintQueueSender) {
+        this(networkPrinterSender, usbPrinterSender, windowsPrintQueueSender, new DrawerKicker());
+    }
+
+    public PrintJobDispatcher(
+            NetworkPrinterSender networkPrinterSender,
+            UsbPrinterSender usbPrinterSender,
+            WindowsPrintQueueSender windowsPrintQueueSender,
+            DrawerKicker drawerKicker) {
         this.networkPrinterSender = networkPrinterSender;
         this.usbPrinterSender = usbPrinterSender;
         this.windowsPrintQueueSender = windowsPrintQueueSender;
+        this.drawerKicker = drawerKicker;
     }
 
     public void dispatch(
@@ -48,6 +58,11 @@ public class PrintJobDispatcher {
             AckCallback ackCallback) {
         System.out.println("[print-agent] job recibido id=" + job.jobId() + " role=" + job.role()
                 + " impresoras conocidas=" + printers.size());
+
+        if ("CASH_DRAWER_KICK".equals(job.sourceType())) {
+            kickDrawer(job, printers, ackCallback);
+            return;
+        }
 
         boolean matched = false;
         for (PrinterConfigClient.PrinterConfigDto printer : printers) {
@@ -78,6 +93,35 @@ public class PrintJobDispatcher {
         if (!matched) {
             String error = "No hay impresora activa configurada para el rol " + job.role()
                     + " en este agente";
+            System.err.println("[print-agent] " + error + " (job " + job.jobId() + ")");
+            ackCallback.ack(job.jobId(), null, "ERROR", error);
+        }
+    }
+
+    /** Pulses the drawer on every printer flagged {@code cashDrawer} for the job's role; prints nothing. */
+    private void kickDrawer(
+            AgentConnection.PrintJobPayload job,
+            List<PrinterConfigClient.PrinterConfigDto> printers,
+            AckCallback ackCallback) {
+        boolean matched = false;
+        for (PrinterConfigClient.PrinterConfigDto printer : printers) {
+            if (!printer.cashDrawer() || !printer.role().equals(job.role())) {
+                continue;
+            }
+            matched = true;
+            try {
+                drawerKicker.kick(printer);
+                System.out.println("[print-agent] gaveta abierta (job " + job.jobId() + ") en '"
+                        + printer.label() + "'");
+                ackCallback.ack(job.jobId(), printer.id(), "PRINTED", null);
+            } catch (Exception e) {
+                System.err.println("[print-agent] ERROR abriendo gaveta (job " + job.jobId() + ") en '"
+                        + printer.label() + "': " + e.getMessage());
+                ackCallback.ack(job.jobId(), printer.id(), "ERROR", e.getMessage());
+            }
+        }
+        if (!matched) {
+            String error = "No hay impresora con gaveta configurada en este agente";
             System.err.println("[print-agent] " + error + " (job " + job.jobId() + ")");
             ackCallback.ack(job.jobId(), null, "ERROR", error);
         }

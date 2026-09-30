@@ -62,6 +62,7 @@ class BillingControllerTest {
     @MockBean BillingService billingService;
     @MockBean PaymentService paymentService;
     @MockBean SessionService sessionService;
+    @MockBean com.vanter.ember.billing.service.TableForceCloseService tableForceCloseService;
     @MockBean JwtService jwtService;
     @MockBean UserDetailsService userDetailsService;
     @MockBean RestaurantRepository restaurantRepository;
@@ -549,5 +550,41 @@ class BillingControllerTest {
     void listRefunds_forbiddenForKitchen() throws Exception {
         mockMvc.perform(get("/billing/payments/20/refunds"))
                 .andExpect(status().isForbidden());
+    }
+
+    // --- POST /billing/sessions/{sessionId}/force-close (ADMIN closes a stuck table) ---
+
+    @Test
+    @WithMockUser(username = "admin@ember.local", roles = "ADMIN")
+    void forceClose_noContentForAdmin_passingTheCallerAndReason() throws Exception {
+        mockMvc.perform(post("/billing/sessions/sess-1/force-close")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"reason\":\"el cliente se fue sin pagar\"}"))
+                .andExpect(status().isNoContent());
+
+        org.mockito.Mockito.verify(tableForceCloseService)
+                .forceClose("sess-1", "admin@ember.local", "el cliente se fue sin pagar");
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void forceClose_returns400WithoutAReason() throws Exception {
+        mockMvc.perform(post("/billing/sessions/sess-1/force-close")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"reason\":\"  \"}"))
+                .andExpect(status().isBadRequest());
+
+        org.mockito.Mockito.verifyNoInteractions(tableForceCloseService);
+    }
+
+    @Test
+    @WithMockUser(roles = "WAITER")
+    void forceClose_forbiddenForWaiter() throws Exception {
+        mockMvc.perform(post("/billing/sessions/sess-1/force-close")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"reason\":\"x\"}"))
+                .andExpect(status().isForbidden());
+
+        org.mockito.Mockito.verifyNoInteractions(tableForceCloseService);
     }
 }

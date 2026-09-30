@@ -2,6 +2,7 @@ package com.vanter.ember.restaurant.controller;
 
 import com.vanter.ember.config.TenantContextHolder;
 import com.vanter.ember.restaurant.model.Restaurant;
+import com.vanter.ember.restaurant.model.dto.SubscriptionResponse;
 import com.vanter.ember.restaurant.service.RestaurantService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -20,5 +21,11 @@ public class RestaurantAdminController {
     @PreAuthorize("hasRole('ADMIN')")
     public Restaurant get() {
         return restaurantService.getCurrent(TenantContextHolder.requireTenantId());
+    }
+
+    @GetMapping("/subscription")
+    @PreAuthorize("hasRole('ADMIN')")
+    public SubscriptionResponse subscription() {
+        return SubscriptionResponse.from(restaurantService.getCurrent(TenantContextHolder.requireTenantId()));
     }
 }

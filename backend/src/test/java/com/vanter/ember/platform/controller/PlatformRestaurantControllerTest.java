@@ -298,6 +298,73 @@ class PlatformRestaurantControllerTest {
     }
 
     @Test
+    void updateSubscription_returns401WithoutAuthHeader() throws Exception {
+        mockMvc.perform(patch("/platform/restaurants/" + UUID.randomUUID() + "/subscription")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void updateSubscription_returns200WithUpdatedSummary() throws Exception {
+        authenticate();
+        UUID id = UUID.randomUUID();
+        PlatformRestaurantSummaryResponse summary = PlatformRestaurantSummaryResponse.builder()
+                .id(id).name("Tenant Grill").slug("tenant-grill").plan(RestaurantPlan.PRO)
+                .status(RestaurantStatus.ACTIVE).createdAt(Instant.now()).build();
+        when(platformRestaurantService.updateSubscription(
+                eq(id), eq(Instant.parse("2026-01-10T00:00:00Z")),
+                eq(com.vanter.ember.restaurant.model.BillingPeriod.ANNUAL),
+                eq(Instant.parse("2027-01-10T00:00:00Z")), eq(OPERATOR_EMAIL)))
+                .thenReturn(summary);
+
+        mockMvc.perform(patch("/platform/restaurants/" + id + "/subscription")
+                        .header("Authorization", "Bearer " + TOKEN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"planStartedAt\":\"2026-01-10T00:00:00Z\",\"billingPeriod\":\"ANNUAL\","
+                                + "\"planPeriodEnd\":\"2027-01-10T00:00:00Z\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.plan").value("PRO"));
+    }
+
+
+    @Test
+    void renewSubscription_returns401WithoutAuthHeader() throws Exception {
+        mockMvc.perform(post("/platform/restaurants/" + UUID.randomUUID() + "/subscription/renew")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"billingPeriod\":\"MONTHLY\"}"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void renewSubscription_returns400WithoutBillingPeriod() throws Exception {
+        authenticate();
+        mockMvc.perform(post("/platform/restaurants/" + UUID.randomUUID() + "/subscription/renew")
+                        .header("Authorization", "Bearer " + TOKEN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void renewSubscription_returns200WithUpdatedSummary() throws Exception {
+        authenticate();
+        UUID id = UUID.randomUUID();
+        PlatformRestaurantSummaryResponse summary = PlatformRestaurantSummaryResponse.builder()
+                .id(id).name("Tenant Grill").slug("tenant-grill").plan(RestaurantPlan.PRO)
+                .status(RestaurantStatus.ACTIVE).createdAt(Instant.now()).build();
+        when(platformRestaurantService.renewSubscription(
+                eq(id), eq(com.vanter.ember.restaurant.model.BillingPeriod.SEMESTRAL), eq(OPERATOR_EMAIL)))
+                .thenReturn(summary);
+
+        mockMvc.perform(post("/platform/restaurants/" + id + "/subscription/renew")
+                        .header("Authorization", "Bearer " + TOKEN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"billingPeriod\":\"SEMESTRAL\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.plan").value("PRO"));
+    }
+    @Test
     void updatePlan_returns401WithoutAuthHeader() throws Exception {
         UUID id = UUID.randomUUID();
         mockMvc.perform(patch("/platform/restaurants/" + id + "/plan")

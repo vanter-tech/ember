@@ -192,7 +192,7 @@ class PrintDispatchServiceTest {
         printDispatchService.onPrintAgentConnected(new PrintAgentConnected(AGENT_ID));
 
         verify(messagingTemplate).convertAndSend("/topic/print-agent/" + AGENT_ID, new com.vanter.ember.printing.dto.PrintJobMessage(
-                job.getId(), job.getRole().name(), job.getPayload()));
+                job.getId(), job.getRole().name(), job.getPayload(), false, job.getSourceType().name()));
     }
 
     @Test
@@ -281,7 +281,7 @@ class PrintDispatchServiceTest {
         verify(messagingTemplate).convertAndSend(
                 "/topic/print-agent/" + AGENT_ID,
                 new com.vanter.ember.printing.dto.PrintJobMessage(
-                        job.getId(), job.getRole().name(), job.getPayload(), true));
+                        job.getId(), job.getRole().name(), job.getPayload(), true, job.getSourceType().name()));
     }
 
     @Test
@@ -298,7 +298,7 @@ class PrintDispatchServiceTest {
         verify(messagingTemplate).convertAndSend(
                 "/topic/print-agent/" + AGENT_ID,
                 new com.vanter.ember.printing.dto.PrintJobMessage(
-                        job.getId(), job.getRole().name(), job.getPayload(), true));
+                        job.getId(), job.getRole().name(), job.getPayload(), true, job.getSourceType().name()));
     }
 
     @Test
@@ -315,6 +315,65 @@ class PrintDispatchServiceTest {
         verify(messagingTemplate).convertAndSend(
                 "/topic/print-agent/" + AGENT_ID,
                 new com.vanter.ember.printing.dto.PrintJobMessage(
-                        job.getId(), job.getRole().name(), job.getPayload(), false));
+                        job.getId(), job.getRole().name(), job.getPayload(), false, job.getSourceType().name()));
+    }
+
+    private PrintJob kickJob() {
+        return PrintJob.builder()
+                .id(UUID.randomUUID()).tenantId(TENANT_ID).role(PrinterRole.RECEIPT)
+                .sourceType(PrintJobSourceType.CASH_DRAWER_KICK).sourceId("evt-1")
+                .payload("{\"kick\":true}").status(PrintJobStatus.PENDING).attempts(0)
+                .createdAt(LocalDateTime.now()).updatedAt(LocalDateTime.now()).build();
+    }
+
+    private PrinterConfig receiptPrinter(boolean cashDrawer) {
+        return PrinterConfig.builder()
+                .id(UUID.randomUUID()).tenantId(TENANT_ID).agentId(AGENT_ID)
+                .role(PrinterRole.RECEIPT).connectionType(ConnectionType.NETWORK)
+                .host("10.0.0.6").port(9100).label("Caja").active(true).cashDrawer(cashDrawer).build();
+    }
+
+    @Test
+    void dispatch_kickWithNoDrawerPrinter_failsImmediatelyInsteadOfStayingPending() {
+        PrintJob job = kickJob();
+        when(printerConfigRepository.findByTenantIdAndRoleAndActiveTrue(TENANT_ID, PrinterRole.RECEIPT))
+                .thenReturn(List.of(receiptPrinter(false)));
+
+        printDispatchService.dispatch(job);
+
+        verify(messagingTemplate, never()).convertAndSend(any(String.class), any(Object.class));
+        assertThat(job.getStatus()).isEqualTo(PrintJobStatus.ERROR);
+        assertThat(job.getLastError()).contains("gaveta");
+        verify(printJobRepository).save(job);
+    }
+
+    @Test
+    void dispatch_kickWhenAgentOffline_failsImmediatelyInsteadOfReplayingOnReconnect() {
+        PrintJob job = kickJob();
+        when(printerConfigRepository.findByTenantIdAndRoleAndActiveTrue(TENANT_ID, PrinterRole.RECEIPT))
+                .thenReturn(List.of(receiptPrinter(true)));
+        when(connectionRegistry.isConnected(AGENT_ID)).thenReturn(false);
+
+        printDispatchService.dispatch(job);
+
+        assertThat(job.getStatus()).isEqualTo(PrintJobStatus.ERROR);
+        assertThat(job.getLastError()).contains("no está conectado");
+    }
+
+    @Test
+    void dispatch_kickToConnectedAgent_sendsMessageCarryingTheSourceType() {
+        PrintJob job = kickJob();
+        when(printerConfigRepository.findByTenantIdAndRoleAndActiveTrue(TENANT_ID, PrinterRole.RECEIPT))
+                .thenReturn(List.of(receiptPrinter(true)));
+        when(connectionRegistry.isConnected(AGENT_ID)).thenReturn(true);
+
+        printDispatchService.dispatch(job);
+
+        ArgumentCaptor<Object> sent = ArgumentCaptor.forClass(Object.class);
+        verify(messagingTemplate).convertAndSend(eq("/topic/print-agent/" + AGENT_ID), sent.capture());
+        assertThat(sent.getValue()).isInstanceOf(com.vanter.ember.printing.dto.PrintJobMessage.class);
+        assertThat(((com.vanter.ember.printing.dto.PrintJobMessage) sent.getValue()).sourceType())
+                .isEqualTo("CASH_DRAWER_KICK");
+        assertThat(job.getStatus()).isEqualTo(PrintJobStatus.SENT);
     }
 }

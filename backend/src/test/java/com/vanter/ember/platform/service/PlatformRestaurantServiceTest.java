@@ -496,6 +496,81 @@ class PlatformRestaurantServiceTest {
     }
 
     @Test
+    void updateSubscription_updatesRestaurantAndWritesAuditLog() {
+        UUID restaurantId = UUID.randomUUID();
+        Restaurant restaurant = Restaurant.builder()
+                .id(restaurantId).name("Acme").slug("acme").plan(RestaurantPlan.PRO).build();
+        PlatformOperator operator = PlatformOperator.builder()
+                .id(UUID.randomUUID()).email("operator@ember.local").build();
+        java.time.Instant start = java.time.Instant.parse("2026-01-10T00:00:00Z");
+        java.time.Instant end = java.time.Instant.parse("2026-07-10T00:00:00Z");
+        when(platformOperatorRepository.findByEmail("operator@ember.local")).thenReturn(Optional.of(operator));
+        when(restaurantRepository.findById(restaurantId)).thenReturn(Optional.of(restaurant));
+        when(restaurantService.updateSubscription(
+                restaurantId, start, com.vanter.ember.restaurant.model.BillingPeriod.SEMESTRAL, end))
+                .thenReturn(restaurant);
+
+        platformRestaurantService.updateSubscription(
+                restaurantId, start, com.vanter.ember.restaurant.model.BillingPeriod.SEMESTRAL, end,
+                "operator@ember.local");
+
+        ArgumentCaptor<com.vanter.ember.platform.model.PlatformAuditLog> auditCaptor =
+                ArgumentCaptor.forClass(com.vanter.ember.platform.model.PlatformAuditLog.class);
+        org.mockito.Mockito.verify(platformAuditLogRepository).save(auditCaptor.capture());
+        assertThat(auditCaptor.getValue().getAction()).isEqualTo("RESTAURANT_SUBSCRIPTION_UPDATED");
+        assertThat(auditCaptor.getValue().getNewValue()).contains("SEMESTRAL").contains(end.toString());
+    }
+
+    @Test
+    void updateSubscription_throwsWhenOperatorNotFound() {
+        when(platformOperatorRepository.findByEmail("ghost@ember.local")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> platformRestaurantService.updateSubscription(
+                UUID.randomUUID(), null, null, null, "ghost@ember.local"))
+                .isInstanceOf(BadCredentialsException.class);
+    }
+
+
+    @Test
+    void renewSubscription_renewsAndWritesAuditLog() {
+        UUID restaurantId = UUID.randomUUID();
+        Restaurant restaurant = Restaurant.builder()
+                .id(restaurantId).name("Acme").slug("acme").plan(RestaurantPlan.PRO)
+                .createdAt(java.time.Instant.parse("2026-01-01T00:00:00Z")).build();
+        Restaurant renewed = Restaurant.builder()
+                .id(restaurantId).name("Acme").slug("acme").plan(RestaurantPlan.PRO)
+                .planStartedAt(java.time.Instant.parse("2026-01-01T00:00:00Z"))
+                .billingPeriod(com.vanter.ember.restaurant.model.BillingPeriod.MONTHLY)
+                .planPeriodEnd(java.time.Instant.parse("2026-03-02T00:00:00Z")).build();
+        PlatformOperator operator = PlatformOperator.builder()
+                .id(UUID.randomUUID()).email("operator@ember.local").build();
+        when(platformOperatorRepository.findByEmail("operator@ember.local")).thenReturn(Optional.of(operator));
+        when(restaurantRepository.findById(restaurantId)).thenReturn(Optional.of(restaurant));
+        when(restaurantService.renewSubscription(
+                org.mockito.ArgumentMatchers.eq(restaurantId),
+                org.mockito.ArgumentMatchers.eq(com.vanter.ember.restaurant.model.BillingPeriod.MONTHLY),
+                org.mockito.ArgumentMatchers.any(java.time.Instant.class)))
+                .thenReturn(renewed);
+
+        platformRestaurantService.renewSubscription(
+                restaurantId, com.vanter.ember.restaurant.model.BillingPeriod.MONTHLY, "operator@ember.local");
+
+        ArgumentCaptor<com.vanter.ember.platform.model.PlatformAuditLog> auditCaptor =
+                ArgumentCaptor.forClass(com.vanter.ember.platform.model.PlatformAuditLog.class);
+        org.mockito.Mockito.verify(platformAuditLogRepository).save(auditCaptor.capture());
+        assertThat(auditCaptor.getValue().getAction()).isEqualTo("RESTAURANT_SUBSCRIPTION_RENEWED");
+        assertThat(auditCaptor.getValue().getNewValue()).contains("MONTHLY").contains("2026-03-02");
+    }
+
+    @Test
+    void renewSubscription_throwsWhenOperatorNotFound() {
+        when(platformOperatorRepository.findByEmail("ghost@ember.local")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> platformRestaurantService.renewSubscription(
+                UUID.randomUUID(), com.vanter.ember.restaurant.model.BillingPeriod.MONTHLY, "ghost@ember.local"))
+                .isInstanceOf(BadCredentialsException.class);
+    }
+    @Test
     void create_throwsWhenOperatorNotFound() {
         when(platformOperatorRepository.findByEmail("ghost@ember.local")).thenReturn(Optional.empty());
 

@@ -2,6 +2,7 @@ package com.vanter.ember.billing.controller;
 
 import com.vanter.ember.billing.dto.CalculateBillRequest;
 import com.vanter.ember.billing.dto.DigitalPaymentRequest;
+import com.vanter.ember.billing.dto.ForceCloseTableRequest;
 import com.vanter.ember.billing.dto.PaymentResponse;
 import com.vanter.ember.billing.dto.PhysicalPaymentRequest;
 import com.vanter.ember.billing.dto.RedistributeSplitRequest;
@@ -18,6 +19,7 @@ import com.vanter.ember.billing.model.Payment;
 import com.vanter.ember.billing.model.Refund;
 import com.vanter.ember.billing.model.SplitMethod;
 import com.vanter.ember.billing.service.BillingService;
+import com.vanter.ember.billing.service.TableForceCloseService;
 import com.vanter.ember.billing.service.PaymentService;
 import com.vanter.ember.session.service.SessionService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -48,6 +50,7 @@ public class BillingController {
     private final BillingService billingService;
     private final PaymentService paymentService;
     private final SessionService sessionService;
+    private final TableForceCloseService tableForceCloseService;
     private final ApplicationEventPublisher eventPublisher;
 
     @Operation(summary = "Calculate and split the bill for a session in one step, "
@@ -139,6 +142,18 @@ public class BillingController {
     @PreAuthorize("hasRole('WAITER')")
     public Payment confirmDigitalPayment(@PathVariable Long id) {
         return paymentService.confirmDigitalPayment(id);
+    }
+
+    @Operation(summary = "Close a stuck table without charging it: voids its open bill and closes the session; "
+            + "refused if it already has confirmed payments (ADMIN)")
+    @PostMapping("/sessions/{sessionId}/force-close")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("hasRole('ADMIN')")
+    public void forceCloseTable(
+            @PathVariable String sessionId,
+            @Valid @RequestBody ForceCloseTableRequest request,
+            Authentication authentication) {
+        tableForceCloseService.forceClose(sessionId, authentication.getName(), request.reason());
     }
 
     @Operation(summary = "Void a bill before any payment lands (WAITER)")

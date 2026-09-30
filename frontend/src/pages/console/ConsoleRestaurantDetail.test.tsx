@@ -23,6 +23,7 @@ vi.mock('@/lib/platformApi', async (importOriginal) => {
       updateStatus: vi.fn(),
       issueHubLicense: vi.fn(),
       updateMode: vi.fn(),
+      renewSubscription: vi.fn(),
     },
     platformAuditLogService: { ...actual.platformAuditLogService, getByRestaurant: vi.fn() },
   }
@@ -153,5 +154,24 @@ describe('ConsoleRestaurantDetail', () => {
     wrap(<ConsoleRestaurantDetail />)
 
     expect(await screen.findByRole('button', { name: 'Emitir licencia Hub' })).toBeDisabled()
+  })
+
+  test('renewing a subscription previews the next payment and calls renewSubscription', async () => {
+    vi.mocked(platformRestaurantService.getById).mockResolvedValue(
+      detail({ status: 'ACTIVE', planPeriodEnd: '2099-01-01T00:00:00Z', billingPeriod: 'MONTHLY' }) as never
+    )
+    vi.mocked(platformRestaurantService.renewSubscription).mockResolvedValue({} as never)
+    wrap(<ConsoleRestaurantDetail />)
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Renovar' }))
+    // 2099-01-01 + 30 days = 31 de enero de 2099.
+    expect(await screen.findByText(/31 de enero de 2099/)).toBeVisible()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmar renovación' }))
+
+    await waitFor(() =>
+      expect(platformRestaurantService.renewSubscription).toHaveBeenCalledWith('r-1', 'MONTHLY')
+    )
+    expect(toast.success).toHaveBeenCalledWith('Suscripción renovada')
   })
 })

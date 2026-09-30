@@ -26,10 +26,18 @@ public class AgentConnection {
 
     public interface PrintJobHandler extends Consumer<PrintJobPayload> {}
 
-    /** {@code logo}: the restaurant has a receipt logo to print above this ticket (absent = false). */
-    public record PrintJobPayload(String jobId, String role, String payload, boolean logo) {
+    /**
+     * {@code logo}: the restaurant has a receipt logo to print above this ticket (absent = false).
+     * {@code sourceType}: {@code "CASH_DRAWER_KICK"} makes the agent pulse the drawer instead of
+     * printing (absent = a printable ticket).
+     */
+    public record PrintJobPayload(String jobId, String role, String payload, boolean logo, String sourceType) {
+        public PrintJobPayload(String jobId, String role, String payload, boolean logo) {
+            this(jobId, role, payload, logo, null);
+        }
+
         public PrintJobPayload(String jobId, String role, String payload) {
-            this(jobId, role, payload, false);
+            this(jobId, role, payload, false, null);
         }
     }
 

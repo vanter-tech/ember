@@ -1,6 +1,7 @@
 package com.vanter.ember.platform.model.dto;
 
 import com.vanter.ember.licensing.model.HubActivation;
+import com.vanter.ember.restaurant.model.BillingPeriod;
 import com.vanter.ember.restaurant.model.DeploymentMode;
 import com.vanter.ember.restaurant.model.Restaurant;
 import com.vanter.ember.restaurant.model.RestaurantPlan;
@@ -18,6 +19,9 @@ public class PlatformRestaurantDetailResponse {
     private String name;
     private String slug;
     private RestaurantPlan plan;
+    private Instant planStartedAt;
+    private BillingPeriod billingPeriod;
+    private Instant planPeriodEnd;
     private RestaurantStatus status;
     private DeploymentMode deploymentMode;
     private Instant createdAt;
@@ -40,6 +44,9 @@ public class PlatformRestaurantDetailResponse {
                 .name(restaurant.getName())
                 .slug(restaurant.getSlug())
                 .plan(restaurant.getPlan())
+                .planStartedAt(restaurant.effectivePlanStart())
+                .billingPeriod(restaurant.effectiveBillingPeriod())
+                .planPeriodEnd(restaurant.effectivePlanEnd())
                 .status(restaurant.getStatus())
                 .deploymentMode(restaurant.getDeploymentMode())
                 .createdAt(restaurant.getCreatedAt())

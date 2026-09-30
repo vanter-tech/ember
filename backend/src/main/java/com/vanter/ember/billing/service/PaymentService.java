@@ -9,6 +9,7 @@ import com.vanter.ember.billing.dto.SplitsRedistributedMessage;
 import com.vanter.ember.billing.dto.WaiterBillStateResponse;
 import com.vanter.ember.billing.event.PaymentCompleted;
 import com.vanter.ember.billing.event.PaymentRefunded;
+import com.vanter.ember.billing.event.PhysicalPaymentRegistered;
 import com.vanter.ember.billing.model.Bill;
 import com.vanter.ember.billing.model.BillSplit;
 import com.vanter.ember.billing.model.BillSplitStatus;
@@ -117,6 +118,9 @@ public class PaymentService {
                 .processedBy(resolveUserId(processedByEmail))
                 .createdAt(LocalDateTime.now())
                 .build());
+        eventPublisher.publishEvent(new PhysicalPaymentRegistered(
+                shift.getTenantId(), payment.getId(), billId, bill.getSessionId(),
+                amount, shift.getId(), payment.getProcessedBy()));
 
         List<BillSplit> allSplits = billSplitRepository.findByBillId(billId);
         boolean allPaid = allSplits.stream().allMatch(s -> s.getStatus() == BillSplitStatus.PAID);

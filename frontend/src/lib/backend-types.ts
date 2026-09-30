@@ -2239,6 +2239,7 @@ export interface components {
             windowsQueueName?: string;
             renderMode?: string;
             label: string;
+            cashDrawer?: boolean;
         };
         PrinterConfigResponse: {
             /** Format: uuid */
@@ -2255,6 +2256,7 @@ export interface components {
             renderMode?: string;
             label?: string;
             active?: boolean;
+            cashDrawer?: boolean;
         };
         PlatformRestaurantCreateRequest: {
             name: string;
@@ -2572,6 +2574,8 @@ export interface components {
             efficiencyPercentage?: number;
             pendingHours?: number;
             hasPin?: boolean;
+            /** Format: date-time */
+            passwordResetAvailableAt?: string;
         };
         UpdateProfileRequest: {
             /** @enum {string} */
@@ -5453,7 +5457,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["User"];
+                    "*/*": components["schemas"]["StaffMemberResponse"];
                 };
             };
         };

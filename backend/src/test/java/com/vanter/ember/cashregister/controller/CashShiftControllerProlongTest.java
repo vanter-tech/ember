@@ -65,7 +65,7 @@ class CashShiftControllerProlongTest {
     void prolong_returnsOkAndResponseForAccountant() throws Exception {
         when(userRepository.findByEmail("accountant@ember.local"))
                 .thenReturn(Optional.of(sampleUser("accountant@ember.local")));
-        when(cashShiftService.prolongShift(eq(5L), eq("user-1"))).thenReturn(sampleShift());
+        when(cashShiftService.prolongShift(eq(5L), eq("user-1"), eq(60))).thenReturn(sampleShift());
         when(cashShiftService.toResponse(any(CashShift.class))).thenReturn(new CashShiftResponse(
                 5L, 1, "OPEN", new BigDecimal("0.00"), "Alice",
                 LocalDateTime.now().minusHours(2), null, null, null, null, null,
@@ -76,6 +76,33 @@ class CashShiftControllerProlongTest {
         mockMvc.perform(post("/cash-shifts/5/prolong"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.prolongCount").value(1));
+    }
+
+    @Test
+    @WithMockUser(username = "accountant@ember.local", roles = "ACCOUNTANT")
+    void prolong_withAChosenDuration_passesItToTheService() throws Exception {
+        when(userRepository.findByEmail("accountant@ember.local"))
+                .thenReturn(Optional.of(sampleUser("accountant@ember.local")));
+        when(cashShiftService.prolongShift(eq(5L), eq("user-1"), eq(120))).thenReturn(sampleShift());
+        when(cashShiftService.toResponse(any(CashShift.class))).thenReturn(null);
+
+        mockMvc.perform(post("/cash-shifts/5/prolong")
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                        .content("{\"minutes\":120}"))
+                .andExpect(status().isOk());
+
+        org.mockito.Mockito.verify(cashShiftService).prolongShift(5L, "user-1", 120);
+    }
+
+    @Test
+    @WithMockUser(username = "accountant@ember.local", roles = "ACCOUNTANT")
+    void prolong_withADurationOutsideTheFixedList_isABadRequest() throws Exception {
+        mockMvc.perform(post("/cash-shifts/5/prolong")
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                        .content("{\"minutes\":45}"))
+                .andExpect(status().isBadRequest());
+
+        org.mockito.Mockito.verifyNoInteractions(cashShiftService);
     }
 
     @Test

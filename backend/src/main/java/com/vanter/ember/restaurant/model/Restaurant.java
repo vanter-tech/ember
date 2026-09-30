@@ -32,6 +32,16 @@ public class Restaurant {
     @Builder.Default
     private RestaurantPlan plan = RestaurantPlan.FREE;
 
+    @Column(name = "plan_started_at")
+    private Instant planStartedAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "billing_period")
+    private BillingPeriod billingPeriod;
+
+    @Column(name = "plan_period_end")
+    private Instant planPeriodEnd;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default
@@ -58,6 +68,27 @@ public class Restaurant {
 
     @Column(name = "deleted_by")
     private UUID deletedBy;
+
+    /** Plan start as shown to the tenant: the operator-recorded date, else the account creation day. */
+    public Instant effectivePlanStart() {
+        if (planStartedAt != null) {
+            return planStartedAt;
+        }
+        return createdAt == null ? null : createdAt.truncatedTo(java.time.temporal.ChronoUnit.DAYS);
+    }
+
+    public BillingPeriod effectiveBillingPeriod() {
+        return billingPeriod != null ? billingPeriod : BillingPeriod.MONTHLY;
+    }
+
+    /** Next payment date: the recorded period end, else one month after the effective start. */
+    public Instant effectivePlanEnd() {
+        if (planPeriodEnd != null) {
+            return planPeriodEnd;
+        }
+        Instant start = effectivePlanStart();
+        return start == null ? null : effectiveBillingPeriod().endFrom(start);
+    }
 
     @PrePersist
     void prePersist() {

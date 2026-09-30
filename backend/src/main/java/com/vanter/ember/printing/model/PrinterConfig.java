@@ -63,4 +63,8 @@ public class PrinterConfig {
 
     @Column(nullable = false)
     private boolean active;
+
+    /** The cash drawer is wired to this printer's RJ11 kick-out port. */
+    @Column(name = "cash_drawer", nullable = false)
+    private boolean cashDrawer;
 }

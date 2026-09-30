@@ -56,12 +56,17 @@ export interface PlatformRestaurantAdmin {
   email: string
 }
 
+export type BillingPeriod = 'MONTHLY' | 'SEMESTRAL' | 'ANNUAL'
+
 // Mirrors PlatformRestaurantDetailResponse (platform/model/dto).
 export interface PlatformRestaurantDetail {
   id: string
   name: string
   slug: string
   plan: 'FREE' | 'STARTER' | 'PRO' | 'ENTERPRISE'
+  planStartedAt?: string | null
+  billingPeriod?: BillingPeriod | null
+  planPeriodEnd?: string | null
   status: PlatformRestaurantStatus
   deploymentMode: DeploymentMode
   createdAt: string
@@ -209,6 +214,31 @@ export const platformRestaurantService = {
     const { data } = await platformApi.patch<PlatformRestaurantSummary>(
       `/platform/restaurants/${id}/plan`,
       { plan }
+    )
+    return data
+  },
+
+  updateSubscription: async (
+    id: string,
+    subscription: {
+      planStartedAt: string | null
+      billingPeriod: BillingPeriod | null
+      planPeriodEnd: string | null
+    }
+  ): Promise<PlatformRestaurantSummary> => {
+    const { data } = await platformApi.patch<PlatformRestaurantSummary>(
+      `/platform/restaurants/${id}/subscription`,
+      subscription
+    )
+    return data
+  },
+  renewSubscription: async (
+    id: string,
+    billingPeriod: BillingPeriod
+  ): Promise<PlatformRestaurantSummary> => {
+    const { data } = await platformApi.post<PlatformRestaurantSummary>(
+      `/platform/restaurants/${id}/subscription/renew`,
+      { billingPeriod }
     )
     return data
   },

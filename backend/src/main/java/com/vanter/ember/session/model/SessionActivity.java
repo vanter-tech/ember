@@ -16,11 +16,15 @@ public class SessionActivity {
         ITEM_SENT,
         ITEM_DELETED,
         TABLE_TRANSFERRED,
-        PARTICIPANT_LEFT
+        PARTICIPANT_LEFT,
+        /** An ADMIN closed a stuck table; {@code participantName} = the admin's email, {@code note} = why. */
+        CLOSED_BY_ADMIN
     }
 
     private Type type;
     private String itemName;
     private String participantName;
     private LocalDateTime timestamp;
+    /** Free-text detail (used by {@link Type#CLOSED_BY_ADMIN}); null for the older entry types. */
+    private String note;
 }

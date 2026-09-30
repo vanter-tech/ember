@@ -156,6 +156,8 @@ class PaymentServiceTest {
         assertThat(payment.getCashShiftId()).isEqualTo(9L);
         assertThat(payment.getProcessedBy()).isEqualTo("user-1");
         assertThat(payment.getCreatedAt()).isNotNull();
+        // one pending cash receipt per split payment, not per bill (PaymentCompleted only fires when all are paid)
+        verify(eventPublisher).publishEvent(any(com.vanter.ember.billing.event.PhysicalPaymentRegistered.class));
     }
 
     @Test

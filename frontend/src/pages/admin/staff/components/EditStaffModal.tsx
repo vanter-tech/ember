@@ -162,6 +162,112 @@ const StaffPinSection = ({
   )
 }
 
+// Same rule the backend enforces (CreateStaffRequest / AdminResetPasswordRequest).
+const PASSWORD_POLICY = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).{8,128}$/
+
+/**
+ * Admin-only password reset for a non-admin account. The password is NOT temporary: the admin
+ * picks it and tells it to the person (their open sessions are signed out server-side). The
+ * backend allows one reset per account every 6 hours, so the button is disabled until
+ * `availableAt` and says when it opens again.
+ */
+const StaffPasswordSection = ({
+  userId,
+  availableAt,
+}: {
+  userId: string
+  availableAt?: string
+}) => {
+  const { t } = useTranslation('admin')
+  const queryClient = useQueryClient()
+  const [password, setPassword] = useState('')
+  const [confirm, setConfirm] = useState('')
+  const [error, setError] = useState<string | null>(null)
+
+  // Captured on mount (no impure call during render); the modal is short-lived and `availableAt` only
+  // moves forward after a reset, so it cannot go stale in a way that unlocks the button early.
+  const [now] = useState(() => Date.now())
+  const lockedUntil = availableAt && new Date(availableAt).getTime() > now ? new Date(availableAt) : null
+
+  const mutation = useMutation({
+    mutationFn: () => staffService.resetPassword(userId, password),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['staff'] })
+      toast.success(t('staffPasswordSavedToast'))
+      setPassword('')
+      setConfirm('')
+      setError(null)
+    },
+    onError: () => {
+      // A 429 (cooldown) or a rejected password both land here; refresh so the button reflects the server.
+      queryClient.invalidateQueries({ queryKey: ['staff'] })
+      toast.error(t('staffPasswordErrorToast'))
+    },
+  })
+
+  const submit = () => {
+    if (!PASSWORD_POLICY.test(password)) {
+      setError(t('staffPasswordPolicyError'))
+      return
+    }
+    if (password !== confirm) {
+      setError(t('staffPasswordMismatchError'))
+      return
+    }
+    setError(null)
+    mutation.mutate()
+  }
+
+  return (
+    <div className="sm:col-span-2 flex flex-col gap-3 rounded-lg border p-4">
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-sm font-medium">{t('staffPasswordSectionTitle')}</span>
+        {lockedUntil && (
+          <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-800">
+            {t('staffPasswordCooldownStatus', {
+              time: lockedUntil.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            })}
+          </span>
+        )}
+      </div>
+      <p className="text-xs text-muted-foreground">{t('staffPasswordHint')}</p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <Input
+          type="password"
+          autoComplete="new-password"
+          className="rounded-xl"
+          placeholder={t('staffPasswordNewLabel')}
+          aria-label={t('staffPasswordNewLabel')}
+          value={password}
+          disabled={!!lockedUntil}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+        <Input
+          type="password"
+          autoComplete="new-password"
+          className="rounded-xl"
+          placeholder={t('staffPasswordConfirmLabel')}
+          aria-label={t('staffPasswordConfirmLabel')}
+          value={confirm}
+          disabled={!!lockedUntil}
+          onChange={(e) => setConfirm(e.target.value)}
+        />
+      </div>
+      {error && <p className="text-sm text-destructive">{error}</p>}
+      <div>
+        <Button
+          type="button"
+          size="sm"
+          onClick={submit}
+          disabled={mutation.isPending || !!lockedUntil || !password}
+        >
+          {t('staffPasswordResetButton')}
+        </Button>
+      </div>
+    </div>
+  )
+}
+
 export const EditStaffModal = () => {
   const { activeModal, modalPayload, closeModal } = useUIStore()
   const queryClient = useQueryClient()
@@ -214,6 +320,9 @@ export const EditStaffModal = () => {
       closeModal()
     },
     onError: () => {
+      // Profile and role are two requests: one may already be applied (a role change can even be
+      // saved while its response fails). Re-read the server state so the modal never shows a stale row.
+      queryClient.invalidateQueries({ queryKey: ['staff'] })
       toast.error(t('staffUpdateErrorToast'))
     },
   })
@@ -355,6 +464,10 @@ export const EditStaffModal = () => {
 
             {member?.id && (
               <StaffPinSection userId={member.id} hasPin={member.hasPin ?? false} />
+            )}
+
+            {member?.id && member.role !== 'ADMIN' && (
+              <StaffPasswordSection userId={member.id} availableAt={member.passwordResetAvailableAt} />
             )}
 
             <DialogFooter className="sm:col-span-2">

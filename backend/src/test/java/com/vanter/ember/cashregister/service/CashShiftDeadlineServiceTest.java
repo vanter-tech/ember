@@ -111,6 +111,30 @@ class CashShiftDeadlineServiceTest {
     }
 
     @Test
+    void prolong_withAChosenStep_addsThatStepToTheDeadline() {
+        LocalDateTime deadline = LocalDateTime.of(2026, 8, 31, 1, 0);
+        CashShift shift = shiftExpiring(deadline, null);
+        assertThat(service.prolong(shift, deadline.minusMinutes(30), java.time.Duration.ofMinutes(30)))
+                .isEqualTo(deadline.plusMinutes(30));
+        assertThat(service.prolong(shift, deadline.minusMinutes(30), java.time.Duration.ofHours(4)))
+                .isEqualTo(deadline.plusHours(4));
+    }
+
+    @Test
+    void prolong_withAChosenStep_fromAfterTheDeadline_addsThatStepToNow() {
+        LocalDateTime deadline = LocalDateTime.of(2026, 8, 31, 1, 0);
+        CashShift shift = shiftExpiring(deadline, null);
+        LocalDateTime now = deadline.plusHours(3);
+        assertThat(service.prolong(shift, now, java.time.Duration.ofHours(2))).isEqualTo(now.plusHours(2));
+    }
+
+    @Test
+    void allowedProlongMinutes_isExactlyTheFixedList() {
+        assertThat(CashShiftDeadlineService.ALLOWED_PROLONG_MINUTES)
+                .containsExactlyInAnyOrder(30, 60, 120, 180, 240);
+    }
+
+    @Test
     void prolong_fromAfterDeadline_addsOneHourToNow() {
         LocalDateTime deadline = LocalDateTime.of(2026, 8, 31, 1, 0);
         CashShift shift = shiftExpiring(deadline, null);

@@ -46,6 +46,7 @@ public class PrinterConfigService {
                         : PrinterRenderMode.RAW)
                 .label(request.label())
                 .active(true)
+                .cashDrawer(Boolean.TRUE.equals(request.cashDrawer()))
                 .build());
         return toResponse(config);
     }
@@ -60,6 +61,7 @@ public class PrinterConfigService {
         if (request.renderMode() != null) config.setRenderMode(PrinterRenderMode.valueOf(request.renderMode()));
         if (request.label() != null) config.setLabel(request.label());
         if (request.active() != null) config.setActive(request.active());
+        if (request.cashDrawer() != null) config.setCashDrawer(request.cashDrawer());
         return toResponse(printerConfigRepository.save(config));
     }
 
@@ -84,6 +86,6 @@ public class PrinterConfigService {
                 config.getId(), config.getAgentId(), config.getRole().name(),
                 config.getConnectionType().name(), config.getHost(), config.getPort(),
                 config.getComPort(), config.getWindowsQueueName(), config.getRenderMode().name(),
-                config.getLabel(), config.isActive());
+                config.getLabel(), config.isActive(), config.isCashDrawer());
     }
 }

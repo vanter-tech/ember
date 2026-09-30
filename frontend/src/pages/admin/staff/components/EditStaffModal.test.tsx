@@ -16,6 +16,7 @@ vi.mock('@/lib/api', async (importOriginal) => {
       updateRole: vi.fn(),
       setPin: vi.fn().mockResolvedValue(undefined),
       clearPin: vi.fn().mockResolvedValue(undefined),
+      resetPassword: vi.fn().mockResolvedValue(undefined),
     },
   }
 })
@@ -101,5 +102,86 @@ describe('EditStaffModal — quick-login PIN section', () => {
 
     expect(screen.getByText('PIN configurado')).toBeVisible()
     expect(screen.queryByText('Sin PIN')).not.toBeInTheDocument()
+  })
+})
+
+describe('EditStaffModal — admin password reset section', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    useUIStore.setState({ activeModal: 'EDIT_STAFF', modalPayload: member() })
+  })
+
+  const fill = (pwd: string, confirm = pwd) => {
+    fireEvent.change(screen.getByLabelText('Nueva contraseña'), { target: { value: pwd } })
+    fireEvent.change(screen.getByLabelText('Confirmar contraseña'), { target: { value: confirm } })
+  }
+
+  test('admin sets a new password for a waiter', async () => {
+    wrap(<EditStaffModal />)
+
+    fill('Nuev0!Clave')
+    fireEvent.click(screen.getByRole('button', { name: 'Restablecer contraseña' }))
+
+    await waitFor(() => expect(staffService.resetPassword).toHaveBeenCalledWith('u-1', 'Nuev0!Clave'))
+  })
+
+  test('mismatched passwords show an error and do not call the API', () => {
+    wrap(<EditStaffModal />)
+
+    fill('Nuev0!Clave', 'Otra0!Clave')
+    fireEvent.click(screen.getByRole('button', { name: 'Restablecer contraseña' }))
+
+    expect(screen.getByText('Las contraseñas no coinciden')).toBeVisible()
+    expect(staffService.resetPassword).not.toHaveBeenCalled()
+  })
+
+  test('a password that breaks the policy shows the rule and does not call the API', () => {
+    wrap(<EditStaffModal />)
+
+    fill('weakpass')
+    fireEvent.click(screen.getByRole('button', { name: 'Restablecer contraseña' }))
+
+    expect(screen.getByText(/mayúscula, una minúscula, un número y un símbolo/)).toBeVisible()
+    expect(staffService.resetPassword).not.toHaveBeenCalled()
+  })
+
+  test('is not offered when editing an administrator', () => {
+    useUIStore.setState({ activeModal: 'EDIT_STAFF', modalPayload: member({ role: 'ADMIN' }) })
+    wrap(<EditStaffModal />)
+
+    expect(screen.queryByRole('button', { name: 'Restablecer contraseña' })).not.toBeInTheDocument()
+  })
+
+  test('during the cooldown the button is disabled and says when it is available again', () => {
+    const availableAt = new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString()
+    useUIStore.setState({
+      activeModal: 'EDIT_STAFF',
+      modalPayload: member({ passwordResetAvailableAt: availableAt }),
+    })
+    wrap(<EditStaffModal />)
+
+    expect(screen.getByRole('button', { name: 'Restablecer contraseña' })).toBeDisabled()
+    expect(screen.getByText(/Disponible de nuevo a las/)).toBeVisible()
+  })
+})
+
+describe('EditStaffModal — saving the profile', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    useUIStore.setState({ activeModal: 'EDIT_STAFF', modalPayload: member() })
+  })
+
+  // Saving is two requests (profile, then role). When the second one fails the first has already been
+  // applied — and a role change can be applied server-side even when its response fails — so the modal
+  // must refresh the staff list from the server instead of leaving the stale row it opened with.
+  test('a failed save refreshes the staff list, so the modal reflects what the server really saved', async () => {
+    vi.mocked(staffService.updateProfile).mockRejectedValue(new Error('boom'))
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    const invalidate = vi.spyOn(qc, 'invalidateQueries')
+    wrap(<EditStaffModal />, qc)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+
+    await waitFor(() => expect(invalidate).toHaveBeenCalledWith({ queryKey: ['staff'] }))
   })
 })

@@ -291,6 +291,30 @@ class BillingServiceTest {
     }
 
     @Test
+    void splitByConsumption_splitsSumExactlyToTheBillTotal_evenWhenEachShareRoundsUp() {
+        // 1.05 * 1.10 = 1.155: rounding each share alone gives 1.16 + 1.16 = 2.32 vs a 2.31 bill.
+        when(settingService.getSettings(TENANT_ID)).thenReturn(settingsWithTaxRate(10.0));
+        Session session = Session.builder().id("sess-1").tableId(UUID.randomUUID()).status(SessionStatus.OPEN)
+                .items(new ArrayList<>(List.of(
+                        OrderItem.builder().id("i-1").price(new BigDecimal("1.05")).participantName("Alice")
+                                .status(OrderItemStatus.DELIVERED).build(),
+                        OrderItem.builder().id("i-2").price(new BigDecimal("1.05")).participantName("Bob")
+                                .status(OrderItemStatus.DELIVERED).build()))).build();
+        Bill bill = Bill.builder().id(1L).sessionId("sess-1").total(new BigDecimal("2.31"))
+                .splitMethod(SplitMethod.BY_CONSUMPTION).status(BillStatus.OPEN).createdAt(LocalDateTime.now()).build();
+        when(billRepository.findById(1L)).thenReturn(Optional.of(bill));
+        when(sessionService.findById("sess-1")).thenReturn(session);
+        when(billSplitRepository.saveAll(anyList())).thenAnswer(inv -> inv.getArgument(0));
+
+        List<BillSplit> splits = billingService.splitByConsumption(1L);
+
+        BigDecimal sum = splits.stream().map(BillSplit::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
+        assertThat(sum).isEqualByComparingTo("2.31");
+        assertThat(splits).extracting(BillSplit::getAmount)
+                .containsExactlyInAnyOrder(new BigDecimal("1.16"), new BigDecimal("1.15"));
+    }
+
+    @Test
     void splitByConsumption_splitsAreLinkedToBill() {
         when(billRepository.findById(1L)).thenReturn(Optional.of(savedBill()));
         when(sessionService.findById("sess-1")).thenReturn(sessionWithMixedItems());

@@ -5,7 +5,7 @@ export type ModalType = 'CREATE_CATEGORY' | 'EDIT_CATEGORY' | 'DELETE_CATEGORY' 
                          'PARTICIPANTS_QR' | 'JOIN_TABLE' | 'TENANT_SUSPENDED' |
                          'OPEN_SHIFT' | 'CASH_MOVEMENT' | 'CLOSE_SHIFT' |
                          'CHARGE_TABLE' | 'CREATE_STAFF' | 'EDIT_STAFF' | 'DELETE_STAFF' |
-                         'VOID_BILL' | 'REFUND_PAYMENT' | 'CREATE_REWARD' | 'EDIT_REWARD' |
+                         'VOID_BILL' | 'FORCE_CLOSE_TABLE' | 'REFUND_PAYMENT' | 'CREATE_REWARD' | 'EDIT_REWARD' |
                          'CREATE_PRINT_AGENT' | 'ADD_PRINTER' | 'DELETE_PRINT_AGENT' | 'DELETE_PRINTER' |
                          'CREATE_MODIFIER_GROUP' | 'EDIT_MODIFIER_GROUP' |
                          'CREATE_INVENTORY_ITEM' | 'EDIT_INVENTORY_ITEM' |
@@ -13,7 +13,7 @@ export type ModalType = 'CREATE_CATEGORY' | 'EDIT_CATEGORY' | 'DELETE_CATEGORY' 
                          'SEAT_FORM' | 'DELETE_SEAT' | null;
 
 export type SettingsType = 'BRANDING' | 'MENU' | 'BILLING' | 'PAYMENT_GATEWAY' | 'TICKET' | 'PRINTING' | 'HARDWARE'|
-                            'SPACE'| 'HORARIO'| 'FIDELIZACION' | 'LOYALTY_REWARDS'| 'INFO'| 'EXPORT'| null;
+                            'SPACE'| 'HORARIO'| 'FIDELIZACION' | 'LOYALTY_REWARDS'| 'INFO'| 'EXPORT'| 'PLAN'| null;
 
 // Which section of the /admin/inventory hub (InventoryHub.tsx) is currently mounted, kept here
 // (rather than TopNav deriving it from the URL like every other admin route) so the "+" button

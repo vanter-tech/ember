@@ -569,7 +569,21 @@ export const kitchenServices = {
 
 }
 
+// Mirrors SubscriptionResponse (restaurant/model/dto). Dates are null until the operator records them.
+export interface SubscriptionResponse {
+  plan: 'FREE' | 'STARTER' | 'PRO' | 'ENTERPRISE'
+  status: 'ACTIVE' | 'SUSPENDED' | 'INACTIVE' | 'DELETED'
+  planStartedAt: string | null
+  billingPeriod: 'MONTHLY' | 'SEMESTRAL' | 'ANNUAL' | null
+  planPeriodEnd: string | null
+}
+
 export const restaurantAdminService = {
+  getSubscription: async (): Promise<SubscriptionResponse> => {
+    const { data } = await api.get<SubscriptionResponse>('/admin/restaurant/subscription')
+    return data
+  },
+
   getPlan: async (): Promise<RestaurantResponse> => {
     const { data } = await api.get<RestaurantResponse>('/admin/restaurant')
     return data
@@ -668,6 +682,9 @@ export const staffService = {
   clearPin: async (userId: string): Promise<void> => {
     await api.delete<void>(`/admin/staff/${userId}/pin`)
   },
+  resetPassword: async (userId: string, newPassword: string): Promise<void> => {
+    await api.post<void>(`/admin/staff/${userId}/reset-password`, { newPassword })
+  },
 }
 
 export type CashMovementType = components['schemas']['RecordMovementRequest']['type']
@@ -725,12 +742,61 @@ export const cashShiftService = {
     })
     return data
   },
-  prolong: async (id: number): Promise<CashShiftResponse> => {
-    const { data } = await api.post<CashShiftResponse>(`/cash-shifts/${id}/prolong`)
+  // `minutes` must be one of 30/60/120/180/240; omitted, the backend extends by the default hour.
+  prolong: async (id: number, minutes?: number): Promise<CashShiftResponse> => {
+    const { data } = await api.post<CashShiftResponse>(
+      `/cash-shifts/${id}/prolong`,
+      minutes === undefined ? undefined : { minutes }
+    )
     return data
   },
   dailyReport: async (date: string): Promise<DailyReportResponse> => {
     const { data } = await api.get<DailyReportResponse>('/cash-shifts/daily-report', { params: { date } })
+    return data
+  },
+}
+
+export type DrawerState = 'NONE' | 'OPENING' | 'OPENED' | 'FAILED' | 'SKIPPED'
+
+// Hand-written (not in backend-types.ts): CashDrawerEventResponse of the /cash-drawer endpoints.
+export interface CashReceiptStatus {
+  participantName: string
+  status: 'PENDING' | 'RECEIVED'
+}
+
+export interface CashDrawerEvent {
+  id: string
+  type: 'CASH_SALE' | 'MANUAL'
+  status: 'PENDING' | 'RECEIVED'
+  tableNumber: number | null
+  amount: number | null
+  reason: string | null
+  createdAt: string
+  receivedAt: string | null
+  drawer: DrawerState
+  createdByName: string | null
+  drawerError: string | null
+}
+
+export const cashDrawerService = {
+  current: async (): Promise<CashDrawerEvent[]> => {
+    const { data } = await api.get<CashDrawerEvent[]>('/cash-drawer/current')
+    return data
+  },
+  receive: async (id: string): Promise<CashDrawerEvent> => {
+    const { data } = await api.post<CashDrawerEvent>(`/cash-drawer/${id}/receive`)
+    return data
+  },
+  bySession: async (sessionId: string): Promise<CashReceiptStatus[]> => {
+    const { data } = await api.get<CashReceiptStatus[]>(`/cash-drawer/by-session/${sessionId}`)
+    return data
+  },
+  skip: async (id: string): Promise<CashDrawerEvent> => {
+    const { data } = await api.post<CashDrawerEvent>(`/cash-drawer/${id}/skip`)
+    return data
+  },
+  open: async (reason: string): Promise<CashDrawerEvent> => {
+    const { data } = await api.post<CashDrawerEvent>('/cash-drawer/open', { reason })
     return data
   },
 }
@@ -780,6 +846,7 @@ export const printingService = {
       windowsQueueName?: string
       renderMode?: string
       label: string
+      cashDrawer?: boolean
     }
   ): Promise<PrinterConfigResponse> => {
     const { data } = await api.post<PrinterConfigResponse>(`/printing/admin/agents/${agentId}/printers`, request)
@@ -876,6 +943,10 @@ export const billingService = {
   confirmDigitalPayment: async (paymentId: number): Promise<Payment> => {
     const { data } = await api.post<Payment>(`/billing/payments/${paymentId}/confirm`)
     return data
+  },
+  // ADMIN closes a stuck table: voids its open bill and closes the session (409 if it already has payments).
+  forceCloseTable: async (sessionId: string, reason: string): Promise<void> => {
+    await api.post<void>(`/billing/sessions/${sessionId}/force-close`, { reason })
   },
   voidBill: async (billId: number, reason: string): Promise<Bill> => {
     const { data } = await api.post<Bill>(`/billing/bills/${billId}/void`, { reason })

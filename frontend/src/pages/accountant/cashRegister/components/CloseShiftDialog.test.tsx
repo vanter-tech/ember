@@ -4,7 +4,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { CloseShiftDialog } from './CloseShiftDialog'
 import { useUIStore } from '@/store/uiStore'
-import { cashShiftService } from '@/lib/api'
+import { cashShiftService, cashDrawerService } from '@/lib/api'
 
 vi.mock('@/lib/api', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/api')>()
@@ -14,6 +14,7 @@ vi.mock('@/lib/api', async (importOriginal) => {
       ...actual.cashShiftService,
       close: vi.fn().mockResolvedValue({ expectedCash: 200, countedCash: 200, variance: 0 }),
     },
+    cashDrawerService: { current: vi.fn().mockResolvedValue([]), receive: vi.fn(), open: vi.fn() },
   }
 })
 
@@ -54,5 +55,14 @@ describe('CloseShiftDialog', () => {
     await waitFor(() =>
       expect(cashShiftService.close).toHaveBeenCalledWith(7, 50, [{ denominationId: 'bill_50', quantity: 1 }], undefined),
     )
+  })
+  test('warns (without blocking the close) when cash payments are still pending to receive', async () => {
+    vi.mocked(cashDrawerService.current).mockResolvedValue([
+      { id: 'e1', type: 'CASH_SALE', status: 'PENDING', tableNumber: 4, amount: 20, reason: null, createdAt: '2026-09-29T10:00:00', receivedAt: null, drawer: 'NONE', createdByName: null, drawerError: null },
+    ])
+    wrap(<CloseShiftDialog />)
+
+    expect(await screen.findByText('Hay 1 cobro(s) en efectivo sin recibir.')).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Confirmar conteo' })).toBeEnabled()
   })
 })

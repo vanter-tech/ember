@@ -8,6 +8,12 @@ import { SettingsService } from '@/lib/api'
 
 vi.mock('@/lib/api', () => ({
   SettingsService: { getSettings: vi.fn(), updateSettings: vi.fn() },
+  cashDrawerService: {
+    current: vi.fn().mockResolvedValue([]),
+    receive: vi.fn(),
+    skip: vi.fn(),
+    open: vi.fn(),
+  },
   cashShiftService: {
     current: vi.fn().mockResolvedValue(null),
     detail: vi.fn(),

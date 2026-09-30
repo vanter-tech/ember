@@ -39,6 +39,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { HubBadge } from '@/components/console/HubBadge'
+import { SubscriptionCard } from '@/components/console/SubscriptionCard'
 import { ConsolePageHeader } from '@/components/console/ConsolePageHeader'
 
 const statusBadgeClass = (status: string) => {
@@ -310,6 +311,8 @@ export default function ConsoleRestaurantDetail() {
           </div>
         </CardContent>
       </Card>
+
+      <SubscriptionCard key={`${restaurant.id}-${restaurant.planPeriodEnd}`} restaurant={restaurant} onSaved={invalidateAll} />
 
       <Card className="rounded-2xl">
         <CardHeader>

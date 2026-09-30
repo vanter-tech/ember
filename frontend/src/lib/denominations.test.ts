@@ -25,6 +25,18 @@ describe('denominations', () => {
     expect(total).toBe(215)
   })
 
+  test('sumBreakdown gives exact cent totals (no floating-point residue)', () => {
+    expect(sumBreakdown([{ denominationId: 'coin_010', quantity: 3 }])).toBe(0.3)
+    expect(sumBreakdown([{ denominationId: 'coin_005', quantity: 3 }])).toBe(0.15)
+    expect(sumBreakdown([{ denominationId: 'coin_010', quantity: 7 }])).toBe(0.7)
+    expect(
+      sumBreakdown([
+        { denominationId: 'coin_010', quantity: 1 },
+        { denominationId: 'coin_005', quantity: 1 },
+      ]),
+    ).toBe(0.15)
+  })
+
   test('sumBreakdown ignores an unknown denominationId rather than throwing', () => {
     const total = sumBreakdown([{ denominationId: 'nope', quantity: 5 }])
     expect(total).toBe(0)

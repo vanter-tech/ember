@@ -77,6 +77,18 @@ describe('AddItemModal', () => {
     vi.mocked(inventoryMenuItemService.listAll).mockResolvedValue([pizza, ensalada, helado])
   })
 
+  // The base Button has a fixed height and only horizontal padding, so an `h-auto` override (the
+  // old `sm:h-auto`) collapses it to a single text line: the confirm button looked "squashed" on
+  // desktop widths. It must keep an explicit height at every breakpoint.
+  test('the confirm button keeps an explicit height (no h-auto override that would collapse it)', async () => {
+    wrap(<AddItemModal />)
+
+    const confirm = await screen.findByRole('button', { name: /Confirmar pedido/ })
+
+    expect(confirm.className).not.toMatch(/h-auto/)
+    expect(confirm.className).toMatch(/(^|\s)h-1[1-4](\s|$)/)
+  })
+
   test('selects "Mesa" as the active client by default', async () => {
     wrap(<AddItemModal />)
     const mesaChip = await screen.findByRole('button', { name: /Mesa \(general\)/ })

@@ -66,7 +66,10 @@ public class PrintJobHandler {
             return;
         }
         // Best effort: TicketLogoClient never throws, and a missing logo just means a text-only ticket.
-        byte[] logo = job.logo() ? logoClient.fetch(backendBaseUrl, jwt).orElse(null) : null;
+        // A drawer kick prints nothing, so it never needs the logo (the backend flags every job of a
+        // tenant that has one) — fetching it would only delay the drawer.
+        boolean printsALogo = job.logo() && !"CASH_DRAWER_KICK".equals(job.sourceType());
+        byte[] logo = printsALogo ? logoClient.fetch(backendBaseUrl, jwt).orElse(null) : null;
         dispatcher.dispatch(job, printers, logo, recording);
     }
 }

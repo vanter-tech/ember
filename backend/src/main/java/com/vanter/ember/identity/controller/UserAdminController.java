@@ -1,6 +1,7 @@
 package com.vanter.ember.identity.controller;
 
 import com.vanter.ember.config.TenantContextHolder;
+import com.vanter.ember.identity.dto.AdminResetPasswordRequest;
 import com.vanter.ember.identity.dto.AdminSetPinRequest;
 import com.vanter.ember.identity.dto.CreateStaffRequest;
 import com.vanter.ember.identity.dto.StaffMemberResponse;
@@ -15,6 +16,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -37,7 +39,7 @@ public class UserAdminController {
     @Operation(summary = "Assign a role to a staff member of the caller's own tenant (ADMIN)")
     @PatchMapping("/users/{userId}/role")
     @PreAuthorize("hasRole('ADMIN')")
-    public User updateRole(@PathVariable String userId,
+    public StaffMemberResponse updateRole(@PathVariable String userId,
                            @Valid @RequestBody UpdateUserRoleRequest request) {
         return userAdminService.updateRole(
                 userId, TenantContextHolder.requireTenantId(), request.role());
@@ -83,6 +85,18 @@ public class UserAdminController {
     @PreAuthorize("hasRole('ADMIN')")
     public void clearStaffPin(@PathVariable String userId) {
         userAdminService.clearPin(userId, TenantContextHolder.requireTenantId());
+    }
+
+    @Operation(summary = "Reset a staff member's password (waiter/kitchen/accountant); not temporary, "
+            + "6-hour cooldown per account (ADMIN)")
+    @PostMapping("/staff/{userId}/reset-password")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("hasRole('ADMIN')")
+    public void resetStaffPassword(@PathVariable String userId,
+                                   @Valid @RequestBody AdminResetPasswordRequest request,
+                                   Authentication authentication) {
+        userAdminService.resetPassword(
+                userId, TenantContextHolder.requireTenantId(), authentication.getName(), request.newPassword());
     }
 
     @Operation(summary =

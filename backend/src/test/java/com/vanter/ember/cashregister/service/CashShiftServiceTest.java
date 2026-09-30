@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -303,7 +304,7 @@ class CashShiftServiceTest {
         when(cashShiftRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(open));
         when(cashShiftRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         LocalDateTime pushed = LocalDateTime.now().plusHours(1);
-        when(deadlineService.prolong(any(), any())).thenReturn(pushed);
+        when(deadlineService.prolong(any(), any(), eq(java.time.Duration.ofMinutes(60)))).thenReturn(pushed);
 
         CashShift result = cashShiftService.prolongShift(1L, "user-7");
 
@@ -312,6 +313,29 @@ class CashShiftServiceTest {
         assertThat(result.getProlongCount()).isEqualTo(1);
         org.mockito.Mockito.verify(eventPublisher)
                 .publishEvent(any(CashShiftProlonged.class));
+    }
+
+    @Test
+    void prolongShift_withAChosenDuration_pushesTheDeadlineByThatMuch() {
+        CashShift open = openShift();
+        when(cashShiftRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(open));
+        when(cashShiftRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        LocalDateTime pushed = LocalDateTime.now().plusHours(3);
+        when(deadlineService.prolong(any(), any(), eq(java.time.Duration.ofMinutes(180)))).thenReturn(pushed);
+
+        CashShift result = cashShiftService.prolongShift(1L, "user-7", 180);
+
+        assertThat(result.getProlongedUntil()).isEqualTo(pushed);
+        assertThat(result.getProlongCount()).isEqualTo(1);
+    }
+
+    @Test
+    void prolongShift_rejectsADurationOutsideTheFixedList_andChangesNothing() {
+        assertThatThrownBy(() -> cashShiftService.prolongShift(1L, "user-7", 45))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> cashShiftService.prolongShift(1L, "user-7", 600))
+                .isInstanceOf(IllegalArgumentException.class);
+        org.mockito.Mockito.verifyNoInteractions(cashShiftRepository);
     }
 
     @Test

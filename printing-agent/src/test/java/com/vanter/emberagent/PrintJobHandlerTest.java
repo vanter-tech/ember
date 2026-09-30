@@ -96,6 +96,25 @@ class PrintJobHandlerTest {
     }
 
     @Test
+    void handle_kickJobFlaggedWithALogo_neverRequestsTheLogo_soTheDrawerOpensWithoutAnExtraRoundTrip() throws Exception {
+        // The backend flags every job of a tenant that has a logo, kicks included; fetching it would
+        // only delay the drawer.
+        server.enqueue(new MockResponse.Builder().code(200).body(PRINTER_JSON)
+                .addHeader("Content-Type", "application/json").build());
+
+        PrintJobDispatcher dispatcher = new PrintJobDispatcher(
+                new NetworkPrinterSender(), new UsbPrinterSender(), new WindowsPrintQueueSender());
+        List<Object[]> acks = new ArrayList<>();
+        new PrintJobHandler(new PrinterConfigClient(), dispatcher, server.url("/").toString(), "fake-jwt")
+                .handle(new AgentConnection.PrintJobPayload(
+                                "k1", "KITCHEN", "{\"kick\":true}", true, "CASH_DRAWER_KICK"),
+                        (jobId, printerConfigId, result, error) -> acks.add(new Object[] {jobId, result}));
+
+        assertEquals(1, server.getRequestCount(), "printer list only, no logo request");
+        assertEquals("ERROR", acks.get(0)[1], "no printer of this agent has the drawer flag");
+    }
+
+    @Test
     void handle_printerFetchFails_acksErrorInsteadOfThrowing() throws Exception {
         server.enqueue(new MockResponse.Builder().code(500).body("boom").build());
 

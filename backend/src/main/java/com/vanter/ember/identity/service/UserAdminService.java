@@ -11,16 +11,24 @@ import com.vanter.ember.restaurant.model.Restaurant;
 import com.vanter.ember.restaurant.model.RestaurantPlan;
 import com.vanter.ember.restaurant.repository.RestaurantRepository;
 import com.vanter.ember.restaurant.service.PlanGateService;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class UserAdminService {
+
+    /** Minimum time between two admin resets of the same account. */
+    static final Duration PASSWORD_RESET_COOLDOWN = Duration.ofHours(6);
 
     private final UserRepository userRepository;
     private final RestaurantRepository restaurantRepository;
@@ -33,8 +41,12 @@ public class UserAdminService {
      * only self-assigned via {@code POST /auth/register}. Demoting the tenant's last active ADMIN
      * is blocked for the same reason {@link #isLastActiveAdmin} guards deactivation: a restaurant
      * with zero active admins cannot be managed and cannot recover from inside the app.
+     *
+     * <p>Returns the {@link StaffMemberResponse} DTO, never the {@link User} entity: the entity's lazy
+     * `restaurantId` proxy cannot be serialized once the persistence session is closed
+     * (`open-in-view: false`), which made this endpoint answer 500 AFTER the role was already saved.
      */
-    public User updateRole(String userId, UUID tenantId, Role newRole) {
+    public StaffMemberResponse updateRole(String userId, UUID tenantId, Role newRole) {
         User user = requireTenantUser(userId, tenantId);
         if (newRole == Role.CUSTOMER) {
             throw new IllegalArgumentException("Cannot assign the CUSTOMER role to a staff member");
@@ -44,7 +56,7 @@ public class UserAdminService {
                     "Cannot change the role of the last active administrator of this restaurant.");
         }
         user.setRole(newRole);
-        return userRepository.save(user);
+        return toStaffResponse(userRepository.save(user));
     }
 
     /**
@@ -140,6 +152,43 @@ public class UserAdminService {
         userRepository.save(user);
     }
 
+    /**
+     * Admin-driven password reset for a non-admin staff member of the caller's own tenant. The new
+     * password is NOT temporary (no forced change) — the admin chooses and communicates it. Bumps
+     * {@code tokenVersion} so the person's already-issued tokens stop working, records who/when, and
+     * refuses a second reset of the same account within {@link #PASSWORD_RESET_COOLDOWN} (429) so the
+     * option cannot be used as a constant back door. ADMIN targets stay with the platform operator.
+     */
+    public void resetPassword(String userId, UUID tenantId, String adminEmail, String newPassword) {
+        User user = requireTenantUser(userId, tenantId);
+        if (user.getRole() != Role.WAITER && user.getRole() != Role.KITCHEN
+                && user.getRole() != Role.ACCOUNTANT) {
+            throw new IllegalArgumentException(
+                    "Only waiter, kitchen and accountant passwords can be reset by an administrator");
+        }
+        Instant availableAt = passwordResetAvailableAt(user);
+        if (availableAt != null) {
+            throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,
+                    "Password was reset recently; it can be reset again at " + availableAt);
+        }
+        user.setPasswordHash(passwordEncoder.encode(newPassword));
+        user.setMustChangePassword(false);
+        user.setPasswordResetAt(Instant.now());
+        user.setPasswordResetBy(adminEmail);
+        bumpTokenVersion(user);
+        userRepository.save(user);
+        log.info("Password of staff member {} reset by admin {}", user.getId(), adminEmail);
+    }
+
+    /** Null when a reset is allowed now; otherwise the instant the cooldown ends. */
+    private static Instant passwordResetAvailableAt(User user) {
+        if (user.getPasswordResetAt() == null) {
+            return null;
+        }
+        Instant end = user.getPasswordResetAt().plus(PASSWORD_RESET_COOLDOWN);
+        return end.isAfter(Instant.now()) ? end : null;
+    }
+
     /** Removes a staff member's quick-login PIN. Admin-only, tenant-scoped. */
     public void clearPin(String userId, UUID tenantId) {
         User user = requireTenantUser(userId, tenantId);
@@ -201,6 +250,7 @@ public class UserAdminService {
                 user.getLocation(),
                 user.getEfficiencyPercentage(),
                 user.getPendingHours(),
-                user.getPinHash() != null);
+                user.getPinHash() != null,
+                passwordResetAvailableAt(user));
     }
 }

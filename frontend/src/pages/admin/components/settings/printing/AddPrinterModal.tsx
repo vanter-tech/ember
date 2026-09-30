@@ -13,6 +13,7 @@ import {
 import { Form, FormControl, FormField, FormItem, FormLabel } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useUIStore } from '@/store/uiStore'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
@@ -28,6 +29,7 @@ const addPrinterSchema = z.object({
   windowsQueueName: z.string().optional(),
   renderMode: z.enum(['RAW', 'DRIVER']),
   label: z.string().min(1).max(100),
+  cashDrawer: z.boolean().optional(),
 })
 
 type AddPrinterInputs = z.infer<typeof addPrinterSchema>
@@ -54,6 +56,7 @@ export const AddPrinterModal = () => {
       windowsQueueName: '',
       renderMode: 'RAW',
       label: '',
+      cashDrawer: false,
     },
   })
 
@@ -70,6 +73,7 @@ export const AddPrinterModal = () => {
         comPort: data.connectionType === 'USB' ? data.comPort : undefined,
         windowsQueueName: data.connectionType === 'WINDOWS_QUEUE' ? data.windowsQueueName : undefined,
         renderMode: data.connectionType === 'WINDOWS_QUEUE' ? data.renderMode : undefined,
+        cashDrawer: data.role === 'RECEIPT' ? !!data.cashDrawer : undefined,
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['printerConfigs', agentId] })
@@ -256,6 +260,20 @@ export const AddPrinterModal = () => {
                 </FormItem>
               )}
             />
+            {form.watch('role') === 'RECEIPT' && (
+              <FormField
+                control={form.control}
+                name="cashDrawer"
+                render={({ field }) => (
+                  <FormItem className="flex items-center gap-2">
+                    <FormControl>
+                      <Checkbox checked={!!field.value} onCheckedChange={(v) => field.onChange(v === true)} />
+                    </FormControl>
+                    <FormLabel>{t('printingCashDrawerLabel')}</FormLabel>
+                  </FormItem>
+                )}
+              />
+            )}
             <DialogFooter>
               <Button type="button" variant="outline" onClick={handleClose} disabled={mutation.isPending}>
                 {t('cancelButton')}

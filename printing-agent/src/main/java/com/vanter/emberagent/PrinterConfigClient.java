@@ -29,5 +29,13 @@ public class PrinterConfigClient {
     public record PrinterConfigDto(
             String id, String agentId, String role, String connectionType,
             String host, Integer port, String comPort, String windowsQueueName, String renderMode,
-            String label, boolean active) {}
+            String label, boolean active, boolean cashDrawer) {
+
+        public PrinterConfigDto(String id, String agentId, String role, String connectionType,
+                String host, Integer port, String comPort, String windowsQueueName, String renderMode,
+                String label, boolean active) {
+            this(id, agentId, role, connectionType, host, port, comPort, windowsQueueName, renderMode,
+                    label, active, false);
+        }
+    }
 }

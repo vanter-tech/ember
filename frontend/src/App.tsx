@@ -18,6 +18,7 @@ import { Tables } from '@/pages/waiter/Tables'
 import { WaiterLayout } from '@/layouts/WaiterLayout'
 import { AccountantLayout } from '@/layouts/AccountantLayout'
 import { CashRegister as AccountantCashRegister } from '@/pages/accountant/cashRegister/CashRegister'
+import { CashReceipts } from '@/pages/accountant/CashReceipts'
 import { Settings } from './pages/admin/Settings'
 import { Analytics } from './pages/admin/analytics/Analytics'
 import { Staff } from './pages/admin/staff/Staff'
@@ -174,6 +175,7 @@ export default function App() {
           <Route path="/accountant" element={<AccountantLayout />}>
             <Route index element={<Navigate to="cash-register" replace />} />
             <Route path="cash-register" element={<AccountantCashRegister />} />
+            <Route path="cash-receipts" element={<CashReceipts />} />
           </Route>
         </Route>
 

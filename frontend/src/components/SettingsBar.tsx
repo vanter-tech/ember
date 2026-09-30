@@ -21,6 +21,7 @@ import {
   Award,
   Info,
   Download,
+  BadgeCheck,
   Menu,
   ChevronsUpDown,
   PanelLeftClose,
@@ -55,6 +56,7 @@ const LEAF: Record<LeafType, { labelKey: AdminKey; Icon: LucideIcon }> = {
   LOYALTY_REWARDS: { labelKey: 'rewardCatalogTitle', Icon: Award },
   INFO: { labelKey: 'infoLabel', Icon: Info },
   EXPORT: { labelKey: 'exportLabel', Icon: Download },
+  PLAN: { labelKey: 'planLabel', Icon: BadgeCheck },
 }
 
 type NavNode =
@@ -75,6 +77,8 @@ const buildSettingsNav = (): NavNode[] => [
     ? []
     : [{ kind: 'group', group: 'FIDELIZACION', labelKey: 'loyaltyLabel', Icon: Gift, members: ['FIDELIZACION', 'LOYALTY_REWARDS'] } as NavNode]),
   { kind: 'leaf', type: 'EXPORT' },
+  // The Hub is a licensed on-premise install with no SaaS plan to show.
+  ...(isHubBuild() ? [] : [{ kind: 'leaf', type: 'PLAN' } as NavNode]),
   { kind: 'leaf', type: 'INFO' },
 ]
 

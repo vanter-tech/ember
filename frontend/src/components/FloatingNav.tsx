@@ -16,9 +16,11 @@ import {
   BookOpen,
   Warehouse,
   DoorOpen,
+  HandCoins,
 } from 'lucide-react'
 import { SessionTableService } from '@/lib/api'
 import { useSessionStore } from '@/store/sessionStore'
+import { useCashDrawerEvents } from '@/pages/accountant/cashDrawer/useCashDrawerEvents'
 import { useTranslation } from '@/lib/i18n'
 import {
   AlertDialog,
@@ -41,6 +43,9 @@ export const FloatingNav = () => {
   const queryClient = useQueryClient()
   const { userId } = useAuthStore()
   const { participants, items, id: sessionId, clearSession } = useSessionStore()
+  // Shares the polled query with the accountant's receipts view (same key), so no extra request.
+  const { data: drawerEvents = [] } = useCashDrawerEvents(role === 'ACCOUNTANT')
+  const pendingCash = drawerEvents.filter((e) => e.status === 'PENDING' && e.type === 'CASH_SALE').length
   const [confirmLogout, setConfirmLogout] = useState(false)
   const [confirmLeave, setConfirmLeave] = useState(false)
 
@@ -133,13 +138,27 @@ export const FloatingNav = () => {
       )}
 
       {role === 'ACCOUNTANT' && (
-        <Link
-          to="/accountant/cash-register"
-          className={navItemClass('/accountant/cash-register')}
-          title={t('navCash')}
-        >
-          <Banknote strokeWidth={1.5} size={24} />
-        </Link>
+        <>
+          <Link
+            to="/accountant/cash-receipts"
+            className={`relative ${navItemClass('/accountant/cash-receipts')}`}
+            title={t('navCashReceipts')}
+          >
+            <HandCoins strokeWidth={1.5} size={24} />
+            {pendingCash > 0 && (
+              <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#8c1717] px-1 text-xs font-bold text-white ring-2 ring-white">
+                {pendingCash}
+              </span>
+            )}
+          </Link>
+          <Link
+            to="/accountant/cash-register"
+            className={navItemClass('/accountant/cash-register')}
+            title={t('navCash')}
+          >
+            <Banknote strokeWidth={1.5} size={24} />
+          </Link>
+        </>
       )}
 
       {role === 'ADMIN' && (

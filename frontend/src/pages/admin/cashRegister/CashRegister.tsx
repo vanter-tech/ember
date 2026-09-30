@@ -3,6 +3,7 @@ import { ShiftHistoryTable } from './components/ShiftHistoryTable'
 import { DailyZReportPanel } from './components/DailyZReportPanel'
 import { CashRegisterBar, type CashRegisterSection } from './components/CashRegisterBar'
 import { SectionTour } from '@/components/tours/SectionTour'
+import { ManualOpenButton } from '@/pages/accountant/cashDrawer/ManualOpenDialog'
 import { useTranslation } from '@/lib/i18n'
 
 export const CashRegister = () => {
@@ -26,9 +27,12 @@ export const CashRegister = () => {
 
   return (
     <div className="flex flex-col gap-8">
-      <div className="flex flex-col gap-1">
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">{t('cashRegisterTitle')}</h1>
-        <p className="text-sm text-muted-foreground">{t('cashRegisterSubtitle')}</p>
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">{t('cashRegisterTitle')}</h1>
+          <p className="text-sm text-muted-foreground">{t('cashRegisterSubtitle')}</p>
+        </div>
+        <ManualOpenButton />
       </div>
 
       <div className="flex flex-col md:flex-row gap-4 md:gap-8">

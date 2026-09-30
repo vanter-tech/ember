@@ -17,6 +17,7 @@ import com.vanter.ember.platform.repository.PlatformAuditLogRepository;
 import com.vanter.ember.platform.repository.PlatformOperatorRepository;
 import com.vanter.ember.restaurant.model.DeploymentMode;
 import com.vanter.ember.restaurant.model.Restaurant;
+import com.vanter.ember.restaurant.model.BillingPeriod;
 import com.vanter.ember.restaurant.model.RestaurantPlan;
 import com.vanter.ember.restaurant.model.RestaurantStatus;
 import com.vanter.ember.restaurant.repository.RestaurantRepository;
@@ -187,6 +188,69 @@ public class PlatformRestaurantService {
                 .build());
 
         return PlatformRestaurantSummaryResponse.from(updated);
+    }
+
+    /** Records the plan's start, billing period and period end; audited like every operator action. */
+    @Transactional
+    public PlatformRestaurantSummaryResponse updateSubscription(
+            UUID restaurantId, java.time.Instant planStartedAt, BillingPeriod billingPeriod,
+            java.time.Instant planPeriodEnd, String operatorEmail) {
+        PlatformOperator operator = platformOperatorRepository.findByEmail(operatorEmail)
+                .orElseThrow(() -> new BadCredentialsException("Invalid credentials"));
+
+        Restaurant restaurant = restaurantRepository.findById(restaurantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Restaurant not found: " + restaurantId));
+
+        String oldValue = describeSubscription(
+                restaurant.getPlanStartedAt(), restaurant.getBillingPeriod(), restaurant.getPlanPeriodEnd());
+
+        Restaurant updated = restaurantService.updateSubscription(
+                restaurantId, planStartedAt, billingPeriod, planPeriodEnd);
+
+        platformAuditLogRepository.save(PlatformAuditLog.builder()
+                .operatorId(operator.getId())
+                .operatorEmail(operator.getEmail())
+                .restaurantId(restaurantId)
+                .action("RESTAURANT_SUBSCRIPTION_UPDATED")
+                .oldValue(oldValue)
+                .newValue(describeSubscription(planStartedAt, billingPeriod, planPeriodEnd))
+                .build());
+
+        return PlatformRestaurantSummaryResponse.from(updated);
+    }
+
+    /** Extends the plan by one billing period (monthly by default); audited like every operator action. */
+    @Transactional
+    public PlatformRestaurantSummaryResponse renewSubscription(
+            UUID restaurantId, BillingPeriod billingPeriod, String operatorEmail) {
+        PlatformOperator operator = platformOperatorRepository.findByEmail(operatorEmail)
+                .orElseThrow(() -> new BadCredentialsException("Invalid credentials"));
+
+        Restaurant restaurant = restaurantRepository.findById(restaurantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Restaurant not found: " + restaurantId));
+
+        String oldValue = describeSubscription(
+                restaurant.effectivePlanStart(), restaurant.effectiveBillingPeriod(), restaurant.effectivePlanEnd());
+
+        Restaurant updated = restaurantService.renewSubscription(
+                restaurantId, billingPeriod, java.time.Instant.now());
+
+        platformAuditLogRepository.save(PlatformAuditLog.builder()
+                .operatorId(operator.getId())
+                .operatorEmail(operator.getEmail())
+                .restaurantId(restaurantId)
+                .action("RESTAURANT_SUBSCRIPTION_RENEWED")
+                .oldValue(oldValue)
+                .newValue(describeSubscription(
+                        updated.getPlanStartedAt(), updated.getBillingPeriod(), updated.getPlanPeriodEnd()))
+                .build());
+
+        return PlatformRestaurantSummaryResponse.from(updated);
+    }
+
+    private static String describeSubscription(
+            java.time.Instant start, BillingPeriod period, java.time.Instant end) {
+        return "start=" + start + ", period=" + period + ", end=" + end;
     }
 
     /**

@@ -114,4 +114,23 @@ class PrinterConfigServiceTest {
 
         assertThat(response.renderMode()).isEqualTo("DRIVER");
     }
+
+    @Test
+    void create_withCashDrawerFlag_persistsIt_andDefaultsToFalseWhenOmitted() {
+        UUID agentId = UUID.randomUUID();
+        PrintAgent agent = PrintAgent.builder()
+                .id(agentId).tenantId(TENANT_ID).name("Agente Caja")
+                .apiKeyHash("h").status(PrintAgentStatus.ACTIVE).createdAt(LocalDateTime.now()).build();
+        when(printAgentRepository.findById(agentId)).thenReturn(Optional.of(agent));
+        when(printerConfigRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        var withDrawer = printerConfigService.create(TENANT_ID, agentId,
+                new CreatePrinterConfigRequest("RECEIPT", "NETWORK", "10.0.0.6", 9100, null, null, null,
+                        "Caja", true));
+        var without = printerConfigService.create(TENANT_ID, agentId,
+                new CreatePrinterConfigRequest("RECEIPT", "NETWORK", "10.0.0.6", 9100, null, null, null, "Caja"));
+
+        assertThat(withDrawer.cashDrawer()).isTrue();
+        assertThat(without.cashDrawer()).isFalse();
+    }
 }

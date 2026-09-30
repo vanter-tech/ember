@@ -92,6 +92,16 @@ public class User {
     @Column(name = "pin_updated_at")
     private Instant pinUpdatedAt;
 
+    /** Last time an ADMIN reset this account's password; drives the per-user reset cooldown. */
+    @JsonIgnore
+    @Column(name = "password_reset_at")
+    private Instant passwordResetAt;
+
+    /** Email of the ADMIN who performed that reset (audit only). */
+    @JsonIgnore
+    @Column(name = "password_reset_by")
+    private String passwordResetBy;
+
     /** Chosen customer-home banner preset. Null → client uses the default preset. */
     @Enumerated(EnumType.STRING)
     @Column(name = "banner_key", length = 20)

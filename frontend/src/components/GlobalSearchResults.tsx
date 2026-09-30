@@ -29,6 +29,7 @@ const SETTINGS_TAB_LABEL_KEYS: Record<Exclude<SettingsType, null>, AdminTranslat
   LOYALTY_REWARDS: 'rewardCatalogTitle',
   INFO: 'infoLabel',
   EXPORT: 'exportLabel',
+  PLAN: 'planLabel',
 }
 
 interface ResultEntry {
@@ -136,7 +137,7 @@ export const GlobalSearchResults = ({ query, enabled }: GlobalSearchResultsProps
   }
   ;(Object.keys(SETTINGS_TAB_LABEL_KEYS) as Exclude<SettingsType, null>[]).forEach((tab) => {
     // The Hub build has no loyalty settings pages (see SettingsBar / Settings.renderContent).
-    if (isHubBuild() && (tab === 'FIDELIZACION' || tab === 'LOYALTY_REWARDS')) return
+    if (isHubBuild() && (tab === 'FIDELIZACION' || tab === 'LOYALTY_REWARDS' || tab === 'PLAN')) return
     const label = tAdmin(SETTINGS_TAB_LABEL_KEYS[tab])
     if (label.toLowerCase().includes(trimmed)) {
       sectionResults.push({

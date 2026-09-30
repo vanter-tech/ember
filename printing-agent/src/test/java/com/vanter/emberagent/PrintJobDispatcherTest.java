@@ -88,4 +88,51 @@ class PrintJobDispatcherTest {
         assertEquals("ERROR", acks.get(0).result());
         assertTrue(acks.get(0).error().contains("KITCHEN"));
     }
+
+    @Test
+    void dispatch_kickJob_pulsesOnlyThePrinterWithTheDrawer_andSkipsPrinting() throws Exception {
+        try (ServerSocket serverSocket = new ServerSocket(0)) {
+            byte[][] received = new byte[1][];
+            Thread serverThread = new Thread(() -> {
+                try (Socket socket = serverSocket.accept()) {
+                    received[0] = socket.getInputStream().readAllBytes();
+                } catch (IOException ignored) {
+                    // teardown
+                }
+            });
+            serverThread.start();
+            PrinterConfigClient.PrinterConfigDto noDrawer = new PrinterConfigClient.PrinterConfigDto(
+                    "p0", "a1", "RECEIPT", "NETWORK", "127.0.0.1", 1, null, null, "RAW", "Otra", true, false);
+            PrinterConfigClient.PrinterConfigDto withDrawer = new PrinterConfigClient.PrinterConfigDto(
+                    "p1", "a1", "RECEIPT", "NETWORK", "127.0.0.1", serverSocket.getLocalPort(), null, null,
+                    "RAW", "Caja", true, true);
+            AgentConnection.PrintJobPayload job = new AgentConnection.PrintJobPayload(
+                    "k1", "RECEIPT", "{\"kick\":true}", false, "CASH_DRAWER_KICK");
+
+            List<AckCall> acks = new ArrayList<>();
+            dispatcher.dispatch(job, List.of(noDrawer, withDrawer),
+                    (jobId, printerConfigId, result, error) -> acks.add(new AckCall(jobId, printerConfigId, result, error)));
+            serverThread.join(2000);
+
+            assertEquals(List.of(new AckCall("k1", "p1", "PRINTED", null)), acks);
+            assertTrue(TicketLogoRendererTest.indexOf(received[0], new byte[] {0x1B, 0x70}) >= 0);
+            assertEquals(-1, TicketLogoRendererTest.indexOf(received[0], "kick".getBytes()));
+        }
+    }
+
+    @Test
+    void dispatch_kickJobWithoutADrawerPrinter_acksError() {
+        PrinterConfigClient.PrinterConfigDto printer = new PrinterConfigClient.PrinterConfigDto(
+                "p1", "a1", "RECEIPT", "NETWORK", "127.0.0.1", 9100, null, null, "RAW", "Caja", true, false);
+        AgentConnection.PrintJobPayload job = new AgentConnection.PrintJobPayload(
+                "k2", "RECEIPT", "{\"kick\":true}", false, "CASH_DRAWER_KICK");
+
+        List<AckCall> acks = new ArrayList<>();
+        dispatcher.dispatch(job, List.of(printer),
+                (jobId, printerConfigId, result, error) -> acks.add(new AckCall(jobId, printerConfigId, result, error)));
+
+        assertEquals(1, acks.size());
+        assertEquals("ERROR", acks.get(0).result());
+        assertNull(acks.get(0).printerConfigId());
+    }
 }

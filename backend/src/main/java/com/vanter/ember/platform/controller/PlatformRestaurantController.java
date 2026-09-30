@@ -5,6 +5,8 @@ import com.vanter.ember.platform.model.dto.PlatformRestaurantCreateRequest;
 import com.vanter.ember.platform.model.dto.PlatformRestaurantDetailResponse;
 import com.vanter.ember.platform.model.dto.PlatformRestaurantModeUpdateRequest;
 import com.vanter.ember.platform.model.dto.PlatformRestaurantPlanUpdateRequest;
+import com.vanter.ember.platform.model.dto.PlatformRestaurantSubscriptionRenewRequest;
+import com.vanter.ember.platform.model.dto.PlatformRestaurantSubscriptionUpdateRequest;
 import com.vanter.ember.platform.model.dto.PlatformRestaurantStatusUpdateRequest;
 import com.vanter.ember.platform.model.dto.PlatformRestaurantSummaryResponse;
 import com.vanter.ember.platform.service.PlatformRestaurantService;
@@ -131,5 +133,28 @@ public class PlatformRestaurantController {
             Authentication authentication) {
         return ResponseEntity.ok(
                 platformRestaurantService.updatePlan(id, request.getPlan(), authentication.getName()));
+    }
+
+    @Operation(summary = "Record a tenant's plan start, billing period and period end, audited")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @PatchMapping("/{id}/subscription")
+    public ResponseEntity<PlatformRestaurantSummaryResponse> updateSubscription(
+            @PathVariable UUID id,
+            @Valid @RequestBody PlatformRestaurantSubscriptionUpdateRequest request,
+            Authentication authentication) {
+        return ResponseEntity.ok(platformRestaurantService.updateSubscription(
+                id, request.getPlanStartedAt(), request.getBillingPeriod(), request.getPlanPeriodEnd(),
+                authentication.getName()));
+    }
+
+    @Operation(summary = "Renew a tenant's subscription by one billing period, audited")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @PostMapping("/{id}/subscription/renew")
+    public ResponseEntity<PlatformRestaurantSummaryResponse> renewSubscription(
+            @PathVariable UUID id,
+            @Valid @RequestBody PlatformRestaurantSubscriptionRenewRequest request,
+            Authentication authentication) {
+        return ResponseEntity.ok(platformRestaurantService.renewSubscription(
+                id, request.getBillingPeriod(), authentication.getName()));
     }
 }

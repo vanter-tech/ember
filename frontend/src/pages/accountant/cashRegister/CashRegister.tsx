@@ -10,6 +10,8 @@ import { formatCurrency } from '@/lib/format'
 import { RotateCcw, Clock } from 'lucide-react'
 import { OpenShiftDialog } from './components/OpenShiftDialog'
 import { MovementDialog } from './components/MovementDialog'
+import { ProlongShiftControl } from './components/ProlongShiftControl'
+import { deriveCashShiftAlert } from '@/lib/cashShiftAlert'
 import { RefundPaymentModal } from '@/pages/waiter/components/RefundPaymentModal'
 import { SectionTour } from '@/components/tours/SectionTour'
 import { useTranslation } from '@/lib/i18n'
@@ -137,7 +139,11 @@ export const CashRegister = () => {
                   <p className="mt-1 text-[11px] text-muted-foreground">{t('expectedCashHint')}</p>
                 </div>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap items-start gap-2">
+                <ProlongShiftControl
+                  shiftId={shift.id!}
+                  stale={deriveCashShiftAlert(shift, new Date(now)) === 'STALE'}
+                />
                 <Button
                   variant="outline"
                   disabled={shift.overdue ?? false}

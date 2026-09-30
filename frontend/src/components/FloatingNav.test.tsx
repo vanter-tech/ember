@@ -14,6 +14,21 @@ const wrap = (ui: ReactNode) =>
     </QueryClientProvider>,
   )
 
+describe('FloatingNav accountant links', () => {
+  beforeEach(() => {
+    useAuthStore.setState({ role: 'ACCOUNTANT', userId: 'acc-1', token: 'tok' })
+    useSessionStore.setState({ id: undefined, participants: [] as never, items: [] as never })
+  })
+
+  test('the accountant reaches the cash receipts view and the cash register, but has no tables view', () => {
+    wrap(<FloatingNav />)
+
+    expect(screen.getByTitle('Cobros en efectivo')).toHaveAttribute('href', '/accountant/cash-receipts')
+    expect(screen.getByTitle('Caja')).toHaveAttribute('href', '/accountant/cash-register')
+    expect(screen.queryByTitle('mesas')).toBeNull()
+  })
+})
+
 describe('FloatingNav leave-table confirmation', () => {
   beforeEach(() => {
     useAuthStore.setState({ role: 'CUSTOMER', userId: 'user-1', token: 'tok' })

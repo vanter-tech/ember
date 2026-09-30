@@ -24,6 +24,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -137,17 +138,49 @@ public class BillingService {
 
         // Same multiplier calculateBill applied to the bill's own total (E-05) — otherwise the
         // sum of per-participant splits would silently drift below the tax-inclusive bill total.
-        BigDecimal taxMultiplier = taxMultiplier();
-        List<BillSplit> splits = amountByParticipant.entrySet().stream()
-                .map(e -> BillSplit.builder()
+        List<BillSplit> splits = splitsSummingToTotal(bill, amountByParticipant, taxMultiplier());
+
+        return billSplitRepository.saveAll(splits);
+    }
+
+    /**
+     * Rounding each diner's taxed share on its own can leave the splits a cent off the bill total
+     * (two diners at 1.05 with 10% tax: 1.155 -> 1.16 each = 2.32, while the bill rounds 2.31 once).
+     * So shares are floored to cents and the cents still missing to reach the rounded grand total
+     * go to the diners with the largest fractional remainder (ties keep name order).
+     */
+    private List<BillSplit> splitsSummingToTotal(
+            Bill bill, Map<String, BigDecimal> subtotalByParticipant, BigDecimal taxMultiplier) {
+        List<String> names = subtotalByParticipant.keySet().stream().sorted().toList();
+        Map<String, BigDecimal> exact = new HashMap<>();
+        Map<String, BigDecimal> floored = new HashMap<>();
+        BigDecimal exactSum = BigDecimal.ZERO;
+        BigDecimal flooredSum = BigDecimal.ZERO;
+        for (String name : names) {
+            BigDecimal value = subtotalByParticipant.get(name).multiply(taxMultiplier);
+            BigDecimal down = value.setScale(2, RoundingMode.FLOOR);
+            exact.put(name, value);
+            floored.put(name, down);
+            exactSum = exactSum.add(value);
+            flooredSum = flooredSum.add(down);
+        }
+        int missingCents = exactSum.setScale(2, RoundingMode.HALF_UP).subtract(flooredSum)
+                .movePointRight(2).intValueExact();
+        List<String> byRemainder = new ArrayList<>(names);
+        byRemainder.sort((a, b) -> exact.get(b).subtract(floored.get(b))
+                .compareTo(exact.get(a).subtract(floored.get(a))));
+        for (int i = 0; i < missingCents; i++) {
+            String name = byRemainder.get(i);
+            floored.put(name, floored.get(name).add(new BigDecimal("0.01")));
+        }
+        return names.stream()
+                .map(name -> BillSplit.builder()
                         .bill(bill)
-                        .participantName(e.getKey())
-                        .amount(e.getValue().multiply(taxMultiplier).setScale(2, RoundingMode.HALF_UP))
+                        .participantName(name)
+                        .amount(floored.get(name))
                         .status(BillSplitStatus.UNPAID)
                         .build())
                 .toList();
-
-        return billSplitRepository.saveAll(splits);
     }
 
     @Transactional

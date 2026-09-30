@@ -6,6 +6,7 @@ import com.vanter.ember.cashregister.dto.CashShiftResponse;
 import com.vanter.ember.cashregister.dto.CloseShiftRequest;
 import com.vanter.ember.cashregister.dto.DailyReportResponse;
 import com.vanter.ember.cashregister.dto.OpenShiftRequest;
+import com.vanter.ember.cashregister.dto.ProlongShiftRequest;
 import com.vanter.ember.cashregister.dto.RecordMovementRequest;
 import com.vanter.ember.cashregister.model.CashMovement;
 import com.vanter.ember.cashregister.model.CashShift;
@@ -105,11 +106,15 @@ public class CashShiftController {
         return cashShiftService.toMovementResponse(movement);
     }
 
-    @Operation(summary = "Prolong an open shift's deadline by one hour (ACCOUNTANT)")
+    @Operation(summary = "Prolong an open shift's deadline by 30, 60, 120, 180 or 240 minutes (default 60) (ACCOUNTANT)")
     @PostMapping("/{id}/prolong")
     @PreAuthorize("hasRole('ACCOUNTANT')")
-    public CashShiftResponse prolong(@PathVariable Long id, Authentication authentication) {
-        CashShift shift = cashShiftService.prolongShift(id, resolveUserId(authentication));
+    public CashShiftResponse prolong(
+            @PathVariable Long id,
+            @Valid @RequestBody(required = false) ProlongShiftRequest request,
+            Authentication authentication) {
+        int minutes = request == null || request.minutes() == null ? 60 : request.minutes();
+        CashShift shift = cashShiftService.prolongShift(id, resolveUserId(authentication), minutes);
         return cashShiftService.toResponse(shift);
     }
 

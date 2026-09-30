@@ -397,7 +397,7 @@ export const AddItemModal = () => {
 
             <DialogFooter>
               <Button
-                className="h-11 w-full sm:h-auto"
+                className="h-11 w-full sm:h-12"
                 onClick={() => mutation.mutate()}
                 disabled={totalCount === 0 || mutation.isPending}
               >

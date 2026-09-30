@@ -36,8 +36,11 @@ export const NICARAGUA_DENOMINATIONS: Denomination[] = [
   { id: 'coin_005', value: 0.05, kind: 'COIN' },
 ]
 
-export const sumBreakdown = (breakdown: DenominationCount[]): number =>
-  breakdown.reduce((total, entry) => {
+/** Summed in whole cents: 3 x 0.10 in floating point is 0.30000000000000004, which the backend (exact BigDecimal) rejects against the breakdown. */
+export const sumBreakdown = (breakdown: DenominationCount[]): number => {
+  const cents = breakdown.reduce((total, entry) => {
     const denomination = NICARAGUA_DENOMINATIONS.find((d) => d.id === entry.denominationId)
-    return denomination ? total + denomination.value * entry.quantity : total
+    return denomination ? total + Math.round(denomination.value * 100) * entry.quantity : total
   }, 0)
+  return cents / 100
+}

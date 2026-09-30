@@ -1,7 +1,7 @@
 import { useParams, Link } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { SessionTableService, billingService, printingService, type WaiterBillState } from '@/lib/api'
+import { SessionTableService, billingService, cashDrawerService, printingService, type WaiterBillState } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import {
   ArrowLeft,
@@ -40,6 +40,8 @@ import { TransferTableModal } from './components/TransferTableModal'
 import { SeatFormModal } from './components/SeatFormModal'
 import { ChargeTableModal } from './components/ChargeTableModal'
 import { VoidBillModal } from './components/VoidBillModal'
+import { ForceCloseTableModal } from './components/ForceCloseTableModal'
+import { useAuthStore } from '@/store/authStore'
 import { RefundPaymentModal } from './components/RefundPaymentModal'
 import { useWebsocketStore } from '@/store/websocket'
 import { isHubBuild } from '@/lib/isHubBuild'
@@ -53,6 +55,7 @@ export const TableInformation = () => {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const { openModal } = useUIStore()
+  const role = useAuthStore((state) => state.role)
   const { settings } = useSettingStore()
   const {
     isConnected,
@@ -72,6 +75,14 @@ export const TableInformation = () => {
     queryKey: ['bill', id],
     queryFn: () => billingService.getBillState(id!),
     enabled: !!id,
+  })
+
+  // Cash payments only exist once a bill does; polled like the accountant's list so the badge flips to "received".
+  const { data: cashReceipts = [] } = useQuery({
+    queryKey: ['cashReceipts', id],
+    queryFn: () => cashDrawerService.bySession(id!),
+    enabled: !!id && !!billData,
+    refetchInterval: 5_000,
   })
 
   const [qrPopoverOpen, setQrPopoverOpen] = useState(false)
@@ -296,6 +307,20 @@ export const TableInformation = () => {
           >
             <ArrowRightLeft className="w-4 h-4 mr-2" /> {t('transferLabel')}
           </Button>
+          {role === 'ADMIN' && sessionData && sessionData.status !== 'CLOSED' && (
+            <Button
+              variant="destructive"
+              className="rounded-full text-1xl px-4 h-12 sm:px-6 sm:h-18"
+              onClick={() =>
+                openModal('FORCE_CLOSE_TABLE', {
+                  sessionId: id,
+                  tableNumber: sessionData.tableNumber,
+                })
+              }
+            >
+              <Ban className="w-4 h-4 mr-2" /> {t('forceCloseTableButton')}
+            </Button>
+          )}
           {/* Botón principal rojo */}
           <Button
             className="rounded-full bg-[#8B0000] hover:bg-[#700000] text-1xl text-white px-4 h-12 sm:px-6 sm:h-18"
@@ -531,6 +556,12 @@ export const TableInformation = () => {
                     const pendingDigital = billData.pendingDigitalPayments?.find(
                       (p) => p.participantName === split.participantName
                     )
+                    const myCash = cashReceipts.filter((r) => r.participantName === split.participantName)
+                    const cashStatus = myCash.some((r) => r.status === 'PENDING')
+                      ? 'PENDING'
+                      : myCash.length > 0
+                        ? 'RECEIVED'
+                        : null
                     return (
                       <div
                         key={split.participantName}
@@ -564,6 +595,11 @@ export const TableInformation = () => {
                                 <CheckCircle2 className="w-4 h-4" />
                                 {split.status === 'PAID' ? t('paidLabel') : t('partiallyPaidLabel')}
                               </Badge>
+                              {cashStatus && (
+                                <Badge variant={cashStatus === 'PENDING' ? 'outline' : 'secondary'}>
+                                  {cashStatus === 'PENDING' ? t('cashAwaitingLabel') : t('cashReceivedLabel')}
+                                </Badge>
+                              )}
                               <Button
                                 variant="ghost"
                                 size="icon"
@@ -687,6 +723,7 @@ export const TableInformation = () => {
         <SeatFormModal/>
         <ChargeTableModal/>
         <VoidBillModal />
+        <ForceCloseTableModal />
         <RefundPaymentModal />
       </div>
     </>

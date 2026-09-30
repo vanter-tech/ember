@@ -17,6 +17,7 @@ import { cashShiftService, type CashShiftResponse } from '@/lib/api'
 import { formatCurrency } from '@/lib/format'
 import { useTranslation } from '@/lib/i18n'
 import { DenominationCounter } from './DenominationCounter'
+import { useCashDrawerEvents } from '@/pages/accountant/cashDrawer/useCashDrawerEvents'
 import type { DenominationCount } from '@/lib/denominations'
 
 // Matches CashShiftService.closeShift's "Cannot close cash shift: N table(s) still have an
@@ -37,6 +38,8 @@ export const CloseShiftDialog = () => {
   const [total, setTotal] = useState(0)
   const [notes, setNotes] = useState('')
   const [result, setResult] = useState<CashShiftResponse | null>(null)
+  const { data: drawerEvents = [] } = useCashDrawerEvents()
+  const pendingCashCount = drawerEvents.filter((e) => e.status === 'PENDING').length
 
   const handleCounterChange = (nextBreakdown: DenominationCount[], nextTotal: number) => {
     setBreakdown(nextBreakdown)
@@ -85,6 +88,11 @@ export const CloseShiftDialog = () => {
         {!result ? (
           <div className="flex flex-col gap-5">
             <DialogDescription>{t('closeShiftDescription')}</DialogDescription>
+            {pendingCashCount > 0 && (
+              <p className="rounded-xl bg-amber-50 p-3 text-sm text-amber-800">
+                {t('drawerClosePendingWarning', { count: pendingCashCount })}
+              </p>
+            )}
             <DenominationCounter onChange={handleCounterChange} />
             <div className="flex flex-col gap-2">
               <label htmlFor="close-shift-notes" className="text-sm font-medium">

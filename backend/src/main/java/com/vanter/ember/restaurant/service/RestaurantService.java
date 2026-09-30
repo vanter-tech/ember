@@ -1,6 +1,7 @@
 package com.vanter.ember.restaurant.service;
 
 import com.vanter.ember.config.ResourceNotFoundException;
+import com.vanter.ember.restaurant.model.BillingPeriod;
 import com.vanter.ember.restaurant.model.DeploymentMode;
 import com.vanter.ember.restaurant.model.Restaurant;
 import com.vanter.ember.restaurant.model.RestaurantPlan;
@@ -9,6 +10,7 @@ import com.vanter.ember.restaurant.repository.RestaurantRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.util.UUID;
 
 @Service
@@ -30,6 +32,39 @@ public class RestaurantService {
     public Restaurant updatePlan(UUID restaurantId, RestaurantPlan plan) {
         Restaurant restaurant = getCurrent(restaurantId);
         restaurant.setPlan(plan);
+        return restaurantRepository.save(restaurant);
+    }
+
+    /**
+     * Records the subscription dates. Only reachable via the platform-operator path
+     * ({@link com.vanter.ember.platform.service.PlatformRestaurantService#updateSubscription}).
+     */
+    public Restaurant updateSubscription(
+            UUID restaurantId, Instant planStartedAt, BillingPeriod billingPeriod, Instant planPeriodEnd) {
+        if (planStartedAt != null && planPeriodEnd != null && !planPeriodEnd.isAfter(planStartedAt)) {
+            throw new IllegalArgumentException("The period end must be after the plan start");
+        }
+        Restaurant restaurant = getCurrent(restaurantId);
+        restaurant.setPlanStartedAt(planStartedAt);
+        restaurant.setBillingPeriod(billingPeriod);
+        restaurant.setPlanPeriodEnd(planPeriodEnd);
+        return restaurantRepository.save(restaurant);
+    }
+
+    /**
+     * Extends the plan by one {@code period}, counted from the current period end, or from
+     * {@code now} when the plan is already overdue. Only reachable via the platform-operator path
+     * ({@link com.vanter.ember.platform.service.PlatformRestaurantService#renewSubscription}).
+     */
+    public Restaurant renewSubscription(UUID restaurantId, BillingPeriod period, Instant now) {
+        Restaurant restaurant = getCurrent(restaurantId);
+        Instant currentEnd = restaurant.effectivePlanEnd();
+        Instant base = currentEnd != null && currentEnd.isAfter(now) ? currentEnd : now.truncatedTo(java.time.temporal.ChronoUnit.DAYS);
+        if (restaurant.getPlanStartedAt() == null) {
+            restaurant.setPlanStartedAt(restaurant.effectivePlanStart());
+        }
+        restaurant.setBillingPeriod(period);
+        restaurant.setPlanPeriodEnd(period.endFrom(base));
         return restaurantRepository.save(restaurant);
     }
 
