@@ -61,7 +61,13 @@ export const ListMenuItem = () => {
 
   return (
     <div className="p-6">
-      <div className="grid grid:cols-1 gap-6">
+      <div
+        className={
+          menuItems.length === 0
+            ? ''
+            : 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'
+        }
+      >
         {menuItems.length === 0 && (
           <EmptyState
             icon={UtensilsCrossed}
@@ -72,33 +78,55 @@ export const ListMenuItem = () => {
         {menuItems.map((menuItem) => (
           <Card
             key={menuItem.id}
-            className="flex flex-row items-center  shadow-sm overflow-hidden border border-zinc-100 rounded-4xl"
+            className="flex flex-col gap-0 py-0 shadow-sm overflow-hidden border border-zinc-100 rounded-2xl"
           >
-            <div className="relative w-auto h-48 bg-zinc-200">
+            <div className="relative h-48 bg-zinc-200">
               <img
                 src={menuItem.imageUrl || 'https://via.placeholder.com/400'}
+                alt={menuItem.name}
                 className="w-full h-full object-cover"
               />
-              {menuItem.available ? (
-                <Badge
-                  className="absolute top-4 left-4 bg-white/90 px-3 py-1 text-xs
-                font-semibold text-green-700 rounded-full"
-                >
-                  {t('activeStatus')}
-                </Badge>
-              ) : (
-                <Badge
-                  className="absolute top-4 left-4 bg-white/90 px-3 py-1 text-xs
-                font-semibold text-green-700 rounded-full"
-                >
-                  {t('disabledStatus')}
-                </Badge>
-              )}
+              <Badge
+                className={cn(
+                  'absolute top-4 left-4 bg-white/90 px-3 py-1 text-xs font-semibold rounded-full',
+                  menuItem.available ? 'text-green-700' : 'text-zinc-500',
+                )}
+              >
+                {menuItem.available ? t('activeStatus') : t('disabledStatus')}
+              </Badge>
             </div>
-            <div className="flex-1 flex flex-col gap-2 m-2">
-              <CardTitle className="text-md md:text-xl lg:text-2xl">
-                {menuItem.name}
-              </CardTitle>
+            <div className="flex-1 flex flex-col gap-2 p-5 pb-3">
+              <div className="flex justify-between items-center">
+                <CardTitle className="text-xl font-bold text-zinc-800">
+                  {menuItem.name}
+                </CardTitle>
+                <div className="flex gap-2 text-zinc-400">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="hover-text-zinc-600 transition-colors"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      openModal('EDIT_ITEMS', menuItem)
+                    }}
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="hover-text-[#8c1717] transition-colors text-[#8c1717]"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      openModal('DELETE_ITEMS', menuItem)
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
               <CardDescription>{menuItem.description}</CardDescription>
               {(menuItem.modifierGroups ?? []).length > 0 && (
                 <div className="flex flex-wrap gap-1.5" data-testid="menu-item-modifier-groups">
@@ -118,34 +146,8 @@ export const ListMenuItem = () => {
                 </div>
               )}
             </div>
-            <div className="flex flex-col items-end gap-6 p-4">
-              <div className="">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="hover-text-zinc-600 transition-colors"
-                  onClick={(e) => {
-                    e.preventDefault()
-                    e.stopPropagation()
-                    openModal('EDIT_ITEMS', menuItem)
-                  }}
-                >
-                  <Pencil className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="hover-text-[#8c1717] transition-colors text-[#8c1717]"
-                  onClick={(e) => {
-                    e.preventDefault()
-                    e.stopPropagation()
-                    openModal('DELETE_ITEMS', menuItem)
-                  }}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-              <CardTitle className="text-[#8c1717] text-3xl">
+            <div className="flex items-center justify-between p-4 border-t border-zinc-100">
+              <CardTitle className="text-[#8c1717] text-2xl">
                 ${menuItem.price}
               </CardTitle>
               <Switch
