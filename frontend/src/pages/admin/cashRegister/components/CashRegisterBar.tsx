@@ -76,7 +76,7 @@ export const CashRegisterBar = ({
         </Popover>
       </div>
 
-      <nav className={`hidden md:flex flex-col gap-2 ${collapsed ? 'w-fit' : 'w-64'}`}>
+      <nav key={String(collapsed)} className="hidden md:flex flex-col gap-2 w-full animate-in fade-in duration-300">
         <Button
           variant="default"
           className={collapsed ? 'size-10 shrink-0 justify-center rounded-full p-0' : 'justify-start'}

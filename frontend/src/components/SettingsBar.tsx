@@ -193,8 +193,9 @@ export const SettingsBar = ({
       </div>
 
       <nav
+        key={String(collapsed)}
         id="settings-tour-sidebar"
-        className={`hidden md:flex flex-col gap-2 ${collapsed ? 'w-fit' : 'w-64'}`}
+        className="hidden md:flex flex-col gap-2 w-full animate-in fade-in duration-300"
       >
         {collapsed
           ? settingsNav.map((node) => {

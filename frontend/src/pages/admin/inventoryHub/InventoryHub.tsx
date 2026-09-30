@@ -34,7 +34,7 @@ export const InventoryHub = () => {
       </div>
 
       <div className="flex flex-col md:flex-row gap-4 md:gap-8">
-        <div className={`w-full shrink-0 ${sidebarCollapsed ? 'md:w-fit' : 'md:w-64'}`}>
+        <div className={`w-full shrink-0 ${sidebarCollapsed ? 'md:w-10' : 'md:w-64'} md:overflow-hidden md:transition-[width] md:duration-300 md:ease-in-out motion-reduce:transition-none`}>
           <InventoryHubBar
             activeSection={activeSection}
             collapsed={sidebarCollapsed}

@@ -77,8 +77,9 @@ export const InventoryHubBar = ({
       </div>
 
       <nav
+        key={String(collapsed)}
         id="inventory-hub-sidebar"
-        className={`hidden md:flex flex-col gap-2 ${collapsed ? 'w-fit' : 'w-64'}`}
+        className="hidden md:flex flex-col gap-2 w-full animate-in fade-in duration-300"
       >
         <Button
           variant="default"
