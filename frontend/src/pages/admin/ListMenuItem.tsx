@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { menuItemService } from '@/lib/api'
 import { useUIStore } from '@/store/uiStore'
-import { Card, CardDescription, CardTitle } from '@/components/ui/card'
+import { Card, CardDescription, CardFooter, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Pencil, Trash2, UtensilsCrossed } from 'lucide-react'
 import { EmptyState } from '@/components/EmptyState'
@@ -104,7 +104,7 @@ export const ListMenuItem = () => {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="hover-text-zinc-600 transition-colors"
+                    className="rounded-full bg-zinc-100 text-zinc-600 hover:bg-zinc-200 transition-colors"
                     onClick={(e) => {
                       e.preventDefault()
                       e.stopPropagation()
@@ -116,7 +116,7 @@ export const ListMenuItem = () => {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="hover-text-[#8c1717] transition-colors text-[#8c1717]"
+                    className="rounded-full bg-[#8c1717]/10 text-[#8c1717] hover:bg-[#8c1717]/20 transition-colors"
                     onClick={(e) => {
                       e.preventDefault()
                       e.stopPropagation()
@@ -146,8 +146,8 @@ export const ListMenuItem = () => {
                 </div>
               )}
             </div>
-            <div className="flex items-center justify-between p-4 border-t border-zinc-100">
-              <CardTitle className="text-[#8c1717] text-2xl">
+            <CardFooter className="justify-between border-zinc-100 bg-transparent p-4">
+              <CardTitle className="text-[#8c1717] text-4xl">
                 ${menuItem.price}
               </CardTitle>
               <Switch
@@ -155,9 +155,9 @@ export const ListMenuItem = () => {
                 onCheckedChange={() =>
                   toggleActiveOrNotMutation.mutate(Number(menuItem.id))
                 }
-                className="rounded-xl focus-visible:ring[#8c1717]"
+                className="h-8 w-14 rounded-xl focus-visible:ring[#8c1717] [&>span]:h-7 [&>span]:w-7 data-[state=checked]:[&>span]:translate-x-6"
               />
-            </div>
+            </CardFooter>
           </Card>
         ))}
       </div>
