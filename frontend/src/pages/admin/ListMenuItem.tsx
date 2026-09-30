@@ -147,7 +147,7 @@ export const ListMenuItem = () => {
               )}
             </div>
             <CardFooter className="justify-between border-zinc-100 bg-transparent p-4">
-              <CardTitle className="text-[#8c1717] text-4xl">
+              <CardTitle className="text-[#8c1717] text-4xl font-bold">
                 ${menuItem.price}
               </CardTitle>
               <Switch
