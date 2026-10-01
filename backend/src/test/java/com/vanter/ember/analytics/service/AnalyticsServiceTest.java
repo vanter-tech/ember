@@ -26,6 +26,7 @@ import com.vanter.ember.billing.repository.RefundRepository;
 import com.vanter.ember.catalog.model.Category;
 import com.vanter.ember.catalog.model.MenuItem;
 import com.vanter.ember.catalog.repository.MenuItemRepository;
+import com.vanter.ember.session.model.LinkedTable;
 import com.vanter.ember.session.model.OrderItem;
 import com.vanter.ember.session.model.OrderItemStatus;
 import com.vanter.ember.session.model.Session;
@@ -609,11 +610,41 @@ class AnalyticsServiceTest {
         assertThat(best.revenue()).isEqualByComparingTo("100.00");
         assertThat(best.revenueShare()).isEqualByComparingTo("71.43");
         assertThat(best.averageSessionDurationMinutes()).isEqualByComparingTo("30.0");
+        assertThat(best.mergedWithTableNumbers()).isEmpty();
 
         TablePerformance second = response.tables().get(1);
         assertThat(second.tableId()).isEqualTo(tableB);
         assertThat(second.revenue()).isEqualByComparingTo("40.00");
         assertThat(second.averageSessionDurationMinutes()).isEqualByComparingTo("15.0");
+    }
+
+    @Test
+    void getTables_listsTheDistinctTablesEachPrimaryWasMergedWith_withoutChangingTotals() {
+        UUID tableA = UUID.randomUUID();
+        when(billRepository.findPaidBillActivity(eq(TENANT_ID), any(), any())).thenReturn(List.of(
+                paidBill("s-1", "100.00", LocalDateTime.of(2026, 8, 2, 20, 30)),
+                paidBill("s-2", "50.00", LocalDateTime.of(2026, 8, 3, 21, 0))));
+        Session first = sessionAt("s-1", tableA, LocalDateTime.of(2026, 8, 2, 20, 0));
+        first.getLinkedTables().add(LinkedTable.builder().tableId(UUID.randomUUID()).tableNumber(4)
+                .linkedAt(LocalDateTime.of(2026, 8, 2, 20, 5)).build());
+        Session second = sessionAt("s-2", tableA, LocalDateTime.of(2026, 8, 3, 20, 0));
+        second.getLinkedTables().add(LinkedTable.builder().tableId(UUID.randomUUID()).tableNumber(4)
+                .linkedAt(LocalDateTime.of(2026, 8, 3, 20, 5)).build());
+        second.getLinkedTables().add(LinkedTable.builder().tableId(UUID.randomUUID()).tableNumber(5)
+                .linkedAt(LocalDateTime.of(2026, 8, 3, 20, 6)).build());
+        when(sessionRepository.findByTenantIdAndIdIn(eq(TENANT_ID), any())).thenReturn(List.of(first, second));
+        when(diningTableRepository.findByRestaurantIdAndIdIn(eq(TENANT_ID), any()))
+                .thenReturn(List.of(DiningTables.builder().id(tableA).tableNumber(3).build()));
+        when(diningTableRepository.countByRestaurantIdAndIsActiveTrue(TENANT_ID)).thenReturn(5L);
+
+        AnalyticsTablesResponse response = analyticsService.getTables(TENANT_ID, FROM, TO);
+
+        assertThat(response.totalRevenue()).isEqualByComparingTo("150.00");
+        assertThat(response.totalTurnovers()).isEqualTo(2L);
+        assertThat(response.tables()).singleElement().satisfies(table -> {
+            assertThat(table.tableNumber()).isEqualTo(3);
+            assertThat(table.mergedWithTableNumbers()).containsExactly(4, 5);
+        });
     }
 
     @Test

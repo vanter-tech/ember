@@ -24,6 +24,7 @@ import com.vanter.ember.session.dto.SessionDetailResponseDto;
 import com.vanter.ember.session.event.*;
 import com.vanter.ember.session.exception.InvalidModifierSelectionException;
 import com.vanter.ember.session.exception.TooManyParticipantsException;
+import com.vanter.ember.session.model.LinkedTable;
 import com.vanter.ember.session.model.OrderItem;
 import com.vanter.ember.session.model.OrderItemStatus;
 import com.vanter.ember.session.model.Participant;
@@ -62,6 +63,7 @@ public class SessionService {
 
     private final SessionRepository sessionRepository;
     private final DiningTableRepository diningTableRepository;
+    private final TableLock tableLock;
     private final MenuItemService menuItemService;
     private final ApplicationEventPublisher eventPublisher;
     private final QrTokenService qrTokenService;
@@ -136,34 +138,36 @@ public class SessionService {
     public Session createSession(UUID tableId, String waiterId, int maxParticipants, List<String> seatNames) {
         UUID tenantId = TenantContextHolder.requireTenantId();
 
-        var table = diningTableRepository.findById(tableId)
-                .orElseThrow(() -> new ResourceNotFoundException("Session not found: " + tableId));
+        record Opened(Session session, DiningTables table) {}
+        Opened opened = tableLock.withTableLock(tableId, table -> {
+            requireTableFree(tenantId, table);
+            List<Participant> seats = buildSeats(maxParticipants, seatNames);
+            Session saved = sessionRepository.save(Session.builder()
+                    .tenantId(tenantId)
+                    .tableId(tableId)
+                    .waiterId(waiterId)
+                    .status(SessionStatus.OPEN)
+                    .maxParticipants(maxParticipants)
+                    .participants(new ArrayList<>(seats))
+                    .createdAt(LocalDateTime.now())
+                    .joinCode(generateJoinCode())
+                    .build());
+            return new Opened(saved, table);
+        });
 
-        var OpenSession = sessionRepository.findByTenantIdAndTableIdAndStatus(
-                tenantId, tableId, SessionStatus.OPEN);
+        eventPublisher.publishEvent(new SessionOpened(
+                tenantId, opened.session().getId(), tableId, opened.table().getTableNumber()));
+        return opened.session();
+    }
 
-        if (!OpenSession.isEmpty()) {
-            throw new IllegalStateException(
-                    "Table " + table.getTableNumber() + " is already occupied");
+    /** Must run while holding the table's row lock; "occupied" includes tables linked to an open session. */
+    private void requireTableFree(UUID tenantId, DiningTables table) {
+        Session occupant = TableOccupancy
+                .byTable(sessionRepository.findByTenantIdAndStatus(tenantId, SessionStatus.OPEN))
+                .get(table.getId());
+        if (occupant != null) {
+            throw new IllegalStateException("Table " + table.getTableNumber() + " is already occupied");
         }
-
-        List<Participant> seats = buildSeats(maxParticipants, seatNames);
-
-        Session session = sessionRepository.save(Session.builder()
-                .tenantId(tenantId)
-                .tableId(tableId)
-                .waiterId(waiterId)
-                .status(SessionStatus.OPEN)
-                .maxParticipants(maxParticipants)
-                .participants(new ArrayList<>(seats))
-                .createdAt(LocalDateTime.now())
-                .joinCode(generateJoinCode())
-                .build());
-
-        eventPublisher.publishEvent(
-                new SessionOpened(tenantId, session.getId(), tableId, table.getTableNumber()));
-
-        return session;
     }
 
     /**
@@ -581,7 +585,8 @@ public class SessionService {
                 saved.getTenantId(),
                 saved.getId(),
                 table.getTableNumber(),
-                List.of(newItem)));
+                List.of(newItem),
+                saved.linkedTableNumbers()));
 
         return saved;
     }
@@ -613,6 +618,62 @@ public class SessionService {
         eventPublisher.publishEvent(new TableTransferred(
                 saved.getTenantId(), saved.getId(), saved.getTableId(),
                 from, target.getEmail(), target.getName()));
+        return saved;
+    }
+
+    /**
+     * Attaches a FREE table to an OPEN session (the session's table stays primary). Locks the target
+     * table row first so a concurrent seat/link of the same table cannot also pass the free check.
+     */
+    public Session linkTable(String sessionId, String callerEmail, UUID targetTableId) {
+        UUID tenantId = TenantContextHolder.requireTenantId();
+        Session saved = tableLock.withTableLock(targetTableId, target -> {
+            Session session = findById(sessionId);
+            requireAssignedWaiter(session, callerEmail);
+            requireOpen(session);
+            if (!Boolean.TRUE.equals(target.getIsActive())) {
+                throw new IllegalStateException("Table " + target.getTableNumber() + " is not active");
+            }
+            requireTableFree(tenantId, target);
+
+            LocalDateTime now = LocalDateTime.now();
+            session.getLinkedTables().add(LinkedTable.builder()
+                    .tableId(target.getId())
+                    .tableNumber(target.getTableNumber())
+                    .linkedAt(now)
+                    .build());
+            session.getActivityLog().add(SessionActivity.builder()
+                    .type(SessionActivity.Type.TABLE_LINKED)
+                    .note("M" + target.getTableNumber())
+                    .timestamp(now)
+                    .build());
+            return sessionRepository.save(session);
+        });
+        eventPublisher.publishEvent(TableLinksChanged.linked(
+                saved.getTenantId(), saved.getId(), saved.getTableId(), saved.linkedTableNumbers()));
+        return saved;
+    }
+
+    /** Detaches a linked table; it becomes free immediately. No row lock needed: freeing cannot double-book. */
+    public Session unlinkTable(String sessionId, String callerEmail, UUID tableId) {
+        Session session = findById(sessionId);
+        requireAssignedWaiter(session, callerEmail);
+        requireOpen(session);
+
+        LinkedTable removed = session.getLinkedTables().stream()
+                .filter(l -> l.getTableId().equals(tableId))
+                .findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException("Table is not linked to this session: " + tableId));
+        session.getLinkedTables().remove(removed);
+        session.getActivityLog().add(SessionActivity.builder()
+                .type(SessionActivity.Type.TABLE_UNLINKED)
+                .note("M" + removed.getTableNumber())
+                .timestamp(LocalDateTime.now())
+                .build());
+
+        Session saved = sessionRepository.save(session);
+        eventPublisher.publishEvent(TableLinksChanged.unlinked(
+                saved.getTenantId(), saved.getId(), saved.getTableId(), saved.linkedTableNumbers()));
         return saved;
     }
 
@@ -763,6 +824,53 @@ public class SessionService {
 
     }
 
+    /**
+     * Waiter's bulk removal ("seleccionar todos"). All-or-nothing: every id is validated before
+     * anything is removed, so an item that moved to the kitchen between selecting and confirming
+     * rejects the whole batch instead of leaving a half-deleted order. Same rule as {@link #removeItem}:
+     * nothing that is PREPARING, READY or DELIVERED can go. One save, one {@link DeleteItem} per item.
+     */
+    public Session removeItems(String sessionId, String requesterEmail, List<String> itemIds) {
+        if (itemIds == null || itemIds.isEmpty()) {
+            throw new IllegalArgumentException("Select at least one item to remove");
+        }
+        Session session = findById(sessionId);
+        requireAssignedWaiter(session, requesterEmail);
+        requireOpen(session);
+
+        Map<String, OrderItem> itemsById = new java.util.HashMap<>();
+        session.getItems().forEach(i -> itemsById.putIfAbsent(i.getId(), i));
+
+        List<OrderItem> toRemove = new ArrayList<>();
+        for (String itemId : new java.util.LinkedHashSet<>(itemIds)) {
+            OrderItem item = itemsById.get(itemId);
+            if (item == null) {
+                throw new ResourceNotFoundException("Item not found: " + itemId);
+            }
+            if (item.getStatus() == OrderItemStatus.PREPARING
+                    || item.getStatus() == OrderItemStatus.READY
+                    || item.getStatus() == OrderItemStatus.DELIVERED) {
+                throw new IllegalStateException(
+                        "Cannot remove item '" + item.getName() + "' as it has already been sent to the kitchen");
+            }
+            toRemove.add(item);
+        }
+
+        Set<String> removedIds = toRemove.stream().map(OrderItem::getId).collect(Collectors.toSet());
+        session.getItems().removeIf(i -> removedIds.contains(i.getId()));
+        LocalDateTime now = LocalDateTime.now();
+        toRemove.forEach(item -> session.getActivityLog().add(SessionActivity.builder()
+                .type(SessionActivity.Type.ITEM_DELETED)
+                .itemName(item.getName())
+                .participantName(item.getParticipantName())
+                .timestamp(now)
+                .build()));
+
+        Session saved = sessionRepository.save(session);
+        toRemove.forEach(item -> eventPublisher.publishEvent(new DeleteItem(saved.getId(), item.getId())));
+        return saved;
+    }
+
     public void confirmDraftsForUser(String sessionId, String userId, String requesterEmail) {
         Session session = findById(sessionId);
 
@@ -800,7 +908,8 @@ public class SessionService {
                     savedSession.getTenantId(),
                     savedSession.getId(),
                     table.getTableNumber(),
-                    drafts
+                    drafts,
+                    savedSession.linkedTableNumbers()
             ));
         }
     }

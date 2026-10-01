@@ -327,8 +327,9 @@ public class AnalyticsService {
             if (session == null || session.getTableId() == null) {
                 continue;
             }
-            tallies.computeIfAbsent(session.getTableId(), id -> new TableTally())
-                    .add(bill.total(), session.getCreatedAt(), bill.createdAt());
+            TableTally tally = tallies.computeIfAbsent(session.getTableId(), id -> new TableTally());
+            tally.add(bill.total(), session.getCreatedAt(), bill.createdAt());
+            tally.mergedWith.addAll(session.linkedTableNumbers());
         }
         if (tallies.isEmpty()) {
             return emptyTables(window, activeTableCount);
@@ -366,7 +367,8 @@ public class AnalyticsService {
                     tally.turnoverCount,
                     scaled(tally.revenue),
                     percentOf(tally.revenue, totalRevenue),
-                    averageMinutes(tally.durationSeconds, tally.durationSamples)));
+                    averageMinutes(tally.durationSeconds, tally.durationSamples),
+                    List.copyOf(tally.mergedWith)));
         }
 
         BigDecimal averageTurnoverRate = activeTableCount == 0
@@ -516,6 +518,7 @@ public class AnalyticsService {
         private BigDecimal revenue = BigDecimal.ZERO;
         private long durationSeconds;
         private long durationSamples;
+        private final java.util.SortedSet<Integer> mergedWith = new java.util.TreeSet<>();
 
         /** {@code sessionOpenedAt} may be missing on legacy data — duration is skipped, not the turnover. */
         private void add(BigDecimal total, LocalDateTime sessionOpenedAt, LocalDateTime billSettledAt) {

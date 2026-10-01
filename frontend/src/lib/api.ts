@@ -527,8 +527,23 @@ export const SessionTableService = {
     await api.post<void>(`/sessions/${sessionId}/transfer`, { targetWaiterId })
   },
 
+  // Attach a free table to this open session (it shows occupied until the session closes).
+  linkTable: async (sessionId: string, tableId: string): Promise<void> => {
+    await api.post<void>(`/sessions/${sessionId}/linked-tables`, { tableId })
+  },
+
+  // Detach a linked table; it is free immediately.
+  unlinkTable: async (sessionId: string, tableId: string): Promise<void> => {
+    await api.delete<void>(`/sessions/${sessionId}/linked-tables/${tableId}`)
+  },
+
   confirmMyOrders: async(sessionId: string, userId: string): Promise<void> => {
      await api.post<void>(`/sessions/${sessionId}/participants/${userId}/confirm`)
+  },
+
+  // Waiter's bulk removal: all or nothing, only items not yet in preparation. 409 = one reached the kitchen.
+  removeItems: async (sessionId: string, itemIds: string[]): Promise<void> => {
+    await api.post<void>(`/sessions/${sessionId}/items/bulk-delete`, { itemIds })
   },
 
   deleteItem: async (sessionId: string, itemId: string): Promise<void> => {

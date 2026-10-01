@@ -10,6 +10,8 @@ export const kitchen = {
   elapsedMinutes: '{{minutes}} min',
   ticketLabel: 'Ticket: #{{code}}',
   orderDetailsHeading: 'Detalles de Orden - M{{tableNumber}}',
+  orderDetailsHeadingMerged: 'Detalles de Orden - {{label}}',
+  mergedWord: 'Unidas',
   entryTimeLabel: 'Ingreso: {{time}}',
   printButton: 'Imprimir',
   itemStatusUpdateErrorToast: 'No se pudo actualizar el estado del plato',

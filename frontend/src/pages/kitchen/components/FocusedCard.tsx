@@ -11,6 +11,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import { NEXT_ACTION_LABEL, NEXT_STATUS, STATUS_LABEL } from '../lib/itemStatus'
 import { useTranslation } from '@/lib/i18n'
+import { mergedTableLabel } from '../lib/mergedTableLabel'
 
 const COLUMNS: OrderItemStatus[] = ['PENDING', 'PREPARING', 'READY']
 const BULK_TARGET_STATUSES: OrderItemStatus[] = ['PENDING', 'PREPARING', 'READY', 'DELIVERED']
@@ -75,7 +76,12 @@ export const FocusedCard = ({ order }: { order: kitchenOrders }) => {
         >
           <CardHeader className="flex flex-col gap-2 border-b">
             <h2 className="text-2xl font-bold text-[#8c1717] tracking-tight">
-              {t('orderDetailsHeading', { tableNumber: order.tableNumber ?? '' })}
+              {(() => {
+                const merged = mergedTableLabel(order.tableNumber, order.linkedTableNumbers, t('mergedWord'))
+                return merged
+                  ? t('orderDetailsHeadingMerged', { label: merged })
+                  : t('orderDetailsHeading', { tableNumber: order.tableNumber ?? '' })
+              })()}
             </h2>
             <div className="w-full flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex gap-3">

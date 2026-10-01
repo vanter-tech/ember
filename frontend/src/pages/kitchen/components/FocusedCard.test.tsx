@@ -143,3 +143,23 @@ describe('FocusedCard manual ticket reprint', () => {
     expect(screen.queryByText('Anular')).not.toBeInTheDocument()
   })
 })
+
+describe('FocusedCard table label', () => {
+  test('an individual table keeps the plain heading', () => {
+    wrap(sampleOrder)
+
+    expect(screen.getByRole('heading', { name: 'Detalles de Orden - M5' })).toBeVisible()
+  })
+
+  test('merged tables show M3+M4 - Unidas', () => {
+    wrap({ ...sampleOrder, tableNumber: 3, linkedTableNumbers: [4] } as kitchenOrders)
+
+    expect(screen.getByRole('heading', { name: 'Detalles de Orden - M3+M4 - Unidas' })).toBeVisible()
+  })
+
+  test('unlinking the last table brings the heading back to the plain table', () => {
+    wrap({ ...sampleOrder, tableNumber: 3, linkedTableNumbers: [] } as kitchenOrders)
+
+    expect(screen.getByRole('heading', { name: 'Detalles de Orden - M3' })).toBeVisible()
+  })
+})

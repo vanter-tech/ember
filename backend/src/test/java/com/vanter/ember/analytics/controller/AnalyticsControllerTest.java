@@ -441,7 +441,8 @@ class AnalyticsControllerTest {
                         1L,
                         new BigDecimal("100.00"),
                         new BigDecimal("71.43"),
-                        new BigDecimal("30.0"))));
+                        new BigDecimal("30.0"),
+                        List.of())));
     }
 
     @Test

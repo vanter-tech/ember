@@ -4,6 +4,7 @@ import com.vanter.ember.session.event.ParticipantJoined;
 import com.vanter.ember.session.event.ParticipantRenamed;
 import com.vanter.ember.session.event.SessionClosed;
 import com.vanter.ember.session.event.SessionOpened;
+import com.vanter.ember.session.event.TableLinksChanged;
 import com.vanter.ember.session.event.TableTransferred;
 import com.vanter.ember.session.model.SessionStatus;
 import org.junit.jupiter.api.Test;
@@ -13,6 +14,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 
+import java.util.List;
 import java.util.UUID;
 
 import static org.mockito.Mockito.verify;
@@ -30,6 +32,15 @@ class WaiterWebSocketListenerTest {
         SessionOpened event = new SessionOpened(TENANT_ID, "sess-1", UUID.randomUUID(), 5);
 
         listener.onSessionOpened(event);
+
+        verify(messagingTemplate).convertAndSend("/topic/waiter/" + TENANT_ID, event);
+    }
+
+    @Test
+    void onTableLinksChanged_broadcastsToTheWaiterTopic() {
+        TableLinksChanged event = TableLinksChanged.linked(TENANT_ID, "sess-1", UUID.randomUUID(), List.of(4));
+
+        listener.onTableLinksChanged(event);
 
         verify(messagingTemplate).convertAndSend("/topic/waiter/" + TENANT_ID, event);
     }

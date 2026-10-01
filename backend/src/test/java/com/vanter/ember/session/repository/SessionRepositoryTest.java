@@ -1,6 +1,7 @@
 package com.vanter.ember.session.repository;
 
 import com.vanter.ember.config.TenantIdentifierResolver;
+import com.vanter.ember.session.model.LinkedTable;
 import com.vanter.ember.session.model.Participant;
 import com.vanter.ember.session.model.Session;
 import com.vanter.ember.session.model.SessionStatus;
@@ -91,5 +92,25 @@ class SessionRepositoryTest {
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getParticipants().get(0).getUserId()).isEqualTo("user-1");
+    }
+
+    @Test
+    void save_persistsLinkedTablesAsJsonAndFindsOpenSessionsByTenantAndStatus() {
+        LinkedTable linked = LinkedTable.builder()
+                .tableId(TABLE_2_ID).tableNumber(4).linkedAt(LocalDateTime.of(2026, 10, 1, 20, 0)).build();
+        sessionRepository.save(Session.builder().tenantId(TENANT_ID).tableId(TABLE_1_ID).waiterId("w@test.com")
+                .status(SessionStatus.OPEN).maxParticipants(4).createdAt(LocalDateTime.now())
+                .linkedTables(new java.util.ArrayList<>(List.of(linked))).build());
+        sessionRepository.save(Session.builder().tenantId(TENANT_ID).tableId(UUID.randomUUID()).waiterId("w@test.com")
+                .status(SessionStatus.CLOSED).maxParticipants(4).createdAt(LocalDateTime.now()).build());
+
+        List<Session> open = sessionRepository.findByTenantIdAndStatus(TENANT_ID, SessionStatus.OPEN);
+
+        assertThat(open).hasSize(1);
+        assertThat(open.get(0).getLinkedTables()).singleElement().satisfies(l -> {
+            assertThat(l.getTableId()).isEqualTo(TABLE_2_ID);
+            assertThat(l.getTableNumber()).isEqualTo(4);
+            assertThat(l.getLinkedAt()).isEqualTo(LocalDateTime.of(2026, 10, 1, 20, 0));
+        });
     }
 }

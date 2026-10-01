@@ -55,6 +55,12 @@ public class KitchenOrder {
     @Builder.Default
     private List<KitchenItem> items = new ArrayList<>();
 
+    /** Numbers of the tables merged into this order's primary table; empty for an individual table. */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "linked_table_numbers", nullable = false)
+    @Builder.Default
+    private List<Integer> linkedTableNumbers = new ArrayList<>();
+
     /** Whether this order still belongs to a live session; false once its session closes. */
     @Column(nullable = false)
     @Builder.Default

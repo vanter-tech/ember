@@ -10,6 +10,7 @@ import com.vanter.ember.kitchen.model.KitchenOrder;
 import com.vanter.ember.kitchen.repository.KitchenOrderRepository;
 import com.vanter.ember.session.event.KitchenItemsConfirmed;
 import com.vanter.ember.session.event.SessionClosed;
+import com.vanter.ember.session.event.TableLinksChanged;
 import com.vanter.ember.session.model.OrderItem;
 import com.vanter.ember.session.model.SelectedModifier;
 import com.vanter.ember.session.model.SessionStatus;
@@ -37,6 +38,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -451,5 +453,66 @@ class KitchenServiceTest {
 
         assertThat(display.get(0).tableNumber()).isEqualTo(2);
         assertThat(display.get(1).tableNumber()).isEqualTo(5);
+    }
+
+    // --- Table merge (EMB-TABLE-MERGE T5) ---
+
+    @Test
+    void handleOrderItemAdded_newOrderIsBornWithTheMergedTablesOfTheSession() {
+        when(kitchenOrderRepository.findByTenantIdAndSessionId(TENANT_ID, "sess-1")).thenReturn(Optional.empty());
+
+        kitchenService.handleOrderItemAdded(new KitchenItemsConfirmed(
+                TENANT_ID, "sess-1", 5, List.of(confirmedItem("i1", "Tacos", "Alice")), List.of(6, 7)));
+
+        ArgumentCaptor<KitchenOrder> saved = ArgumentCaptor.forClass(KitchenOrder.class);
+        verify(kitchenOrderRepository).save(saved.capture());
+        assertThat(saved.getValue().getLinkedTableNumbers()).containsExactly(6, 7);
+    }
+
+    @Test
+    void handleOrderItemAdded_anExistingOrderTakesTheCurrentLinkedListFromTheEvent() {
+        KitchenOrder existing = KitchenOrder.builder().id("ko-1").tenantId(TENANT_ID).sessionId("sess-1")
+                .tableNumber(5).items(new ArrayList<>()).build();
+        when(kitchenOrderRepository.findByTenantIdAndSessionId(TENANT_ID, "sess-1")).thenReturn(Optional.of(existing));
+
+        kitchenService.handleOrderItemAdded(new KitchenItemsConfirmed(
+                TENANT_ID, "sess-1", 5, List.of(confirmedItem("i1", "Tacos", "Alice")), List.of(6)));
+
+        assertThat(existing.getLinkedTableNumbers()).containsExactly(6);
+    }
+
+    @Test
+    void handleTableLinksChanged_overwritesTheLinkedNumbersOfTheSessionsOrder() {
+        KitchenOrder order = KitchenOrder.builder().id("ko-1").tenantId(TENANT_ID).sessionId("sess-1")
+                .tableNumber(5).build();
+        when(kitchenOrderRepository.findByTenantIdAndSessionId(TENANT_ID, "sess-1")).thenReturn(Optional.of(order));
+
+        kitchenService.handleTableLinksChanged(
+                TableLinksChanged.linked(TENANT_ID, "sess-1", UUID.randomUUID(), List.of(6)));
+
+        verify(kitchenOrderRepository).save(order);
+        assertThat(order.getLinkedTableNumbers()).containsExactly(6);
+    }
+
+    @Test
+    void handleTableLinksChanged_unlinkingTheLastTableBringsTheOrderBackToAnIndividualTable() {
+        KitchenOrder order = KitchenOrder.builder().id("ko-1").tenantId(TENANT_ID).sessionId("sess-1")
+                .tableNumber(5).linkedTableNumbers(new ArrayList<>(List.of(6))).build();
+        when(kitchenOrderRepository.findByTenantIdAndSessionId(TENANT_ID, "sess-1")).thenReturn(Optional.of(order));
+
+        kitchenService.handleTableLinksChanged(
+                TableLinksChanged.unlinked(TENANT_ID, "sess-1", UUID.randomUUID(), List.of()));
+
+        assertThat(order.getLinkedTableNumbers()).isEmpty();
+    }
+
+    @Test
+    void handleTableLinksChanged_aSessionWithoutAKitchenOrderYetIsANoOp() {
+        when(kitchenOrderRepository.findByTenantIdAndSessionId(TENANT_ID, "sess-1")).thenReturn(Optional.empty());
+
+        kitchenService.handleTableLinksChanged(
+                TableLinksChanged.linked(TENANT_ID, "sess-1", UUID.randomUUID(), List.of(6)));
+
+        verify(kitchenOrderRepository, never()).save(any());
     }
 }

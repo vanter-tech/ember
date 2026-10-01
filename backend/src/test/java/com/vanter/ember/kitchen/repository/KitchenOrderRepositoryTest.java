@@ -54,6 +54,22 @@ class KitchenOrderRepositoryTest {
     }
 
     @Test
+    void save_persistsLinkedTableNumbersAsJson_andDefaultsToEmpty() {
+        kitchenOrderRepository.save(KitchenOrder.builder()
+                .sessionId("sess-merged").tableNumber(5)
+                .linkedTableNumbers(new ArrayList<>(List.of(6, 7)))
+                .items(new ArrayList<>()).build());
+        kitchenOrderRepository.save(KitchenOrder.builder()
+                .sessionId("sess-single").tableNumber(8)
+                .items(new ArrayList<>()).build());
+
+        assertThat(kitchenOrderRepository.findByTenantIdAndSessionId(TENANT_ID, "sess-merged"))
+                .get().extracting(KitchenOrder::getLinkedTableNumbers).isEqualTo(List.of(6, 7));
+        assertThat(kitchenOrderRepository.findByTenantIdAndSessionId(TENANT_ID, "sess-single"))
+                .get().extracting(KitchenOrder::getLinkedTableNumbers).isEqualTo(List.of());
+    }
+
+    @Test
     void save_persistsKitchenOrder() {
         KitchenOrder order = KitchenOrder.builder()
                 .sessionId("sess-1").tableNumber(5)

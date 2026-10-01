@@ -12,6 +12,7 @@ import com.vanter.ember.printing.service.PrintTargetResolver;
 import com.vanter.ember.printing.service.ReceiptRenderer;
 import com.vanter.ember.session.event.KitchenItemsConfirmed;
 import com.vanter.ember.session.model.OrderItem;
+import com.vanter.ember.session.model.TableLabels;
 import com.vanter.ember.settings.model.SettingsPayload;
 import com.vanter.ember.settings.service.SettingService;
 import java.time.LocalDateTime;
@@ -90,7 +91,7 @@ public class PrintingEventListener {
     private String renderKitchenPayload(KitchenItemsConfirmed event) {
         List<OrderItem> items = event.confirmedItems();
         StringBuilder sb = new StringBuilder();
-        sb.append("Mesa ").append(event.tableNumber()).append('\n');
+        sb.append(TableLabels.ticketLine(event.tableNumber(), event.linkedTableNumbers())).append('\n');
         for (OrderItem item : items) {
             sb.append("- ").append(item.getName()).append('\n');
             for (var modifier : item.getModifiers()) {

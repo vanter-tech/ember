@@ -34,6 +34,8 @@ import com.vanter.ember.config.ResourceNotFoundException;
 import com.vanter.ember.config.TenantContextHolder;
 import com.vanter.ember.identity.model.User;
 import com.vanter.ember.identity.repository.UserRepository;
+import com.vanter.ember.session.model.Session;
+import com.vanter.ember.session.model.TableLabels;
 import com.vanter.ember.session.service.SessionService;
 import com.vanter.ember.settings.model.DiningTables;
 import com.vanter.ember.settings.repository.DiningTableRepository;
@@ -449,38 +451,47 @@ public class PaymentService {
     }
 
     public List<PaymentResponse> toResponses(List<Payment> payments) {
-        Map<String, Integer> tableNumberBySessionId = resolveTableNumbers(payments);
+        Map<String, TableRef> tableBySessionId = resolveTables(payments);
         return payments.stream().map(p -> {
             BigDecimal refunded = refundRepository.sumByPaymentId(p.getId());
+            TableRef table = tableBySessionId.get(p.getBill().getSessionId());
             return new PaymentResponse(
                     p.getId(), p.getBill().getId(), p.getParticipantName(), p.getAmount(),
                     p.getMethod().name(), p.getStatus().name(), p.getCreatedAt(),
                     refunded, p.getAmount().subtract(refunded),
-                    tableNumberBySessionId.get(p.getBill().getSessionId()));
+                    table == null ? null : table.number(),
+                    table == null ? null : table.label());
         }).toList();
     }
+
+    private record TableRef(Integer number, String label) {}
 
     /**
      * A shift's payment list spans many tables — the admin Corte Z view wants to show which table
      * each payment was for, not just who paid it. Resolved via each bill's session (for its table
-     * id) then a single batch lookup of table numbers, rather than a query per payment.
+     * id and linked tables) then a single batch lookup of table numbers, rather than a query per
+     * payment. {@code label} is the merged form ({@code M3+M4}) and is null for an individual table.
      */
-    private Map<String, Integer> resolveTableNumbers(List<Payment> payments) {
+    private Map<String, TableRef> resolveTables(List<Payment> payments) {
         if (payments.isEmpty()) {
             return Map.of();
         }
         UUID tenantId = payments.get(0).getBill().getTenantId();
-        Map<String, UUID> tableIdBySessionId = payments.stream()
+        Map<String, Session> sessionById = payments.stream()
                 .map(p -> p.getBill().getSessionId())
                 .distinct()
-                .collect(Collectors.toMap(
-                        sessionId -> sessionId, sessionId -> sessionService.findById(sessionId).getTableId()));
-        Set<UUID> tableIds = Set.copyOf(tableIdBySessionId.values());
+                .collect(Collectors.toMap(sessionId -> sessionId, sessionService::findById));
+        Set<UUID> tableIds = sessionById.values().stream().map(Session::getTableId).collect(Collectors.toSet());
         Map<UUID, Integer> tableNumberByTableId = diningTableRepository
                 .findByRestaurantIdAndIdIn(tenantId, tableIds).stream()
                 .collect(Collectors.toMap(DiningTables::getId, DiningTables::getTableNumber));
-        return tableIdBySessionId.entrySet().stream()
-                .collect(Collectors.toMap(Map.Entry::getKey, e -> tableNumberByTableId.get(e.getValue())));
+        return sessionById.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> {
+            Session session = e.getValue();
+            Integer number = tableNumberByTableId.get(session.getTableId());
+            List<Integer> linked = session.linkedTableNumbers();
+            String label = number != null && !linked.isEmpty() ? TableLabels.joined(number, linked) : null;
+            return new TableRef(number, label);
+        }));
     }
 
     public List<RefundResponse> listRefunds(Long paymentId) {

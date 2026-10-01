@@ -1,6 +1,7 @@
 package com.vanter.ember.analytics.dto;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -14,6 +15,10 @@ import java.util.UUID;
  * <p>{@code tableNumber} is {@code null} for a table that has since been deleted — it still keeps
  * the revenue it earned while it existed, the same way a deleted menu item keeps the name it was
  * sold under.
+ *
+ * <p>{@code mergedWithTableNumbers} lists, ascending and de-duplicated, the tables that were ever
+ * attached to this table's sessions in the window. Those tables get no row of their own: revenue
+ * and turnover stay on the primary table and are never split.
  */
 public record TablePerformance(
         UUID tableId,
@@ -21,4 +26,5 @@ public record TablePerformance(
         long turnoverCount,
         BigDecimal revenue,
         BigDecimal revenueShare,
-        BigDecimal averageSessionDurationMinutes) {}
+        BigDecimal averageSessionDurationMinutes,
+        List<Integer> mergedWithTableNumbers) {}

@@ -21,6 +21,7 @@ import {
 } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
 import { Badge } from '@/components/ui/badge'
+import { Checkbox } from '@/components/ui/checkbox'
 import toast from 'react-hot-toast'
 import axios from 'axios'
 import { useNavigate } from 'react-router-dom'
@@ -41,6 +42,7 @@ import { SeatFormModal } from './components/SeatFormModal'
 import { ChargeTableModal } from './components/ChargeTableModal'
 import { VoidBillModal } from './components/VoidBillModal'
 import { ForceCloseTableModal } from './components/ForceCloseTableModal'
+import { BulkDeleteItemsModal } from './components/BulkDeleteItemsModal'
 import { useAuthStore } from '@/store/authStore'
 import { RefundPaymentModal } from './components/RefundPaymentModal'
 import { useWebsocketStore } from '@/store/websocket'
@@ -127,6 +129,47 @@ export const TableInformation = () => {
   const itemsToWaiter = sessionData?.items
     ? sessionData.items.filter((item) => item.status != 'DRAFT')
     : []
+
+  // "Seleccionar todos": only items that can still be removed (not PREPARING/READY/DELIVERED) are
+  // pickable, mirroring the backend rule. A selection that went stale after a refresh (an item
+  // moved to the kitchen meanwhile) is filtered against the live list rather than trusted.
+  const isSentToKitchen = (status?: string) =>
+    status === 'PREPARING' || status === 'READY' || status === 'DELIVERED'
+  const deletableIds = itemsToWaiter.filter((item) => !isSentToKitchen(item.status)).map((item) => item.id!)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [confirmBulkDelete, setConfirmBulkDelete] = useState(false)
+  const selectedDeletable = deletableIds.filter((itemId) => selectedIds.has(itemId))
+  const allDeletableSelected = deletableIds.length > 0 && selectedDeletable.length === deletableIds.length
+
+  const toggleItem = (itemId: string) =>
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(itemId)) next.delete(itemId)
+      else next.add(itemId)
+      return next
+    })
+  const toggleSelectAll = () => setSelectedIds(allDeletableSelected ? new Set() : new Set(deletableIds))
+
+  const bulkDeleteMutation = useMutation({
+    mutationFn: (itemIds: string[]) => SessionTableService.removeItems(id!, itemIds),
+    onSuccess: (_data, itemIds) => {
+      queryClient.invalidateQueries({ queryKey: ['sessionDetails'] })
+      toast.success(t('bulkDeleteSuccessToast', { count: itemIds.length }))
+      setSelectedIds(new Set())
+      setConfirmBulkDelete(false)
+    },
+    onError: (error) => {
+      // Nothing was removed (all or nothing). Refresh so the list shows what changed.
+      queryClient.invalidateQueries({ queryKey: ['sessionDetails'] })
+      toast.error(
+        axios.isAxiosError(error) && error.response?.status === 409
+          ? t('bulkDeleteSentToast')
+          : t('bulkDeleteErrorToast'),
+      )
+      setSelectedIds(new Set())
+      setConfirmBulkDelete(false)
+    },
+  })
 
   const mutation = useMutation({
     mutationFn: SessionTableService.closeEmptySession,
@@ -340,24 +383,51 @@ export const TableInformation = () => {
         <div className="lg:col-span-2 flex flex-col gap-6">
           <Card id="table-tour-orders" className="rounded-3xl border-none shadow-sm relative overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-transparent via-[#8B0000] to-transparent opacity-20"></div>
-            <CardHeader className="p-7 border-b border">
+            <CardHeader className="p-7 border-b border flex flex-row flex-wrap items-center justify-between gap-3">
               <CardTitle className="text-2xl text-gray-800 font-bold">
                 {t('orderDetailsTitle')}
               </CardTitle>
+              {deletableIds.length > 0 && (
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={actionsDisabled}
+                    onClick={toggleSelectAll}
+                  >
+                    {allDeletableSelected ? t('deselectAllItems') : t('selectAllItems')}
+                  </Button>
+                  {selectedDeletable.length > 0 && (
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      disabled={actionsDisabled}
+                      onClick={() => setConfirmBulkDelete(true)}
+                    >
+                      <Trash2 />
+                      {t('deleteSelectedItems', { count: selectedDeletable.length })}
+                    </Button>
+                  )}
+                </div>
+              )}
             </CardHeader>
             <CardContent className="flex flex-col gap-3 max-h-87.5 overflow-y-auto pr-2">
               {itemsToWaiter && itemsToWaiter.length > 0 ? (
                 itemsToWaiter.map((item) => {
-                  const isSentToKitchen =
-                    item.status === 'PREPARING' ||
-                    item.status === 'READY' ||
-                    item.status === 'DELIVERED'
+                  const sentToKitchen = isSentToKitchen(item.status)
                   return (
                   <div
                     key={item.id}
                     className="flex items-center justify-between p-4 bg-gray-50/80 rounded-2xl"
                   >
                     <div className="flex items-center gap-4">
+                      <Checkbox
+                        aria-label={t('selectItemAria', { name: item.name ?? '' })}
+                        checked={!sentToKitchen && selectedIds.has(item.id!)}
+                        disabled={sentToKitchen || actionsDisabled}
+                        title={sentToKitchen ? t('cannotRemoveSentItem') : undefined}
+                        onCheckedChange={() => toggleItem(item.id!)}
+                      />
                       <div
                         className="w-10 h-10 rounded-full bg-gray-200/60 flex items-center
                                     justify-center text-sm font-bold text-gray-500"
@@ -380,8 +450,8 @@ export const TableInformation = () => {
                       <Button
                         className=""
                         variant={'destructive'}
-                        disabled={isSentToKitchen || actionsDisabled}
-                        title={isSentToKitchen ? t('cannotRemoveSentItem') : undefined}
+                        disabled={sentToKitchen || actionsDisabled}
+                        title={sentToKitchen ? t('cannotRemoveSentItem') : undefined}
                         onClick={(e) => {
                           e.preventDefault()
                           e.stopPropagation()
@@ -718,6 +788,13 @@ export const TableInformation = () => {
           </Card>
         </div>
         <GlobalDeleteModal/>
+        <BulkDeleteItemsModal
+          open={confirmBulkDelete}
+          count={selectedDeletable.length}
+          pending={bulkDeleteMutation.isPending}
+          onCancel={() => setConfirmBulkDelete(false)}
+          onConfirm={() => bulkDeleteMutation.mutate(selectedDeletable)}
+        />
         <AddItemModal/>
         <TransferTableModal/>
         <SeatFormModal/>

@@ -8,6 +8,7 @@ import com.vanter.ember.session.model.OrderItem;
 import com.vanter.ember.session.model.OrderItemStatus;
 import com.vanter.ember.session.model.SelectedModifier;
 import com.vanter.ember.session.model.Session;
+import com.vanter.ember.session.model.TableLabels;
 import com.vanter.ember.session.repository.SessionRepository;
 import com.vanter.ember.settings.model.DiningTables;
 import com.vanter.ember.settings.model.SettingsPayload;
@@ -72,7 +73,13 @@ public class ReceiptRenderer {
         if (session.getTableId() != null) {
             diningTableRepository.findById(session.getTableId())
                     .map(DiningTables::getTableNumber)
-                    .ifPresent(data::tableNumber);
+                    .ifPresent(number -> {
+                        data.tableNumber(number);
+                        List<Integer> linked = session.linkedTableNumbers();
+                        if (!linked.isEmpty()) {
+                            data.tableLine(TableLabels.ticketLine(number, linked));
+                        }
+                    });
         }
 
         List<OrderItem> billed = session.getItems().stream()

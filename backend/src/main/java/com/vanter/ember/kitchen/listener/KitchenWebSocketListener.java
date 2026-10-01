@@ -4,6 +4,7 @@ import com.vanter.ember.kitchen.event.KitchenItemRemoved;
 import com.vanter.ember.kitchen.event.KitchenItemUpdated;
 import com.vanter.ember.kitchen.event.KitchenOrderRetired;
 import com.vanter.ember.session.event.KitchenItemsConfirmed;
+import com.vanter.ember.session.event.TableLinksChanged;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.event.EventListener;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -17,6 +18,11 @@ public class KitchenWebSocketListener {
 
     @EventListener
     public void onKitchenItemsConfirmed(KitchenItemsConfirmed event) {
+        messagingTemplate.convertAndSend("/topic/kitchen/" + event.tenantId(), event);
+    }
+
+    @EventListener
+    public void onTableLinksChanged(TableLinksChanged event) {
         messagingTemplate.convertAndSend("/topic/kitchen/" + event.tenantId(), event);
     }
 

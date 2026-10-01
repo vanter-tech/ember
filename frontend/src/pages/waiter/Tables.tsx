@@ -1,18 +1,33 @@
 import { ParticipantQrModal } from './components/ParticipantsQrModal'
 import { DashboardService, SessionTableService, cashShiftService } from '@/lib/api'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import toast from 'react-hot-toast'
+import {
+  DndContext,
+  DragOverlay,
+  MouseSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type DragStartEvent,
+} from '@dnd-kit/core'
 import { useAuthStore } from '@/store/authStore'
 import { useWebsocketStore } from '@/store/websocket'
-import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { useEffect, useState } from 'react'
-import { Armchair, Users } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Armchair } from 'lucide-react'
 import { useUIStore } from '@/store/uiStore'
 import { Link } from 'react-router-dom'
 import { useTranslation } from '@/lib/i18n'
 import { EmptyState } from '@/components/EmptyState'
 import { WaiterTour } from './components/WaiterTour'
-import { AvatarInitials, getAvatarColor } from '@/components/AvatarInitials'
+import { TableCard } from './components/TableCard'
+import { TableCardView } from './components/TableCardView'
+import { LinkTableModal } from './components/LinkTableModal'
+import { resolveLinkDrop } from './lib/linkDrop'
+import { groupTables } from './lib/groupTables'
+import { useFlipGrid } from './lib/useFlipGrid'
 
 export const Tables = () => {
   const { t } = useTranslation('waiter')
@@ -39,6 +54,8 @@ export const Tables = () => {
   // An ADMIN can always browse tables (to inspect or close one that got stuck, which is usually
   // also when the caja is closed); assigning a table still requires an open caja.
   const canBrowse = isCajaOpen || role === 'ADMIN'
+  // The link endpoints are WAITER-only (no role hierarchy), so only a waiter is offered a merge.
+  const canLink = role === 'WAITER'
 
   const tableDetails = dashboardData?.find(
     (data) => data.tableId === selectedTable
@@ -51,6 +68,58 @@ export const Tables = () => {
     queryFn: () => SessionTableService.sessionInformation(sessionId!),
     enabled: !!sessionId,
   })
+
+  const queryClient = useQueryClient()
+  const unlinkMutation = useMutation({
+    mutationFn: ({ sessionId, tableId }: { sessionId: string; tableId: string }) =>
+      SessionTableService.unlinkTable(sessionId, tableId),
+    onSuccess: (_data, vars) => {
+      const unlinked = tableDetails?.linkedTables?.find((l) => l.tableId === vars.tableId)
+      toast.success(t('unlinkSuccessToast', { table: unlinked?.tableNumber ?? '' }))
+      queryClient.invalidateQueries({ queryKey: ['dashboardData'] })
+    },
+    onError: () => toast.error(t('unlinkErrorToast')),
+  })
+
+  // Mouse: a short drag distance (so a click still selects). Touch: press-and-hold, so swiping the
+  // grid still scrolls the page.
+  const sensors = useSensors(
+    useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 350, tolerance: 8 } }),
+  )
+  const [draggingId, setDraggingId] = useState<string | null>(null)
+  const linkMutation = useMutation({
+    mutationFn: ({ sessionId, tableId }: { sessionId: string; tableId: string }) =>
+      SessionTableService.linkTable(sessionId, tableId),
+    onSuccess: (_data, vars) => {
+      const linked = dashboardData?.find((table) => table.tableId === vars.tableId)
+      toast.success(t('linkSuccessToast', { table: linked?.tableNumber ?? '' }))
+      queryClient.invalidateQueries({ queryKey: ['dashboardData'] })
+    },
+    onError: () => {
+      toast.error(t('linkErrorToast'))
+      queryClient.invalidateQueries({ queryKey: ['dashboardData'] })
+    },
+  })
+
+  const handleDragStart = (event: DragStartEvent) => setDraggingId(String(event.active.id))
+  const handleDragEnd = (event: DragEndEvent) => {
+    setDraggingId(null)
+    const request = resolveLinkDrop(
+      String(event.active.id),
+      event.over ? { id: String(event.over.id), sessionId: event.over.data.current?.sessionId } : null,
+    )
+    if (request) linkMutation.mutate(request)
+  }
+  const draggingTable = dashboardData?.find((table) => table.tableId === draggingId)
+
+  // Merged tables are one wide card; the grid animates cards sliding together or apart.
+  const groups = useMemo(() => groupTables(dashboardData), [dashboardData])
+  const gridRef = useRef<HTMLDivElement>(null)
+  const layoutSignature = groups
+    .map((g) => `${g.table.tableId}:${g.spanClass}:${g.table.isOccupied ? 1 : 0}:${g.linked.map((l) => l.tableId).join('+')}`)
+    .join('|')
+  useFlipGrid(gridRef, layoutSignature)
 
   const { isConnected, stompClient, subscribeToWaiterSession, unsubscribeFromWaiterSession } =
     useWebsocketStore()
@@ -95,7 +164,15 @@ export const Tables = () => {
           </div>
         </div>
 
-        <div id="waiter-tour-grid" className="grid grid-cols-2 sm:grid-cols-3 gap-4 relative">
+        {canLink && <p className="mb-3 text-xs text-zinc-500">{t('linkDragHint')}</p>}
+
+        <DndContext
+          sensors={sensors}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+          onDragCancel={() => setDraggingId(null)}
+        >
+        <div ref={gridRef} id="waiter-tour-grid" className="grid grid-cols-2 sm:grid-cols-3 grid-flow-dense gap-4 relative">
           {!canBrowse && (
             <div className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-white/40">
               <span className="max-w-[80%] text-center text-lg font-semibold text-[#8c1717]">
@@ -112,51 +189,31 @@ export const Tables = () => {
               />
             </div>
           )}
-          {dashboardData?.map((table) => (
-            <Card
+          {groups.map(({ table, linked, spanClass }) => (
+            <TableCard
               key={table.tableId}
-              onClick={() => canBrowse && setSelectedTable(table.tableId)}
-              className={`${table.tableId === selectedTable ? 'shadow-[0_0_8px_1px_rgba(140,23,23,0.35)]' : 'shadow-sm'} border-zinc-100
-                h-40 flex flex-col justify-between rounded-2xl relative
-                ${canBrowse ? 'cursor-pointer' : 'pointer-events-none cursor-not-allowed blur-sm'}
-                ${table.isOccupied ? 'border-2 bg-[#8c1717] text-white' : 'bg-white text-black'}`}
-            >
-              {table.tableId === selectedTable && (
-                <div className="pointer-events-none absolute inset-0 z-20 animate-pulse rounded-2xl border-2 border-[#8c1717] shadow-[inset_0_0_0_3px_white,inset_0_0_6px_1px_rgba(140,23,23,0.35)]" />
-              )}
-              {table.isOccupied && table.currentSession?.waiterName && (
-                <div
-                  title={table.currentSession.waiterName}
-                  className={`absolute bottom-4 left-4 z-10 flex size-7 items-center justify-center rounded-full text-[11px] font-bold ${getAvatarColor(table.currentSession.waiterName)}`}
-                >
-                  {AvatarInitials(table.currentSession.waiterName)}
-                </div>
-              )}
-              <CardHeader className="p-4 pb-0 flex justify-between">
-                <span className=" text-2xl font-bold">
-                  M{table.tableNumber}
-                </span>
-                <div
-                  className={`flex items-center justify-center gap-1 rounded-full h-6 w-11 bg-white text-black ${table.isOccupied ? 'border-2 border-[#8b0000]' : ''}`}
-                >
-                  <Users className="h-4 w-4" />
-                  {table.isOccupied
-                    ? table.currentSession?.currentParticipant
-                    : '0'}
-                </div>
-              </CardHeader>
-              <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-                {table.isOccupied ? (
-                  <Armchair className="text-white w-7 h-7" />
-                ) : (
-                  <Armchair className="text-zinc-400 w-7 h-7" />
-                )}
-              </div>
-
-              {table.isOccupied && <CardContent className="p-4"></CardContent>}
-            </Card>
+              table={table}
+              linked={linked}
+              spanClass={spanClass}
+              selected={table.tableId === selectedTable}
+              canBrowse={canBrowse}
+              onSelect={() => canBrowse && setSelectedTable(table.tableId)}
+              draggable={canLink && canBrowse && isCajaOpen && !table.isOccupied}
+              dropTarget={!!table.isOccupied && !table.linkedToTableId && !!table.currentSession?.sessionId}
+            />
           ))}
         </div>
+        <DragOverlay>
+          {draggingTable ? (
+            // The whole card, same box as the one being dragged (the overlay wrapper takes its size).
+            <TableCardView
+              table={draggingTable}
+              linked={[]}
+              className="h-full w-full cursor-grabbing shadow-2xl ring-2 ring-[#8c1717] rotate-2"
+            />
+          ) : null}
+        </DragOverlay>
+        </DndContext>
       </div>
       <div id="waiter-tour-panel" className="w-full md:w-[30%] border-t md:border-t-0 md:border-l border-zinc-200 pt-5 md:pt-0 md:pl-5">
         {tableDetails ? (
@@ -164,9 +221,16 @@ export const Tables = () => {
             <h2 className="text-xl font-semibold mb-5">{t('tableDetailsTitle')}</h2>
             <div className="bg-white rounded-2xl p-6">
               <div className="flex justify-between items-center">
-                <h2 className="text-[#8c1717] font-bold text-3xl">
-                  M{tableDetails.tableNumber}
-                </h2>
+                <div className="flex flex-col">
+                  <h2 className="text-[#8c1717] font-bold text-3xl">
+                    M{tableDetails.tableNumber}
+                  </h2>
+                  {tableDetails.linkedToTableId && (
+                    <span className="text-xs text-zinc-500">
+                      {t('linkedToLabel', { table: tableDetails.linkedToTableNumber ?? '?' })}
+                    </span>
+                  )}
+                </div>
                 <div className="flex flex-col gap-2 text-right">
                   <span className="text-xs text-zinc-500">{t('waiterLabel')}</span>
                   {tableDetails.currentSession?.waiterName || t('unassignedLabel')}
@@ -212,6 +276,46 @@ export const Tables = () => {
                 )}
               </div>
               <div className="flex flex-col gap-4 mt-6">
+                {canLink && tableDetails.isOccupied && !tableDetails.linkedToTableId && (
+                  <>
+                    {(tableDetails.linkedTables?.length ?? 0) > 0 && (
+                      <div className="flex flex-col gap-3">
+                        <span className="text-xs text-zinc-500">{t('linkedTablesHeading')}</span>
+                        {tableDetails.linkedTables!.map((linked) => (
+                          <div key={linked.tableId} className="flex items-center justify-between gap-3">
+                            <span className="text-lg font-semibold">M{linked.tableNumber}</span>
+                            <Button
+                              variant="outline"
+                              className="px-5 text-md"
+                              aria-label={t('unlinkAria', { table: linked.tableNumber ?? '' })}
+                              disabled={unlinkMutation.isPending}
+                              onClick={() =>
+                                unlinkMutation.mutate({
+                                  sessionId: tableDetails.currentSession!.sessionId!,
+                                  tableId: linked.tableId!,
+                                })
+                              }
+                            >
+                              {t('unlinkButton')}
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <Button
+                      variant="outline"
+                      className="w-full text-md"
+                      onClick={() =>
+                        openModal('LINK_TABLE', {
+                          sessionId: tableDetails.currentSession?.sessionId,
+                          tableNumber: tableDetails.tableNumber,
+                        })
+                      }
+                    >
+                      {t('linkTableButton')}
+                    </Button>
+                  </>
+                )}
                 {tableDetails.isOccupied && (
                   <Link to={tableDetails.currentSession?.sessionId + ''}>
                     <Button className="w-full text-md">{t('viewInfoButton')}</Button>
@@ -239,6 +343,7 @@ export const Tables = () => {
         )}
       </div>
       <ParticipantQrModal />
+      <LinkTableModal />
       <WaiterTour
         tableIds={
           dashboardData

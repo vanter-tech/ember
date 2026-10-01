@@ -319,6 +319,7 @@ planFeatureEverythingInFree: 'Everything in Free',  planFeatureEverythingInStart
   averageDurationLabel: 'Average duration (min)',
   noTableActivity: 'No tables with activity in this period.',
   tableNumberLabel: 'Table {{tableNumber}}',
+  mergedWithTables: 'Merged with {{tables}}',
   tableRevenueSummary: '${{revenue}} · {{turnoverCount}} turns · {{duration}} min',
   billingCardDescription: 'Configure currency, taxes, and suggested tips.',
   loadingSettingsLabel: 'Loading settings...',

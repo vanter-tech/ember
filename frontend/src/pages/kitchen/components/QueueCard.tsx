@@ -13,6 +13,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import { NEXT_ACTION_LABEL, NEXT_STATUS, STATUS_LABEL } from '../lib/itemStatus'
 import { useTranslation } from '@/lib/i18n'
+import { mergedTableLabel } from '../lib/mergedTableLabel'
 
 export const QueueCard = ({order, now}: {order: kitchenOrders, now: number}) => {
   const queryClient = useQueryClient()
@@ -38,7 +39,7 @@ export const QueueCard = ({order, now}: {order: kitchenOrders, now: number}) => 
         <CardHeader className='flex flex-col items-start gap-1'>
             <div>
                 <CardTitle className='text-2xl font-black tracking-tight'>
-                    {order.tableNumber || "?"}
+                    {mergedTableLabel(order.tableNumber, order.linkedTableNumbers, t('mergedWord')) ?? (order.tableNumber || "?")}
                 </CardTitle>
                 <p className='text-xs text-gray-500 mt-1'>
                     {t('ticketLabel', { code: order.id?.substring(0,6).toUpperCase() ?? '' })}

@@ -80,6 +80,13 @@ export const TableAnalytics = () => {
                 <div className="flex items-baseline justify-between gap-2 text-sm">
                   <span className="font-medium text-foreground">
                     {t('tableNumberLabel', { tableNumber: table.tableNumber ?? '—' })}
+                    {(table.mergedWithTableNumbers?.length ?? 0) > 0 && (
+                      <span className="ml-2 text-xs font-normal text-muted-foreground">
+                        {t('mergedWithTables', {
+                          tables: (table.mergedWithTableNumbers ?? []).map((n) => `M${n}`).join(', '),
+                        })}
+                      </span>
+                    )}
                   </span>
                   <span className="shrink-0 text-muted-foreground">
                     {t('tableRevenueSummary', {

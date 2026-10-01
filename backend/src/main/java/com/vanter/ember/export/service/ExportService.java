@@ -10,6 +10,7 @@ import com.vanter.ember.billing.model.PaymentStatus;
 import com.vanter.ember.billing.repository.BillRepository;
 import com.vanter.ember.billing.repository.PaymentRepository;
 import com.vanter.ember.session.model.Session;
+import com.vanter.ember.session.model.TableLabels;
 import com.vanter.ember.session.repository.SessionRepository;
 import com.vanter.ember.settings.model.DiningTables;
 import com.vanter.ember.settings.model.SettingsPayload;
@@ -144,6 +145,7 @@ public class ExportService {
             Session session = sessionsById.get(bill.getSessionId());
             UUID tableId = session == null ? null : session.getTableId();
             Integer tableNumber = tableId == null ? null : tableNumbersById.get(tableId);
+            List<Integer> linkedNumbers = session == null ? List.of() : session.linkedTableNumbers();
 
             List<Payment> confirmedPayments = paymentsByBillId.getOrDefault(bill.getId(), List.of()).stream()
                     .filter(p -> p.getStatus() == PaymentStatus.CONFIRMED)
@@ -163,7 +165,9 @@ public class ExportService {
 
             Row row = sheet.createRow(rowIndex++);
             numericCell(row, 0, bill.getId(), styles.count());
-            if (tableNumber != null) {
+            if (tableNumber != null && !linkedNumbers.isEmpty()) {
+                textCell(row, 1, TableLabels.joined(tableNumber, linkedNumbers), styles.text());
+            } else if (tableNumber != null) {
                 numericCell(row, 1, tableNumber, styles.count());
             }
             Cell dateCell = row.createCell(2);

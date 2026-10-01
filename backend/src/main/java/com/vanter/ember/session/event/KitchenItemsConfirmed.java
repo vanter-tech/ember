@@ -9,6 +9,12 @@ public record KitchenItemsConfirmed(
         UUID tenantId,
         String sessionId,
         int tableNumber,
-        List<OrderItem> confirmedItems
+        List<OrderItem> confirmedItems,
+        List<Integer> linkedTableNumbers
 ) {
+
+    /** Individual table: no linked tables. */
+    public KitchenItemsConfirmed(UUID tenantId, String sessionId, int tableNumber, List<OrderItem> confirmedItems) {
+        this(tenantId, sessionId, tableNumber, confirmedItems, List.of());
+    }
 }

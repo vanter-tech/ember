@@ -18,6 +18,7 @@ import com.vanter.ember.billing.model.PaymentStatus;
 import com.vanter.ember.billing.model.SplitMethod;
 import com.vanter.ember.billing.repository.BillRepository;
 import com.vanter.ember.billing.repository.PaymentRepository;
+import com.vanter.ember.session.model.LinkedTable;
 import com.vanter.ember.session.model.Session;
 import com.vanter.ember.session.model.SessionStatus;
 import com.vanter.ember.session.repository.SessionRepository;
@@ -245,6 +246,33 @@ class ExportServiceTest {
         // Only the two CONFIRMED payments count for methods/participants; PENDING is excluded.
         assertThat(text(dataRow, 5)).isEqualTo("DIGITAL/PHYSICAL");
         assertThat(numeric(dataRow, 6)).isEqualTo(2.0);
+    }
+
+    @Test
+    void buildTenantExportWorkbook_ventasSheet_mergedTablesShowTheJoinedLabelAsText() throws IOException {
+        Bill bill = Bill.builder()
+                .id(1L).sessionId("sess-1").total(new BigDecimal("50.00"))
+                .splitMethod(SplitMethod.EQUAL_PARTS).status(BillStatus.PAID)
+                .createdAt(LocalDateTime.of(2026, 8, 5, 20, 0)).build();
+        when(billRepository.findByTenantIdAndCreatedAtBetweenAndStatusIn(eq(TENANT_ID), eq(FROM), eq(TO), any()))
+                .thenReturn(List.of(bill));
+        when(paymentRepository.findByBillIdIn(List.of(1L))).thenReturn(List.of());
+
+        UUID tableId = UUID.randomUUID();
+        Session session = Session.builder()
+                .id("sess-1").tenantId(TENANT_ID).tableId(tableId).status(SessionStatus.CLOSED)
+                .linkedTables(List.of(LinkedTable.builder().tableId(UUID.randomUUID()).tableNumber(8)
+                        .linkedAt(LocalDateTime.of(2026, 8, 5, 19, 40)).build()))
+                .maxParticipants(4).createdAt(LocalDateTime.of(2026, 8, 5, 19, 30)).build();
+        when(sessionRepository.findByTenantIdAndIdIn(TENANT_ID, List.of("sess-1"))).thenReturn(List.of(session));
+        when(diningTableRepository.findByRestaurantIdAndIdIn(TENANT_ID, List.of(tableId)))
+                .thenReturn(List.of(DiningTables.builder().id(tableId).restaurantId(TENANT_ID).tableNumber(7).build()));
+        when(analyticsService.getProducts(TENANT_ID, FROM, TO, null)).thenReturn(emptyProducts());
+        when(settingService.getSettings(TENANT_ID)).thenReturn(sampleSettings());
+
+        Workbook workbook = readWorkbook(exportService.buildTenantExportWorkbook(TENANT_ID, FROM, TO));
+
+        assertThat(text(workbook.getSheet("Ventas").getRow(9), 1)).isEqualTo("M7+M8");
     }
 
     @Test

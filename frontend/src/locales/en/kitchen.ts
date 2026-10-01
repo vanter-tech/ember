@@ -12,6 +12,8 @@ export const kitchen = {
   elapsedMinutes: '{{minutes}} min',
   ticketLabel: 'Ticket: #{{code}}',
   orderDetailsHeading: 'Order Details - M{{tableNumber}}',
+  orderDetailsHeadingMerged: 'Order Details - {{label}}',
+  mergedWord: 'Joined',
   entryTimeLabel: 'Entry: {{time}}',
   printButton: 'Print',
   itemStatusUpdateErrorToast: 'Could not update the dish status',

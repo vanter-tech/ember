@@ -113,7 +113,7 @@ export const ShiftHistoryTable = () => {
                                   return (
                                     <TableRow key={payment.id}>
                                       <TableCell>
-                                        {payment.tableNumber != null ? `#${payment.tableNumber}` : '—'}
+                                        {payment.tableLabel ?? (payment.tableNumber != null ? `#${payment.tableNumber}` : '—')}
                                       </TableCell>
                                       <TableCell>
                                         {formatCurrency(payment.amount ?? 0)}

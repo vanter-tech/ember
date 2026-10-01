@@ -26,6 +26,7 @@ import com.vanter.ember.config.TenantContextHolder;
 import com.vanter.ember.identity.model.Role;
 import com.vanter.ember.identity.model.User;
 import com.vanter.ember.identity.repository.UserRepository;
+import com.vanter.ember.session.model.LinkedTable;
 import com.vanter.ember.session.model.Session;
 import com.vanter.ember.session.service.SessionService;
 import com.vanter.ember.settings.model.DiningTables;
@@ -131,6 +132,31 @@ class PaymentServiceTest {
 
         assertThat(responses).singleElement()
                 .extracting(PaymentResponse::tableNumber).isEqualTo(5);
+        assertThat(responses.get(0).tableLabel()).isNull();
+    }
+
+    @Test
+    void toResponses_mergedSessionCarriesTheJoinedTableLabel() {
+        Bill bill = Bill.builder()
+                .id(1L).tenantId(TENANT_ID).sessionId("sess-1").total(new BigDecimal("22.50"))
+                .splitMethod(SplitMethod.BY_CONSUMPTION).status(BillStatus.OPEN)
+                .createdAt(LocalDateTime.now()).build();
+        Payment payment = Payment.builder()
+                .id(20L).bill(bill).participantName("Alice").amount(new BigDecimal("22.50"))
+                .method(PaymentMethod.PHYSICAL).status(PaymentStatus.CONFIRMED)
+                .createdAt(LocalDateTime.now()).build();
+        Session merged = sampleSession();
+        merged.getLinkedTables().add(LinkedTable.builder().tableId(UUID.randomUUID()).tableNumber(6)
+                .linkedAt(LocalDateTime.now()).build());
+        when(sessionService.findById("sess-1")).thenReturn(merged);
+        when(diningTableRepository.findByRestaurantIdAndIdIn(TENANT_ID, Set.of(TABLE_ID)))
+                .thenReturn(List.of(DiningTables.builder().id(TABLE_ID).tableNumber(5).build()));
+        when(refundRepository.sumByPaymentId(20L)).thenReturn(BigDecimal.ZERO);
+
+        PaymentResponse response = paymentService.toResponses(List.of(payment)).get(0);
+
+        assertThat(response.tableNumber()).isEqualTo(5);
+        assertThat(response.tableLabel()).isEqualTo("M5+M6");
     }
 
     @Test

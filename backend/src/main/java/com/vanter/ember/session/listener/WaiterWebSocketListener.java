@@ -5,6 +5,7 @@ import com.vanter.ember.session.event.ParticipantLeft;
 import com.vanter.ember.session.event.ParticipantRenamed;
 import com.vanter.ember.session.event.SessionClosed;
 import com.vanter.ember.session.event.SessionOpened;
+import com.vanter.ember.session.event.TableLinksChanged;
 import com.vanter.ember.session.event.TableTransferred;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.event.EventListener;
@@ -44,6 +45,11 @@ public class WaiterWebSocketListener {
 
     @EventListener
     public void onSessionClosed(SessionClosed event) {
+        messagingTemplate.convertAndSend("/topic/waiter/" + event.tenantId(), event);
+    }
+
+    @EventListener
+    public void onTableLinksChanged(TableLinksChanged event) {
         messagingTemplate.convertAndSend("/topic/waiter/" + event.tenantId(), event);
     }
 

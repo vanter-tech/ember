@@ -8,6 +8,7 @@ import com.vanter.ember.billing.model.Bill;
 import com.vanter.ember.billing.repository.BillRepository;
 import com.vanter.ember.restaurant.model.Restaurant;
 import com.vanter.ember.restaurant.repository.RestaurantRepository;
+import com.vanter.ember.session.model.LinkedTable;
 import com.vanter.ember.session.model.OrderItem;
 import com.vanter.ember.session.model.OrderItemStatus;
 import com.vanter.ember.session.model.SelectedModifier;
@@ -87,6 +88,23 @@ class ReceiptRendererTest {
         assertThat(out).contains("Impuesto (15%)").contains("C$7.50");
         assertThat(out).contains("TOTAL").contains("C$57.50");
         assertThat(out).contains("Gracias por visitarnos");
+    }
+
+    @Test
+    void render_mergedTables_printTheJoinedLabelInsteadOfMesaN() {
+        Bill bill = Bill.builder().id(12L).tenantId(TENANT).sessionId(SESSION_ID)
+                .total(new BigDecimal("10.00")).createdAt(CREATED).build();
+        when(bills.findById(12L)).thenReturn(Optional.of(bill));
+        Session session = Session.builder().id(SESSION_ID).tableId(TABLE)
+                .linkedTables(List.of(LinkedTable.builder().tableId(UUID.randomUUID()).tableNumber(6)
+                        .linkedAt(CREATED).build()))
+                .items(List.of(item("Sopa", "10.00", OrderItemStatus.DELIVERED))).build();
+        when(sessions.findById(SESSION_ID)).thenReturn(Optional.of(session));
+        when(tables.findById(TABLE)).thenReturn(Optional.of(DiningTables.builder().tableNumber(5).build()));
+
+        String out = renderer.render(12L, settings);
+
+        assertThat(out).contains("M5+M6 - Unidas").doesNotContain("Mesa 5");
     }
 
     @Test

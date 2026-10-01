@@ -30,7 +30,8 @@ final class ReceiptLayout {
     record Data(
             String header, Integer tableNumber, Long billId, LocalDateTime when, List<Line> lines,
             BigDecimal subtotal, String taxLabel, BigDecimal tax, BigDecimal total,
-            String currency, String footer, int width, List<String> infoLines, boolean tipLine) {
+            String currency, String footer, int width, List<String> infoLines, boolean tipLine,
+            String tableLine) {
 
         static Builder builder() {
             return new Builder();
@@ -51,6 +52,7 @@ final class ReceiptLayout {
             private int width = 42;
             private final List<String> infoLines = new ArrayList<>();
             private boolean tipLine;
+            private String tableLine;
 
             Builder header(String v) { this.header = v; return this; }
             Builder tableNumber(Integer v) { this.tableNumber = v; return this; }
@@ -68,10 +70,12 @@ final class ReceiptLayout {
             Builder infoLine(String v) { this.infoLines.add(v); return this; }
             /** A "PROPINA: ____" line, after the totals and before the footer, for the waiter to fill in by hand. */
             Builder tipLine(boolean v) { this.tipLine = v; return this; }
+            /** Replaces the "Mesa N" line (e.g. "M3+M4 - Unidas" for merged tables). */
+            Builder tableLine(String v) { this.tableLine = v; return this; }
 
             Data build() {
                 return new Data(header, tableNumber, billId, when, List.copyOf(lines), subtotal, taxLabel,
-                        tax, total, currency, footer, width, List.copyOf(infoLines), tipLine);
+                        tax, total, currency, footer, width, List.copyOf(infoLines), tipLine, tableLine);
             }
         }
     }
@@ -88,7 +92,9 @@ final class ReceiptLayout {
                 out.append(center(line, w)).append('\n');
             }
         }
-        if (d.tableNumber() != null) {
+        if (d.tableLine() != null) {
+            out.append(d.tableLine()).append('\n');
+        } else if (d.tableNumber() != null) {
             out.append("Mesa ").append(d.tableNumber()).append('\n');
         }
         String bill = "Cuenta #" + d.billId();

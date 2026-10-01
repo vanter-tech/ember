@@ -12,6 +12,7 @@ import com.vanter.ember.kitchen.repository.KitchenOrderRepository;
 import com.vanter.ember.session.event.DeleteItem;
 import com.vanter.ember.session.event.KitchenItemsConfirmed;
 import com.vanter.ember.session.event.SessionClosed;
+import com.vanter.ember.session.event.TableLinksChanged;
 import com.vanter.ember.session.model.OrderItemStatus;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -74,12 +75,14 @@ public class KitchenService {
                         .tenantId(event.tenantId())
                         .sessionId(event.sessionId())
                         .tableNumber(event.tableNumber())
+                        .linkedTableNumbers(new ArrayList<>(event.linkedTableNumbers()))
                         .createdAt(LocalDateTime.now())
                         .items(new ArrayList<>())
                         .active(true)
                         .build());
 
         order.setActive(true);
+        order.setLinkedTableNumbers(new ArrayList<>(event.linkedTableNumbers()));
         event.confirmedItems().forEach(item -> {
             order.getItems().add(KitchenItem.builder()
                     .itemId(item.getId())
@@ -95,6 +98,14 @@ public class KitchenService {
         });
 
         kitchenOrderRepository.save(order);
+    }
+
+    @EventListener
+    public void handleTableLinksChanged(TableLinksChanged event) {
+        kitchenOrderRepository.findByTenantIdAndSessionId(event.tenantId(), event.sessionId()).ifPresent(order -> {
+            order.setLinkedTableNumbers(new ArrayList<>(event.linkedTableNumbers()));
+            kitchenOrderRepository.save(order);
+        });
     }
 
     public KitchenOrder updateItemStatus(String orderId, String itemId, OrderItemStatus newStatus) {

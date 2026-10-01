@@ -1,13 +1,16 @@
 package com.vanter.ember.settings.repository;
 
 import com.vanter.ember.settings.model.DiningTables;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface DiningTableRepository extends JpaRepository<DiningTables, UUID> {
@@ -26,4 +29,9 @@ public interface DiningTableRepository extends JpaRepository<DiningTables, UUID>
      * earned while it was active.
      */
     List<DiningTables> findByRestaurantIdAndIdIn(UUID restaurantId, Collection<UUID> ids);
+
+    /** Row lock used to serialise "who gets this table" decisions (seating vs linking). */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select t from DiningTables t where t.id = :id")
+    Optional<DiningTables> findByIdForUpdate(@Param("id") UUID id);
 }

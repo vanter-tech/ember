@@ -18,7 +18,11 @@ public class SessionActivity {
         TABLE_TRANSFERRED,
         PARTICIPANT_LEFT,
         /** An ADMIN closed a stuck table; {@code participantName} = the admin's email, {@code note} = why. */
-        CLOSED_BY_ADMIN
+        CLOSED_BY_ADMIN,
+        /** A free table was attached to the session; {@code note} = the table label, e.g. {@code M4}. */
+        TABLE_LINKED,
+        /** A linked table was detached; {@code note} = the table label. */
+        TABLE_UNLINKED
     }
 
     private Type type;

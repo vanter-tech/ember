@@ -10,6 +10,7 @@ import com.vanter.ember.printing.model.PrintJobSourceType;
 import com.vanter.ember.printing.model.PrintJobStatus;
 import com.vanter.ember.printing.model.PrinterRole;
 import com.vanter.ember.printing.repository.PrintJobRepository;
+import com.vanter.ember.session.model.TableLabels;
 import java.time.LocalDateTime;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -56,7 +57,7 @@ public class KitchenTicketPrintService {
 
     private String renderTicketPayload(KitchenOrder order) {
         StringBuilder sb = new StringBuilder();
-        sb.append("Mesa ").append(order.getTableNumber()).append('\n');
+        sb.append(TableLabels.ticketLine(order.getTableNumber(), order.getLinkedTableNumbers())).append('\n');
         for (KitchenItem item : order.getItems()) {
             sb.append("- ").append(item.getName()).append('\n');
             for (String modifier : item.getModifiers()) {

@@ -92,6 +92,19 @@ class PrintingEventListenerTest {
         assertThat(jobCaptor.getValue().getTargetAgentId()).isNull();
     }
 
+    @Test
+    void onKitchenItemsConfirmed_mergedTables_printTheJoinedLabel() {
+        when(settingService.getSettings(TENANT_ID)).thenReturn(settingsWith(true));
+        when(printJobRepository.saveAndFlush(any())).thenAnswer(inv -> inv.getArgument(0));
+        OrderItem item = OrderItem.builder().id("i1").itemId(1L).name("Hamburguesa").build();
+
+        printingEventListener.onKitchenItemsConfirmed(
+                new KitchenItemsConfirmed(TENANT_ID, "session-1", 5, List.of(item), List.of(6)));
+
+        ArgumentCaptor<PrintJob> jobCaptor = ArgumentCaptor.forClass(PrintJob.class);
+        verify(printJobRepository).saveAndFlush(jobCaptor.capture());
+        assertThat(jobCaptor.getValue().getPayload()).contains("M5+M6 - Unidas").doesNotContain("Mesa 5");
+    }
 
     /** What Hibernate does with an assigned-id entity: MERGE, i.e. fill the tenant id on a COPY. */
     private static PrintJob mergedCopy(PrintJob given, UUID tenantId) {

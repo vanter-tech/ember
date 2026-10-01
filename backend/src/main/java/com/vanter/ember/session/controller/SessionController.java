@@ -15,6 +15,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.Map;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -233,6 +234,26 @@ public class SessionController {
         return sessionService.getSessionDetails(id);
     }
 
+    @Operation(summary = "Attach a free table to this open session (WAITER)")
+    @PostMapping("/{id}/linked-tables")
+    @PreAuthorize("hasRole('WAITER')")
+    public SessionDetailResponseDto linkTable(@PathVariable String id,
+                                              @Valid @RequestBody LinkTableRequest request,
+                                              Authentication authentication) {
+        sessionService.linkTable(id, authentication.getName(), request.tableId());
+        return sessionService.getSessionDetails(id);
+    }
+
+    @Operation(summary = "Detach a linked table from this session (WAITER)")
+    @DeleteMapping("/{id}/linked-tables/{tableId}")
+    @PreAuthorize("hasRole('WAITER')")
+    public SessionDetailResponseDto unlinkTable(@PathVariable String id,
+                                                @PathVariable UUID tableId,
+                                                Authentication authentication) {
+        sessionService.unlinkTable(id, authentication.getName(), tableId);
+        return sessionService.getSessionDetails(id);
+    }
+
     @Operation(summary = "Send item to KITCHEN")
     @PostMapping("/{sessionId}/participants/{userId}/confirm")
     @PreAuthorize("hasRole('CUSTOMER')")
@@ -240,6 +261,16 @@ public class SessionController {
                                              Authentication authentication){
         sessionService.confirmDraftsForUser(sessionId, userId, authentication.getName());
         return ResponseEntity.ok().build();
+    }
+
+    @Operation(summary = "Remove several not-yet-prepared items at once, all or nothing (WAITER)")
+    @PostMapping("/{id}/items/bulk-delete")
+    @PreAuthorize("hasRole('WAITER')")
+    public SessionDetailResponseDto removeItems(@PathVariable String id,
+                                                @Valid @RequestBody RemoveItemsRequest request,
+                                                Authentication authentication) {
+        sessionService.removeItems(id, authentication.getName(), request.itemIds());
+        return sessionService.getSessionDetails(id);
     }
 
     @Operation(summary = "Remove item from session (CUSTOMER/WAITER)")

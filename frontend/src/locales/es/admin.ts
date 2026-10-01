@@ -317,6 +317,7 @@ planFeatureEverythingInFree: 'Todo lo de Free',  planFeatureEverythingInStarter:
   averageDurationLabel: 'Duración promedio (min)',
   noTableActivity: 'Sin mesas con actividad en este periodo.',
   tableNumberLabel: 'Mesa {{tableNumber}}',
+  mergedWithTables: 'Fusionada con {{tables}}',
   tableRevenueSummary: '${{revenue}} · {{turnoverCount}} giros · {{duration}} min',
   billingCardDescription: 'Configura moneda, impuestos y propinas sugeridas.',
   loadingSettingsLabel: 'Cargando configuraciones...',

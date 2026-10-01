@@ -3,6 +3,7 @@ package com.vanter.ember.kitchen.listener;
 import com.vanter.ember.kitchen.event.KitchenItemUpdated;
 import com.vanter.ember.kitchen.event.KitchenOrderRetired;
 import com.vanter.ember.session.event.KitchenItemsConfirmed;
+import com.vanter.ember.session.event.TableLinksChanged;
 import com.vanter.ember.session.model.OrderItemStatus;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -29,6 +30,15 @@ class KitchenWebSocketListenerTest {
         KitchenItemsConfirmed event = new KitchenItemsConfirmed(TENANT_ID, "sess-1", 5, List.of());
 
         listener.onKitchenItemsConfirmed(event);
+
+        verify(messagingTemplate).convertAndSend("/topic/kitchen/" + TENANT_ID, event);
+    }
+
+    @Test
+    void onTableLinksChanged_sendsToTenantKitchenTopic() {
+        TableLinksChanged event = TableLinksChanged.linked(TENANT_ID, "sess-1", UUID.randomUUID(), List.of(6));
+
+        listener.onTableLinksChanged(event);
 
         verify(messagingTemplate).convertAndSend("/topic/kitchen/" + TENANT_ID, event);
     }

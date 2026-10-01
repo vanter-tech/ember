@@ -563,6 +563,109 @@ class SessionControllerTest {
                 .andExpect(status().isForbidden());
     }
 
+    // --- POST/DELETE /sessions/{id}/linked-tables ---
+
+    @Test
+    @WithMockUser(username = "waiter@test.com", roles = "WAITER")
+    void linkTable_callsTheServiceWithTheCallerAndTarget_andReturnsSessionDetail() throws Exception {
+        UUID target = UUID.randomUUID();
+        when(sessionService.getSessionDetails("sess-1")).thenReturn(sampleSessionDetail(List.of()));
+
+        mockMvc.perform(post("/sessions/sess-1/linked-tables")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"tableId\":\"" + target + "\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value("sess-1"));
+
+        verify(sessionService).linkTable("sess-1", "waiter@test.com", target);
+    }
+
+    @Test
+    @WithMockUser(username = "waiter@test.com", roles = "WAITER")
+    void linkTable_badRequestWhenTableIdMissing() throws Exception {
+        mockMvc.perform(post("/sessions/sess-1/linked-tables")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest());
+
+        verify(sessionService, never()).linkTable(any(), any(), any());
+    }
+
+    @Test
+    @WithMockUser(username = "cust@test.com", roles = "CUSTOMER")
+    void linkTable_forbiddenForCustomer() throws Exception {
+        mockMvc.perform(post("/sessions/sess-1/linked-tables")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"tableId\":\"" + UUID.randomUUID() + "\"}"))
+                .andExpect(status().isForbidden());
+
+        verify(sessionService, never()).linkTable(any(), any(), any());
+    }
+
+    @Test
+    @WithMockUser(username = "waiter@test.com", roles = "WAITER")
+    void unlinkTable_callsTheService_andReturnsSessionDetail() throws Exception {
+        UUID target = UUID.randomUUID();
+        when(sessionService.getSessionDetails("sess-1")).thenReturn(sampleSessionDetail(List.of()));
+
+        mockMvc.perform(delete("/sessions/sess-1/linked-tables/" + target))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value("sess-1"));
+
+        verify(sessionService).unlinkTable("sess-1", "waiter@test.com", target);
+    }
+
+    @Test
+    @WithMockUser(username = "cust@test.com", roles = "CUSTOMER")
+    void unlinkTable_forbiddenForCustomer() throws Exception {
+        mockMvc.perform(delete("/sessions/sess-1/linked-tables/" + UUID.randomUUID()))
+                .andExpect(status().isForbidden());
+
+        verify(sessionService, never()).unlinkTable(any(), any(), any());
+    }
+
+    // --- POST /sessions/{id}/items/bulk-delete ---
+
+    @Test
+    @WithMockUser(username = "waiter@test.com", roles = "WAITER")
+    void bulkDeleteItems_callsTheServiceWithTheCallerAndIds_andReturnsSessionDetail() throws Exception {
+        when(sessionService.getSessionDetails("sess-1")).thenReturn(sampleSessionDetail(List.of()));
+
+        mockMvc.perform(post("/sessions/sess-1/items/bulk-delete")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"itemIds\":[\"a\",\"b\"]}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value("sess-1"));
+
+        verify(sessionService).removeItems("sess-1", "waiter@test.com", List.of("a", "b"));
+    }
+
+    @Test
+    @WithMockUser(username = "waiter@test.com", roles = "WAITER")
+    void bulkDeleteItems_badRequestWhenTheListIsEmptyOrMissing() throws Exception {
+        mockMvc.perform(post("/sessions/sess-1/items/bulk-delete")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"itemIds\":[]}"))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(post("/sessions/sess-1/items/bulk-delete")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest());
+
+        verify(sessionService, never()).removeItems(any(), any(), any());
+    }
+
+    @Test
+    @WithMockUser(username = "cust@test.com", roles = "CUSTOMER")
+    void bulkDeleteItems_forbiddenForCustomer() throws Exception {
+        mockMvc.perform(post("/sessions/sess-1/items/bulk-delete")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"itemIds\":[\"a\"]}"))
+                .andExpect(status().isForbidden());
+
+        verify(sessionService, never()).removeItems(any(), any(), any());
+    }
+
     // --- DELETE /sessions/{id}/items/{itemId} ---
 
     @Test

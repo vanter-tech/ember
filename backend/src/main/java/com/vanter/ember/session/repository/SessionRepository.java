@@ -17,6 +17,8 @@ public interface SessionRepository extends JpaRepository<Session, String> {
 
     List<Session> findByTenantId(UUID tenantId);
 
+    List<Session> findByTenantIdAndStatus(UUID tenantId, SessionStatus status);
+
     /**
      * Filters the embedded {@code participants} JSON in Java rather than in SQL: Postgres's jsonb
      * containment operators aren't portable to H2 (the test datasource), and this method has no

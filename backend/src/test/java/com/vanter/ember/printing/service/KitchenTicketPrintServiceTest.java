@@ -100,6 +100,19 @@ class KitchenTicketPrintServiceTest {
     }
 
     @Test
+    void enqueue_mergedTablesPrintTheJoinedLabelInsteadOfMesaN() {
+        TenantContextHolder.setTenantId(TENANT_ID);
+        KitchenOrder order = sampleOrder();
+        order.setLinkedTableNumbers(new ArrayList<>(List.of(6)));
+        when(kitchenOrderRepository.findByIdAndTenantId("ko-1", TENANT_ID)).thenReturn(Optional.of(order));
+        when(printJobRepository.saveAndFlush(any())).thenAnswer(i -> i.getArgument(0));
+
+        PrintJob job = service.enqueue("ko-1");
+
+        assertThat(job.getPayload()).contains("M5+M6 - Unidas", "Tacos").doesNotContain("Mesa 5");
+    }
+
+    @Test
     void enqueue_throwsNotFound_whenOrderMissing() {
         TenantContextHolder.setTenantId(TENANT_ID);
         when(kitchenOrderRepository.findByIdAndTenantId("ko-999", TENANT_ID)).thenReturn(Optional.empty());

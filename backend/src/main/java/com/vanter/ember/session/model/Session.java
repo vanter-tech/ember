@@ -83,6 +83,11 @@ public class Session {
     @Builder.Default
     private List<SessionActivity> activityLog = new ArrayList<>();
 
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "linked_tables", nullable = false)
+    @Builder.Default
+    private List<LinkedTable> linkedTables = new ArrayList<>();
+
     @Column(name = "join_code", length = 10)
     private String joinCode;
 
@@ -94,5 +99,13 @@ public class Session {
         if (id == null) {
             id = UUID.randomUUID().toString();
         }
+    }
+
+    /** Table numbers of the linked tables in link order; empty (never null) for an unmerged session. */
+    public List<Integer> linkedTableNumbers() {
+        if (linkedTables == null) {
+            return List.of();
+        }
+        return linkedTables.stream().map(LinkedTable::getTableNumber).toList();
     }
 }

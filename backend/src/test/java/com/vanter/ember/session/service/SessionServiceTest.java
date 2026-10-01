@@ -23,8 +23,10 @@ import com.vanter.ember.session.event.ParticipantLeft;
 import com.vanter.ember.session.event.ParticipantRenamed;
 import com.vanter.ember.session.event.SessionClosed;
 import com.vanter.ember.session.event.SessionOpened;
+import com.vanter.ember.session.event.TableLinksChanged;
 import com.vanter.ember.session.event.TableTransferred;
 import com.vanter.ember.session.exception.TooManyParticipantsException;
+import com.vanter.ember.session.model.LinkedTable;
 import com.vanter.ember.session.model.OrderItem;
 import com.vanter.ember.session.model.OrderItemStatus;
 import com.vanter.ember.session.model.Participant;
@@ -54,6 +56,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Function;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -80,10 +83,31 @@ class SessionServiceTest {
     @Mock UserRepository userRepository;
     @Mock RestaurantRepository restaurantRepository;
     @Mock BillRepository billRepository;
+    @Mock TableLock tableLock;
     @InjectMocks SessionService sessionService;
 
     private DiningTables diningTable() {
         return DiningTables.builder().id(TABLE_ID).tableNumber(5).isActive(true).build();
+    }
+
+    /** Makes the mocked {@link TableLock} run its action synchronously with the given table. */
+    @SuppressWarnings("unchecked")
+    private void lockReturns(DiningTables table) {
+        when(tableLock.withTableLock(eq(table.getId()), any())).thenAnswer(
+                inv -> ((Function<DiningTables, Object>) inv.getArgument(1)).apply(table));
+    }
+
+    private void noOpenSessions() {
+        when(sessionRepository.findByTenantIdAndStatus(RESTAURANT_ID, SessionStatus.OPEN)).thenReturn(List.of());
+    }
+
+    private DiningTables otherTable(UUID id, int number) {
+        return DiningTables.builder().id(id).tableNumber(number).isActive(true).build();
+    }
+
+    private Session openSession() {
+        return Session.builder().id("sess-1").tenantId(RESTAURANT_ID).tableId(TABLE_ID)
+                .waiterId("waiter@test.com").status(SessionStatus.OPEN).build();
     }
 
     private User user(String id) {
@@ -92,8 +116,8 @@ class SessionServiceTest {
 
     @Test
     void createSession_savesSessionWithOpenStatus() {
-        when(diningTableRepository.findById(TABLE_ID)).thenReturn(Optional.of(diningTable()));
-        when(sessionRepository.findByTenantIdAndTableIdAndStatus(RESTAURANT_ID, TABLE_ID, SessionStatus.OPEN)).thenReturn(List.of());
+        lockReturns(diningTable());
+        noOpenSessions();
         when(sessionRepository.save(any())).thenAnswer(inv -> {
             Session s = inv.getArgument(0);
             s.setId("sess-1");
@@ -111,9 +135,8 @@ class SessionServiceTest {
 
     @Test
     void createSession_stampsTenantFromContext() {
-        when(diningTableRepository.findById(TABLE_ID)).thenReturn(Optional.of(diningTable()));
-        when(sessionRepository.findByTenantIdAndTableIdAndStatus(RESTAURANT_ID, TABLE_ID, SessionStatus.OPEN))
-                .thenReturn(List.of());
+        lockReturns(diningTable());
+        noOpenSessions();
         when(sessionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         Session result = sessionService.createSession(TABLE_ID, "waiter@test.com", 4, null);
@@ -132,8 +155,8 @@ class SessionServiceTest {
 
     @Test
     void createSession_setsCreatedAt() {
-        when(diningTableRepository.findById(TABLE_ID)).thenReturn(Optional.of(diningTable()));
-        when(sessionRepository.findByTenantIdAndTableIdAndStatus(RESTAURANT_ID, TABLE_ID, SessionStatus.OPEN)).thenReturn(List.of());
+        lockReturns(diningTable());
+        noOpenSessions();
         when(sessionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         Session result = sessionService.createSession(TABLE_ID, "waiter@test.com", 4, null);
@@ -143,8 +166,8 @@ class SessionServiceTest {
 
     @Test
     void createSession_publishesSessionOpenedEvent() {
-        when(diningTableRepository.findById(TABLE_ID)).thenReturn(Optional.of(diningTable()));
-        when(sessionRepository.findByTenantIdAndTableIdAndStatus(RESTAURANT_ID, TABLE_ID, SessionStatus.OPEN)).thenReturn(List.of());
+        lockReturns(diningTable());
+        noOpenSessions();
         when(sessionRepository.save(any())).thenAnswer(inv -> {
             Session s = inv.getArgument(0);
             s.setId("sess-1");
@@ -162,10 +185,10 @@ class SessionServiceTest {
 
     @Test
     void createSession_throwsWhenTableOccupied() {
-        when(diningTableRepository.findById(TABLE_ID)).thenReturn(Optional.of(diningTable()));
+        lockReturns(diningTable());
         Session existingOpenSession = Session.builder()
                 .id("sess-0").tableId(TABLE_ID).status(SessionStatus.OPEN).build();
-        when(sessionRepository.findByTenantIdAndTableIdAndStatus(RESTAURANT_ID, TABLE_ID, SessionStatus.OPEN))
+        when(sessionRepository.findByTenantIdAndStatus(RESTAURANT_ID, SessionStatus.OPEN))
                 .thenReturn(List.of(existingOpenSession));
 
         assertThatThrownBy(() -> sessionService.createSession(TABLE_ID, "waiter@test.com", 4, null))
@@ -173,13 +196,141 @@ class SessionServiceTest {
                 .hasMessageContaining("occupied");
     }
 
+    // --- Table merge (EMB-TABLE-MERGE T2) ---
+
+    @Test
+    void createSession_rejectsATableThatIsLinkedToAnotherOpenSession() {
+        UUID m4 = UUID.randomUUID();
+        lockReturns(otherTable(m4, 4));
+        Session family = openSession();
+        family.getLinkedTables().add(LinkedTable.builder().tableId(m4).tableNumber(4)
+                .linkedAt(LocalDateTime.now()).build());
+        when(sessionRepository.findByTenantIdAndStatus(RESTAURANT_ID, SessionStatus.OPEN)).thenReturn(List.of(family));
+
+        assertThatThrownBy(() -> sessionService.createSession(m4, "other@test.com", 2, null))
+                .isInstanceOf(IllegalStateException.class).hasMessageContaining("occupied");
+        verify(sessionRepository, never()).save(any());
+    }
+
+    @Test
+    void linkTable_attachesAFreeTable_logsIt_andPublishesTheFullList() {
+        UUID m4 = UUID.randomUUID();
+        lockReturns(otherTable(m4, 4));
+        Session session = openSession();
+        when(sessionRepository.findByIdAndTenantId("sess-1", RESTAURANT_ID)).thenReturn(Optional.of(session));
+        when(sessionRepository.findByTenantIdAndStatus(RESTAURANT_ID, SessionStatus.OPEN)).thenReturn(List.of(session));
+        when(sessionRepository.save(any(Session.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Session saved = sessionService.linkTable("sess-1", "waiter@test.com", m4);
+
+        assertThat(saved.getLinkedTables()).singleElement().satisfies(l -> {
+            assertThat(l.getTableId()).isEqualTo(m4);
+            assertThat(l.getTableNumber()).isEqualTo(4);
+            assertThat(l.getLinkedAt()).isNotNull();
+        });
+        assertThat(saved.getActivityLog()).extracting(SessionActivity::getType)
+                .containsExactly(SessionActivity.Type.TABLE_LINKED);
+        ArgumentCaptor<TableLinksChanged> captor = ArgumentCaptor.forClass(TableLinksChanged.class);
+        verify(eventPublisher).publishEvent(captor.capture());
+        assertThat(captor.getValue().type()).isEqualTo("TABLES_LINKED");
+        assertThat(captor.getValue().linkedTableNumbers()).containsExactly(4);
+        assertThat(captor.getValue().tableId()).isEqualTo(TABLE_ID);
+    }
+
+    @Test
+    void linkTable_rejectsATableOccupiedByAnotherSession() {
+        UUID m4 = UUID.randomUUID();
+        lockReturns(otherTable(m4, 4));
+        Session session = openSession();
+        Session other = Session.builder().id("sess-9").tableId(m4).status(SessionStatus.OPEN).build();
+        when(sessionRepository.findByIdAndTenantId("sess-1", RESTAURANT_ID)).thenReturn(Optional.of(session));
+        when(sessionRepository.findByTenantIdAndStatus(RESTAURANT_ID, SessionStatus.OPEN))
+                .thenReturn(List.of(session, other));
+
+        assertThatThrownBy(() -> sessionService.linkTable("sess-1", "waiter@test.com", m4))
+                .isInstanceOf(IllegalStateException.class).hasMessageContaining("occupied");
+        verify(sessionRepository, never()).save(any());
+    }
+
+    @Test
+    void linkTable_rejectsTheSessionsOwnPrimaryTableAndAnAlreadyLinkedOne() {
+        UUID m4 = UUID.randomUUID();
+        Session session = openSession();
+        session.getLinkedTables().add(LinkedTable.builder().tableId(m4).tableNumber(4).linkedAt(LocalDateTime.now()).build());
+        when(sessionRepository.findByIdAndTenantId("sess-1", RESTAURANT_ID)).thenReturn(Optional.of(session));
+        when(sessionRepository.findByTenantIdAndStatus(RESTAURANT_ID, SessionStatus.OPEN)).thenReturn(List.of(session));
+
+        lockReturns(diningTable());
+        assertThatThrownBy(() -> sessionService.linkTable("sess-1", "waiter@test.com", TABLE_ID))
+                .isInstanceOf(IllegalStateException.class);
+        lockReturns(otherTable(m4, 4));
+        assertThatThrownBy(() -> sessionService.linkTable("sess-1", "waiter@test.com", m4))
+                .isInstanceOf(IllegalStateException.class);
+        verify(sessionRepository, never()).save(any());
+    }
+
+    @Test
+    void linkTable_rejectsAnInactiveTable() {
+        UUID m4 = UUID.randomUUID();
+        lockReturns(DiningTables.builder().id(m4).tableNumber(4).isActive(false).build());
+        Session session = openSession();
+        when(sessionRepository.findByIdAndTenantId("sess-1", RESTAURANT_ID)).thenReturn(Optional.of(session));
+
+        assertThatThrownBy(() -> sessionService.linkTable("sess-1", "waiter@test.com", m4))
+                .isInstanceOf(IllegalStateException.class).hasMessageContaining("not active");
+    }
+
+    @Test
+    void linkTable_onlyTheAssignedWaiterOnAnOpenSession() {
+        UUID m4 = UUID.randomUUID();
+        lockReturns(otherTable(m4, 4));
+        Session session = openSession();
+        when(sessionRepository.findByIdAndTenantId("sess-1", RESTAURANT_ID)).thenReturn(Optional.of(session));
+
+        assertThatThrownBy(() -> sessionService.linkTable("sess-1", "intruder@test.com", m4))
+                .isInstanceOf(AccessDeniedException.class);
+
+        session.setStatus(SessionStatus.CLOSED);
+        assertThatThrownBy(() -> sessionService.linkTable("sess-1", "waiter@test.com", m4))
+                .isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    void unlinkTable_detachesIt_logsIt_andPublishesTheRemainingList() {
+        UUID m4 = UUID.randomUUID();
+        UUID m5 = UUID.randomUUID();
+        Session session = openSession();
+        session.getLinkedTables().add(LinkedTable.builder().tableId(m4).tableNumber(4).linkedAt(LocalDateTime.now()).build());
+        session.getLinkedTables().add(LinkedTable.builder().tableId(m5).tableNumber(5).linkedAt(LocalDateTime.now()).build());
+        when(sessionRepository.findByIdAndTenantId("sess-1", RESTAURANT_ID)).thenReturn(Optional.of(session));
+        when(sessionRepository.save(any(Session.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Session saved = sessionService.unlinkTable("sess-1", "waiter@test.com", m4);
+
+        assertThat(saved.getLinkedTables()).extracting(LinkedTable::getTableId).containsExactly(m5);
+        assertThat(saved.getActivityLog()).extracting(SessionActivity::getType)
+                .containsExactly(SessionActivity.Type.TABLE_UNLINKED);
+        ArgumentCaptor<TableLinksChanged> captor = ArgumentCaptor.forClass(TableLinksChanged.class);
+        verify(eventPublisher).publishEvent(captor.capture());
+        assertThat(captor.getValue().type()).isEqualTo("TABLE_UNLINKED");
+        assertThat(captor.getValue().linkedTableNumbers()).containsExactly(5);
+    }
+
+    @Test
+    void unlinkTable_aTableThatIsNotLinkedIsNotFound() {
+        Session session = openSession();
+        when(sessionRepository.findByIdAndTenantId("sess-1", RESTAURANT_ID)).thenReturn(Optional.of(session));
+
+        assertThatThrownBy(() -> sessionService.unlinkTable("sess-1", "waiter@test.com", UUID.randomUUID()))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
     // --- Hub name-only seat seeding (EMB-FEAT-HUB T1) ---
 
     @Test
     void createSession_noSeatNames_seedsNoParticipants() {
-        when(diningTableRepository.findById(TABLE_ID)).thenReturn(Optional.of(diningTable()));
-        when(sessionRepository.findByTenantIdAndTableIdAndStatus(RESTAURANT_ID, TABLE_ID, SessionStatus.OPEN))
-                .thenReturn(List.of());
+        lockReturns(diningTable());
+        noOpenSessions();
         when(sessionRepository.save(any(Session.class))).thenAnswer(inv -> inv.getArgument(0));
 
         Session s = sessionService.createSession(TABLE_ID, "waiter@test.com", 4, null);
@@ -189,9 +340,8 @@ class SessionServiceTest {
 
     @Test
     void createSession_partialSeatNames_fillsRestWithAsientoN() {
-        when(diningTableRepository.findById(TABLE_ID)).thenReturn(Optional.of(diningTable()));
-        when(sessionRepository.findByTenantIdAndTableIdAndStatus(RESTAURANT_ID, TABLE_ID, SessionStatus.OPEN))
-                .thenReturn(List.of());
+        lockReturns(diningTable());
+        noOpenSessions();
         when(sessionRepository.save(any(Session.class))).thenAnswer(inv -> inv.getArgument(0));
 
         Session s = sessionService.createSession(TABLE_ID, "waiter@test.com", 4, List.of("Ana", "Beto"));
@@ -203,9 +353,8 @@ class SessionServiceTest {
 
     @Test
     void createSession_moreNamesThanCapacity_throws() {
-        when(diningTableRepository.findById(TABLE_ID)).thenReturn(Optional.of(diningTable()));
-        when(sessionRepository.findByTenantIdAndTableIdAndStatus(RESTAURANT_ID, TABLE_ID, SessionStatus.OPEN))
-                .thenReturn(List.of());
+        lockReturns(diningTable());
+        noOpenSessions();
 
         assertThatThrownBy(() -> sessionService.createSession(TABLE_ID, "waiter@test.com", 2, List.of("A", "B", "C")))
                 .isInstanceOf(IllegalArgumentException.class);
@@ -213,9 +362,8 @@ class SessionServiceTest {
 
     @Test
     void createSession_duplicateProvidedNames_throws() {
-        when(diningTableRepository.findById(TABLE_ID)).thenReturn(Optional.of(diningTable()));
-        when(sessionRepository.findByTenantIdAndTableIdAndStatus(RESTAURANT_ID, TABLE_ID, SessionStatus.OPEN))
-                .thenReturn(List.of());
+        lockReturns(diningTable());
+        noOpenSessions();
 
         assertThatThrownBy(() -> sessionService.createSession(TABLE_ID, "waiter@test.com", 3, List.of("Ana", "Ana")))
                 .isInstanceOf(IllegalArgumentException.class);
@@ -1000,6 +1148,116 @@ class SessionServiceTest {
         assertThat(deleted.getParticipantName()).isEqualTo("Alice");
     }
 
+    // --- removeItems (bulk delete) tests ---
+
+    private OrderItem bulkItem(String id, String name, OrderItemStatus status) {
+        return OrderItem.builder()
+                .id(id).itemId(10L).name(name).price(new java.math.BigDecimal("5.00"))
+                .participantId("user-1").participantName("Alice")
+                .status(status).addedAt(LocalDateTime.now())
+                .build();
+    }
+
+    private Session sessionWithItems(OrderItem... items) {
+        Session session = openSessionWithItem(OrderItemStatus.PENDING, "user-1");
+        session.setItems(new ArrayList<>(List.of(items)));
+        when(sessionRepository.findByIdAndTenantId("sess-1", RESTAURANT_ID)).thenReturn(Optional.of(session));
+        return session;
+    }
+
+    @Test
+    void removeItems_removesAllRequestedItems_logsEachOne_andPublishesOneDeleteItemPerItem() {
+        Session session = sessionWithItems(
+                bulkItem("a", "Tacos", OrderItemStatus.PENDING),
+                bulkItem("b", "Sopa", OrderItemStatus.PENDING),
+                bulkItem("c", "Flan", OrderItemStatus.PENDING));
+        when(sessionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        Session result = sessionService.removeItems("sess-1", "waiter@test.com", List.of("a", "b"));
+
+        assertThat(result.getItems()).extracting(OrderItem::getId).containsExactly("c");
+        assertThat(result.getActivityLog()).extracting(SessionActivity::getType)
+                .containsExactly(SessionActivity.Type.ITEM_DELETED, SessionActivity.Type.ITEM_DELETED);
+        assertThat(result.getActivityLog()).extracting(SessionActivity::getItemName)
+                .containsExactly("Tacos", "Sopa");
+        verify(sessionRepository, org.mockito.Mockito.times(1)).save(session);
+        ArgumentCaptor<DeleteItem> events = ArgumentCaptor.forClass(DeleteItem.class);
+        verify(eventPublisher, org.mockito.Mockito.times(2)).publishEvent(events.capture());
+        assertThat(events.getAllValues()).extracting(DeleteItem::orderItemId).containsExactly("a", "b");
+    }
+
+    @Test
+    void removeItems_rejectsTheWholeBatchIfOneItemIsAlreadyInTheKitchen_andRemovesNothing() {
+        Session session = sessionWithItems(
+                bulkItem("a", "Tacos", OrderItemStatus.PENDING),
+                bulkItem("b", "Sopa", OrderItemStatus.PREPARING));
+
+        assertThatThrownBy(() -> sessionService.removeItems("sess-1", "waiter@test.com", List.of("a", "b")))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Sopa")
+                .hasMessageContaining("sent to the kitchen");
+
+        assertThat(session.getItems()).hasSize(2);
+        assertThat(session.getActivityLog()).isEmpty();
+        verify(sessionRepository, never()).save(any());
+        verify(eventPublisher, never()).publishEvent(any(Object.class));
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = OrderItemStatus.class, names = {"PREPARING", "READY", "DELIVERED"})
+    void removeItems_neverRemovesAnItemThatLeftPending(OrderItemStatus status) {
+        sessionWithItems(bulkItem("a", "Tacos", status));
+
+        assertThatThrownBy(() -> sessionService.removeItems("sess-1", "waiter@test.com", List.of("a")))
+                .isInstanceOf(IllegalStateException.class);
+        verify(sessionRepository, never()).save(any());
+    }
+
+    @Test
+    void removeItems_onlyTheAssignedWaiterMayDoIt() {
+        sessionWithItems(bulkItem("a", "Tacos", OrderItemStatus.PENDING));
+
+        assertThatThrownBy(() -> sessionService.removeItems("sess-1", "someone-else@test.com", List.of("a")))
+                .isInstanceOf(AccessDeniedException.class);
+        verify(sessionRepository, never()).save(any());
+    }
+
+    @Test
+    void removeItems_anUnknownItemIsNotFound_andNothingIsRemoved() {
+        Session session = sessionWithItems(bulkItem("a", "Tacos", OrderItemStatus.PENDING));
+
+        assertThatThrownBy(() -> sessionService.removeItems("sess-1", "waiter@test.com", List.of("a", "ghost")))
+                .isInstanceOf(ResourceNotFoundException.class);
+
+        assertThat(session.getItems()).hasSize(1);
+        verify(sessionRepository, never()).save(any());
+    }
+
+    @Test
+    void removeItems_aRepeatedIdCountsOnce() {
+        sessionWithItems(bulkItem("a", "Tacos", OrderItemStatus.PENDING));
+        when(sessionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        Session result = sessionService.removeItems("sess-1", "waiter@test.com", List.of("a", "a"));
+
+        assertThat(result.getItems()).isEmpty();
+        assertThat(result.getActivityLog()).hasSize(1);
+        verify(eventPublisher, org.mockito.Mockito.times(1)).publishEvent(any(DeleteItem.class));
+    }
+
+    @Test
+    void removeItems_needsAnOpenSession_andAtLeastOneItem() {
+        Session session = sessionWithItems(bulkItem("a", "Tacos", OrderItemStatus.PENDING));
+
+        assertThatThrownBy(() -> sessionService.removeItems("sess-1", "waiter@test.com", List.of()))
+                .isInstanceOf(IllegalArgumentException.class);
+
+        session.setStatus(SessionStatus.CLOSED);
+        assertThatThrownBy(() -> sessionService.removeItems("sess-1", "waiter@test.com", List.of("a")))
+                .isInstanceOf(IllegalStateException.class);
+        verify(sessionRepository, never()).save(any());
+    }
+
     // --- handleKitchenItemUpdated tests ---
 
     @Test
@@ -1211,6 +1469,33 @@ class SessionServiceTest {
                 .filteredOn(KitchenItemsConfirmed.class::isInstance)
                 .extracting(e -> ((KitchenItemsConfirmed) e).tenantId())
                 .containsExactly(RESTAURANT_ID);
+    }
+
+    @Test
+    void confirmDraftsForUser_passesTheMergedTablesOfTheSessionToTheKitchenEvent() {
+        Session session = openSessionWithParticipant("user-1");
+        session.getLinkedTables().add(LinkedTable.builder().tableId(UUID.randomUUID()).tableNumber(6)
+                .linkedAt(LocalDateTime.now()).build());
+        session.getItems().add(OrderItem.builder()
+                .id("item-1").itemId(10L).name("Tacos").price(new java.math.BigDecimal("12.50"))
+                .participantId("user-1").participantName("Alice")
+                .status(OrderItemStatus.DRAFT).addedAt(LocalDateTime.now())
+                .build());
+        when(sessionRepository.findByIdAndTenantId("sess-1", RESTAURANT_ID)).thenReturn(Optional.of(session));
+        when(userRepository.findByEmail("user-1@test.com"))
+                .thenReturn(Optional.of(userWithRestaurant("user-1", RESTAURANT_ID)));
+        when(diningTableRepository.findById(TABLE_ID))
+                .thenReturn(Optional.of(diningTableForRestaurant(RESTAURANT_ID)));
+        when(sessionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        sessionService.confirmDraftsForUser("sess-1", "user-1", "user-1@test.com");
+
+        ArgumentCaptor<Object> captor = ArgumentCaptor.forClass(Object.class);
+        verify(eventPublisher, org.mockito.Mockito.times(2)).publishEvent(captor.capture());
+        assertThat(captor.getAllValues())
+                .filteredOn(KitchenItemsConfirmed.class::isInstance)
+                .extracting(e -> ((KitchenItemsConfirmed) e).linkedTableNumbers())
+                .containsExactly(List.of(6));
     }
 
     @Test

@@ -2079,7 +2079,7 @@ export interface components {
         };
         SessionActivityDto: {
             /** @enum {string} */
-            type?: "ITEM_SENT" | "ITEM_DELETED" | "TABLE_TRANSFERRED" | "PARTICIPANT_LEFT";
+            type?: "ITEM_SENT" | "ITEM_DELETED" | "TABLE_TRANSFERRED" | "PARTICIPANT_LEFT" | "TABLE_LINKED" | "TABLE_UNLINKED";
             itemName?: string;
             participantName?: string;
             /** Format: date-time */
@@ -2150,7 +2150,7 @@ export interface components {
         };
         SessionActivity: {
             /** @enum {string} */
-            type?: "ITEM_SENT" | "ITEM_DELETED" | "TABLE_TRANSFERRED" | "PARTICIPANT_LEFT";
+            type?: "ITEM_SENT" | "ITEM_DELETED" | "TABLE_TRANSFERRED" | "PARTICIPANT_LEFT" | "TABLE_LINKED" | "TABLE_UNLINKED";
             itemName?: string;
             participantName?: string;
             /** Format: date-time */
@@ -2660,6 +2660,7 @@ export interface components {
             createdAt?: string;
             items?: components["schemas"]["KitchenItem"][];
             active?: boolean;
+            linkedTableNumbers?: number[];
         };
         UpdateItemsStatusRequest: {
             itemIds: string[];
@@ -2965,6 +2966,12 @@ export interface components {
             /** Format: date-time */
             createdAt?: string;
         };
+        LinkedTableSummary: {
+            /** Format: uuid */
+            tableId?: string;
+            /** Format: int32 */
+            tableNumber?: number;
+        };
         TableStatusResponse: {
             /** Format: uuid */
             tableId?: string;
@@ -2972,6 +2979,11 @@ export interface components {
             tableNumber?: number;
             isOccupied?: boolean;
             currentSession?: components["schemas"]["ActiveSessionSummary"];
+            linkedTables?: components["schemas"]["LinkedTableSummary"][];
+            /** Format: uuid */
+            linkedToTableId?: string;
+            /** Format: int32 */
+            linkedToTableNumber?: number;
         };
         PageMenuItemResponse: {
             /** Format: int64 */
@@ -3047,6 +3059,7 @@ export interface components {
             remaining?: number;
             /** Format: int32 */
             tableNumber?: number;
+            tableLabel?: string;
         };
         DailyReportResponse: {
             /** Format: date */
@@ -3104,6 +3117,7 @@ export interface components {
             revenue?: number;
             revenueShare?: number;
             averageSessionDurationMinutes?: number;
+            mergedWithTableNumbers?: number[];
         };
         AnalyticsSummaryResponse: {
             totalRevenue?: number;
