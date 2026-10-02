@@ -1,6 +1,7 @@
 import { Fragment, useState } from 'react'
 import { DailyReportSkeleton } from './CashRegisterSkeletons'
 import { ShiftBreakdownDetail } from './ShiftBreakdownDetail'
+import { ShiftAuditDetail } from './ShiftAuditDetail'
 import { useQuery } from '@tanstack/react-query'
 import { cashShiftService } from '@/lib/api'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -122,6 +123,7 @@ export const DailyZReportPanel = () => {
                           <TableRow>
                             <TableCell colSpan={8} className="bg-muted/30">
                               <ShiftBreakdownDetail shift={shift} emptyLabel={t('noBreakdownRecordedLabel')} />
+                              <ShiftAuditDetail shiftId={shift.id!} />
                             </TableCell>
                           </TableRow>
                         )}

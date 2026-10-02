@@ -3,6 +3,7 @@ package com.vanter.ember.cashregister.service;
 import com.vanter.ember.billing.dto.PaymentResponse;
 import com.vanter.ember.billing.model.Payment;
 import com.vanter.ember.billing.repository.PaymentRepository;
+import com.vanter.ember.billing.service.BillingAuditService;
 import com.vanter.ember.billing.service.PaymentService;
 import com.vanter.ember.cashregister.dto.CashMovementResponse;
 import com.vanter.ember.cashregister.dto.CashShiftDetailResponse;
@@ -62,6 +63,7 @@ public class CashShiftService {
     private final SessionRepository sessionRepository;
     private final ApplicationEventPublisher eventPublisher;
     private final PaymentService paymentService;
+    private final BillingAuditService billingAuditService;
     private final SettingService settingService;
     private final CashShiftDeadlineService deadlineService;
 
@@ -251,7 +253,12 @@ public class CashShiftService {
                 movements.stream().map(m -> toMovementResponse(m, names)).toList();
         List<PaymentResponse> paymentResponses = paymentService.toResponses(payments);
 
-        return new CashShiftDetailResponse(toResponse(shift, names), movementResponses, paymentResponses);
+        // Voids have no payment to hang a shift on, so they are placed by when they happened: while the shift was open.
+        LocalDateTime windowEnd = shift.getClosedAt() != null ? shift.getClosedAt() : LocalDateTime.now();
+        return new CashShiftDetailResponse(
+                toResponse(shift, names), movementResponses, paymentResponses,
+                billingAuditService.refundsOf(payments),
+                billingAuditService.voidedBetween(shift.getTenantId(), shift.getOpenedAt(), windowEnd));
     }
 
     public Page<CashShift> getHistory(UUID tenantId, LocalDateTime from, LocalDateTime to, Pageable pageable) {

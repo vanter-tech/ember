@@ -10,6 +10,9 @@ import static org.mockito.Mockito.when;
 
 import com.vanter.ember.billing.dto.PaymentResponse;
 import com.vanter.ember.billing.model.Payment;
+import com.vanter.ember.billing.dto.ShiftRefundResponse;
+import com.vanter.ember.billing.dto.VoidedBillResponse;
+import com.vanter.ember.billing.service.BillingAuditService;
 import com.vanter.ember.billing.service.PaymentService;
 import com.vanter.ember.cashregister.dto.CashShiftDetailResponse;
 import com.vanter.ember.cashregister.dto.CashShiftResponse;
@@ -52,6 +55,7 @@ class CashShiftServiceTest {
     @Mock SessionRepository sessionRepository;
     @Mock ApplicationEventPublisher eventPublisher;
     @Mock PaymentService paymentService;
+    @Mock BillingAuditService billingAuditService;
     @Mock SettingService settingService;
     @Mock CashShiftDeadlineService deadlineService;
     @InjectMocks CashShiftService cashShiftService;
@@ -280,6 +284,48 @@ class CashShiftServiceTest {
 
         assertThat(detail.payments()).hasSize(1);
         assertThat(detail.payments().get(0).participantName()).isEqualTo("Alice");
+    }
+
+    @Test
+    void getDetail_includesTheShiftsRefundsAndTheBillsVoidedWhileItWasOpen() {
+        CashShift shift = openShift();
+        shift.setClosedAt(shift.getOpenedAt().plusHours(8));
+        Payment payment = mock(Payment.class);
+        when(cashShiftRepository.findById(1L)).thenReturn(Optional.of(shift));
+        when(cashMovementRepository.findByCashShiftIdOrderByCreatedAtAsc(1L)).thenReturn(List.of());
+        when(paymentRepository.findByCashShiftId(1L)).thenReturn(List.of(payment));
+        when(paymentService.toResponses(anyList())).thenReturn(List.of());
+        when(userRepository.findAllById(any())).thenReturn(List.of());
+        ShiftRefundResponse refund = new ShiftRefundResponse(
+                5L, 20L, 7L, "ELPO-000007", "Alice", new BigDecimal("2.00"), "cold food", "Carla", LocalDateTime.now());
+        VoidedBillResponse voided = new VoidedBillResponse(
+                9L, "ELPO-000009", new BigDecimal("30.00"), 5, null, "wrong table", "Ana", LocalDateTime.now());
+        when(billingAuditService.refundsOf(List.of(payment))).thenReturn(List.of(refund));
+        when(billingAuditService.voidedBetween(TENANT_ID, shift.getOpenedAt(), shift.getClosedAt()))
+                .thenReturn(List.of(voided));
+
+        CashShiftDetailResponse detail = cashShiftService.getDetail(1L);
+
+        assertThat(detail.refunds()).containsExactly(refund);
+        assertThat(detail.voidedBills()).containsExactly(voided);
+    }
+
+    @Test
+    void getDetail_ofAnOpenShift_looksForVoidsUpToNow() {
+        CashShift shift = openShift();
+        when(cashShiftRepository.findById(1L)).thenReturn(Optional.of(shift));
+        when(cashMovementRepository.findByCashShiftIdOrderByCreatedAtAsc(1L)).thenReturn(List.of());
+        when(paymentRepository.findByCashShiftId(1L)).thenReturn(List.of());
+        when(paymentService.toResponses(anyList())).thenReturn(List.of());
+        when(userRepository.findAllById(any())).thenReturn(List.of());
+        LocalDateTime before = LocalDateTime.now();
+
+        cashShiftService.getDetail(1L);
+
+        org.mockito.ArgumentCaptor<LocalDateTime> end = org.mockito.ArgumentCaptor.forClass(LocalDateTime.class);
+        org.mockito.Mockito.verify(billingAuditService)
+                .voidedBetween(org.mockito.ArgumentMatchers.eq(TENANT_ID), org.mockito.ArgumentMatchers.eq(shift.getOpenedAt()), end.capture());
+        assertThat(end.getValue()).isBetween(before, LocalDateTime.now());
     }
 
     @Test

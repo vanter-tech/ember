@@ -1,7 +1,10 @@
 import { Fragment, useState } from 'react'
 import { ShiftHistorySkeleton } from './CashRegisterSkeletons'
+import { LoadingStatus } from '@/components/skeletons/LoadingStatus'
+import { TableSkeleton } from '@/components/skeletons/TableSkeleton'
 import { useShiftHistory } from './useShiftHistory'
 import { ShiftBreakdownDetail } from './ShiftBreakdownDetail'
+import { ShiftAuditDetail } from './ShiftAuditDetail'
 import { useQuery } from '@tanstack/react-query'
 import { cashShiftService } from '@/lib/api'
 import { Card, CardContent } from '@/components/ui/card'
@@ -77,7 +80,10 @@ export const ShiftHistoryTable = () => {
                       <TableRow key={`${shift.id}-detail`}>
                         <TableCell colSpan={7} className="bg-muted/30">
                           {!detail ? (
-                            <div className="py-3 text-sm text-muted-foreground">{t('loadingPayments')}</div>
+                            <>
+                              <LoadingStatus label={t('loadingPayments')} />
+                              <TableSkeleton columns={5} rows={2} />
+                            </>
                           ) : (detail.payments ?? []).length === 0 ? (
                             <div className="py-3 text-sm text-muted-foreground">{t('noPaymentsInShift')}</div>
                           ) : (
@@ -129,6 +135,7 @@ export const ShiftHistoryTable = () => {
                             </Table>
                           )}
                           <ShiftBreakdownDetail shift={detail?.shift} />
+                          {detail && <ShiftAuditDetail shiftId={shift.id!} />}
                         </TableCell>
                       </TableRow>
                     )}

@@ -3049,6 +3049,36 @@ export interface components {
             shift?: components["schemas"]["CashShiftResponse"];
             movements?: components["schemas"]["CashMovementResponse"][];
             payments?: components["schemas"]["PaymentResponse"][];
+            refunds?: components["schemas"]["ShiftRefundResponse"][];
+            voidedBills?: components["schemas"]["VoidedBillResponse"][];
+        };
+        ShiftRefundResponse: {
+            /** Format: int64 */
+            id?: number;
+            /** Format: int64 */
+            paymentId?: number;
+            /** Format: int64 */
+            billId?: number;
+            billCode?: string;
+            participantName?: string;
+            amount?: number;
+            reason?: string;
+            refundedByName?: string;
+            /** Format: date-time */
+            createdAt?: string;
+        };
+        VoidedBillResponse: {
+            /** Format: int64 */
+            id?: number;
+            billCode?: string;
+            total?: number;
+            /** Format: int32 */
+            tableNumber?: number;
+            tableLabel?: string;
+            voidReason?: string;
+            voidedByName?: string;
+            /** Format: date-time */
+            voidedAt?: string;
         };
         PaymentResponse: {
             /** Format: int64 */

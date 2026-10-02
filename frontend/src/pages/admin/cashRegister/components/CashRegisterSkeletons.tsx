@@ -71,3 +71,16 @@ export const CashRegisterPageSkeleton = ({ label }: { label: string }) => (
     </div>
   </div>
 )
+
+// A shift's refunds and voided bills under its expanded row: two titled tables as placeholders.
+export const ShiftAuditSkeleton = ({ label }: { label: string }) => (
+  <div data-testid="skeleton-shift-audit" className="mt-3 flex flex-col gap-6 border-t border-border/40 pt-3">
+    <LoadingStatus label={label} />
+    {[0, 1].map((i) => (
+      <div key={i} className="flex flex-col gap-3">
+        <Skeleton className="h-3 w-24" />
+        <TableSkeleton columns={6} rows={2} />
+      </div>
+    ))}
+  </div>
+)

@@ -9,7 +9,7 @@ vi.mock('@/lib/api', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/api')>()
   return {
     ...actual,
-    cashShiftService: { ...actual.cashShiftService, dailyReport: vi.fn() },
+    cashShiftService: { ...actual.cashShiftService, dailyReport: vi.fn(), detail: vi.fn() },
   }
 })
 
@@ -20,12 +20,14 @@ const wrap = (ui: ReactNode) =>
     </QueryClientProvider>,
   )
 
-const report = (shifts: unknown[]) =>
+const report = (shifts: unknown[]) => {
+  vi.mocked(cashShiftService.detail).mockResolvedValue({ refunds: [], voidedBills: [] } as never)
   vi.mocked(cashShiftService.dailyReport).mockResolvedValue({
     date: '2026-10-02',
     totalCashSales: 0, totalDigitalSales: 0, totalVariance: 0, totalCashIn: 0, totalCashOut: 0,
     shifts,
   } as never)
+}
 
 describe('DailyZReportPanel', () => {
   beforeEach(() => {

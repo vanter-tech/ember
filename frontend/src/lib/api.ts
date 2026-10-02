@@ -706,6 +706,8 @@ export type CashMovementType = components['schemas']['RecordMovementRequest']['t
 export type CashShiftResponse = components['schemas']['CashShiftResponse']
 export type CashMovementResponse = components['schemas']['CashMovementResponse']
 export type CashShiftDetailResponse = components['schemas']['CashShiftDetailResponse']
+export type ShiftRefund = components['schemas']['ShiftRefundResponse']
+export type VoidedBill = components['schemas']['VoidedBillResponse']
 export type DailyReportResponse = components['schemas']['DailyReportResponse']
 
 export const cashShiftService = {

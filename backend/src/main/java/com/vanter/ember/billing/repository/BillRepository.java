@@ -22,6 +22,20 @@ public interface BillRepository extends JpaRepository<Bill, Long> {
 
     List<Bill> findByStatus(BillStatus status);
 
+    /** Bills voided in a window (both inclusive), oldest first. Carries the same deliberate {@code tenantId} predicate as the analytics reads. */
+    @Query("""
+            select b from Bill b
+            where b.tenantId = :tenantId
+              and b.status = com.vanter.ember.billing.model.BillStatus.VOIDED
+              and b.voidedAt >= :from
+              and b.voidedAt <= :to
+            order by b.voidedAt asc, b.id asc
+            """)
+    List<Bill> findVoidedBetween(
+            @Param("tenantId") UUID tenantId,
+            @Param("from") LocalDateTime from,
+            @Param("to") LocalDateTime to);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select b from Bill b where b.id = :id")
     Optional<Bill> findByIdForUpdate(@Param("id") Long id);

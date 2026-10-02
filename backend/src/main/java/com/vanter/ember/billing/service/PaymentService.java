@@ -464,7 +464,7 @@ public class PaymentService {
         }).toList();
     }
 
-    private record TableRef(Integer number, String label) {}
+    record TableRef(Integer number, String label) {}
 
     /**
      * A shift's payment list spans many tables — the admin Corte Z view wants to show which table
@@ -476,9 +476,14 @@ public class PaymentService {
         if (payments.isEmpty()) {
             return Map.of();
         }
-        UUID tenantId = payments.get(0).getBill().getTenantId();
-        Map<String, Session> sessionById = payments.stream()
-                .map(p -> p.getBill().getSessionId())
+        return tablesBySession(
+                payments.get(0).getBill().getTenantId(),
+                payments.stream().map(p -> p.getBill().getSessionId()).toList());
+    }
+
+    /** The table (and merged label) of each session, in one batch table lookup; shared with {@link BillingAuditService}. */
+    Map<String, TableRef> tablesBySession(UUID tenantId, List<String> sessionIds) {
+        Map<String, Session> sessionById = sessionIds.stream()
                 .distinct()
                 .collect(Collectors.toMap(sessionId -> sessionId, sessionService::findById));
         Set<UUID> tableIds = sessionById.values().stream().map(Session::getTableId).collect(Collectors.toSet());
