@@ -36,13 +36,21 @@ export const TableAnalytics = () => {
           </div>
         )}
         {data && (
-          <div className="grid grid-cols-1 divide-y divide-border/40 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+          <div className="grid grid-cols-1 divide-y divide-border/40 sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4">
             <div className="flex flex-col gap-1 py-3 first:pt-0 last:pb-0 sm:py-0 sm:px-6 sm:first:pl-0 sm:last:pr-0">
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 {t('activeTablesLabel')}
               </p>
               <p className="text-2xl font-bold tracking-tight tabular-nums text-primary">
                 {data.activeTableCount ?? 0}
+              </p>
+            </div>
+            <div className="flex flex-col gap-1 py-3 first:pt-0 last:pb-0 sm:py-0 sm:px-6 sm:first:pl-0 sm:last:pr-0">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                {t('totalTurnoversLabel')}
+              </p>
+              <p className="text-2xl font-bold tracking-tight tabular-nums text-primary">
+                {data.totalTurnovers ?? 0}
               </p>
             </div>
             <div className="flex flex-col gap-1 py-3 first:pt-0 last:pb-0 sm:py-0 sm:px-6 sm:first:pl-0 sm:last:pr-0">

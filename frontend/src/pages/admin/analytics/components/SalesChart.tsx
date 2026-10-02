@@ -55,6 +55,7 @@ export const SalesChart = () => {
       bucket.bucketStart ?? bucket.bucketEnd ?? ''
     ).toLocaleDateString(locale === 'en' ? 'en-US' : 'es-MX', BUCKET_LABEL_FORMAT[granularity]),
     revenue: bucket.revenue ?? 0,
+    bills: bucket.paidBillCount ?? 0,
   }))
 
   return (
@@ -64,9 +65,16 @@ export const SalesChart = () => {
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
             <TrendingUp className="h-4 w-4 text-primary" strokeWidth={2} />
           </div>
-          <CardTitle className="text-base font-semibold tracking-tight text-foreground">
-            {t('salesOverTimeTitle')}
-          </CardTitle>
+          <div className="flex flex-col">
+            <CardTitle className="text-base font-semibold tracking-tight text-foreground">
+              {t('salesOverTimeTitle')}
+            </CardTitle>
+            {data && (
+              <span className="text-xs text-muted-foreground">
+                {t('salesPaidBillsSummary', { count: data.paidBillCount ?? 0 })}
+              </span>
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-1 rounded-full bg-muted/60 p-1">
           {GRANULARITY_OPTIONS.map((option) => (
@@ -131,7 +139,10 @@ export const SalesChart = () => {
                     border: '1px solid var(--border)',
                     fontSize: 12,
                   }}
-                  formatter={(value) => [`$${Number(value ?? 0).toFixed(2)}`, t('revenueTooltipLabel')]}
+                  formatter={(value) => [`${Number(value ?? 0).toFixed(2)}`, t('revenueTooltipLabel')]}
+                  labelFormatter={(label, payload) =>
+                    `${label} · ${payload?.[0]?.payload?.bills ?? 0} ${t('billsTooltipLabel')}`
+                  }
                 />
                 <Area
                   type="monotone"

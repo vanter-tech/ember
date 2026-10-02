@@ -1,7 +1,7 @@
 import { SummaryCardsSkeleton } from './AnalyticsSkeletons'
 import { useAnalyticsSummary } from './useAnalyticsSummary'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { DollarSign, Users, Receipt } from 'lucide-react'
+import { DollarSign, Users, Receipt, ReceiptText } from 'lucide-react'
 import { useTranslation } from '@/lib/i18n'
 
 export const SummaryCards = () => {
@@ -34,10 +34,15 @@ export const SummaryCards = () => {
       value: `$${(data.averageOrderValue ?? 0).toFixed(2)}`,
       icon: Receipt,
     },
+    {
+      label: t('paidBillCountLabel'),
+      value: data.paidBillCount ?? 0,
+      icon: ReceiptText,
+    },
   ]
 
   return (
-    <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+    <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
       {cards.map(({ label, value, icon: Icon }) => (
         <Card
           key={label}

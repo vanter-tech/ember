@@ -89,6 +89,7 @@ export interface Page<T> {
 export type RestaurantResponse = components['schemas']['Restaurant']
 export type PublicBranding = components['schemas']['PublicBrandingResponse']
 
+export type AnalyticsRangeResponse = components['schemas']['AnalyticsRangeResponse']
 export type AnalyticsSummaryResponse = components['schemas']['AnalyticsSummaryResponse']
 export type AnalyticsSalesResponse = components['schemas']['AnalyticsSalesResponse']
 export type SalesBucket = components['schemas']['SalesBucket']
@@ -615,6 +616,10 @@ export const publicService = {
 }
 
 export const analyticsService = {
+  getRange: async (): Promise<AnalyticsRangeResponse> => {
+    const { data } = await api.get<AnalyticsRangeResponse>('/admin/analytics/range')
+    return data
+  },
   getSummary: async (from?: string, to?: string): Promise<AnalyticsSummaryResponse> => {
     const { data } = await api.get<AnalyticsSummaryResponse>(
       '/admin/analytics/summary',
