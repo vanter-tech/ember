@@ -82,6 +82,8 @@ export interface PlatformRestaurantCreateRequest {
   name: string
   slug: string
   plan?: 'FREE' | 'STARTER' | 'PRO' | 'ENTERPRISE'
+  // Demo account: backend forces ENTERPRISE + a 25-day subscription window.
+  demo?: boolean
   deploymentMode: DeploymentMode
   adminName: string
   adminEmail: string

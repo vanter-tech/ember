@@ -38,7 +38,8 @@ const createSchema = z.object({
       /^[a-z0-9]+(-[a-z0-9]+)*$/,
       'El slug debe ser minúsculas y números separados por guiones'
     ),
-  plan: z.enum(['FREE', 'STARTER', 'PRO', 'ENTERPRISE']),
+  // DEMO is UI-only: submitted as ENTERPRISE + demo=true (25-day window set by the backend).
+  plan: z.enum(['FREE', 'STARTER', 'PRO', 'ENTERPRISE', 'DEMO']),
   // No default on purpose: the operator must choose Web or Hub (see defaultValues).
   deploymentMode: z.enum(['CLOUD', 'HUB'], { error: 'Elige el modo de uso' }),
   adminName: z.string().min(1, 'El nombre del admin es obligatorio'),
@@ -72,7 +73,10 @@ export default function ConsoleRestaurantCreate() {
   })
 
   const createRestaurant = useMutation({
-    mutationFn: (data: CreateFormInputs) => platformRestaurantService.create(data),
+    mutationFn: ({ plan, ...rest }: CreateFormInputs) =>
+      platformRestaurantService.create(
+        plan === 'DEMO' ? { ...rest, plan: 'ENTERPRISE', demo: true } : { ...rest, plan }
+      ),
     onSuccess: (restaurant) => {
       queryClient.invalidateQueries({ queryKey: ['platformRestaurants'] })
       toast.success('Restaurante creado')
@@ -151,6 +155,7 @@ export default function ConsoleRestaurantCreate() {
                         <SelectItem value="STARTER">Starter</SelectItem>
                         <SelectItem value="PRO">Pro</SelectItem>
                         <SelectItem value="ENTERPRISE">Enterprise</SelectItem>
+                        <SelectItem value="DEMO">Demo (Enterprise, 25 días)</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />

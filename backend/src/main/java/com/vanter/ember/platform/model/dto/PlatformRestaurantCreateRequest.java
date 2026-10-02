@@ -22,6 +22,9 @@ public class PlatformRestaurantCreateRequest {
     /** Optional — omitted or null defaults to FREE, same as Restaurant's own @Builder.Default. */
     private RestaurantPlan plan;
 
+    /** Demo account: forces ENTERPRISE and a 25-day subscription window, whatever {@link #plan} says. */
+    private boolean demo;
+
     /** Required, no default: whether this restaurant runs on Ember Web or on an on-premise Hub. */
     @NotNull(message = "Deployment mode is required")
     private DeploymentMode deploymentMode;

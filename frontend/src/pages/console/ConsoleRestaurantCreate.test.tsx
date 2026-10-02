@@ -50,6 +50,25 @@ describe('ConsoleRestaurantCreate', () => {
     await waitFor(() => expect(platformRestaurantService.create).not.toHaveBeenCalled())
   })
 
+  test('the Demo plan is submitted as ENTERPRISE with demo=true', async () => {
+    vi.mocked(platformRestaurantService.create).mockResolvedValue({ id: 'r1' } as never)
+    wrap(<ConsoleRestaurantCreate />)
+
+    fillEverythingButTheMode()
+    fireEvent.click(screen.getByLabelText('Plan'))
+    fireEvent.click(await screen.findByRole('option', { name: 'Demo (Enterprise, 25 días)' }))
+    fireEvent.click(screen.getByLabelText('Modo de uso'))
+    fireEvent.click(await screen.findByRole('option', { name: 'Web (Ember en la nube)' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Crear restaurante' }))
+
+    await waitFor(() => expect(platformRestaurantService.create).toHaveBeenCalled())
+    expect(vi.mocked(platformRestaurantService.create).mock.calls[0][0]).toMatchObject({
+      plan: 'ENTERPRISE',
+      demo: true,
+      deploymentMode: 'CLOUD',
+    })
+  })
+
   test('shows the mode selector with an operator-friendly label', () => {
     wrap(<ConsoleRestaurantCreate />)
 

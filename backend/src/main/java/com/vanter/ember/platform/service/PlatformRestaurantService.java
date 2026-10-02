@@ -23,6 +23,7 @@ import com.vanter.ember.restaurant.model.RestaurantStatus;
 import com.vanter.ember.restaurant.repository.RestaurantRepository;
 import com.vanter.ember.restaurant.service.RestaurantService;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -43,6 +44,9 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 public class PlatformRestaurantService {
+
+    /** Length of the subscription window given to a demo account. */
+    static final long DEMO_DAYS = 25;
 
     private final RestaurantRepository restaurantRepository;
     private final UserRepository userRepository;
@@ -366,12 +370,18 @@ public class PlatformRestaurantService {
             throw new IllegalArgumentException("Email already in use: " + request.getAdminEmail());
         }
 
-        Restaurant restaurant = restaurantRepository.save(Restaurant.builder()
+        Restaurant.RestaurantBuilder builder = Restaurant.builder()
                 .name(request.getName())
                 .slug(request.getSlug())
                 .plan(request.getPlan() != null ? request.getPlan() : RestaurantPlan.FREE)
-                .deploymentMode(request.getDeploymentMode())
-                .build());
+                .deploymentMode(request.getDeploymentMode());
+        if (request.isDemo()) {
+            Instant now = Instant.now();
+            builder.plan(RestaurantPlan.ENTERPRISE)
+                    .planStartedAt(now)
+                    .planPeriodEnd(now.plus(DEMO_DAYS, ChronoUnit.DAYS));
+        }
+        Restaurant restaurant = restaurantRepository.save(builder.build());
 
         userRepository.save(User.builder()
                 .restaurantId(restaurant)

@@ -447,6 +447,50 @@ class PlatformRestaurantServiceTest {
     }
 
     @Test
+    void create_demoForcesEnterpriseAnd25DayWindow() {
+        PlatformOperator operator = PlatformOperator.builder()
+                .id(UUID.randomUUID())
+                .email("operator@ember.local")
+                .build();
+        when(platformOperatorRepository.findByEmail("operator@ember.local")).thenReturn(Optional.of(operator));
+        when(restaurantRepository.existsBySlug("tenant-grill")).thenReturn(false);
+        when(userRepository.existsByEmail("owner@tenant-grill.local")).thenReturn(false);
+        when(passwordEncoder.encode("Str0ng!Pass")).thenReturn("hashed");
+        ArgumentCaptor<Restaurant> captor = ArgumentCaptor.forClass(Restaurant.class);
+        when(restaurantRepository.save(captor.capture())).thenReturn(restaurant());
+
+        PlatformRestaurantCreateRequest request = createRequest();
+        request.setPlan(RestaurantPlan.FREE);
+        request.setDemo(true);
+        platformRestaurantService.create(request, "operator@ember.local");
+
+        Restaurant created = captor.getValue();
+        assertThat(created.getPlan()).isEqualTo(RestaurantPlan.ENTERPRISE);
+        assertThat(created.getPlanStartedAt()).isNotNull();
+        assertThat(java.time.Duration.between(created.getPlanStartedAt(), created.getPlanPeriodEnd()))
+                .isEqualTo(java.time.Duration.ofDays(25));
+    }
+
+    @Test
+    void create_withoutDemoLeavesTheSubscriptionWindowUnset() {
+        PlatformOperator operator = PlatformOperator.builder()
+                .id(UUID.randomUUID())
+                .email("operator@ember.local")
+                .build();
+        when(platformOperatorRepository.findByEmail("operator@ember.local")).thenReturn(Optional.of(operator));
+        when(restaurantRepository.existsBySlug("tenant-grill")).thenReturn(false);
+        when(userRepository.existsByEmail("owner@tenant-grill.local")).thenReturn(false);
+        when(passwordEncoder.encode("Str0ng!Pass")).thenReturn("hashed");
+        ArgumentCaptor<Restaurant> captor = ArgumentCaptor.forClass(Restaurant.class);
+        when(restaurantRepository.save(captor.capture())).thenReturn(restaurant());
+
+        platformRestaurantService.create(createRequest(), "operator@ember.local");
+
+        assertThat(captor.getValue().getPlanStartedAt()).isNull();
+        assertThat(captor.getValue().getPlanPeriodEnd()).isNull();
+    }
+
+    @Test
     void updatePlan_updatesRestaurantAndWritesAuditLog() {
         UUID restaurantId = UUID.randomUUID();
         Restaurant restaurant = Restaurant.builder()
