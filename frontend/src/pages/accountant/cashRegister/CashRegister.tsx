@@ -116,6 +116,11 @@ export const CashRegister = () => {
                     )}
                   </span>
                 )}
+                {(shift.prolongCount ?? 0) > 0 && (
+                  <span>
+                    {t('prolongCountLabel')}: <span className="font-medium text-foreground">{shift.prolongCount}</span>
+                  </span>
+                )}
               </div>
               <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
                 <div className="rounded-2xl bg-zinc-50 p-4">
@@ -222,6 +227,7 @@ export const CashRegister = () => {
                     <TableHead>{t('billColumnLabel')}</TableHead>
                     <TableHead>{t('tableColumnLabel')}</TableHead>
                     <TableHead>{t('participantLabel')}</TableHead>
+                    <TableHead>{t('processedByColumnLabel')}</TableHead>
                     <TableHead>{t('methodLabel')}</TableHead>
                     <TableHead>{t('statusLabel')}</TableHead>
                     <TableHead>{t('amountLabel')}</TableHead>
@@ -232,7 +238,7 @@ export const CashRegister = () => {
                 <TableBody>
                   {(detail?.payments ?? []).length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={9} className="text-center text-sm text-muted-foreground">
+                      <TableCell colSpan={10} className="text-center text-sm text-muted-foreground">
                         {t('noPaymentsRegistered')}
                       </TableCell>
                     </TableRow>
@@ -243,10 +249,14 @@ export const CashRegister = () => {
                         <TableCell>{billCode(payment.billCode, payment.billId)}</TableCell>
                         <TableCell>{payment.tableNumber ?? '—'}</TableCell>
                         <TableCell>{payment.participantName}</TableCell>
+                        <TableCell>{payment.processedByName ?? '—'}</TableCell>
                         <TableCell>
                           <Badge variant="outline">
                             {payment.method === 'PHYSICAL' ? t('methodCash') : t('methodDigital')}
                           </Badge>
+                          {payment.method === 'DIGITAL' && payment.gatewayRef && (
+                            <span className="block text-xs text-muted-foreground">{payment.gatewayRef}</span>
+                          )}
                         </TableCell>
                         <TableCell>
                           <Badge variant={payment.status === 'PENDING' ? 'secondary' : 'default'}>

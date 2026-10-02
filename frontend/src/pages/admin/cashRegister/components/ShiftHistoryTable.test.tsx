@@ -84,3 +84,41 @@ describe('ShiftHistoryTable', () => {
     expect(screen.getByText('$100.00 × 2')).toBeVisible()
   })
 })
+
+describe('ShiftHistoryTable — audit columns', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  test('shows when the shift closed and who registered each of its payments', async () => {
+    vi.mocked(cashShiftService.history).mockResolvedValue({
+      content: [
+        {
+          id: 3, shiftNumber: 3, status: 'CLOSED', openedByName: 'Ana', closedByName: 'Ana',
+          expectedCash: 200, countedCash: 200, variance: 0, closedAt: '2026-10-02T22:15:00', prolongCount: 1,
+        },
+      ],
+      totalPages: 1,
+    } as never)
+    vi.mocked(cashShiftService.detail).mockResolvedValue({
+      shift: { id: 3, shiftNumber: 3, status: 'CLOSED' },
+      movements: [],
+      payments: [
+        {
+          id: 1, tableNumber: 5, amount: 100, method: 'DIGITAL', status: 'CONFIRMED', remaining: 100,
+          refundedAmount: 0, participantName: 'Carla', processedByName: 'Pedro Mesero', gatewayRef: 'GW-9',
+        },
+      ],
+      refunds: [],
+      voidedBills: [],
+    } as never)
+
+    wrap(<ShiftHistoryTable />)
+
+    expect(await screen.findByText('02/10/2026, 22:15')).toBeVisible()
+    fireEvent.click(screen.getByText('#3'))
+
+    expect(await screen.findByText('Pedro Mesero')).toBeVisible()
+    expect(screen.getByText('GW-9')).toBeVisible()
+  })
+})

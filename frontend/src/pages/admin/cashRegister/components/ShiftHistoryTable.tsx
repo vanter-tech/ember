@@ -10,7 +10,7 @@ import { cashShiftService } from '@/lib/api'
 import { Card, CardContent } from '@/components/ui/card'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
-import { formatCurrency } from '@/lib/format'
+import { formatCurrency, formatDateTime } from '@/lib/format'
 import { PaginationControls } from '@/components/PaginationControls'
 import { useTranslation } from '@/lib/i18n'
 import { billCode } from '@/lib/documentCodes'
@@ -48,12 +48,14 @@ export const ShiftHistoryTable = () => {
                 <TableHead>{t('expectedColumnLabel')}</TableHead>
                 <TableHead>{t('countedColumnLabel')}</TableHead>
                 <TableHead>{t('varianceColumnLabel')}</TableHead>
+                <TableHead>{t('closedAtColumnLabel')}</TableHead>
+                <TableHead>{t('prolongCountColumnLabel')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {data.content.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-sm text-muted-foreground">
+                  <TableCell colSpan={9} className="text-center text-sm text-muted-foreground">
                     {t('noShiftsRegistered')}
                   </TableCell>
                 </TableRow>
@@ -75,10 +77,12 @@ export const ShiftHistoryTable = () => {
                       <TableCell>{shift.expectedCash != null ? formatCurrency(shift.expectedCash) : '—'}</TableCell>
                       <TableCell>{shift.countedCash != null ? formatCurrency(shift.countedCash) : '—'}</TableCell>
                       <TableCell>{shift.variance != null ? formatCurrency(shift.variance) : '—'}</TableCell>
+                      <TableCell>{formatDateTime(shift.closedAt)}</TableCell>
+                      <TableCell>{shift.prolongCount ?? 0}</TableCell>
                     </TableRow>
                     {expandedId === shift.id && (
                       <TableRow key={`${shift.id}-detail`}>
-                        <TableCell colSpan={7} className="bg-muted/30">
+                        <TableCell colSpan={9} className="bg-muted/30">
                           {!detail ? (
                             <>
                               <LoadingStatus label={t('loadingPayments')} />
@@ -95,6 +99,7 @@ export const ShiftHistoryTable = () => {
                                   <TableHead>{t('paymentAmountColumnLabel')}</TableHead>
                                   <TableHead>{t('paymentMethodColumnLabel')}</TableHead>
                                   <TableHead>{t('statusColumnLabel')}</TableHead>
+                                  <TableHead>{t('paymentProcessedByColumnLabel')}</TableHead>
                                 </TableRow>
                               </TableHeader>
                               <TableBody>
@@ -120,6 +125,9 @@ export const ShiftHistoryTable = () => {
                                         {payment.method === 'DIGITAL'
                                           ? t('paymentMethodDigitalLabel')
                                           : t('paymentMethodPhysicalLabel')}
+                                        {payment.method === 'DIGITAL' && payment.gatewayRef && (
+                                          <span className="block text-xs text-muted-foreground">{payment.gatewayRef}</span>
+                                        )}
                                       </TableCell>
                                       <TableCell>
                                         {isRefunded
@@ -128,6 +136,7 @@ export const ShiftHistoryTable = () => {
                                             ? t('paymentStatusConfirmedLabel')
                                             : t('paymentStatusPendingLabel')}
                                       </TableCell>
+                                      <TableCell>{payment.processedByName ?? '—'}</TableCell>
                                     </TableRow>
                                   )
                                 })}

@@ -75,6 +75,8 @@ export const waiter = {
   timeColumnLabel: 'Hora',
   tableColumnLabel: 'Mesa',
   billColumnLabel: 'Cuenta',
+  processedByColumnLabel: 'Registró',
+  prolongCountLabel: 'Prórrogas',
   methodLabel: 'Método',
   methodCash: 'Efectivo',
   methodDigital: 'Digital',

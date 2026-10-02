@@ -17,4 +17,8 @@ public record PaymentResponse(
         BigDecimal remaining,
         Integer tableNumber,
         /** {@code M3+M4} when the payment's table was merged with others, otherwise null. */
-        String tableLabel) {}
+        String tableLabel,
+        /** Name of whoever registered the payment (the waiter or accountant); null when unknown. */
+        String processedByName,
+        /** The payment gateway's reference for a digital payment; null for cash. */
+        String gatewayRef) {}

@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { DollarSign, CreditCard, Scale, ArrowDownCircle, ArrowUpCircle } from 'lucide-react'
-import { formatCurrency } from '@/lib/format'
+import { formatCurrency, formatDateTime } from '@/lib/format'
 import { useTranslation } from '@/lib/i18n'
 
 const today = () => new Date().toISOString().slice(0, 10)
@@ -84,12 +84,14 @@ export const DailyZReportPanel = () => {
                     <TableHead>{t('expectedColumnLabel')}</TableHead>
                     <TableHead>{t('countedColumnLabel')}</TableHead>
                     <TableHead>{t('varianceColumnLabel')}</TableHead>
+                    <TableHead>{t('closedAtColumnLabel')}</TableHead>
+                    <TableHead>{t('prolongCountColumnLabel')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {(data.shifts ?? []).length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={8} className="text-center text-sm text-muted-foreground">
+                      <TableCell colSpan={10} className="text-center text-sm text-muted-foreground">
                         {t('noShiftsRegistered')}
                       </TableCell>
                     </TableRow>
@@ -118,10 +120,12 @@ export const DailyZReportPanel = () => {
                             {shift.countedCash != null ? formatCurrency(shift.countedCash) : '—'}
                           </TableCell>
                           <TableCell>{shift.variance != null ? formatCurrency(shift.variance) : '—'}</TableCell>
+                          <TableCell>{formatDateTime(shift.closedAt)}</TableCell>
+                          <TableCell>{shift.prolongCount ?? 0}</TableCell>
                         </TableRow>
                         {expandedId === shift.id && (
                           <TableRow>
-                            <TableCell colSpan={8} className="bg-muted/30">
+                            <TableCell colSpan={10} className="bg-muted/30">
                               <ShiftBreakdownDetail shift={shift} emptyLabel={t('noBreakdownRecordedLabel')} />
                               <ShiftAuditDetail shiftId={shift.id!} />
                             </TableCell>

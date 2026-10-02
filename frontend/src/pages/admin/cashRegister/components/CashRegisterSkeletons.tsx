@@ -12,7 +12,7 @@ export const ShiftHistorySkeleton = ({ label }: { label: string }) => (
     <LoadingStatus label={label} />
     <Card className={CARD}>
       <CardContent>
-        <TableSkeleton columns={7} rows={8} />
+        <TableSkeleton columns={9} rows={8} />
       </CardContent>
     </Card>
   </>
@@ -40,7 +40,7 @@ export const DailyReportSkeleton = ({ label }: { label: string }) => (
         <Skeleton className="h-4 w-28" />
       </CardHeader>
       <CardContent>
-        <TableSkeleton columns={7} rows={3} />
+        <TableSkeleton columns={10} rows={3} />
       </CardContent>
     </Card>
   </>

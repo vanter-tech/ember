@@ -25,6 +25,7 @@ export const CashRegisterSkeleton = ({ label }: { label: string }) => (
             <Skeleton className="h-4 w-44" />
             <Skeleton className="h-4 w-36" />
             <Skeleton className="h-4 w-48" />
+            <Skeleton className="h-4 w-28" />
           </div>
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
             {Array.from({ length: 4 }, (_, i) => (
@@ -60,7 +61,7 @@ export const CashRegisterSkeleton = ({ label }: { label: string }) => (
           <Skeleton className="h-4 w-24" />
         </CardHeader>
         <CardContent>
-          <TableSkeleton columns={8} rows={4} />
+          <TableSkeleton columns={10} rows={4} />
         </CardContent>
       </Card>
     </div>

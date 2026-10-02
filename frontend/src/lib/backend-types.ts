@@ -3097,6 +3097,8 @@ export interface components {
             /** Format: int32 */
             tableNumber?: number;
             tableLabel?: string;
+            processedByName?: string;
+            gatewayRef?: string;
         };
         DailyReportResponse: {
             /** Format: date */

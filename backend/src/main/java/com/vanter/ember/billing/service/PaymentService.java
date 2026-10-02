@@ -452,6 +452,7 @@ public class PaymentService {
 
     public List<PaymentResponse> toResponses(List<Payment> payments) {
         Map<String, TableRef> tableBySessionId = resolveTables(payments);
+        Map<String, String> userNames = userNames(payments.stream().map(Payment::getProcessedBy));
         return payments.stream().map(p -> {
             BigDecimal refunded = refundRepository.sumByPaymentId(p.getId());
             TableRef table = tableBySessionId.get(p.getBill().getSessionId());
@@ -460,8 +461,18 @@ public class PaymentService {
                     p.getMethod().name(), p.getStatus().name(), p.getCreatedAt(),
                     refunded, p.getAmount().subtract(refunded),
                     table == null ? null : table.number(),
-                    table == null ? null : table.label());
+                    table == null ? null : table.label(),
+                    p.getProcessedBy() == null ? null : userNames.getOrDefault(p.getProcessedBy(), p.getProcessedBy()),
+                    p.getGatewayRef());
         }).toList();
+    }
+
+    /** Display names of the given user ids in one lookup; ids that no longer resolve are simply absent. */
+    private Map<String, String> userNames(java.util.stream.Stream<String> userIds) {
+        List<String> ids = userIds.filter(java.util.Objects::nonNull).distinct().toList();
+        return ids.isEmpty()
+                ? Map.of()
+                : userRepository.findAllById(ids).stream().collect(Collectors.toMap(User::getId, User::getName));
     }
 
     record TableRef(Integer number, String label) {}
@@ -501,11 +512,7 @@ public class PaymentService {
 
     public List<RefundResponse> listRefunds(Long paymentId) {
         List<Refund> refunds = refundRepository.findByPaymentId(paymentId);
-        Set<String> userIds = refunds.stream().map(Refund::getRefundedBy).collect(Collectors.toSet());
-        Map<String, String> names = userIds.isEmpty()
-                ? Map.of()
-                : userRepository.findAllById(userIds).stream()
-                        .collect(Collectors.toMap(User::getId, User::getName));
+        Map<String, String> names = userNames(refunds.stream().map(Refund::getRefundedBy));
         return refunds.stream()
                 .map(r -> new RefundResponse(
                         r.getId(), r.getAmount(), r.getReason(),

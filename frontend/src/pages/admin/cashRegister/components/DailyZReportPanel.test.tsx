@@ -82,3 +82,26 @@ describe('DailyZReportPanel', () => {
     expect(await screen.findByText(/no registró desglose/)).toBeVisible()
   })
 })
+
+describe('DailyZReportPanel — when each shift closed and how often it was extended', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  test('shows the closing time and the extension count of each shift', async () => {
+    report([
+      {
+        id: 3, shiftNumber: 3, status: 'CLOSED', openedByName: 'Ana', closedByName: 'Ana',
+        closedAt: '2026-10-02T22:15:00', prolongCount: 2, openingFloat: 100,
+      },
+      { id: 4, shiftNumber: 4, status: 'CLOSED', openedByName: 'Ana', closedByName: 'Ana', openingFloat: 100 },
+    ])
+
+    wrap(<DailyZReportPanel />)
+
+    expect(await screen.findByText('02/10/2026, 22:15')).toBeVisible()
+    expect(screen.getByText('Cierre')).toBeVisible()
+    expect(screen.getByText('Prórrogas')).toBeVisible()
+    expect(screen.getByText('2')).toBeVisible()
+  })
+})
