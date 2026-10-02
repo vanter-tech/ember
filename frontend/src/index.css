@@ -3,6 +3,10 @@
 @import "@fontsource-variable/geist";
 
 @custom-variant dark (&:is(.dark *));
+/* The shadcn overlays (dialog, alert-dialog, popover, select) were written for base-ui and key their
+   enter/exit animations on data-open / data-closed; Radix reports the same thing as data-state. */
+@custom-variant data-open (&[data-state="open"]);
+@custom-variant data-closed (&[data-state="closed"]);
 
 
 @keyframes shake-error{
