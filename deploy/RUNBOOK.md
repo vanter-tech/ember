@@ -492,6 +492,23 @@ Verified: `curl https://storage.googleapis.com/ember-downloads-prod` → `403`;
 Rollback: re-add `roles/storage.objectViewer` for `allUsers`. Any new public bucket must use
 `legacyObjectReader`, never `objectViewer`.
 
+**Media bucket closed (report 699, executed 2026-10-02).** After `v0.3.9` was live and a photo
+returned `200` with `cf-cache-status: HIT` through `/public/media`, `ember-media-prod` stopped being
+public: the `allUsers` binding was removed (it had left a role besides `objectViewer`, so direct
+object reads still answered `200` until it was gone) and public access prevention was enforced:
+
+```bash
+gcloud storage buckets get-iam-policy gs://ember-media-prod --format="yaml(bindings)" | grep -B2 allUsers
+gcloud storage buckets remove-iam-policy-binding gs://ember-media-prod \
+  --member=allUsers --role=<role shown above>
+gcloud storage buckets update gs://ember-media-prod --public-access-prevention
+gcloud storage buckets describe gs://ember-media-prod --format="yaml(public_access_prevention)"  # enforced
+```
+
+Verified: bucket listing `403`, direct `storage.googleapis.com/ember-media-prod/<uuid>.jpg` `403`,
+`/v1/public/media/<uuid>.jpg?t=<now>` (cache bypass) `200`. Rollback: `--public-access-prevention=inherited`
+and re-add `allUsers` with `roles/storage.legacyObjectReader` (never `objectViewer`, it allows listing).
+
 **DEVIATION 2 — the HMAC key belongs to the operator's user account, not a
 service account.** The org enforces `constraints/iam.disableServiceAccountKeyCreation`
 (HMAC keys for an SA count as SA keys) and this account has no
@@ -504,6 +521,48 @@ SaaS, but if that account is lost or its access changes, image uploads break.
 Rotation: same Interoperability screen. **TODO:** migrate to a dedicated-SA HMAC
 key (`ember-media@…`, `objectAdmin` on this bucket only) if the org constraint is
 ever lifted for this project.
+
+**Superseded (report 699, executed 2026-10-02) — the app now uses an HMAC key of the dedicated service
+account `ember-media@ember-prod-vanter.iam.gserviceaccount.com`** (`objectAdmin` on this bucket), and
+the operator's user-account key was deactivated and deleted (Interoperability screen; `gcloud storage hmac list`
+does not show user-account keys). The org policy was not lifted: `fer.obando1.10.4@gmail.com` holds
+`resourcemanager.organizationAdmin` on org `332300963065`, which is enough to set a project-scoped exception.
+Procedure used (repeat it for any future rotation):
+
+```bash
+gcloud services enable orgpolicy.googleapis.com --project=ember-prod-vanter
+cat > /tmp/policy.yaml <<'POL'
+name: projects/ember-prod-vanter/policies/iam.disableServiceAccountKeyCreation
+spec:
+  rules:
+  - enforce: false
+POL
+gcloud org-policies set-policy /tmp/policy.yaml
+# Propagation is slow: the effective policy said enforce:false at once, but key creation kept
+# answering 412 for ~20 minutes (set 22:37, first success 22:58). Retry; do not change anything else.
+umask 077
+gcloud storage hmac create ember-media@ember-prod-vanter.iam.gserviceaccount.com --format=json > /tmp/hmac.json
+gcloud org-policies delete iam.disableServiceAccountKeyCreation --project=ember-prod-vanter  # restore, pass or fail
+gcloud org-policies describe iam.disableServiceAccountKeyCreation --project=ember-prod-vanter --effective  # enforce: true
+```
+
+Then replace `MINIO_ACCESS_KEY` / `MINIO_SECRET_KEY` in `ember-prod-env` without printing them (fetch the body,
+`awk` with `ENVIRON` to rewrite just those two lines, check `diff | grep -c '^>'` = 2 and the line count, `versions add`,
+`shred` the temp files incl. `hmac.json`), run `./deploy/deploy.sh <tag>` and test an upload plus an uncached read.
+Version 5 of the secret holds the service-account key; the previous versions still hold the deleted user key.
+
+**The service account also needs `roles/storage.legacyBucketReader` on the bucket.** `objectAdmin` is not enough:
+minio-java (no `region` set in `MinioConfig`) first calls `GET /<bucket>?location=`, which needs `storage.buckets.get`;
+without it every upload and every uncached photo read fails with `AccessDenied` (HTTP 500 on upload, 502 on
+`/public/media`). The Owner user key hid this. Granted with:
+
+```bash
+gcloud storage buckets add-iam-policy-binding gs://ember-media-prod \
+  --member="serviceAccount:ember-media@ember-prod-vanter.iam.gserviceaccount.com" \
+  --role="roles/storage.legacyBucketReader"
+```
+
+Optional hardening: set the `region` on the `MinioClient` in prod so the lookup (and that role) is unnecessary.
 
 Backend change shipped with this task (report 325): `minio.manage-bucket`
 (`MinioProperties`, default `true`) — `false` in `application-prod.properties`.
