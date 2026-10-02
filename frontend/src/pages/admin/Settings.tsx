@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Flag } from "lucide-react";
 import {useSettingsStore, type SettingsType} from "@/store/uiStore";
+import {AnimatedTabContent} from "@/components/AnimatedTabContent";
 import {SettingsBar} from "@/components/SettingsBar";
 import { SectionTour } from "@/components/tours/SectionTour";
 import { Button } from "@/components/ui/button";
@@ -121,7 +122,9 @@ export const Settings = () => {
                 provides that frame. Adding one here too doubled it (a second boxed region
                 visible below the tab's own CardFooter). */}
             <div id="settings-tour-content" className="flex-1">
-                {renderContent()}
+                <AnimatedTabContent tabKey={activeSettings ?? 'none'}>
+                    {renderContent()}
+                </AnimatedTabContent>
             </div>
             {activeSettings && tourSteps.length > 0 && (
                 <SectionTour
