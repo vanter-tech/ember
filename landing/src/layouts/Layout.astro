@@ -4,6 +4,8 @@ import '../styles/global.css';
 import SEO from '../components/SEO.astro';
 import Analytics from '../components/Analytics.astro';
 import WhatsAppButton from '../components/WhatsAppButton.astro';
+import CookieBanner from '../components/CookieBanner';
+import { getLang } from '../i18n/utils';
 
 interface Props {
   title: string;
@@ -57,16 +59,11 @@ const lang = Astro.currentLocale ?? 'es';
 		<Analytics />
 	</head>
 	<body>
-		{/* Must live in <body>: an <img> inside a head <noscript> makes Astro's DOMParser close the head early, so client-side navigation drops and reloads the stylesheet (flash of unstyled page). */}
-		{import.meta.env.PROD && (
-			<noscript>
-				<img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=1853493642493263&ev=PageView&noscript=1" />
-			</noscript>
-		)}
 		<a class="skip-link" href="#main-content">
 			{lang === 'en' ? 'Skip to content' : 'Saltar al contenido'}
 		</a>
 		<slot />
 		<WhatsAppButton />
+		<CookieBanner lang={getLang(lang)} client:load />
 	</body>
 </html>
