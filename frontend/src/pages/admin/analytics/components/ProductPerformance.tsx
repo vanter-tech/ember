@@ -28,9 +28,19 @@ export const ProductPerformance = () => {
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
               <Trophy className="h-4 w-4 text-primary" strokeWidth={2} />
             </div>
-            <CardTitle className="text-base font-semibold tracking-tight text-foreground">
-              {t('topProductsTitle')}
-            </CardTitle>
+            <div className="flex flex-col">
+              <CardTitle className="text-base font-semibold tracking-tight text-foreground">
+                {t('topProductsTitle')}
+              </CardTitle>
+              {data && (
+                <span className="text-xs text-muted-foreground">
+                  {t('productsSoldSummary', {
+                    products: data.productCount ?? 0,
+                    quantity: data.totalQuantity ?? 0,
+                  })}
+                </span>
+              )}
+            </div>
           </div>
         </CardHeader>
         <CardContent>

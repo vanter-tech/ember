@@ -167,6 +167,14 @@ class ReceiptLayoutTest {
     }
 
     @Test
+    void render_printsTheBillCode_insteadOfTheRawId() {
+        ReceiptLayout.Data data = ReceiptLayout.Data.builder()
+                .billId(7L).billCode("ELPO-000123").width(32).build();
+
+        assertThat(ReceiptLayout.render(data)).isEqualTo("Cuenta ELPO-000123\n");
+    }
+
+    @Test
     void render_omitsBlankHeaderAndFooter_andMissingTable() {
         ReceiptLayout.Data data = ReceiptLayout.Data.builder()
                 .header("  ").footer("").billId(3L).width(32)

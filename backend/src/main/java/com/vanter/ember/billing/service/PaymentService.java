@@ -447,24 +447,35 @@ public class PaymentService {
                 .map(p -> new WaiterBillStateResponse.PendingDigitalPayment(
                         p.getId(), p.getParticipantName(), p.getAmount()))
                 .toList();
-        return new WaiterBillStateResponse(bill.getId(), bill.getTotal(), splits, pending);
+        return new WaiterBillStateResponse(bill.getId(), bill.getBillCode(), bill.getTotal(), splits, pending);
     }
 
     public List<PaymentResponse> toResponses(List<Payment> payments) {
         Map<String, TableRef> tableBySessionId = resolveTables(payments);
+        Map<String, String> userNames = userNames(payments.stream().map(Payment::getProcessedBy));
         return payments.stream().map(p -> {
             BigDecimal refunded = refundRepository.sumByPaymentId(p.getId());
             TableRef table = tableBySessionId.get(p.getBill().getSessionId());
             return new PaymentResponse(
-                    p.getId(), p.getBill().getId(), p.getParticipantName(), p.getAmount(),
+                    p.getId(), p.getBill().getId(), p.getBill().getBillCode(), p.getParticipantName(), p.getAmount(),
                     p.getMethod().name(), p.getStatus().name(), p.getCreatedAt(),
                     refunded, p.getAmount().subtract(refunded),
                     table == null ? null : table.number(),
-                    table == null ? null : table.label());
+                    table == null ? null : table.label(),
+                    p.getProcessedBy() == null ? null : userNames.getOrDefault(p.getProcessedBy(), p.getProcessedBy()),
+                    p.getGatewayRef());
         }).toList();
     }
 
-    private record TableRef(Integer number, String label) {}
+    /** Display names of the given user ids in one lookup; ids that no longer resolve are simply absent. */
+    private Map<String, String> userNames(java.util.stream.Stream<String> userIds) {
+        List<String> ids = userIds.filter(java.util.Objects::nonNull).distinct().toList();
+        return ids.isEmpty()
+                ? Map.of()
+                : userRepository.findAllById(ids).stream().collect(Collectors.toMap(User::getId, User::getName));
+    }
+
+    record TableRef(Integer number, String label) {}
 
     /**
      * A shift's payment list spans many tables — the admin Corte Z view wants to show which table
@@ -476,9 +487,14 @@ public class PaymentService {
         if (payments.isEmpty()) {
             return Map.of();
         }
-        UUID tenantId = payments.get(0).getBill().getTenantId();
-        Map<String, Session> sessionById = payments.stream()
-                .map(p -> p.getBill().getSessionId())
+        return tablesBySession(
+                payments.get(0).getBill().getTenantId(),
+                payments.stream().map(p -> p.getBill().getSessionId()).toList());
+    }
+
+    /** The table (and merged label) of each session, in one batch table lookup; shared with {@link BillingAuditService}. */
+    Map<String, TableRef> tablesBySession(UUID tenantId, List<String> sessionIds) {
+        Map<String, Session> sessionById = sessionIds.stream()
                 .distinct()
                 .collect(Collectors.toMap(sessionId -> sessionId, sessionService::findById));
         Set<UUID> tableIds = sessionById.values().stream().map(Session::getTableId).collect(Collectors.toSet());
@@ -496,11 +512,7 @@ public class PaymentService {
 
     public List<RefundResponse> listRefunds(Long paymentId) {
         List<Refund> refunds = refundRepository.findByPaymentId(paymentId);
-        Set<String> userIds = refunds.stream().map(Refund::getRefundedBy).collect(Collectors.toSet());
-        Map<String, String> names = userIds.isEmpty()
-                ? Map.of()
-                : userRepository.findAllById(userIds).stream()
-                        .collect(Collectors.toMap(User::getId, User::getName));
+        Map<String, String> names = userNames(refunds.stream().map(Refund::getRefundedBy));
         return refunds.stream()
                 .map(r -> new RefundResponse(
                         r.getId(), r.getAmount(), r.getReason(),

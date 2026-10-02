@@ -2442,6 +2442,9 @@ export interface components {
         Bill: {
             /** Format: int64 */
             id?: number;
+            /** Format: int32 */
+            billNumber?: number;
+            billCode?: string;
             /** Format: uuid */
             tenantId?: string;
             sessionId?: string;
@@ -2576,6 +2579,8 @@ export interface components {
             hasPin?: boolean;
             /** Format: date-time */
             passwordResetAvailableAt?: string;
+            /** Format: date-time */
+            pinUpdatedAt?: string;
         };
         UpdateProfileRequest: {
             /** @enum {string} */
@@ -2651,6 +2656,9 @@ export interface components {
         };
         KitchenOrder: {
             id?: string;
+            /** Format: int32 */
+            ticketNumber?: number;
+            ticketCode?: string;
             /** Format: uuid */
             tenantId?: string;
             sessionId?: string;
@@ -3043,12 +3051,43 @@ export interface components {
             shift?: components["schemas"]["CashShiftResponse"];
             movements?: components["schemas"]["CashMovementResponse"][];
             payments?: components["schemas"]["PaymentResponse"][];
+            refunds?: components["schemas"]["ShiftRefundResponse"][];
+            voidedBills?: components["schemas"]["VoidedBillResponse"][];
+        };
+        ShiftRefundResponse: {
+            /** Format: int64 */
+            id?: number;
+            /** Format: int64 */
+            paymentId?: number;
+            /** Format: int64 */
+            billId?: number;
+            billCode?: string;
+            participantName?: string;
+            amount?: number;
+            reason?: string;
+            refundedByName?: string;
+            /** Format: date-time */
+            createdAt?: string;
+        };
+        VoidedBillResponse: {
+            /** Format: int64 */
+            id?: number;
+            billCode?: string;
+            total?: number;
+            /** Format: int32 */
+            tableNumber?: number;
+            tableLabel?: string;
+            voidReason?: string;
+            voidedByName?: string;
+            /** Format: date-time */
+            voidedAt?: string;
         };
         PaymentResponse: {
             /** Format: int64 */
             id?: number;
             /** Format: int64 */
             billId?: number;
+            billCode?: string;
             participantName?: string;
             amount?: number;
             method?: string;
@@ -3060,6 +3099,8 @@ export interface components {
             /** Format: int32 */
             tableNumber?: number;
             tableLabel?: string;
+            processedByName?: string;
+            gatewayRef?: string;
         };
         DailyReportResponse: {
             /** Format: date */
@@ -3080,6 +3121,7 @@ export interface components {
         WaiterBillStateResponse: {
             /** Format: int64 */
             id?: number;
+            code?: string;
             total?: number;
             splits?: components["schemas"]["BillSplit"][];
             pendingDigitalPayments?: components["schemas"]["PendingDigitalPayment"][];

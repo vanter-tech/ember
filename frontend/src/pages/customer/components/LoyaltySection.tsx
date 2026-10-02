@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { TIER_LABELS } from '@/pages/admin/components/settings/loyalty/types'
 import { useTranslation } from '@/lib/i18n'
 import { useLoyaltyAccount } from './useLoyaltyAccount'
+import { TierProgressBar } from './TierProgressBar'
 
 type Reward = NonNullable<LoyaltyAccountResponse['rewards']>[number]
 
@@ -82,6 +83,7 @@ export const LoyaltySection = () => {
                     })
                   : t('loyaltyMaxTierReached')}
               </span>
+              {account.nextTier && <TierProgressBar percent={account.tierProgressPercent} />}
             </div>
           </CardContent>
         </Card>

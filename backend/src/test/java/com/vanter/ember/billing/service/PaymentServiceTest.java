@@ -159,6 +159,66 @@ class PaymentServiceTest {
         assertThat(response.tableLabel()).isEqualTo("M5+M6");
     }
 
+    private Payment paymentProcessedBy(String processedBy, String gatewayRef) {
+        Bill bill = Bill.builder()
+                .id(1L).tenantId(TENANT_ID).sessionId("sess-1").total(new BigDecimal("22.50"))
+                .splitMethod(SplitMethod.BY_CONSUMPTION).status(BillStatus.OPEN)
+                .createdAt(LocalDateTime.now()).build();
+        return Payment.builder()
+                .id(20L).bill(bill).participantName("Alice").amount(new BigDecimal("22.50"))
+                .method(PaymentMethod.PHYSICAL).status(PaymentStatus.CONFIRMED)
+                .processedBy(processedBy).gatewayRef(gatewayRef).createdAt(LocalDateTime.now()).build();
+    }
+
+    private void stubTableAndRefunds() {
+        when(sessionService.findById("sess-1")).thenReturn(sampleSession());
+        when(diningTableRepository.findByRestaurantIdAndIdIn(TENANT_ID, Set.of(TABLE_ID)))
+                .thenReturn(List.of(DiningTables.builder().id(TABLE_ID).tableNumber(5).build()));
+        when(refundRepository.sumByPaymentId(20L)).thenReturn(BigDecimal.ZERO);
+    }
+
+    @Test
+    void toResponses_carriesTheNameOfWhoRegisteredThePayment() {
+        stubTableAndRefunds();
+        when(userRepository.findAllById(List.of("user-1")))
+                .thenReturn(List.of(User.builder().id("user-1").name("Alice W").build()));
+
+        PaymentResponse response = paymentService.toResponses(List.of(paymentProcessedBy("user-1", null))).get(0);
+
+        assertThat(response.processedByName()).isEqualTo("Alice W");
+    }
+
+    @Test
+    void toResponses_whoRegisteredItNoLongerResolves_fallsBackToTheStoredId() {
+        stubTableAndRefunds();
+        when(userRepository.findAllById(List.of("gone-user"))).thenReturn(List.of());
+
+        PaymentResponse response = paymentService.toResponses(List.of(paymentProcessedBy("gone-user", null))).get(0);
+
+        assertThat(response.processedByName()).isEqualTo("gone-user");
+    }
+
+    @Test
+    void toResponses_paymentWithoutProcessor_hasNoNameAndLooksUpNoUsers() {
+        stubTableAndRefunds();
+
+        PaymentResponse response = paymentService.toResponses(List.of(paymentProcessedBy(null, null))).get(0);
+
+        assertThat(response.processedByName()).isNull();
+        org.mockito.Mockito.verify(userRepository, org.mockito.Mockito.never()).findAllById(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void toResponses_carriesTheGatewayReferenceOfADigitalPayment() {
+        stubTableAndRefunds();
+        when(userRepository.findAllById(List.of("user-1")))
+                .thenReturn(List.of(User.builder().id("user-1").name("Alice W").build()));
+
+        PaymentResponse response = paymentService.toResponses(List.of(paymentProcessedBy("user-1", "GW-123"))).get(0);
+
+        assertThat(response.gatewayRef()).isEqualTo("GW-123");
+    }
+
     @Test
     void registerPhysicalPayment_createsConfirmedPhysicalPayment() {
         Bill bill = sampleBill();

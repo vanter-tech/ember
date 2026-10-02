@@ -122,7 +122,7 @@ export const useWebsocketStore = create<WebSocketState>((set, get) => ({
             }
             if(eventData.type === 'BILL_READY'){
                 useSessionStore.getState().setBillReady(
-                    { id: eventData.billId, total: eventData.total },
+                    { id: eventData.billId, billCode: eventData.billCode, total: eventData.total },
                     eventData.splits
                 )
             }
@@ -200,6 +200,7 @@ export const useWebsocketStore = create<WebSocketState>((set, get) => ({
             if(eventData.type === 'BILL_READY'){
                 queryClient.setQueryData<WaiterBillState>(['bill', sessionId], {
                     id: eventData.billId,
+                    code: eventData.billCode,
                     total: eventData.total,
                     splits: eventData.splits,
                 })

@@ -2,6 +2,8 @@ package com.vanter.ember.printing.listener;
 
 import com.vanter.ember.billing.event.PaymentCompleted;
 import com.vanter.ember.config.TenantContextHolder;
+import com.vanter.ember.kitchen.model.KitchenOrder;
+import com.vanter.ember.kitchen.repository.KitchenOrderRepository;
 import com.vanter.ember.printing.model.PrintJob;
 import com.vanter.ember.printing.model.PrintJobSourceType;
 import com.vanter.ember.printing.model.PrintJobStatus;
@@ -37,6 +39,7 @@ public class PrintingEventListener {
     private final PrintDispatchService printDispatchService;
     private final ReceiptRenderer receiptRenderer;
     private final PrintTargetResolver printTargetResolver;
+    private final KitchenOrderRepository kitchenOrderRepository;
 
     @EventListener
     public void onKitchenItemsConfirmed(KitchenItemsConfirmed event) {
@@ -91,6 +94,10 @@ public class PrintingEventListener {
     private String renderKitchenPayload(KitchenItemsConfirmed event) {
         List<OrderItem> items = event.confirmedItems();
         StringBuilder sb = new StringBuilder();
+        // KitchenService creates the order (and its code) in a higher-precedence listener of this same event.
+        kitchenOrderRepository.findByTenantIdAndSessionId(event.tenantId(), event.sessionId())
+                .map(KitchenOrder::getTicketCode)
+                .ifPresent(code -> sb.append(code).append('\n'));
         sb.append(TableLabels.ticketLine(event.tableNumber(), event.linkedTableNumbers())).append('\n');
         for (OrderItem item : items) {
             sb.append("- ").append(item.getName()).append('\n');

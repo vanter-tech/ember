@@ -19,6 +19,7 @@ const AgentRowSkeleton = () => (
       <div className="flex flex-col gap-2">
         <Skeleton className="h-5 w-32" />
         <Skeleton className="h-4 w-56" />
+        <Skeleton className="h-3 w-40" />
       </div>
       <div className="flex items-center gap-2">
         <Skeleton className="h-8 w-32 rounded-xl" />
@@ -43,7 +44,10 @@ export const JobsCardSkeleton = ({ label }: { label?: string }) => (
     <CardContent className="space-y-2 py-4">
       {Array.from({ length: 3 }, (_, i) => (
         <div key={i} data-testid="skeleton-job-row" className="flex items-center justify-between rounded-xl border border-zinc-200 p-3">
-          <Skeleton className="h-4 w-48" />
+          <div className="flex flex-col gap-1.5">
+            <Skeleton className="h-4 w-48" />
+            <Skeleton className="h-3 w-40" />
+          </div>
           <Skeleton className="h-8 w-28 rounded-xl" />
         </div>
       ))}

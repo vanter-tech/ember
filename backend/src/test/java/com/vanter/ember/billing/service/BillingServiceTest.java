@@ -21,6 +21,9 @@ import com.vanter.ember.session.model.SessionStatus;
 import com.vanter.ember.session.service.SessionService;
 import com.vanter.ember.settings.model.RestaurantSettings;
 import com.vanter.ember.settings.model.SettingsPayload;
+import com.vanter.ember.numbering.DocumentNumberService;
+import com.vanter.ember.numbering.DocumentSeries;
+import com.vanter.ember.numbering.IssuedNumber;
 import com.vanter.ember.settings.service.SettingService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -58,6 +61,7 @@ class BillingServiceTest {
     @Mock UserRepository userRepository;
     @Mock SimpMessagingTemplate messagingTemplate;
     @Mock SettingService settingService;
+    @Mock DocumentNumberService documentNumberService;
     @InjectMocks BillingService billingService;
 
     private static final UUID TENANT_ID = UUID.randomUUID();
@@ -77,6 +81,8 @@ class BillingServiceTest {
         // tests that never reach taxMultiplier() don't trip strict-stubbing) and override per-test
         // where the tax calculation itself (E-05) is what's under test.
         lenient().when(settingService.getSettings(TENANT_ID)).thenReturn(settingsWithTaxRate(0.0));
+        lenient().when(documentNumberService.next(TENANT_ID, DocumentSeries.BILL))
+                .thenReturn(new IssuedNumber(7, "TEST-000007"));
     }
 
     @AfterEach
@@ -109,6 +115,29 @@ class BillingServiceTest {
         Bill bill = billingService.calculateBill("sess-1", SplitMethod.BY_CONSUMPTION);
 
         assertThat(bill.getTotal()).isEqualByComparingTo("22.50");
+    }
+
+    @Test
+    void calculateBill_issuesTheNextBillNumberAndCode() {
+        when(sessionService.findById("sess-1")).thenReturn(sessionWithMixedItems());
+        when(billRepository.findBySessionIdAndStatusNot("sess-1", BillStatus.VOIDED)).thenReturn(Optional.empty());
+        when(billRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        Bill bill = billingService.calculateBill("sess-1", SplitMethod.BY_CONSUMPTION);
+
+        assertThat(bill.getBillNumber()).isEqualTo(7);
+        assertThat(bill.getBillCode()).isEqualTo("TEST-000007");
+    }
+
+    @Test
+    void calculateBill_whenAlreadyBilled_consumesNoNumber() {
+        when(billRepository.findBySessionIdAndStatusNot("sess-1", BillStatus.VOIDED))
+                .thenReturn(Optional.of(Bill.builder().id(1L).build()));
+
+        assertThatThrownBy(() -> billingService.calculateBill("sess-1", SplitMethod.BY_CONSUMPTION))
+                .isInstanceOf(IllegalStateException.class);
+
+        org.mockito.Mockito.verifyNoInteractions(documentNumberService);
     }
 
     @Test

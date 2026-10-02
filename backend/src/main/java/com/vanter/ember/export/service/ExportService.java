@@ -117,7 +117,7 @@ public class ExportService {
         int rowIndex = writeBusinessHeaderBlock(sheet, branding, from, to, labelStyle, valueStyle);
 
         writeColumnHeaderRow(sheet, rowIndex, columnHeaderStyle,
-                "ID Cuenta", "Mesa", "Fecha", "Total", "Estado", "Métodos de pago", "Participantes");
+                "Cuenta", "Mesa", "Fecha", "Total", "Estado", "Métodos de pago", "Participantes");
         rowIndex++;
 
         List<Bill> bills = billRepository.findByTenantIdAndCreatedAtBetweenAndStatusIn(
@@ -164,7 +164,11 @@ public class ExportService {
             dataRowCount++;
 
             Row row = sheet.createRow(rowIndex++);
-            numericCell(row, 0, bill.getId(), styles.count());
+            if (bill.getBillCode() != null) {
+                textCell(row, 0, bill.getBillCode(), styles.text());
+            } else {
+                numericCell(row, 0, bill.getId(), styles.count());
+            }
             if (tableNumber != null && !linkedNumbers.isEmpty()) {
                 textCell(row, 1, TableLabels.joined(tableNumber, linkedNumbers), styles.text());
             } else if (tableNumber != null) {

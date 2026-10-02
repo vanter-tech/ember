@@ -58,7 +58,7 @@ public class ReceiptRenderer {
         Optional<Bill> found = billRepository.findById(billId);
         if (found.isPresent()) {
             Bill bill = found.get();
-            data.when(bill.getCreatedAt()).total(bill.getTotal());
+            data.when(bill.getCreatedAt()).total(bill.getTotal()).billCode(bill.getBillCode());
             if (ticket.getHeaderMessage() == null || ticket.getHeaderMessage().isBlank()) {
                 restaurantRepository.findById(bill.getTenantId())
                         .map(Restaurant::getName)

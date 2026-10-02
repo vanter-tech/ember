@@ -251,6 +251,7 @@ public class UserAdminService {
                 user.getEfficiencyPercentage(),
                 user.getPendingHours(),
                 user.getPinHash() != null,
-                passwordResetAvailableAt(user));
+                passwordResetAvailableAt(user),
+                user.getPinUpdatedAt());
     }
 }

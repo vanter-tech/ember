@@ -8,6 +8,9 @@ import com.vanter.ember.kitchen.event.KitchenOrderRetired;
 import com.vanter.ember.kitchen.model.KitchenItem;
 import com.vanter.ember.kitchen.model.KitchenOrder;
 import com.vanter.ember.kitchen.repository.KitchenOrderRepository;
+import com.vanter.ember.numbering.DocumentNumberService;
+import com.vanter.ember.numbering.DocumentSeries;
+import com.vanter.ember.numbering.IssuedNumber;
 import com.vanter.ember.session.event.KitchenItemsConfirmed;
 import com.vanter.ember.session.event.SessionClosed;
 import com.vanter.ember.session.event.TableLinksChanged;
@@ -38,6 +41,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -49,11 +53,14 @@ class KitchenServiceTest {
 
     @Mock KitchenOrderRepository kitchenOrderRepository;
     @Mock ApplicationEventPublisher eventPublisher;
+    @Mock DocumentNumberService documentNumberService;
     @InjectMocks KitchenService kitchenService;
 
     @BeforeEach
     void bindTenant() {
         TenantContextHolder.setTenantId(TENANT_ID);
+        lenient().when(documentNumberService.next(TENANT_ID, DocumentSeries.KDS))
+                .thenReturn(new IssuedNumber(1, "TEST-KDS-000001"));
     }
 
     @AfterEach
@@ -94,6 +101,36 @@ class KitchenServiceTest {
         assertThat(item.getStatus()).isEqualTo(OrderItemStatus.PENDING);
         assertThat(item.getUpdatedAt()).isNotNull();
         assertThat(saved.getTenantId()).isEqualTo(TENANT_ID);
+    }
+
+    @Test
+    void handleOrderItemAdded_newOrderGetsTheNextKdsNumberAndCode() {
+        when(kitchenOrderRepository.findByTenantIdAndSessionId(TENANT_ID, "sess-1")).thenReturn(Optional.empty());
+        when(documentNumberService.next(TENANT_ID, DocumentSeries.KDS))
+                .thenReturn(new IssuedNumber(45, "ELPO-KDS-000045"));
+        when(kitchenOrderRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        kitchenService.handleOrderItemAdded(sampleEvent());
+
+        ArgumentCaptor<KitchenOrder> captor = ArgumentCaptor.forClass(KitchenOrder.class);
+        verify(kitchenOrderRepository).save(captor.capture());
+        assertThat(captor.getValue().getTicketNumber()).isEqualTo(45);
+        assertThat(captor.getValue().getTicketCode()).isEqualTo("ELPO-KDS-000045");
+    }
+
+    @Test
+    void handleOrderItemAdded_existingOrderKeepsItsCode_andConsumesNoNumber() {
+        KitchenOrder existing = KitchenOrder.builder()
+                .id("ko-1").sessionId("sess-1").tableNumber(5)
+                .ticketNumber(45).ticketCode("ELPO-KDS-000045")
+                .items(new ArrayList<>()).build();
+        when(kitchenOrderRepository.findByTenantIdAndSessionId(TENANT_ID, "sess-1")).thenReturn(Optional.of(existing));
+        when(kitchenOrderRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        kitchenService.handleOrderItemAdded(sampleEvent());
+
+        verify(documentNumberService, never()).next(any(), any());
+        assertThat(existing.getTicketCode()).isEqualTo("ELPO-KDS-000045");
     }
 
     @Test

@@ -10,7 +10,7 @@ export const kitchen = {
   kdsSubtitle: 'Kitchen monitor - KDS',
   kdsColumnEmpty: 'No dishes',
   elapsedMinutes: '{{minutes}} min',
-  ticketLabel: 'Ticket: #{{code}}',
+  ticketLabel: 'Ticket: {{code}}',
   orderDetailsHeading: 'Order Details - M{{tableNumber}}',
   orderDetailsHeadingMerged: 'Order Details - {{label}}',
   mergedWord: 'Joined',

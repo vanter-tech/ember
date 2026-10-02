@@ -12,7 +12,7 @@ export const ShiftHistorySkeleton = ({ label }: { label: string }) => (
     <LoadingStatus label={label} />
     <Card className={CARD}>
       <CardContent>
-        <TableSkeleton columns={7} rows={8} />
+        <TableSkeleton columns={9} rows={8} />
       </CardContent>
     </Card>
   </>
@@ -40,7 +40,7 @@ export const DailyReportSkeleton = ({ label }: { label: string }) => (
         <Skeleton className="h-4 w-28" />
       </CardHeader>
       <CardContent>
-        <TableSkeleton columns={7} rows={3} />
+        <TableSkeleton columns={10} rows={3} />
       </CardContent>
     </Card>
   </>
@@ -69,5 +69,18 @@ export const CashRegisterPageSkeleton = ({ label }: { label: string }) => (
         <ShiftHistorySkeleton label={label} />
       </div>
     </div>
+  </div>
+)
+
+// A shift's refunds and voided bills under its expanded row: two titled tables as placeholders.
+export const ShiftAuditSkeleton = ({ label }: { label: string }) => (
+  <div data-testid="skeleton-shift-audit" className="mt-3 flex flex-col gap-6 border-t border-border/40 pt-3">
+    <LoadingStatus label={label} />
+    {[0, 1].map((i) => (
+      <div key={i} className="flex flex-col gap-3">
+        <Skeleton className="h-3 w-24" />
+        <TableSkeleton columns={6} rows={2} />
+      </div>
+    ))}
   </div>
 )

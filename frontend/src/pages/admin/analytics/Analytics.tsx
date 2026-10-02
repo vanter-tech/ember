@@ -6,6 +6,7 @@ import { SummaryCards } from './components/SummaryCards'
 import { SalesChart } from './components/SalesChart'
 import { ProductPerformance } from './components/ProductPerformance'
 import { TableAnalytics } from './components/TableAnalytics'
+import { AnalyticsRange } from './components/AnalyticsRange'
 
 export const Analytics = () => {
   const { t } = useTranslation('admin')
@@ -47,6 +48,7 @@ export const Analytics = () => {
           <p className="text-sm text-muted-foreground">
             {t('analyticsPageSubtitle')}
           </p>
+          <AnalyticsRange />
         </div>
       )}
 

@@ -185,3 +185,28 @@ describe('EditStaffModal — saving the profile', () => {
     await waitFor(() => expect(invalidate).toHaveBeenCalledWith({ queryKey: ['staff'] }))
   })
 })
+
+describe('EditStaffModal — when the PIN was last changed', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  test('shows the date the PIN was last set when the account has one', () => {
+    useUIStore.setState({
+      activeModal: 'EDIT_STAFF',
+      modalPayload: member({ hasPin: true, pinUpdatedAt: '2026-10-01T15:00:00Z' }),
+    })
+
+    wrap(<EditStaffModal />)
+
+    expect(screen.getByText(/PIN actualizado: 01\/10\/2026/)).toBeVisible()
+  })
+
+  test('shows nothing about the date when the account has no PIN', () => {
+    useUIStore.setState({ activeModal: 'EDIT_STAFF', modalPayload: member({ hasPin: false }) })
+
+    wrap(<EditStaffModal />)
+
+    expect(screen.queryByText(/PIN actualizado/)).not.toBeInTheDocument()
+  })
+})

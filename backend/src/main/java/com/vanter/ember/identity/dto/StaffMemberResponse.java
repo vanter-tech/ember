@@ -18,13 +18,15 @@ public record StaffMemberResponse(
         BigDecimal pendingHours,
         boolean hasPin,
         /** When an admin may reset this password again; null = available now. */
-        Instant passwordResetAvailableAt) {
+        Instant passwordResetAvailableAt,
+        /** When the quick-login PIN was last set or changed; null when it never was. */
+        Instant pinUpdatedAt) {
 
     public StaffMemberResponse(
             String id, String name, String email, Role role, Instant createdAt, Boolean active,
             String shift, String contractType, String location, BigDecimal efficiencyPercentage,
             BigDecimal pendingHours, boolean hasPin) {
         this(id, name, email, role, createdAt, active, shift, contractType, location,
-                efficiencyPercentage, pendingHours, hasPin, null);
+                efficiencyPercentage, pendingHours, hasPin, null, null);
     }
 }

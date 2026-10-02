@@ -16,6 +16,7 @@ import { deriveCashShiftAlert } from '@/lib/cashShiftAlert'
 import { RefundPaymentModal } from '@/pages/waiter/components/RefundPaymentModal'
 import { SectionTour } from '@/components/tours/SectionTour'
 import { useTranslation } from '@/lib/i18n'
+import { billCode } from '@/lib/documentCodes'
 
 export const CashRegister = () => {
   const { t } = useTranslation('waiter')
@@ -113,6 +114,11 @@ export const CashRegister = () => {
                     {msLeft !== null && msLeft > 0 && (
                       <span>({t('timeLeftLabel', { time: fmtDuration(msLeft) })})</span>
                     )}
+                  </span>
+                )}
+                {(shift.prolongCount ?? 0) > 0 && (
+                  <span>
+                    {t('prolongCountLabel')}: <span className="font-medium text-foreground">{shift.prolongCount}</span>
                   </span>
                 )}
               </div>
@@ -218,8 +224,10 @@ export const CashRegister = () => {
                 <TableHeader>
                   <TableRow>
                     <TableHead>{t('timeColumnLabel')}</TableHead>
+                    <TableHead>{t('billColumnLabel')}</TableHead>
                     <TableHead>{t('tableColumnLabel')}</TableHead>
                     <TableHead>{t('participantLabel')}</TableHead>
+                    <TableHead>{t('processedByColumnLabel')}</TableHead>
                     <TableHead>{t('methodLabel')}</TableHead>
                     <TableHead>{t('statusLabel')}</TableHead>
                     <TableHead>{t('amountLabel')}</TableHead>
@@ -230,7 +238,7 @@ export const CashRegister = () => {
                 <TableBody>
                   {(detail?.payments ?? []).length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={8} className="text-center text-sm text-muted-foreground">
+                      <TableCell colSpan={10} className="text-center text-sm text-muted-foreground">
                         {t('noPaymentsRegistered')}
                       </TableCell>
                     </TableRow>
@@ -238,12 +246,17 @@ export const CashRegister = () => {
                     (detail!.payments ?? []).map((payment) => (
                       <TableRow key={payment.id}>
                         <TableCell>{fmtTime(payment.createdAt)}</TableCell>
+                        <TableCell>{billCode(payment.billCode, payment.billId)}</TableCell>
                         <TableCell>{payment.tableNumber ?? '—'}</TableCell>
                         <TableCell>{payment.participantName}</TableCell>
+                        <TableCell>{payment.processedByName ?? '—'}</TableCell>
                         <TableCell>
                           <Badge variant="outline">
                             {payment.method === 'PHYSICAL' ? t('methodCash') : t('methodDigital')}
                           </Badge>
+                          {payment.method === 'DIGITAL' && payment.gatewayRef && (
+                            <span className="block text-xs text-muted-foreground">{payment.gatewayRef}</span>
+                          )}
                         </TableCell>
                         <TableCell>
                           <Badge variant={payment.status === 'PENDING' ? 'secondary' : 'default'}>

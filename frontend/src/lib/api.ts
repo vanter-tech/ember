@@ -89,6 +89,7 @@ export interface Page<T> {
 export type RestaurantResponse = components['schemas']['Restaurant']
 export type PublicBranding = components['schemas']['PublicBrandingResponse']
 
+export type AnalyticsRangeResponse = components['schemas']['AnalyticsRangeResponse']
 export type AnalyticsSummaryResponse = components['schemas']['AnalyticsSummaryResponse']
 export type AnalyticsSalesResponse = components['schemas']['AnalyticsSalesResponse']
 export type SalesBucket = components['schemas']['SalesBucket']
@@ -615,6 +616,10 @@ export const publicService = {
 }
 
 export const analyticsService = {
+  getRange: async (): Promise<AnalyticsRangeResponse> => {
+    const { data } = await api.get<AnalyticsRangeResponse>('/admin/analytics/range')
+    return data
+  },
   getSummary: async (from?: string, to?: string): Promise<AnalyticsSummaryResponse> => {
     const { data } = await api.get<AnalyticsSummaryResponse>(
       '/admin/analytics/summary',
@@ -706,6 +711,8 @@ export type CashMovementType = components['schemas']['RecordMovementRequest']['t
 export type CashShiftResponse = components['schemas']['CashShiftResponse']
 export type CashMovementResponse = components['schemas']['CashMovementResponse']
 export type CashShiftDetailResponse = components['schemas']['CashShiftDetailResponse']
+export type ShiftRefund = components['schemas']['ShiftRefundResponse']
+export type VoidedBill = components['schemas']['VoidedBillResponse']
 export type DailyReportResponse = components['schemas']['DailyReportResponse']
 
 export const cashShiftService = {

@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { SettingsFormSkeleton, type SettingsRow } from '@/components/skeletons/SettingsFormSkeleton';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { SettingsService } from '@/lib/api';
+import { SettingsService, restaurantAdminService } from '@/lib/api';
+import { Skeleton } from '@/components/ui/skeleton';
 import type { components } from '@/lib/backend-types';
 import { Clock, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -42,6 +43,11 @@ export const BusinessHoursSettings = () => {
   const { data: settings, isPending: isLoadingSettings } = useQuery({
     queryKey: ['restaurantSettings'],
     queryFn: () => SettingsService.getSettings(),
+  });
+
+  const { data: restaurant, isPending: isLoadingRestaurant } = useQuery({
+    queryKey: ['restaurantAdmin'],
+    queryFn: restaurantAdminService.getPlan,
   });
 
   const [draftSchedule, setDraftSchedule] = useState<DaySchedule[] | undefined>(undefined);
@@ -101,6 +107,13 @@ export const BusinessHoursSettings = () => {
         <div>
           <CardTitle className="text-xl">{t('businessHoursLabel')}</CardTitle>
           <CardDescription>{t('businessHoursCardDescription')}</CardDescription>
+          {isLoadingRestaurant ? (
+            <Skeleton data-testid="skeleton-timezone" className="mt-1.5 h-3 w-48" />
+          ) : (
+            restaurant?.timezone && (
+              <p className="mt-1 text-xs text-zinc-500">{t('businessHoursTimezoneLabel', { timezone: restaurant.timezone })}</p>
+            )
+          )}
         </div>
       </CardHeader>
       <div className="border-t w-full m-auto border-[#7a1315]/20"></div>

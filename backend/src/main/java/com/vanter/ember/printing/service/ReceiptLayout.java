@@ -31,7 +31,7 @@ final class ReceiptLayout {
             String header, Integer tableNumber, Long billId, LocalDateTime when, List<Line> lines,
             BigDecimal subtotal, String taxLabel, BigDecimal tax, BigDecimal total,
             String currency, String footer, int width, List<String> infoLines, boolean tipLine,
-            String tableLine) {
+            String tableLine, String billCode) {
 
         static Builder builder() {
             return new Builder();
@@ -53,6 +53,7 @@ final class ReceiptLayout {
             private final List<String> infoLines = new ArrayList<>();
             private boolean tipLine;
             private String tableLine;
+            private String billCode;
 
             Builder header(String v) { this.header = v; return this; }
             Builder tableNumber(Integer v) { this.tableNumber = v; return this; }
@@ -72,10 +73,12 @@ final class ReceiptLayout {
             Builder tipLine(boolean v) { this.tipLine = v; return this; }
             /** Replaces the "Mesa N" line (e.g. "M3+M4 - Unidas" for merged tables). */
             Builder tableLine(String v) { this.tableLine = v; return this; }
+            /** The bill's printable code (e.g. ELPO-000123); without it the line falls back to the raw id. */
+            Builder billCode(String v) { this.billCode = v; return this; }
 
             Data build() {
                 return new Data(header, tableNumber, billId, when, List.copyOf(lines), subtotal, taxLabel,
-                        tax, total, currency, footer, width, List.copyOf(infoLines), tipLine, tableLine);
+                        tax, total, currency, footer, width, List.copyOf(infoLines), tipLine, tableLine, billCode);
             }
         }
     }
@@ -97,7 +100,7 @@ final class ReceiptLayout {
         } else if (d.tableNumber() != null) {
             out.append("Mesa ").append(d.tableNumber()).append('\n');
         }
-        String bill = "Cuenta #" + d.billId();
+        String bill = d.billCode() != null ? "Cuenta " + d.billCode() : "Cuenta #" + d.billId();
         out.append(d.when() == null ? bill : twoCols(bill, WHEN.format(d.when()), w)).append('\n');
 
         boolean hasItems = !d.lines().isEmpty();

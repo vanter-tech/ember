@@ -36,6 +36,14 @@ public class Bill {
     @Column(name = "tenant_id", nullable = false, updatable = false)
     private UUID tenantId;
 
+    /** Consecutive per-tenant number (gap-free series); null only on bills created before numbering existed and not yet backfilled. */
+    @Column(name = "bill_number")
+    private Integer billNumber;
+
+    /** Printable code frozen at issuance, e.g. {@code ELPO-000123}; what receipts and screens show instead of {@link #id}. */
+    @Column(name = "bill_code", length = 24)
+    private String billCode;
+
     @Column(nullable = false)
     private String sessionId;
 

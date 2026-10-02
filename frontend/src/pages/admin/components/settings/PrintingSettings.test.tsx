@@ -137,3 +137,34 @@ describe('PrintingSettings', () => {
     ])
   })
 })
+
+describe('PrintingSettings — when an agent was last seen and what each job printed', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  test('shows the last connection of an agent, or that it never connected', async () => {
+    vi.mocked(printingService.listAgents).mockResolvedValue([
+      { id: 'a-1', name: 'Caja 1', status: 'ACTIVE', connected: false, paired: true, lastSeenAt: '2026-10-02T09:15:00' },
+      { id: 'a-2', name: 'Caja 2', status: 'ACTIVE', connected: false, paired: false },
+    ] as never)
+
+    wrap(<PrintingSettings />)
+
+    expect(await screen.findByText('Última conexión: 02/10/2026, 09:15')).toBeVisible()
+    expect(screen.getByText('Nunca se ha conectado')).toBeVisible()
+  })
+
+  test('labels each job with what it printed and when', async () => {
+    vi.mocked(printingService.listAgents).mockResolvedValue([] as never)
+    vi.mocked(printingService.listJobs).mockResolvedValue([
+      { id: 'j-1', role: 'KITCHEN', status: 'SENT', sourceType: 'KITCHEN_TICKET', sourceId: 'sess-1', createdAt: '2026-10-02T12:00:00' },
+      { id: 'j-2', role: 'RECEIPT', status: 'SENT', sourceType: 'BILL_RECEIPT', sourceId: '12', createdAt: '2026-10-02T11:00:00' },
+      { id: 'j-3', role: 'RECEIPT', status: 'SENT', sourceType: 'CASH_DRAWER_KICK', sourceId: 'x', createdAt: '2026-10-02T10:00:00' },
+    ] as never)
+
+    wrap(<PrintingSettings />)
+
+    expect(await screen.findByText('Ticket de cocina · 02/10/2026, 12:00')).toBeVisible()
+    expect(screen.getByText('Recibo de cuenta · 02/10/2026, 11:00')).toBeVisible()
+    expect(screen.getByText('Apertura de gaveta · 02/10/2026, 10:00')).toBeVisible()
+  })
+})

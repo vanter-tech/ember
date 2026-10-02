@@ -101,3 +101,55 @@ describe('accountant CashRegister — prolong the shift by a chosen time', () =>
     expect(cashShiftService.prolong).not.toHaveBeenCalled()
   })
 })
+
+describe('accountant CashRegister — who registered each payment and how often the shift was extended', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  test('names who registered each payment and shows the gateway reference of a digital one', async () => {
+    vi.mocked(cashShiftService.current).mockResolvedValue({
+      id: 1, shiftNumber: 3, status: 'OPEN', openingFloat: 100, openedByName: 'Ana',
+      openedAt: '2026-09-24T09:00:00',
+    } as never)
+    vi.mocked(cashShiftService.detail).mockResolvedValue({
+      movements: [],
+      payments: [
+        {
+          id: 1, method: 'PHYSICAL', status: 'CONFIRMED', amount: 50, participantName: 'Luis',
+          processedByName: 'Carla Mesera', tableNumber: 4,
+        },
+        {
+          id: 2, method: 'DIGITAL', status: 'CONFIRMED', amount: 30, participantName: 'Eva',
+          processedByName: 'Pedro Mesero', gatewayRef: 'GW-77', tableNumber: 5,
+        },
+      ],
+    } as never)
+    wrap()
+
+    expect(await screen.findByText('Carla Mesera')).toBeVisible()
+    expect(screen.getByText('Pedro Mesero')).toBeVisible()
+    expect(screen.getByText('GW-77')).toBeVisible()
+  })
+
+  test('shows how many times the open shift was extended, only when it was', async () => {
+    vi.mocked(cashShiftService.detail).mockResolvedValue({ movements: [], payments: [] } as never)
+    vi.mocked(cashShiftService.current).mockResolvedValue({
+      id: 1, shiftNumber: 3, status: 'OPEN', openingFloat: 100, openedByName: 'Ana',
+      openedAt: '2026-09-24T09:00:00', prolongCount: 2,
+    } as never)
+    wrap()
+
+    expect(await screen.findByText('Prórrogas:')).toBeVisible()
+  })
+
+  test('says nothing about extensions for a shift that was never extended', async () => {
+    vi.mocked(cashShiftService.detail).mockResolvedValue({ movements: [], payments: [] } as never)
+    vi.mocked(cashShiftService.current).mockResolvedValue({
+      id: 1, shiftNumber: 3, status: 'OPEN', openingFloat: 100, openedByName: 'Ana',
+      openedAt: '2026-09-24T09:00:00', prolongCount: 0,
+    } as never)
+    wrap()
+
+    await screen.findByText('Apertura:')
+    expect(screen.queryByText('Prórrogas:')).not.toBeInTheDocument()
+  })
+})

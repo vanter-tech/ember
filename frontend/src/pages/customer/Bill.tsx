@@ -12,6 +12,7 @@ import { ArrowLeft, CreditCard, CheckCircle2, Clock, Sparkles } from 'lucide-rea
 import toast from 'react-hot-toast'
 import { TIER_LABELS } from '@/pages/admin/components/settings/loyalty/types'
 import { useTranslation } from '@/lib/i18n'
+import { billCode } from '@/lib/documentCodes'
 
 export const Bill = () => {
   const { t } = useTranslation('customer')
@@ -45,7 +46,7 @@ export const Bill = () => {
       if (useSessionStore.getState().bill?.id === openedWithBillId.current) clearBill()
       return
     }
-    setBillReady({ id: fetchedBill.id, total: fetchedBill.total }, fetchedBill.splits ?? [])
+    setBillReady({ id: fetchedBill.id, billCode: fetchedBill.code, total: fetchedBill.total }, fetchedBill.splits ?? [])
   }, [fetchedBill, setBillReady, clearBill])
 
   const myName = participants?.find((p) => p.userId === currentId)?.name
@@ -87,7 +88,7 @@ export const Bill = () => {
           </Button>
         </Link>
         <h2 className="text-2xl text-[#8c1717] font-bold uppercase">
-          {t('billTitle')}
+          {t('billTitle')}{bill ? ` ${billCode(bill.billCode, bill.id)}` : ''}
         </h2>
       </header>
 
