@@ -34,6 +34,9 @@ spring:
     # scheme via docs/db/dev-rebaseline-v5.sql (see report 263).
     baseline-on-migrate: true
     baseline-version: 1
+    # V26 rewrites stored GCS photo URLs to this base (same value the app hands out for new uploads).
+    placeholders:
+      mediaPublicUrl: ${MINIO_PUBLIC_URL:http://localhost:9000/ember-media}
   jpa:
     hibernate:
       # Flyway is the sole schema owner (AUDIT_BLUEPRINT.md F-20); export DDL_AUTO=update locally

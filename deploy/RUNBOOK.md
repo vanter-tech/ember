@@ -461,6 +461,23 @@ URLs):** an `ember-cdn` Worker (`fetch` → `storage.googleapis.com/ember-media-
 `cf.cacheEverything`) bound to `cdn.ember.vanter.net`, then flip
 `MINIO_PUBLIC_URL`.
 
+**Superseded (report 697) — photos are served by the backend, the bucket is closed.**
+The `allUsers` → `roles/storage.objectViewer` binding below also allows **listing**
+(`curl https://storage.googleapis.com/ember-media-prod` returned every key), so the
+"no listing" comment in step 1 was wrong. The backend now serves photos at
+`GET /public/media/<uuid>.jpg` (only that shape; ticket logos are not reachable), and
+Cloudflare caches them (`.jpg` is cached by default, `immutable` header). Rollout order,
+each step verified before the next:
+
+1. Deploy the release with `V26` and set `MINIO_PUBLIC_URL=https://api.ember.vanter.net/v1/public/media`
+   in `ember-prod-env` **before** it starts — `V26` rewrites the stored GCS URLs to that base.
+2. Check a photo: `curl -sI https://api.ember.vanter.net/v1/public/media/<uuid>.jpg` → `200`,
+   and the second request shows `cf-cache-status: HIT`. Open the customer menu in a browser.
+3. Only then close the bucket (report 697 follow-up): remove the `allUsers` binding and set
+   `--public-access-prevention`. Closing it earlier breaks every photo.
+Rollback before step 3: revert `MINIO_PUBLIC_URL` and the rows (`UPDATE ... SET img_url =
+'https://storage.googleapis.com/ember-media-prod/' || regexp_replace(img_url, '^.*/', '')`).
+
 **DEVIATION 2 — the HMAC key belongs to the operator's user account, not a
 service account.** The org enforces `constraints/iam.disableServiceAccountKeyCreation`
 (HMAC keys for an SA count as SA keys) and this account has no
@@ -490,7 +507,8 @@ gcloud storage buckets create gs://ember-media-prod \
   --project=ember-prod-vanter --location=us-central1 \
   --uniform-bucket-level-access
 
-# Public read for browsers (objects only; no listing).
+# Public read for browsers. NOTE: objectViewer also allows LISTING; superseded by the
+# backend-served route above (the binding is removed once that is live).
 gcloud storage buckets add-iam-policy-binding gs://ember-media-prod \
   --member=allUsers --role=roles/storage.objectViewer
 ```
