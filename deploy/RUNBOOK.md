@@ -478,6 +478,20 @@ each step verified before the next:
 Rollback before step 3: revert `MINIO_PUBLIC_URL` and the rows (`UPDATE ... SET img_url =
 'https://storage.googleapis.com/ember-media-prod/' || regexp_replace(img_url, '^.*/', '')`).
 
+**Downloads bucket (report 698, executed 2026-10-02).** `gs://ember-downloads-prod` had the same
+`allUsers` → `objectViewer` binding, so anyone could list every installer version. It stays public
+for downloads (the Caddy proxy at `downloads.ember.vanter.net` reads it anonymously) but not for listing:
+
+```bash
+gcloud storage buckets add-iam-policy-binding gs://ember-downloads-prod   --member=allUsers --role=roles/storage.legacyObjectReader
+gcloud storage buckets remove-iam-policy-binding gs://ember-downloads-prod   --member=allUsers --role=roles/storage.objectViewer
+```
+
+Verified: `curl https://storage.googleapis.com/ember-downloads-prod` → `403`;
+`https://downloads.ember.vanter.net/EmberAgentSetup-latest.exe` and `EmberHubSetup-latest.exe` → `200`.
+Rollback: re-add `roles/storage.objectViewer` for `allUsers`. Any new public bucket must use
+`legacyObjectReader`, never `objectViewer`.
+
 **DEVIATION 2 — the HMAC key belongs to the operator's user account, not a
 service account.** The org enforces `constraints/iam.disableServiceAccountKeyCreation`
 (HMAC keys for an SA count as SA keys) and this account has no
