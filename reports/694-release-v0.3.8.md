@@ -20,7 +20,13 @@ Ship reports 687-693 as `v0.3.8`: squash PR to `main`, tag, Hub installer, deplo
 ## 5. Why It Changed?
 Everything since `v0.3.7` was only on local branches; this puts it on `main`, builds the backend image through the tag, and gives the Hub a matching installer.
 
-## Deploy (user-gated, Cloud Shell)
+## Deploy result (2026-10-02)
+- Backend image `0.3.8` built from tag `v0.3.8` (run 37046463533, success); `deploy.sh 0.3.8` run by the user.
+- Prod `flyway_schema_history` after the deploy: `V25` applied, every row `success = t`.
+- Tag `v0.3.8` points at the docs commit `de53e4a1` (same code as the squash `34a9bde9`), like `v0.3.6`; that commit only reaches `main` once the docs PR is merged.
+- Hub installer published by the user with `publish-installer.sh hub 0.3.8`.
+
+## Deploy commands (as given)
 ```
 ./deploy/deploy.sh 0.3.8        # no "v"; V25 runs on boot, never pre-run by hand
 ./deploy/publish-installer.sh hub 0.3.8 EmberHubSetup-0.3.8.exe
