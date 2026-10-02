@@ -7,7 +7,7 @@ import { getLang, useTranslations } from '../i18n/utils';
 const lang = getLang(Astro.currentLocale);
 const t = useTranslations(lang);
 
-const sections = Array.from({ length: 9 }, (_, i) => ({
+const sections = Array.from({ length: 10 }, (_, i) => ({
 	title: t(`terms.s${i + 1}.title`),
 	body: t(`terms.s${i + 1}.body`),
 }));

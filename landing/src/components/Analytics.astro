@@ -6,16 +6,28 @@
 		<script defer data-domain="ember.vanter.net" src="https://plausible.io/js/script.js"></script>
 
 		<script is:inline>
-			!function(f,b,e,v,n,t,s)
-			{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-			n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-			if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-			n.queue=[];t=b.createElement(e);t.async=!0;
-			t.src=v;s=b.getElementsByTagName(e)[0];
-			s.parentNode.insertBefore(t,s)}(window, document,'script',
-			'https://connect.facebook.net/en_US/fbevents.js');
-			fbq('init', '1853493642493263');
-			fbq('track', 'PageView');
+			(() => {
+				const loadPixel = () => {
+					!function(f,b,e,v,n,t,s)
+					{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+					n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+					if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+					n.queue=[];t=b.createElement(e);t.async=!0;
+					t.src=v;s=b.getElementsByTagName(e)[0];
+					s.parentNode.insertBefore(t,s)}(window, document,'script',
+					'https://connect.facebook.net/en_US/fbevents.js');
+					fbq('init', '1853493642493263');
+					fbq('track', 'PageView');
+				};
+
+				// Meta Pixel loads only after the visitor accepts the cookie notice.
+				let accepted = false;
+				try {
+					accepted = localStorage.getItem('ember-cookie-consent') === 'accepted';
+				} catch (e) {}
+				if (accepted) loadPixel();
+				else window.addEventListener('ember:cookie-consent', loadPixel, { once: true });
+			})();
 		</script>
 	</>
 )}

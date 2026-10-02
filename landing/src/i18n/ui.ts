@@ -586,7 +586,7 @@ export const ui: Record<Lang, Record<string, string>> = {
 		'privacy.desc':
 			'Cómo Vanter recolecta, usa y protege los datos personales de quienes usan Ember.',
 		'privacy.h1': 'Política de privacidad',
-		'privacy.date': '29 de agosto de 2026',
+		'privacy.date': '2 de octubre de 2026',
 		'privacy.s1.title': '1. Responsable del tratamiento',
 		'privacy.s1.body':
 			'Ember es un producto desarrollado y operado bajo el nombre comercial "Vanter". Vanter no es una sociedad constituida: es el nombre comercial de Fernando Obando, persona natural con domicilio en Managua, Nicaragua, quien presta este servicio y es responsable del tratamiento de los datos personales recolectados a través de Ember y este sitio. Toda mención a "Vanter" en esta política se entiende hecha a Fernando Obando.',
@@ -598,7 +598,7 @@ export const ui: Record<Lang, Record<string, string>> = {
 			'Usamos los datos únicamente para prestar el servicio: autenticar usuarios, procesar comandas y pagos, generar analítica para el restaurante que administra su cuenta, y responder consultas comerciales o de soporte. No vendemos datos personales a terceros.',
 		'privacy.s4.title': '4. Cookies',
 		'privacy.s4.body':
-			'Este sitio usa únicamente cookies estrictamente necesarias para su funcionamiento. Para medir el tráfico usamos una herramienta de analítica sin cookies y sin fines publicitarios, que no rastrea entre sitios ni identifica personas. Podés gestionar cualquier cookie desde tu navegador en cualquier momento.',
+			'Este sitio usa cookies estrictamente necesarias y una herramienta de analítica (Plausible) sin cookies y sin fines publicitarios, que no rastrea entre sitios ni identifica personas. Si aceptás el aviso de cookies, también cargamos el Píxel de Meta (Facebook): guarda una cookie propia (_fbp) y envía a Meta tu dirección IP, tipo de navegador, páginas visitadas y acciones como enviar el formulario de contacto o tocar el botón de WhatsApp, únicamente para medir y optimizar nuestros anuncios. Si no aceptás, el Píxel no se carga. Podés retirar tu consentimiento borrando los datos de este sitio en tu navegador y gestionar cualquier cookie desde él en cualquier momento.',
 		'privacy.s5.title': '5. Conservación',
 		'privacy.s5.body':
 			'Conservamos los datos mientras la cuenta del restaurante permanezca activa y durante el plazo adicional exigido por obligaciones legales o contractuales. Un comensal que participa en una sesión de mesa no requiere registro previo; sus datos de sesión se conservan según las políticas de retención del restaurante correspondiente.',
@@ -613,7 +613,7 @@ export const ui: Record<Lang, Record<string, string>> = {
 		'terms.title': 'Términos de servicio — Ember',
 		'terms.desc': 'Condiciones de uso de la plataforma Ember, operada por Vanter.',
 		'terms.h1': 'Términos de servicio',
-		'terms.date': '29 de agosto de 2026',
+		'terms.date': '2 de octubre de 2026',
 		'terms.s1.title': '1. Identificación del prestador y aceptación de los términos',
 		'terms.s1.body':
 			'Ember es un producto desarrollado bajo el nombre comercial "Vanter", el cual no corresponde a una sociedad constituida sino al nombre comercial de Fernando Obando, persona natural con domicilio en Managua, Nicaragua. Toda referencia a "Vanter" en estos términos se entiende hecha a Fernando Obando. Al crear una cuenta o usar Ember, el restaurante contratante y su personal aceptan estos Términos de Servicio y la Política de privacidad. Si no estás de acuerdo, no debés usar el servicio.',
@@ -638,9 +638,36 @@ export const ui: Record<Lang, Record<string, string>> = {
 		'terms.s8.title': '8. Ley aplicable y jurisdicción',
 		'terms.s8.body':
 			'Estos términos se rigen por las leyes de la República de Nicaragua. Cualquier controversia se someterá a los jueces competentes de Managua, Nicaragua.',
-		'terms.s9.title': '9. Contacto',
+		'terms.s9.title': '9. Edad y uso comercial',
 		'terms.s9.body':
+			'Ember es un servicio exclusivamente comercial (B2B), destinado a restaurantes y negocios de alimentos y bebidas y a su personal. Para crear una cuenta o contratar el servicio debés ser mayor de 18 años y tener capacidad legal para obligarte, en nombre propio o del negocio que representás. Ember no está dirigido a menores de edad ni a consumidores finales: no debés usarlo con fines personales o domésticos y no recolectamos a sabiendas datos personales de menores de 18 años. Si un menor participa en una mesa junto a un adulto, solo se registra el nombre visible que ingrese, bajo la responsabilidad del restaurante y del adulto acompañante. Podemos suspender cualquier cuenta que incumpla esta cláusula y eliminar sus datos.',
+		'terms.s10.title': '10. Contacto',
+		'terms.s10.body':
 			'Consultas sobre estos términos: tofernandoband01@outlook.com — Fernando Obando (Vanter), Managua, Nicaragua.',
+
+		// --- Cookie banner ---
+		'cookie.aria': 'Aviso de cookies',
+		'cookie.text':
+			'Usamos cookies esenciales y, si aceptás, el Píxel de Meta (Facebook) para medir nuestros anuncios.',
+		'cookie.accept': 'Aceptar',
+		'cookie.info': 'Ver información',
+		'cookie.modal.title': 'Cookies y rastreo en este sitio',
+		'cookie.modal.intro':
+			'Esto es lo que se carga al visitar este sitio y qué cambia si aceptás el aviso.',
+		'cookie.modal.essential.title': 'Esenciales',
+		'cookie.modal.essential.body':
+			'Guardamos en tu navegador tu elección de este aviso y tu preferencia de tema claro u oscuro. Son necesarias para que el sitio funcione y no requieren consentimiento.',
+		'cookie.modal.plausible.title': 'Analítica sin cookies (Plausible)',
+		'cookie.modal.plausible.body':
+			'Mide cuántas personas visitan el sitio y qué páginas ven. No usa cookies, no te identifica ni te sigue entre sitios, y no tiene fines publicitarios. Se carga siempre.',
+		'cookie.modal.meta.title': 'Píxel de Meta (Facebook)',
+		'cookie.modal.meta.body':
+			'Solo si aceptás. Guarda una cookie propia (_fbp) y envía a Meta tu dirección IP, tipo de navegador, las páginas que visitás y acciones como enviar el formulario de contacto o tocar el botón de WhatsApp. Lo usamos únicamente para medir y mejorar nuestros anuncios en Facebook e Instagram; no vendemos tus datos. Si no aceptás, no se carga.',
+		'cookie.modal.withdraw.title': 'Cómo retirar tu consentimiento',
+		'cookie.modal.withdraw.body':
+			'Borrá los datos de este sitio desde la configuración de tu navegador: el aviso volverá a aparecer y el Píxel dejará de cargarse en tus próximas visitas.',
+		'cookie.modal.privacy': 'Leer la Política de Privacidad',
+		'cookie.modal.close': 'Cerrar',
 
 		// --- 404 ---
 		'404.title': 'Página no encontrada — Ember',
@@ -1229,7 +1256,7 @@ export const ui: Record<Lang, Record<string, string>> = {
 		'privacy.desc':
 			'How Vanter collects, uses and protects the personal data of Ember users.',
 		'privacy.h1': 'Privacy policy',
-		'privacy.date': 'August 29, 2026',
+		'privacy.date': 'October 2, 2026',
 		'privacy.s1.title': '1. Data controller',
 		'privacy.s1.body':
 			'Ember is a product developed and operated under the trade name "Vanter." Vanter is not an incorporated company: it is the trade name of Fernando Obando, a natural person domiciled in Managua, Nicaragua, who provides this service and is the controller of the personal data collected through Ember and this site. Any reference to "Vanter" in this policy refers to Fernando Obando.',
@@ -1241,7 +1268,7 @@ export const ui: Record<Lang, Record<string, string>> = {
 			'We use data only to provide the service: authenticate users, process orders and payments, generate analytics for the restaurant that manages the account, and answer sales or support inquiries. We do not sell personal data to third parties.',
 		'privacy.s4.title': '4. Cookies',
 		'privacy.s4.body':
-			'This site uses only strictly necessary cookies to function. For traffic measurement we use a cookieless, non-advertising analytics tool that does not track across sites or identify individuals. You can manage any cookie from your browser at any time.',
+			'This site uses strictly necessary cookies and a cookieless, non-advertising analytics tool (Plausible) that does not track across sites or identify individuals. If you accept the cookie notice, we also load the Meta (Facebook) Pixel: it sets a first-party cookie (_fbp) and sends Meta your IP address, browser type, pages visited and actions such as submitting the contact form or tapping the WhatsApp button, solely to measure and optimize our ads. If you do not accept, the Pixel is not loaded. You can withdraw your consent by clearing this site\'s data in your browser, and manage any cookie from it at any time.',
 		'privacy.s5.title': '5. Retention',
 		'privacy.s5.body':
 			'We keep data while the restaurant account remains active and for the additional period required by legal or contractual obligations. A guest who takes part in a table session does not need prior registration; their session data is kept according to the retention policies of the corresponding restaurant.',
@@ -1256,7 +1283,7 @@ export const ui: Record<Lang, Record<string, string>> = {
 		'terms.title': 'Terms of service — Ember',
 		'terms.desc': 'Terms of use for the Ember platform, operated by Vanter.',
 		'terms.h1': 'Terms of service',
-		'terms.date': 'August 29, 2026',
+		'terms.date': 'October 2, 2026',
 		'terms.s1.title': '1. Provider identification & acceptance of terms',
 		'terms.s1.body':
 			'Ember is a product developed under the trade name "Vanter," which is not an incorporated company but the trade name of Fernando Obando, a natural person domiciled in Managua, Nicaragua. Any reference to "Vanter" in these terms refers to Fernando Obando. By creating an account or using Ember, the contracting restaurant and its staff accept these Terms of Service and the Privacy Policy. If you do not agree, you must not use the service.',
@@ -1281,9 +1308,36 @@ export const ui: Record<Lang, Record<string, string>> = {
 		'terms.s8.title': '8. Governing law & jurisdiction',
 		'terms.s8.body':
 			'These terms are governed by the laws of the Republic of Nicaragua. Any dispute will be submitted to the competent courts of Managua, Nicaragua.',
-		'terms.s9.title': '9. Contact',
+		'terms.s9.title': '9. Age & commercial use',
 		'terms.s9.body':
+			'Ember is an exclusively commercial (B2B) service intended for restaurants and food and beverage businesses and their staff. To create an account or contract the service you must be at least 18 years old and have the legal capacity to be bound, on your own behalf or on behalf of the business you represent. Ember is not directed at minors or end consumers: you must not use it for personal or household purposes, and we do not knowingly collect personal data from anyone under 18. If a minor takes part in a table alongside an adult, only the display name they enter is recorded, under the responsibility of the restaurant and the accompanying adult. We may suspend any account that breaches this clause and delete its data.',
+		'terms.s10.title': '10. Contact',
+		'terms.s10.body':
 			'Questions about these terms: tofernandoband01@outlook.com — Fernando Obando (Vanter), Managua, Nicaragua.',
+
+		// --- Cookie banner ---
+		'cookie.aria': 'Cookie notice',
+		'cookie.text':
+			'We use essential cookies and, if you accept, the Meta (Facebook) Pixel to measure our ads.',
+		'cookie.accept': 'Accept',
+		'cookie.info': 'View information',
+		'cookie.modal.title': 'Cookies and tracking on this site',
+		'cookie.modal.intro':
+			'This is what loads when you visit this site and what changes if you accept the notice.',
+		'cookie.modal.essential.title': 'Essential',
+		'cookie.modal.essential.body':
+			'We store in your browser your choice on this notice and your light or dark theme preference. They are needed for the site to work and do not require consent.',
+		'cookie.modal.plausible.title': 'Cookieless analytics (Plausible)',
+		'cookie.modal.plausible.body':
+			'Measures how many people visit the site and which pages they view. It uses no cookies, does not identify you or follow you across sites, and has no advertising purpose. It always loads.',
+		'cookie.modal.meta.title': 'Meta (Facebook) Pixel',
+		'cookie.modal.meta.body':
+			'Only if you accept. It sets a first-party cookie (_fbp) and sends Meta your IP address, browser type, the pages you visit and actions such as submitting the contact form or tapping the WhatsApp button. We use it solely to measure and improve our ads on Facebook and Instagram; we do not sell your data. If you do not accept, it is not loaded.',
+		'cookie.modal.withdraw.title': 'How to withdraw your consent',
+		'cookie.modal.withdraw.body':
+			'Clear this site\'s data from your browser settings: the notice will reappear and the Pixel will stop loading on your next visits.',
+		'cookie.modal.privacy': 'Read the Privacy Policy',
+		'cookie.modal.close': 'Close',
 
 		// --- 404 ---
 		'404.title': 'Page not found — Ember',
