@@ -455,6 +455,10 @@ export const ui: Record<Lang, Record<string, string>> = {
 		'cpage.demo.text':
 			'¿Preferís vernos en acción? Coordinamos una demo de 20 minutos por videollamada.',
 		'cpage.demo.cta': 'Pedir una demo',
+		'cpage.wa.title': 'WhatsApp',
+		'cpage.wa.body': 'La forma más rápida de coordinar una demo. Escribinos y te respondemos por ahí.',
+		'wa.label': 'Escribinos por WhatsApp',
+		'wa.message': 'Hola, quiero una demo de Ember',
 		'cpage.form.title': 'Escribinos',
 		'cpage.form.lede': 'Contanos sobre tu restaurante y te respondemos dentro de un día hábil.',
 		'cpage.channels.title': 'Otras formas de contacto',
@@ -1098,6 +1102,10 @@ export const ui: Record<Lang, Record<string, string>> = {
 		'cpage.demo.text':
 			'Prefer to see it in action? We’ll set up a 20-minute video demo.',
 		'cpage.demo.cta': 'Request a demo',
+		'cpage.wa.title': 'WhatsApp',
+		'cpage.wa.body': 'The fastest way to set up a demo. Message us and we’ll reply there.',
+		'wa.label': 'Message us on WhatsApp',
+		'wa.message': 'Hi, I’d like a demo of Ember',
 		'cpage.form.title': 'Write to us',
 		'cpage.form.lede': 'Tell us about your restaurant and we’ll reply within one business day.',
 		'cpage.channels.title': 'Other ways to reach us',

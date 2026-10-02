@@ -27,6 +27,16 @@ export const HUB_DOWNLOAD_URL =
   import.meta.env.PUBLIC_HUB_DOWNLOAD_URL ??
   'https://downloads.ember.vanter.net/EmberHubSetup-latest.exe';
 
+// WhatsApp contact line (digits only, country code first — wa.me format).
+export const WHATSAPP_NUMBER = '50557684337';
+export const WHATSAPP_DISPLAY = '+505 5768-4337';
+
+export const whatsappUrl = (message: string) =>
+  `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+
+// Counts a WhatsApp click as a Lead for the Meta Pixel (same event the contact form fires).
+export const WHATSAPP_TRACK_ATTR = "window.fbq&&window.fbq('track','Lead')";
+
 export const NAV_LINKS = [
   { href: '/funcionalidades', key: 'nav.features' },
   { href: '/planes', key: 'nav.pricing' },

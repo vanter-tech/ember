@@ -3,6 +3,7 @@ import { ClientRouter } from 'astro:transitions';
 import '../styles/global.css';
 import SEO from '../components/SEO.astro';
 import Analytics from '../components/Analytics.astro';
+import WhatsAppButton from '../components/WhatsAppButton.astro';
 
 interface Props {
   title: string;
@@ -66,5 +67,6 @@ const lang = Astro.currentLocale ?? 'es';
 			{lang === 'en' ? 'Skip to content' : 'Saltar al contenido'}
 		</a>
 		<slot />
+		<WhatsAppButton />
 	</body>
 </html>
