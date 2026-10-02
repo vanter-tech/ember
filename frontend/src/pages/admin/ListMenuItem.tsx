@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { MenuItemGridSkeleton } from './components/AdminListSkeletons'
 import { useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { menuItemService } from '@/lib/api'
@@ -50,7 +51,11 @@ export const ListMenuItem = () => {
   }
 
   if (isLoading) {
-    return <div className="p-6 text-zinc-500">{t('loadingMenuItems')}</div>
+    return (
+      <div className="p-6">
+        <MenuItemGridSkeleton label={t('loadingMenuItems')} />
+      </div>
+    )
   }
 
   if (isError) {

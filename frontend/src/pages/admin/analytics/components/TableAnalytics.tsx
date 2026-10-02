@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { TableAnalyticsSkeleton } from './AnalyticsSkeletons'
 import { LayoutGrid } from 'lucide-react'
 import { analyticsService } from '@/lib/api'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -10,6 +11,8 @@ export const TableAnalytics = () => {
     queryKey: ['analyticsTables'],
     queryFn: () => analyticsService.getTables(),
   })
+
+  if (isLoading) return <TableAnalyticsSkeleton label={t('loadingTables')} />
 
   const tables = data?.tables ?? []
   const maxRevenue = Math.max(...tables.map((table) => table.revenue ?? 0), 0)
@@ -27,11 +30,6 @@ export const TableAnalytics = () => {
         </div>
       </CardHeader>
       <CardContent className="flex flex-col gap-6">
-        {isLoading && (
-          <div className="flex items-center justify-center py-16 text-sm text-muted-foreground">
-            {t('loadingTables')}
-          </div>
-        )}
         {isError && (
           <div className="flex items-center justify-center py-16 text-sm text-destructive">
             {t('loadingTablesError')}

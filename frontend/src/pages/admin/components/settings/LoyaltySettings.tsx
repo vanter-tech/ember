@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { SettingsFormSkeleton } from '@/components/skeletons/SettingsFormSkeleton';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { SettingsService } from '@/lib/api';
 import type { LoyaltyAccrualMode, LoyaltySettings as LoyaltySettingsPayload, SettingsResponse } from '@/lib/api';
@@ -91,7 +92,7 @@ export const LoyaltySettings = () => {
   };
 
   if (isLoadingSettings) {
-    return <div className="p-6 text-zinc-500">{t('loadingSettingsLabel')}</div>;
+    return <SettingsFormSkeleton label={t('loadingSettingsLabel')} layout={['toggle', 'field', 'pair', 'triple']} />;
   }
 
   return (

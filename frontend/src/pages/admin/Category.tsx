@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { CategoryGridSkeleton } from './components/AdminListSkeletons'
 import { useQuery } from '@tanstack/react-query'
 import { categoryService } from '@/lib/api'
 import { Button } from '../../components/ui/button'
@@ -45,9 +46,7 @@ export const Category = () => {
   const categories = categoriesPage?.content ?? []
 
   if (isLoading) {
-    return (
-      <div className="p-6 text-zinc-500">{t('loadingCategories', { brand: 'Ember' })}</div>
-    )
+    return <CategoryGridSkeleton label={t('loadingCategories', { brand: 'Ember' })} />
   }
 
   if (isError) {

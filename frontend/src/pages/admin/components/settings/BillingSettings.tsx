@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { SettingsFormSkeleton } from '@/components/skeletons/SettingsFormSkeleton';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { SettingsService } from '@/lib/api';
 import type { components } from '@/lib/backend-types';
@@ -105,7 +106,7 @@ export const BillingSettings = () => {
   };
 
   if (isLoadingSettings) {
-    return <div className="p-6 text-zinc-500">{t('loadingSettingsLabel')}</div>;
+    return <SettingsFormSkeleton label={t('loadingSettingsLabel')} layout={['pair', 'toggle', 'chips', 'rule', 'rule']} />;
   }
 
   return (

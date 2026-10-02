@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { PlanSkeleton } from './PlanSkeleton'
 import { AlertTriangle, Check } from 'lucide-react'
 import { restaurantAdminService, type SubscriptionResponse } from '@/lib/api'
 import { Badge } from '@/components/ui/badge'
@@ -43,7 +44,7 @@ const formatDate = (iso: string) =>
 /** Read-only subscription summary. The operator records the dates by hand; no prices are shown. */
 export const PlanSettings = () => {
   const { t } = useTranslation('admin')
-  const { data: subscription } = useQuery({
+  const { data: subscription, isPending } = useQuery({
     queryKey: ['subscription'],
     queryFn: restaurantAdminService.getSubscription,
   })
@@ -51,6 +52,7 @@ export const PlanSettings = () => {
   // Read once on mount (not during render) so the countdown is stable between re-renders.
   const [now] = useState(() => Date.now())
 
+  if (isPending) return <PlanSkeleton label={t('loadingSettingsLabel')} />
   if (!subscription) return null
 
   const daysLeft = subscription.planPeriodEnd

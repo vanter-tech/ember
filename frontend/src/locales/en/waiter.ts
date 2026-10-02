@@ -49,6 +49,7 @@ export const waiter = {
   closingTableLabel: 'Closing',
   closeTableButton: 'Close table',
   loadingCashRegister: 'Loading register...',
+  loadingCashReceipts: 'Loading cash receipts...',
   cashRegisterTitle: 'Cash register',
   cashRegisterSubtitle: 'Opening, movements, and shift reconciliation.',
   tourCashRegisterTitle: 'Your shift',

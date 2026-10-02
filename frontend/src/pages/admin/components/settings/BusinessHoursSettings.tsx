@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { SettingsFormSkeleton, type SettingsRow } from '@/components/skeletons/SettingsFormSkeleton';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { SettingsService } from '@/lib/api';
 import type { components } from '@/lib/backend-types';
@@ -88,7 +89,7 @@ export const BusinessHoursSettings = () => {
   };
 
   if (isLoadingSettings) {
-    return <div className="p-6 text-zinc-500">{t('loadingSettingsLabel')}</div>;
+    return <SettingsFormSkeleton label={t('loadingSettingsLabel')} layout={Array.from({ length: 7 }, (): SettingsRow => 'day')} />;
   }
 
   return (

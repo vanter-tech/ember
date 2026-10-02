@@ -28,7 +28,7 @@ describe('CashReceipts view', () => {
     ])
     wrap()
 
-    expect(screen.getByRole('heading', { name: 'Cobros en efectivo' })).toBeVisible()
+    expect(await screen.findByRole('heading', { name: 'Cobros en efectivo' })).toBeVisible()
     expect(await screen.findByRole('button', { name: 'Recibir y abrir caja' })).toBeVisible()
   })
 })

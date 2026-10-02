@@ -1,4 +1,5 @@
 import { useParams, Link } from 'react-router-dom'
+import { TableInformationSkeleton } from './components/TableInformationSkeleton'
 import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { SessionTableService, billingService, cashDrawerService, printingService, type WaiterBillState } from '@/lib/api'
@@ -229,7 +230,7 @@ export const TableInformation = () => {
   })
 
   if (isLoadingData) {
-    return <div className="p-6 text-zinc-500">{t('loadingDashboard')}</div>
+    return <TableInformationSkeleton label={t('loadingDashboard')} />
   }
 
   const hasItems = itemsToWaiter && itemsToWaiter.length > 0

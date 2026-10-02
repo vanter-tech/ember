@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { KdsHeaderSkeleton, KdsSkeleton } from './components/KdsSkeleton'
 import { kitchenServices } from '@/lib/api'
 import { useQuery } from '@tanstack/react-query'
 import { QueueCard } from './components/QueueCard'
@@ -35,10 +36,34 @@ export const OrdersDisplays = () => {
       new Date(a?.createdAt ?? 0).getTime() - new Date(b?.createdAt ?? 0).getTime()
   )
 
+  const header = (
+    <div className="flex items-center justify-center flex-col relative w-full h-20 shadow-sm rounded-3xl p-4">
+      <Badge
+        variant={isConnected ? 'default' : 'destructive'}
+        className="absolute top-3 right-4"
+      >
+        <span
+          className={`size-1.5 rounded-full ${isConnected ? 'bg-primary-foreground' : 'bg-destructive'}`}
+        />
+        {isConnected ? t('connected') : t('disconnected')}
+      </Badge>
+      <div className="flex items-center gap-3">
+        <h1 className="text-3xl font-bold text-[#8c1717] tracking-tight">
+          Ember
+        </h1>
+        <LanguageSwitcher />
+      </div>
+      <span className="text-sm text-gray-500 mt-1">
+        {t('kdsSubtitle')}
+      </span>
+    </div>
+  )
+
   if (isLoading) {
     return (
-      <div className="flex flex-1 items-center justify-center h-full">
-        <span className="text-gray-500">{t('loadingOrders')}</span>
+      <div className="flex flex-col h-full overflow-y-auto p-2">
+        <KdsHeaderSkeleton />
+        <KdsSkeleton label={t('loadingOrders')} />
       </div>
     )
   }
@@ -55,26 +80,7 @@ export const OrdersDisplays = () => {
 
   return (
     <div className="flex flex-col h-full overflow-y-auto p-2">
-      <div className="flex items-center justify-center flex-col relative w-full h-20 shadow-sm rounded-3xl p-4">
-        <Badge
-          variant={isConnected ? 'default' : 'destructive'}
-          className="absolute top-3 right-4"
-        >
-          <span
-            className={`size-1.5 rounded-full ${isConnected ? 'bg-primary-foreground' : 'bg-destructive'}`}
-          />
-          {isConnected ? t('connected') : t('disconnected')}
-        </Badge>
-        <div className="flex items-center gap-3">
-          <h1 className="text-3xl font-bold text-[#8c1717] tracking-tight">
-            Ember
-          </h1>
-          <LanguageSwitcher />
-        </div>
-        <span className="text-sm text-gray-500 mt-1">
-          {t('kdsSubtitle')}
-        </span>
-      </div>
+      {header}
       <div className="flex items-start gap-6 overflow-x-auto p-6">
         {orders.length === 0 ? (
           <div className="flex w-full items-center justify-center">

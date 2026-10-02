@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { JobsCardSkeleton, PrinterRowSkeleton, PrintingSkeleton } from './PrintingSkeletons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import { Ban, KeyRound, Printer, RotateCcw, Ticket, Trash2 } from 'lucide-react'
@@ -38,13 +39,15 @@ const AgentPrinterList = ({ agent }: { agent: PrintAgentResponse }) => {
   const { t } = useTranslation('admin')
   const openModal = useUIStore((state) => state.openModal)
 
-  const { data: allPrinters = [] } = useQuery({
+  const { data: allPrinters = [], isLoading } = useQuery({
     queryKey: ['printerConfigs', agent.id],
     queryFn: () => printingService.listPrinters(agent.id as string),
     enabled: !!agent.id,
   })
   // A "removed" printer is deactivated (active=false), not hard-deleted, so filter it out here.
   const printers = allPrinters.filter((printer) => printer.active)
+
+  if (isLoading) return <PrinterRowSkeleton />
 
   if (printers.length === 0) {
     return <p className="pl-3 text-sm text-zinc-400">{t('printingNoPrintersMessage')}</p>
@@ -178,7 +181,7 @@ export const PrintingSettings = () => {
   const openModal = useUIStore((state) => state.openModal)
   const queryClient = useQueryClient()
 
-  const { data: allAgents = [] } = useQuery({
+  const { data: allAgents = [], isPending: isLoadingAgents } = useQuery({
     queryKey: ['printAgents'],
     queryFn: () => printingService.listAgents(),
   })
@@ -186,7 +189,7 @@ export const PrintingSettings = () => {
   // ones so the list reads as a delete.
   const agents = allAgents.filter((agent) => agent.status !== 'REVOKED')
 
-  const { data: jobs = [] } = useQuery({
+  const { data: jobs = [], isPending: isLoadingJobs } = useQuery({
     queryKey: ['printJobs'],
     queryFn: () => printingService.listJobs(),
   })
@@ -210,6 +213,8 @@ export const PrintingSettings = () => {
   // Newest first, always: the list scrolls inside a max-height box, so the most recent jobs must
   // be the ones on top that stay visible.
   const recentJobs = [...jobs].sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''))
+
+  if (isLoadingAgents) return <PrintingSkeleton label={t('loadingSettingsLabel')} />
 
   return (
     <>
@@ -296,6 +301,9 @@ export const PrintingSettings = () => {
         </CardContent>
       </Card>
 
+      {isLoadingJobs ? (
+        <JobsCardSkeleton label={t('loadingSettingsLabel')} />
+      ) : (
       <Card className="rounded-2xl border-zinc-200">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>{t('printingJobsTitle')}</CardTitle>
@@ -361,6 +369,7 @@ export const PrintingSettings = () => {
           })}
         </CardContent>
       </Card>
+      )}
       </CardContent>
     </Card>
 

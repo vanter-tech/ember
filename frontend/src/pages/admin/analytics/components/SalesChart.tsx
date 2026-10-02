@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { ChartSkeleton } from '@/components/skeletons/ChartSkeleton'
+import { SalesChartSkeleton } from './AnalyticsSkeletons'
 import { useQuery } from '@tanstack/react-query'
 import {
   Area,
@@ -41,6 +43,11 @@ export const SalesChart = () => {
   })
   const planGate = isError ? extractPlanGateError(error) : null
 
+  // First load: the whole card is a placeholder. After that, switching period only reloads the chart.
+  const [loadedOnce, setLoadedOnce] = useState(false)
+  if (data && !loadedOnce) setLoadedOnce(true)
+  if (isLoading && !loadedOnce) return <SalesChartSkeleton label={t('loadingSales')} />
+
   const buckets = data?.buckets ?? []
 
   const chartData = buckets.map((bucket) => ({
@@ -80,11 +87,7 @@ export const SalesChart = () => {
         </div>
       </CardHeader>
       <CardContent>
-        {isLoading && (
-          <div className="flex items-center justify-center py-16 text-sm text-muted-foreground">
-            {t('loadingSales')}
-          </div>
-        )}
+        {isLoading && <ChartSkeleton label={t('loadingSales')} />}
         {isError && (
           <div className="flex items-center justify-center py-16 text-sm text-destructive">
             {planGate

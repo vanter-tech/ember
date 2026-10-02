@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { LoyaltyRewardsSkeleton } from './LoyaltyRewardsSkeleton';
 import { loyaltyRewardService } from '@/lib/api';
 import { Pencil, Plus } from 'lucide-react';
 
@@ -21,6 +22,8 @@ export const LoyaltyRewardsSettings = () => {
     queryFn: loyaltyRewardService.list,
   });
 
+  if (isLoadingRewards) return <LoyaltyRewardsSkeleton label={t('loadingRewards')} />;
+
   return (
     <>
       <Card className="shadow-sm border-zinc-100">
@@ -40,9 +43,7 @@ export const LoyaltyRewardsSettings = () => {
         <div className="border-t w-full m-auto border-[#7a1315]/20"></div>
 
         <CardContent>
-          {isLoadingRewards ? (
-            <div className="p-6 text-zinc-500">{t('loadingRewards')}</div>
-          ) : !rewards || rewards.length === 0 ? (
+          {!rewards || rewards.length === 0 ? (
             <div className="flex items-center justify-center rounded-xl border border-dashed border-border py-12 text-sm text-muted-foreground">
               {t('noRewardsYet')}
             </div>

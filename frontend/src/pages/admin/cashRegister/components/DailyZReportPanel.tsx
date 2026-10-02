@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { DailyReportSkeleton } from './CashRegisterSkeletons'
 import { useQuery } from '@tanstack/react-query'
 import { cashShiftService } from '@/lib/api'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -39,7 +40,7 @@ export const DailyZReportPanel = () => {
         className="w-fit rounded-xl"
       />
 
-      {isLoading && <div className="text-sm text-muted-foreground">{t('loadingDailyReport')}</div>}
+      {isLoading && <DailyReportSkeleton label={t('loadingDailyReport')} />}
       {isError && <div className="text-sm text-destructive">{t('loadingDailyReportError')}</div>}
 
       {data && (

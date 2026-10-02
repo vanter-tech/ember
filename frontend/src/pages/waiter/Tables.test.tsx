@@ -214,3 +214,60 @@ describe('Tables with merged tables', () => {
     await waitFor(() => expect(SessionTableService.linkTable).toHaveBeenCalledWith('sess-3', 't5'))
   })
 })
+
+describe('Tables while the dashboard is still loading', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    useAuthStore.setState({ restaurantId: 'restaurant-1', role: 'WAITER' })
+    vi.mocked(cashShiftService.current).mockResolvedValue({ status: 'OPEN' } as never)
+  })
+
+  // The page fades in as a whole on arrival. A bare "Cargando…" text with no layout made the real
+  // content pop in after the fade had run on that text.
+  test('draws the page layout at once, with placeholder cards, instead of a bare loading text', () => {
+    vi.mocked(DashboardService.getDashboardData).mockReturnValue(new Promise(() => {}) as never)
+    wrap()
+
+    // no real text while loading: the header (title + legend) is placeholder blocks too
+    expect(screen.getByTestId('skeleton-floor-header')).toBeInTheDocument()
+    expect(screen.queryByText('Salon Principal')).not.toBeInTheDocument()
+    expect(screen.queryByText('Ocupado')).not.toBeInTheDocument()
+    // enough placeholder tables to fill the window (3 columns x 4 rows at 1024x768)
+    expect(screen.getAllByTestId('skeleton-card')).toHaveLength(12)
+    // Announced to assistive tech (dnd-kit has its own role="status" live region, so match by text).
+    expect(screen.getByText('Cargando datos del panel...').closest('[role="status"]')).not.toBeNull()
+  })
+
+  test('the right-hand panel shows the skeleton of a SELECTED table, not the "select a table" prompt', () => {
+    vi.mocked(DashboardService.getDashboardData).mockReturnValue(new Promise(() => {}) as never)
+    wrap()
+
+    expect(screen.queryByText('Detalles de mesa')).not.toBeInTheDocument()
+    expect(screen.getByTestId('skeleton-panel-title')).toBeInTheDocument()
+    expect(screen.getByTestId('skeleton-panel')).toBeInTheDocument()
+    expect(screen.getAllByTestId('skeleton-panel-item').length).toBeGreaterThanOrEqual(2)
+    expect(screen.queryByText('Selecciona una mesa para ver los detalles')).not.toBeInTheDocument()
+  })
+
+  test('does not claim there are no tables, nor ask to open the caja, while it is still loading', () => {
+    vi.mocked(DashboardService.getDashboardData).mockReturnValue(new Promise(() => {}) as never)
+    wrap()
+
+    expect(screen.queryByText('Todavía no hay mesas configuradas')).not.toBeInTheDocument()
+    expect(screen.queryByText('Necesita abrir la caja para poder asignar mesa.')).not.toBeInTheDocument()
+  })
+
+  test('the placeholders give way to the real tables when the data arrives', async () => {
+    vi.mocked(DashboardService.getDashboardData).mockResolvedValue([
+      { tableId: 't1', tableNumber: 1, isOccupied: false },
+      { tableId: 't2', tableNumber: 2, isOccupied: false },
+    ] as never)
+    wrap()
+
+    expect(await screen.findByText('M1')).toBeVisible()
+    expect(screen.queryAllByTestId('skeleton-card')).toHaveLength(0)
+    expect(screen.queryByTestId('skeleton-panel')).not.toBeInTheDocument()
+    expect(screen.getByText('Selecciona una mesa para ver los detalles')).toBeVisible()
+    expect(screen.queryByText('Cargando datos del panel...')).not.toBeInTheDocument()
+  })
+})

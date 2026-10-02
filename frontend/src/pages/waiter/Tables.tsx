@@ -22,6 +22,11 @@ import { Link } from 'react-router-dom'
 import { useTranslation } from '@/lib/i18n'
 import { EmptyState } from '@/components/EmptyState'
 import { WaiterTour } from './components/WaiterTour'
+import { CardGridSkeleton } from '@/components/skeletons/CardGridSkeleton'
+import { TableDetailsSkeleton } from './components/TableDetailsSkeleton'
+import { FloorHeaderSkeleton } from './components/FloorHeaderSkeleton'
+import { Skeleton } from '@/components/ui/skeleton'
+import { tableSkeletonCount } from './lib/tableSkeletonCount'
 import { TableCard } from './components/TableCard'
 import { TableCardView } from './components/TableCardView'
 import { LinkTableModal } from './components/LinkTableModal'
@@ -113,6 +118,9 @@ export const Tables = () => {
   }
   const draggingTable = dashboardData?.find((table) => table.tableId === draggingId)
 
+  // Placeholder tables while the floor loads: as many as fill the window (see tableSkeletonCount).
+  const skeletonCount = useMemo(() => tableSkeletonCount(window.innerWidth, window.innerHeight), [])
+
   // Merged tables are one wide card; the grid animates cards sliding together or apart.
   const groups = useMemo(() => groupTables(dashboardData), [dashboardData])
   const gridRef = useRef<HTMLDivElement>(null)
@@ -144,12 +152,12 @@ export const Tables = () => {
     ? sessionData.items.filter((item) => item.status != 'DRAFT')
     : []
 
-  if (isLoadingDashboard) {
-    return <div className="p-6 text-zinc-500">{t('loadingDashboard')}</div>
-  }
   return (
     <div className="flex flex-col md:flex-row w-full h-full gap-5 p-5">
       <div className="w-full md:w-[70%]">
+        {isLoadingDashboard ? (
+          <FloorHeaderSkeleton />
+        ) : (
         <div className="flex justify-between mb-5">
           <h2>{t('mainRoomTitle')}</h2>
           <div className="flex gap-4">
@@ -163,9 +171,15 @@ export const Tables = () => {
             </div>
           </div>
         </div>
+        )}
 
-        {canLink && <p className="mb-3 text-xs text-zinc-500">{t('linkDragHint')}</p>}
+        {!isLoadingDashboard && canLink && <p className="mb-3 text-xs text-zinc-500">{t('linkDragHint')}</p>}
 
+        {isLoadingDashboard ? (
+          <div id="waiter-tour-grid">
+            <CardGridSkeleton label={t('loadingDashboard')} count={skeletonCount} />
+          </div>
+        ) : (
         <DndContext
           sensors={sensors}
           onDragStart={handleDragStart}
@@ -214,9 +228,15 @@ export const Tables = () => {
           ) : null}
         </DragOverlay>
         </DndContext>
+        )}
       </div>
       <div id="waiter-tour-panel" className="w-full md:w-[30%] border-t md:border-t-0 md:border-l border-zinc-200 pt-5 md:pt-0 md:pl-5">
-        {tableDetails ? (
+        {isLoadingDashboard ? (
+          <div>
+            <Skeleton data-testid="skeleton-panel-title" className="mb-5 h-7 w-40" />
+            <TableDetailsSkeleton />
+          </div>
+        ) : tableDetails ? (
           <div>
             <h2 className="text-xl font-semibold mb-5">{t('tableDetailsTitle')}</h2>
             <div className="bg-white rounded-2xl p-6">

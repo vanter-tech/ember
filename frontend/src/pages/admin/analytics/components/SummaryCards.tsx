@@ -1,23 +1,14 @@
-import { useQuery } from '@tanstack/react-query'
-import { analyticsService } from '@/lib/api'
+import { SummaryCardsSkeleton } from './AnalyticsSkeletons'
+import { useAnalyticsSummary } from './useAnalyticsSummary'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { DollarSign, Users, Receipt } from 'lucide-react'
 import { useTranslation } from '@/lib/i18n'
 
 export const SummaryCards = () => {
   const { t } = useTranslation('admin')
-  const { data, isLoading, isError } = useQuery({
-    queryKey: ['analyticsSummary'],
-    queryFn: () => analyticsService.getSummary(),
-  })
+  const { data, isLoading, isError } = useAnalyticsSummary()
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-10 text-sm text-muted-foreground">
-        {t('loadingSummaryMetrics')}
-      </div>
-    )
-  }
+  if (isLoading) return <SummaryCardsSkeleton label={t('loadingSummaryMetrics')} />
 
   if (isError || !data) {
     return (

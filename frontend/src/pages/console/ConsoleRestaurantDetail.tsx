@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { Skeleton } from '@/components/ui/skeleton'
+import { CardGridSkeleton } from '@/components/skeletons/CardGridSkeleton'
 import { Link, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import axios from 'axios'
@@ -193,7 +195,17 @@ export default function ConsoleRestaurantDetail() {
   })
 
   if (isLoading) {
-    return <div className="p-6 text-zinc-500">Cargando restaurante...</div>
+    return (
+      <div className="flex flex-col gap-6">
+        <Skeleton className="h-10 w-1/3" />
+        <CardGridSkeleton
+          label="Cargando restaurante..."
+          count={3}
+          className="grid-cols-1 gap-6 md:grid-cols-3"
+          itemClassName="h-28"
+        />
+      </div>
+    )
   }
 
   if (isError || !restaurant) {

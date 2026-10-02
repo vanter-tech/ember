@@ -18,7 +18,7 @@ const hhmm = (iso: string) => new Date(iso).toLocaleTimeString([], { hour: '2-di
 export const ReceivedCashList = () => {
   const { t } = useTranslation('waiter')
   const queryClient = useQueryClient()
-  const { data: events = [] } = useCashDrawerEvents()
+  const { data: events = [], isLoading } = useCashDrawerEvents()
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: CASH_DRAWER_QUERY_KEY })
   const retry = useMutation({
@@ -43,6 +43,9 @@ export const ReceivedCashList = () => {
   const failed = sales.filter((e) => e.drawer === 'FAILED')
   const received = sales.filter((e) => e.drawer !== 'FAILED')
   const busy = retry.isPending || skip.isPending
+
+  // Nothing to show until the first answer arrives (the pending list above carries the skeleton).
+  if (isLoading) return null
 
   return (
     <>

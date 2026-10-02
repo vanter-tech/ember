@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { InventoryGridSkeleton } from './components/AdminListSkeletons'
 import { useQuery } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import { inventoryService } from '@/lib/api'
@@ -76,7 +77,8 @@ export const Inventory = () => {
     clearLowStockAlert()
   }, [lastLowStockAlert, clearLowStockAlert, t])
 
-  if (isLoading) return <div className="p-6 text-zinc-500">{t('loadingInventory')}</div>
+  if (isLoading)
+    return <InventoryGridSkeleton label={t('loadingInventory')} />
   if (isError) return <div className="p-6 text-red-500">{t('loadingInventoryError')}</div>
 
   return (

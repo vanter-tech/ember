@@ -1,4 +1,5 @@
 import { useQuery, useMutation } from '@tanstack/react-query'
+import { CardGridSkeleton } from '@/components/skeletons/CardGridSkeleton'
 import { menuServices, SessionTableService } from '@/lib/api'
 import { Badge } from '@/components/ui/badge'
 import toast from 'react-hot-toast'
@@ -154,7 +155,16 @@ export const Menu = () => {
 
   if (step !== 'welcome') {
     if (isLoading)
-      return <div className="p-6 text-zinc-500">{t('loadingItems')}</div>
+      return (
+        <div className="p-4">
+          <CardGridSkeleton
+            label={t('loadingItems')}
+            count={6}
+            className="grid-cols-2 lg:grid-cols-4"
+            itemClassName="h-56"
+          />
+        </div>
+      )
     if (isError)
       return (
         <div className="p-6 text-red-500">{t('loadingItemsError')}</div>

@@ -1,4 +1,6 @@
 import { Fragment, useState } from 'react'
+import { ShiftHistorySkeleton } from './CashRegisterSkeletons'
+import { useShiftHistory } from './useShiftHistory'
 import { useQuery } from '@tanstack/react-query'
 import { cashShiftService, type CashShiftResponse } from '@/lib/api'
 import { Card, CardContent } from '@/components/ui/card'
@@ -25,10 +27,7 @@ export const ShiftHistoryTable = () => {
   const [expandedId, setExpandedId] = useState<number | null>(null)
   const { t } = useTranslation('admin')
 
-  const { data, isLoading, isError } = useQuery({
-    queryKey: ['cashShiftHistory', page],
-    queryFn: () => cashShiftService.history({ page, size: 20 }),
-  })
+  const { data, isLoading, isError } = useShiftHistory(page)
 
   const { data: detail } = useQuery({
     queryKey: ['cashShiftDetail', expandedId],
@@ -36,9 +35,7 @@ export const ShiftHistoryTable = () => {
     enabled: expandedId !== null,
   })
 
-  if (isLoading) {
-    return <div className="p-6 text-sm text-muted-foreground">{t('loadingShifts')}</div>
-  }
+  if (isLoading) return <ShiftHistorySkeleton label={t('loadingShifts')} />
 
   if (isError || !data) {
     return <div className="p-6 text-sm text-destructive">{t('loadingShiftsError')}</div>

@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { StaffSkeleton } from './components/StaffSkeleton'
 import { useQuery } from '@tanstack/react-query'
 import { staffService, type StaffMemberResponse } from '@/lib/api'
 import { useUIStore } from '@/store/uiStore'
@@ -54,23 +55,20 @@ export const Staff = () => {
     })
   }, [staff, searchTerm, roleFilter])
 
+  if (isLoading) return <StaffSkeleton label={t('loadingStaff')} />
+
   return (
     <div className="flex flex-col gap-8">
       <StaffHeader />
       <div id="staff-tour-filters">
         <StaffFilters active={roleFilter} onChange={setRoleFilter} />
       </div>
-      {isLoading && (
-        <div className="flex items-center justify-center py-16 text-sm text-muted-foreground">
-          {t('loadingStaff')}
-        </div>
-      )}
       {isError && (
         <div className="flex items-center justify-center py-16 text-sm text-destructive">
           {t('loadingStaffError')}
         </div>
       )}
-      {!isLoading && !isError && (
+      {!isError && (
         <>
           <div id="staff-tour-grid">
             <StaffGrid
@@ -86,7 +84,7 @@ export const Staff = () => {
       <CreateStaffModal />
       <EditStaffModal />
       <GlobalDeleteModal />
-      <SectionTour sectionId="admin-staff" steps={tourSteps} ready={!isLoading && !isError} />
+      <SectionTour sectionId="admin-staff" steps={tourSteps} ready={!isError} />
     </div>
   )
 }

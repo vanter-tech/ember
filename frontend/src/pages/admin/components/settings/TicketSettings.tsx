@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { SettingsFormSkeleton } from '@/components/skeletons/SettingsFormSkeleton';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { SettingsService, ticketLogoService } from '@/lib/api';
 import type { components } from '@/lib/backend-types';
@@ -113,7 +114,7 @@ export const TicketSettings = () => {
   };
 
   if (isLoadingSettings) {
-    return <div className="p-6 text-zinc-500">{t('loadingSettingsLabel')}</div>;
+    return <SettingsFormSkeleton label={t('loadingSettingsLabel')} layout={['field', 'field', 'field', 'toggle', 'toggle', 'toggle', 'toggle', 'preview']} />;
   }
 
   const businessName = settings?.branding?.businessName || 'Ember';

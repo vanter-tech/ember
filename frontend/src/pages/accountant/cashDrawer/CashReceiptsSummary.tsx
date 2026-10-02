@@ -2,11 +2,20 @@ import { Card, CardContent } from '@/components/ui/card'
 import { formatCurrency } from '@/lib/format'
 import { useTranslation } from '@/lib/i18n'
 import { useCashDrawerEvents } from './useCashDrawerEvents'
+import { SummaryTileSkeleton } from './CashReceiptsSkeleton'
 
 /** Headline numbers for the receipts view: how many cash sales wait for the accountant and how much. */
 export const CashReceiptsSummary = () => {
   const { t } = useTranslation('waiter')
-  const { data: events = [] } = useCashDrawerEvents()
+  const { data: events = [], isLoading } = useCashDrawerEvents()
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <SummaryTileSkeleton />
+        <SummaryTileSkeleton />
+      </div>
+    )
+  }
   const pending = events.filter((e) => e.status === 'PENDING' && e.type === 'CASH_SALE')
   const total = pending.reduce((sum, e) => sum + (e.amount ?? 0), 0)
 

@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { ModifierGroupGridSkeleton } from './components/AdminListSkeletons'
 import { modifierGroupService } from '@/lib/api'
 import { useUIStore } from '@/store/uiStore'
 import { Card, CardTitle } from '@/components/ui/card'
@@ -43,7 +44,8 @@ export const ModifierGroups = () => {
     return type ?? ''
   }
 
-  if (isLoading) return <div className="p-6 text-zinc-500">{t('loadingModifierGroups')}</div>
+  if (isLoading)
+    return <ModifierGroupGridSkeleton label={t('loadingModifierGroups')} />
   if (isError) return <div className="p-6 text-red-500">{t('loadingModifierGroupsError')}</div>
 
   return (

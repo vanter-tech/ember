@@ -8,11 +8,13 @@ import { EmptyState } from '@/components/EmptyState'
 import { formatCurrency } from '@/lib/format'
 import { useTranslation } from '@/lib/i18n'
 import { CASH_DRAWER_QUERY_KEY, useCashDrawerEvents } from './useCashDrawerEvents'
+import { ReceiptCardSkeleton } from './CashReceiptsSkeleton'
+import { LoadingStatus } from '@/components/skeletons/LoadingStatus'
 
 export const PendingCashList = () => {
   const { t } = useTranslation('waiter')
   const queryClient = useQueryClient()
-  const { data: events = [] } = useCashDrawerEvents()
+  const { data: events = [], isLoading } = useCashDrawerEvents()
 
   const mutation = useMutation({
     mutationFn: (id: string) => cashDrawerService.receive(id),
@@ -52,6 +54,20 @@ export const PendingCashList = () => {
       </CardFooter>
     </Card>
   )
+
+  // Until the first answer arrives there is neither "no pending" nor a list: show placeholders.
+  if (isLoading) {
+    return (
+      <>
+        <LoadingStatus label={t('loadingCashReceipts')} />
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(18rem,1fr))] gap-4">
+          {Array.from({ length: 3 }, (_, i) => (
+            <ReceiptCardSkeleton key={i} />
+          ))}
+        </div>
+      </>
+    )
+  }
 
   if (actionable.length === 0) return <EmptyState icon={Banknote} title={t('drawerPendingEmpty')} />
 

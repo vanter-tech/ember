@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { SettingsService } from '@/lib/api'
+import { SettingsFormSkeleton } from '@/components/skeletons/SettingsFormSkeleton'
 import type { components } from '@/lib/backend-types'
 import { House, Loader2 } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -25,7 +26,7 @@ export const BrandingSettings = () => {
   const { t } = useTranslation('admin')
   const { t: tCommon } = useTranslation('common')
   const queryClient = useQueryClient()
-  const { data: settings } = useQuery({
+  const { data: settings, isPending: isLoadingSettings } = useQuery({
     queryKey: ['restaurantSettings'],
     queryFn: () => SettingsService.getSettings(),
   })
@@ -66,6 +67,15 @@ export const BrandingSettings = () => {
 
   const handleUndo = () => {
     setDraftBranding(undefined)
+  }
+
+  if (isLoadingSettings) {
+    return (
+      <SettingsFormSkeleton
+        label={t('loadingSettingsLabel')}
+        layout={['field', 'pair', 'field', 'pair', 'field', 'field']}
+      />
+    )
   }
 
   return (

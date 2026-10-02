@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { ProductPerformanceSkeleton } from './AnalyticsSkeletons'
 import { Tag, Trophy } from 'lucide-react'
 import { analyticsService } from '@/lib/api'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -13,6 +14,8 @@ export const ProductPerformance = () => {
     queryKey: ['analyticsProducts', TOP_PRODUCTS_LIMIT],
     queryFn: () => analyticsService.getProducts(undefined, undefined, TOP_PRODUCTS_LIMIT),
   })
+
+  if (isLoading) return <ProductPerformanceSkeleton label={t('loadingProducts')} />
 
   const products = data?.products ?? []
   const categories = data?.categories ?? []
@@ -31,11 +34,6 @@ export const ProductPerformance = () => {
           </div>
         </CardHeader>
         <CardContent>
-          {isLoading && (
-            <div className="flex items-center justify-center py-16 text-sm text-muted-foreground">
-              {t('loadingProducts')}
-            </div>
-          )}
           {isError && (
             <div className="flex items-center justify-center py-16 text-sm text-destructive">
               {t('loadingProductsError')}

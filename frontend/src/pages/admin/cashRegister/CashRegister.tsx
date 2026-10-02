@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { ShiftHistoryTable } from './components/ShiftHistoryTable'
+import { CashRegisterPageSkeleton } from './components/CashRegisterSkeletons'
+import { useShiftHistory } from './components/useShiftHistory'
 import { DailyZReportPanel } from './components/DailyZReportPanel'
 import { CashRegisterBar, type CashRegisterSection } from './components/CashRegisterBar'
 import { SectionTour } from '@/components/tours/SectionTour'
@@ -10,6 +12,8 @@ export const CashRegister = () => {
   const { t } = useTranslation('admin')
   const [section, setSection] = useState<CashRegisterSection>('history')
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  // The first page of history is what the page opens on: until it arrives the whole page is blocks.
+  const { isLoading } = useShiftHistory(0)
 
   const tourSteps = [
     {
@@ -24,6 +28,8 @@ export const CashRegister = () => {
       content: t('tourCashRegisterContentContent'),
     },
   ]
+
+  if (isLoading) return <CashRegisterPageSkeleton label={t('loadingShifts')} />
 
   return (
     <div className="flex flex-col gap-8">

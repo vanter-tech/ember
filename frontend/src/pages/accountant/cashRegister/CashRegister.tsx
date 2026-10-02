@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { CashRegisterSkeleton } from './components/CashRegisterSkeleton'
 import { useQuery } from '@tanstack/react-query'
 import { cashShiftService } from '@/lib/api'
 import { useUIStore } from '@/store/uiStore'
@@ -67,7 +68,7 @@ export const CashRegister = () => {
   const msLeft = shift?.effectiveDeadline ? new Date(shift.effectiveDeadline).getTime() - now : null
 
   if (isLoading) {
-    return <div className="p-6 text-zinc-500">{t('loadingCashRegister')}</div>
+    return <CashRegisterSkeleton label={t('loadingCashRegister')} />
   }
 
   return (

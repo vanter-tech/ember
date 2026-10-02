@@ -47,6 +47,7 @@ export const waiter = {
   closingTableLabel: 'Cerrando',
   closeTableButton: 'Cerrar mesa',
   loadingCashRegister: 'Cargando caja...',
+  loadingCashReceipts: 'Cargando cobros en efectivo...',
   cashRegisterTitle: 'Caja',
   cashRegisterSubtitle: 'Apertura, movimientos y arqueo del turno.',
   tourCashRegisterTitle: 'Tu turno de caja',
