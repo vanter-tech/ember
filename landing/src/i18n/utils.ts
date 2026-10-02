@@ -14,13 +14,21 @@ export function useTranslations(lang: Lang) {
 	};
 }
 
+/**
+ * Cloudflare answers 307 to the slashed URL for every page served as `dir/index.html`,
+ * so a link without the trailing slash costs an extra round trip on every navigation.
+ */
+function withTrailingSlash(path: string): string {
+	return path.endsWith('/') || /\.[a-z0-9]+$/i.test(path) ? path : `${path}/`;
+}
+
 /** Prefija /en a una ruta interna cuando el idioma es inglés. */
 export function localizePath(path: string, lang: Lang): string {
-	if (lang === defaultLang) return path;
+	if (lang === defaultLang) return withTrailingSlash(path);
 	if (path === '/') return '/en/';
 	// anclas del tipo "/#features"
 	if (path.startsWith('/#')) return `/en/${path.slice(1)}`;
-	return `/en${path}`;
+	return `/en${withTrailingSlash(path)}`;
 }
 
 /** Ruta equivalente en el otro idioma (para el selector). */
