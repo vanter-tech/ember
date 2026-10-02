@@ -47,6 +47,7 @@ export const InventoryGridSkeleton = ({ label, count = 10 }: { label: string; co
             <Skeleton data-testid="skeleton-inventory-action" className="size-9" />
           </div>
           <Skeleton className="h-4 w-24" />
+          <Skeleton className="h-3 w-40" />
         </Card>
       ))}
     </div>

@@ -6,6 +6,7 @@ import { RewardCard } from './components/LoyaltySection'
 import { useLoyaltyAccount } from './components/useLoyaltyAccount'
 import { TIER_LABELS } from '@/pages/admin/components/settings/loyalty/types'
 import { useTranslation } from '@/lib/i18n'
+import { TierProgressBar } from './components/TierProgressBar'
 
 export const RewardsView = () => {
   const { t } = useTranslation('customer')
@@ -43,6 +44,7 @@ export const RewardsView = () => {
                       })
                     : t('loyaltyMaxTierReached')}
                 </span>
+                {account.nextTier && <TierProgressBar percent={account.tierProgressPercent} />}
               </div>
             </CardContent>
           </Card>

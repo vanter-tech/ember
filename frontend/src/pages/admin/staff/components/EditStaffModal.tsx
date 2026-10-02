@@ -34,6 +34,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { staffService, type StaffMemberResponse, type StaffRole } from '@/lib/api'
 import { ROLE_LABELS } from '../types'
 import { useTranslation } from '@/lib/i18n'
+import { formatDateTime } from '@/lib/format'
 
 const editStaffSchemaFactory = (t: ReturnType<typeof useTranslation<'admin'>>['t']) =>
   z.object({
@@ -56,9 +57,11 @@ type EditStaffInputs = z.infer<ReturnType<typeof editStaffSchemaFactory>>
 const StaffPinSection = ({
   userId,
   hasPin,
+  pinUpdatedAt,
 }: {
   userId: string
   hasPin: boolean
+  pinUpdatedAt?: string
 }) => {
   const { t } = useTranslation('admin')
   const queryClient = useQueryClient()
@@ -119,6 +122,9 @@ const StaffPinSection = ({
           {hasPin ? t('staffPinSetStatus') : t('staffPinNoneStatus')}
         </span>
       </div>
+      {hasPin && pinUpdatedAt && (
+        <p className="text-xs text-muted-foreground">{t('staffPinUpdatedAt', { time: formatDateTime(pinUpdatedAt) })}</p>
+      )}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <Input
           type="text"
@@ -463,7 +469,7 @@ export const EditStaffModal = () => {
             />
 
             {member?.id && (
-              <StaffPinSection userId={member.id} hasPin={member.hasPin ?? false} />
+              <StaffPinSection userId={member.id} hasPin={member.hasPin ?? false} pinUpdatedAt={member.pinUpdatedAt} />
             )}
 
             {member?.id && member.role !== 'ADMIN' && (

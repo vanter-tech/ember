@@ -39,9 +39,11 @@ export const AddPrinterModal = () => {
   const { activeModal, modalPayload, closeModal } = useUIStore()
   const { agentId, discoveredPrinters = [] } = (modalPayload ?? {}) as {
     agentId?: string
-    discoveredPrinters?: Array<{ name?: string; inkjetGuess?: boolean }>
+    discoveredPrinters?: Array<{ name?: string; inkjetGuess?: boolean; driverName?: string; portName?: string }>
   }
-  const knownQueues = discoveredPrinters.filter((p): p is { name: string; inkjetGuess?: boolean } => !!p.name)
+  const knownQueues = discoveredPrinters.filter(
+    (p): p is { name: string; inkjetGuess?: boolean; driverName?: string; portName?: string } => !!p.name,
+  )
   const [queueFreeText, setQueueFreeText] = useState(false)
   const queryClient = useQueryClient()
 
@@ -208,6 +210,11 @@ export const AddPrinterModal = () => {
                             {knownQueues.map((p) => (
                               <SelectItem key={p.name} value={p.name}>
                                 {p.name}
+                                {(p.driverName || p.portName) && (
+                                  <span className="ml-2 text-xs text-zinc-400">
+                                    {[p.driverName, p.portName].filter(Boolean).join(' · ')}
+                                  </span>
+                                )}
                               </SelectItem>
                             ))}
                             <SelectItem value="__other__">{t('printingQueueOtherOption')}</SelectItem>

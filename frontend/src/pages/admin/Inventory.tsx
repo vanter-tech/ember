@@ -15,6 +15,7 @@ import { NewInventoryItemModal } from './components/NewInventoryItemModal'
 import { EditInventoryItemModal } from './components/EditInventoryItemModal'
 import { SectionTour } from '@/components/tours/SectionTour'
 import { useTranslation } from '@/lib/i18n'
+import { formatDateTime } from '@/lib/format'
 
 export const Inventory = () => {
   const { openModal } = useUIStore()
@@ -102,6 +103,10 @@ export const Inventory = () => {
             <p className="text-sm text-zinc-500">
               {item.currentStock} {item.unit}
             </p>
+            <p className="text-xs text-zinc-400">{t('inventoryUpdatedLabel', { time: formatDateTime(item.updatedAt) })}</p>
+            {item.menuItemAvailable === false && (
+              <Badge variant="secondary" className="w-fit">{t('inventoryMenuUnavailableBadge')}</Badge>
+            )}
             {(item.currentStock ?? 0) <= 0 && (
               <Badge variant="destructive" className="w-fit">{t('inventoryStockOutBadge')}</Badge>
             )}

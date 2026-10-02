@@ -28,6 +28,7 @@ export const customer = {
   loyaltyProgramAt: 'Fidelización en {{restaurantName}}',
   loyaltyPointsLabel: 'puntos',
   loyaltyMaxTierReached: 'Nivel máximo alcanzado',
+  loyaltyTierProgressAria: 'Progreso hacia el siguiente nivel',
   loyaltyPointsToNextTier: '{{points}} pts para {{tierName}}',
   loyaltyLastVisitLabel: 'Última visita',
   loyaltyNoVisitsYet: 'Sin visitas aún',

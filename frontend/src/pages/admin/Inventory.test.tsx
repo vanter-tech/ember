@@ -53,3 +53,29 @@ describe('Inventory empty state', () => {
     expect(screen.queryByText('Todavía no tienes productos en inventario')).not.toBeInTheDocument()
   })
 })
+
+describe('Inventory card details', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    useAuthStore.setState({ restaurantId: 'restaurant-1' })
+  })
+
+  test('shows when the stock was last updated and flags a dish hidden from the menu', async () => {
+    vi.mocked(inventoryService.getAll).mockResolvedValue([
+      {
+        id: 1, menuItemId: 5, menuItemName: 'Tacos', unit: 'u', currentStock: 12, lowStockThreshold: 3,
+        menuItemAvailable: false, updatedAt: '2026-10-02T08:30:00',
+      },
+      {
+        id: 2, menuItemId: 6, menuItemName: 'Burger', unit: 'u', currentStock: 9, lowStockThreshold: 3,
+        menuItemAvailable: true, updatedAt: '2026-10-01T18:00:00',
+      },
+    ] as never)
+
+    wrap()
+
+    expect(await screen.findByText('Actualizado: 02/10/2026, 08:30')).toBeVisible()
+    expect(screen.getByText('Actualizado: 01/10/2026, 18:00')).toBeVisible()
+    expect(screen.getAllByText('No disponible en la carta')).toHaveLength(1)
+  })
+})

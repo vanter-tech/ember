@@ -2579,6 +2579,8 @@ export interface components {
             hasPin?: boolean;
             /** Format: date-time */
             passwordResetAvailableAt?: string;
+            /** Format: date-time */
+            pinUpdatedAt?: string;
         };
         UpdateProfileRequest: {
             /** @enum {string} */

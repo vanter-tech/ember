@@ -30,6 +30,7 @@ export const customer = {
   loyaltyProgramAt: 'Loyalty program at {{restaurantName}}',
   loyaltyPointsLabel: 'points',
   loyaltyMaxTierReached: 'Highest tier reached',
+  loyaltyTierProgressAria: 'Progress to the next tier',
   loyaltyPointsToNextTier: '{{points}} pts to {{tierName}}',
   loyaltyLastVisitLabel: 'Last visit',
   loyaltyNoVisitsYet: 'No visits yet',

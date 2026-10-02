@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { JobsCardSkeleton, PrinterRowSkeleton, PrintingSkeleton } from './PrintingSkeletons'
+import { formatDateTime } from '@/lib/format'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import { Ban, KeyRound, Printer, RotateCcw, Ticket, Trash2 } from 'lucide-react'
@@ -212,6 +213,14 @@ export const PrintingSettings = () => {
   const hasPendingJobs = jobs.some((job) => job.status === 'PENDING')
   // Newest first, always: the list scrolls inside a max-height box, so the most recent jobs must
   // be the ones on top that stay visible.
+  const sourceTypeLabel = (sourceType?: string) =>
+    sourceType === 'BILL_RECEIPT'
+      ? t('printingSourceBillReceipt')
+      : sourceType === 'KITCHEN_TICKET'
+        ? t('printingSourceKitchenTicket')
+        : sourceType === 'CASH_DRAWER_KICK'
+          ? t('printingSourceCashDrawerKick')
+          : (sourceType ?? '—')
   const recentJobs = [...jobs].sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''))
 
   if (isLoadingAgents) return <PrintingSkeleton label={t('loadingSettingsLabel')} />
@@ -265,6 +274,11 @@ export const PrintingSettings = () => {
                     <span className={agent.paired ? 'text-emerald-600' : 'text-amber-600'}>
                       {agent.paired ? t('printingPairedBadge') : t('printingUnpairedBadge')}
                     </span>
+                  </p>
+                  <p className="text-xs text-zinc-400">
+                    {agent.lastSeenAt
+                      ? t('printingLastSeenLabel', { time: formatDateTime(agent.lastSeenAt) })
+                      : t('printingNeverSeenLabel')}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -333,6 +347,9 @@ export const PrintingSettings = () => {
                 <div>
                   <p className={`text-sm ${canceled ? 'text-zinc-400' : 'text-zinc-800'}`}>
                     {job.role} · {canceled ? t('printingJobCanceledStatus') : job.status}
+                  </p>
+                  <p className="text-xs text-zinc-400" title={job.sourceId}>
+                    {sourceTypeLabel(job.sourceType)} · {formatDateTime(job.createdAt)}
                   </p>
                   {job.lastError && !canceled && (
                     <p className="text-sm text-red-600">{job.lastError}</p>

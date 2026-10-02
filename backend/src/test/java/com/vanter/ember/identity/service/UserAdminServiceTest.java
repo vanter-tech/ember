@@ -596,4 +596,21 @@ class UserAdminServiceTest {
         assertThat(result.get(1).passwordResetAvailableAt()).isNull();
         assertThat(result.get(2).passwordResetAvailableAt()).isNull();
     }
+
+    @Test
+    void getStaff_exposesWhenThePinWasLastChanged_orNullWhenItNeverWas() {
+        User withPin = waiterFor(TENANT_A);
+        java.time.Instant changedAt = java.time.Instant.parse("2026-10-01T15:00:00Z");
+        withPin.setPinHash("hash");
+        withPin.setPinUpdatedAt(changedAt);
+        User noPin = waiterFor(TENANT_A);
+        noPin.setId("u-2");
+        when(userRepository.findByRestaurantId_IdAndRoleNotOrderByNameAsc(TENANT_A, Role.CUSTOMER))
+                .thenReturn(List.of(withPin, noPin));
+
+        List<com.vanter.ember.identity.dto.StaffMemberResponse> result = userAdminService.getStaff(TENANT_A);
+
+        assertThat(result.get(0).pinUpdatedAt()).isEqualTo(changedAt);
+        assertThat(result.get(1).pinUpdatedAt()).isNull();
+    }
 }
