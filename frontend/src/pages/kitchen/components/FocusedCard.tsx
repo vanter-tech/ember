@@ -11,6 +11,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import { NEXT_ACTION_LABEL, NEXT_STATUS, STATUS_LABEL } from '../lib/itemStatus'
 import { useTranslation } from '@/lib/i18n'
+import { kitchenTicketCode } from '@/lib/documentCodes'
 import { mergedTableLabel } from '../lib/mergedTableLabel'
 
 const COLUMNS: OrderItemStatus[] = ['PENDING', 'PREPARING', 'READY']
@@ -87,7 +88,7 @@ export const FocusedCard = ({ order }: { order: kitchenOrders }) => {
               <div className="flex gap-3">
                 <span className="flex items-center gap-2 text-xs text-gray-500 mt-1">
                   <TicketCheck />{' '}
-                  {t('ticketLabel', { code: order.id!.substring(0, 6).toUpperCase() })}
+                  {t('ticketLabel', { code: kitchenTicketCode(order) })}
                 </span>
                 <span className="flex items-center gap-2 text-xs text-gray-500 mt-1">
                   <Clock /> {t('entryTimeLabel', { time: order.createdAt ?? '' })}

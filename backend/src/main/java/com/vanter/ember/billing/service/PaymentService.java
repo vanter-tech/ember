@@ -447,7 +447,7 @@ public class PaymentService {
                 .map(p -> new WaiterBillStateResponse.PendingDigitalPayment(
                         p.getId(), p.getParticipantName(), p.getAmount()))
                 .toList();
-        return new WaiterBillStateResponse(bill.getId(), bill.getTotal(), splits, pending);
+        return new WaiterBillStateResponse(bill.getId(), bill.getBillCode(), bill.getTotal(), splits, pending);
     }
 
     public List<PaymentResponse> toResponses(List<Payment> payments) {
@@ -456,7 +456,7 @@ public class PaymentService {
             BigDecimal refunded = refundRepository.sumByPaymentId(p.getId());
             TableRef table = tableBySessionId.get(p.getBill().getSessionId());
             return new PaymentResponse(
-                    p.getId(), p.getBill().getId(), p.getParticipantName(), p.getAmount(),
+                    p.getId(), p.getBill().getId(), p.getBill().getBillCode(), p.getParticipantName(), p.getAmount(),
                     p.getMethod().name(), p.getStatus().name(), p.getCreatedAt(),
                     refunded, p.getAmount().subtract(refunded),
                     table == null ? null : table.number(),

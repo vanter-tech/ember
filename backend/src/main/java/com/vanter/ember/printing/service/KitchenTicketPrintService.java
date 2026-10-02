@@ -57,6 +57,9 @@ public class KitchenTicketPrintService {
 
     private String renderTicketPayload(KitchenOrder order) {
         StringBuilder sb = new StringBuilder();
+        if (order.getTicketCode() != null) {
+            sb.append(order.getTicketCode()).append('\n');
+        }
         sb.append(TableLabels.ticketLine(order.getTableNumber(), order.getLinkedTableNumbers())).append('\n');
         for (KitchenItem item : order.getItems()) {
             sb.append("- ").append(item.getName()).append('\n');

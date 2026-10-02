@@ -49,6 +49,7 @@ import { RefundPaymentModal } from './components/RefundPaymentModal'
 import { useWebsocketStore } from '@/store/websocket'
 import { isHubBuild } from '@/lib/isHubBuild'
 import { useTranslation } from '@/lib/i18n'
+import { billCode } from '@/lib/documentCodes'
 import { SectionTour } from '@/components/tours/SectionTour'
 import type { Step } from 'react-joyride'
 
@@ -608,7 +609,7 @@ export const TableInformation = () => {
           <Card>
             <CardHeader className="p-7 border-b border flex flex-row items-center justify-between">
               <CardTitle className="text-2xl text-gray-800 font-bold">
-                {billData ? t('billTitle') : t('summaryTitle')}
+                {billData ? `${t('billTitle')} ${billCode(billData.code, billData.id)}` : t('summaryTitle')}
               </CardTitle>
               {billData && !billData.splits!.some((s) => s.status !== 'UNPAID') && (
                 <Button

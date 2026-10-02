@@ -2442,6 +2442,9 @@ export interface components {
         Bill: {
             /** Format: int64 */
             id?: number;
+            /** Format: int32 */
+            billNumber?: number;
+            billCode?: string;
             /** Format: uuid */
             tenantId?: string;
             sessionId?: string;
@@ -2651,6 +2654,9 @@ export interface components {
         };
         KitchenOrder: {
             id?: string;
+            /** Format: int32 */
+            ticketNumber?: number;
+            ticketCode?: string;
             /** Format: uuid */
             tenantId?: string;
             sessionId?: string;
@@ -3049,6 +3055,7 @@ export interface components {
             id?: number;
             /** Format: int64 */
             billId?: number;
+            billCode?: string;
             participantName?: string;
             amount?: number;
             method?: string;
@@ -3080,6 +3087,7 @@ export interface components {
         WaiterBillStateResponse: {
             /** Format: int64 */
             id?: number;
+            code?: string;
             total?: number;
             splits?: components["schemas"]["BillSplit"][];
             pendingDigitalPayments?: components["schemas"]["PendingDigitalPayment"][];

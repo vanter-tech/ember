@@ -163,3 +163,17 @@ describe('FocusedCard table label', () => {
     expect(screen.getByRole('heading', { name: 'Detalles de Orden - M3' })).toBeVisible()
   })
 })
+
+describe('FocusedCard ticket code', () => {
+  test('shows the order\'s printed ticket code', () => {
+    wrap({ ...sampleOrder, ticketCode: 'ELPO-KDS-000045' })
+
+    expect(screen.getByText(/Ticket: ELPO-KDS-000045/)).toBeInTheDocument()
+  })
+
+  test('an order from before numbering keeps the short id code', () => {
+    wrap({ ...sampleOrder, id: 'abcdef12-0000', ticketCode: undefined })
+
+    expect(screen.getByText(/Ticket: #ABCDEF/)).toBeInTheDocument()
+  })
+})

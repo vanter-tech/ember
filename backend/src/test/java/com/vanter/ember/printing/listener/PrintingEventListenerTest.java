@@ -8,6 +8,8 @@ import static org.mockito.Mockito.when;
 
 import com.vanter.ember.billing.event.PaymentCompleted;
 import com.vanter.ember.config.TenantContextHolder;
+import com.vanter.ember.kitchen.model.KitchenOrder;
+import com.vanter.ember.kitchen.repository.KitchenOrderRepository;
 import com.vanter.ember.printing.model.PrintJob;
 import com.vanter.ember.printing.model.PrintJobStatus;
 import com.vanter.ember.printing.model.PrinterRole;
@@ -40,6 +42,7 @@ class PrintingEventListenerTest {
     @Mock PrintDispatchService printDispatchService;
     @Mock ReceiptRenderer receiptRenderer;
     @Mock PrintTargetResolver printTargetResolver;
+    @Mock KitchenOrderRepository kitchenOrderRepository;
     @InjectMocks PrintingEventListener printingEventListener;
 
     private static final UUID TENANT_ID = UUID.randomUUID();
@@ -90,6 +93,22 @@ class PrintingEventListenerTest {
         assertThat(jobCaptor.getValue().getSourceId()).isEqualTo("session-1");
         assertThat(jobCaptor.getValue().getPayload()).contains("Hamburguesa");
         assertThat(jobCaptor.getValue().getTargetAgentId()).isNull();
+    }
+
+    @Test
+    void onKitchenItemsConfirmed_ticketStartsWithTheKitchenOrdersCode() {
+        when(settingService.getSettings(TENANT_ID)).thenReturn(settingsWith(true));
+        when(printJobRepository.saveAndFlush(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(kitchenOrderRepository.findByTenantIdAndSessionId(TENANT_ID, "session-1")).thenReturn(Optional.of(
+                KitchenOrder.builder().ticketNumber(45).ticketCode("ELPO-KDS-000045").build()));
+        OrderItem item = OrderItem.builder().id("i1").itemId(1L).name("Hamburguesa").build();
+
+        printingEventListener.onKitchenItemsConfirmed(
+                new KitchenItemsConfirmed(TENANT_ID, "session-1", 5, List.of(item)));
+
+        ArgumentCaptor<PrintJob> jobCaptor = ArgumentCaptor.forClass(PrintJob.class);
+        verify(printJobRepository).saveAndFlush(jobCaptor.capture());
+        assertThat(jobCaptor.getValue().getPayload()).startsWith("ELPO-KDS-000045\nMesa 5\n");
     }
 
     @Test

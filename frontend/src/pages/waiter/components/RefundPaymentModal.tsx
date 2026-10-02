@@ -15,6 +15,7 @@ import { useUIStore } from '@/store/uiStore'
 import { billingService } from '@/lib/api'
 import toast from 'react-hot-toast'
 import { useTranslation } from '@/lib/i18n'
+import { billCode } from '@/lib/documentCodes'
 
 export const RefundPaymentModal = () => {
   const { t } = useTranslation('waiter')
@@ -79,7 +80,7 @@ export const RefundPaymentModal = () => {
         <DialogHeader className="mb-2">
           <DialogTitle className="text-2xl font-bold text-zinc-800">{t('refundPaymentTitle')}</DialogTitle>
           <DialogDescription className="text-zinc-500 text-sm mt-1">
-            {modalPayload?.participantName} {t('availableBalanceLabel', { amount: payment?.remaining !== undefined ? `$${payment.remaining.toFixed(2)}` : '—' })}
+            {payment ? `${billCode(payment.billCode, payment.billId)} · ` : ''}{modalPayload?.participantName} {t('availableBalanceLabel', { amount: payment?.remaining !== undefined ? `$${payment.remaining.toFixed(2)}` : '—' })}
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-3">

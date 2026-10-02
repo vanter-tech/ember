@@ -10,6 +10,7 @@ import { formatCurrency } from '@/lib/format'
 import { NICARAGUA_DENOMINATIONS } from '@/lib/denominations'
 import { PaginationControls } from '@/components/PaginationControls'
 import { useTranslation } from '@/lib/i18n'
+import { billCode } from '@/lib/documentCodes'
 
 // The generated CashShiftResponse type has optional denominationId/quantity (OpenAPI schema),
 // unlike lib/denominations.ts's own stricter DenominationCount — this is the shape actually
@@ -94,6 +95,7 @@ export const ShiftHistoryTable = () => {
                             <Table>
                               <TableHeader>
                                 <TableRow>
+                                  <TableHead>{t('paymentBillColumnLabel')}</TableHead>
                                   <TableHead>{t('paymentTableColumnLabel')}</TableHead>
                                   <TableHead>{t('paymentAmountColumnLabel')}</TableHead>
                                   <TableHead>{t('paymentMethodColumnLabel')}</TableHead>
@@ -109,6 +111,7 @@ export const ShiftHistoryTable = () => {
                                   const isRefunded = !payment.remaining || payment.remaining <= 0
                                   return (
                                     <TableRow key={payment.id}>
+                                      <TableCell>{billCode(payment.billCode, payment.billId)}</TableCell>
                                       <TableCell>
                                         {payment.tableLabel ?? (payment.tableNumber != null ? `#${payment.tableNumber}` : '—')}
                                       </TableCell>

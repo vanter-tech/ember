@@ -14,6 +14,9 @@ import com.vanter.ember.config.ResourceNotFoundException;
 import com.vanter.ember.config.TenantContextHolder;
 import com.vanter.ember.identity.model.User;
 import com.vanter.ember.identity.repository.UserRepository;
+import com.vanter.ember.numbering.DocumentNumberService;
+import com.vanter.ember.numbering.DocumentSeries;
+import com.vanter.ember.numbering.IssuedNumber;
 import com.vanter.ember.session.model.OrderItem;
 import com.vanter.ember.session.model.OrderItemStatus;
 import com.vanter.ember.session.model.Session;
@@ -44,6 +47,7 @@ public class BillingService {
     private final UserRepository userRepository;
     private final SimpMessagingTemplate messagingTemplate;
     private final SettingService settingService;
+    private final DocumentNumberService documentNumberService;
 
     @Transactional
     public Bill calculateBill(String sessionId, SplitMethod splitMethod) {
@@ -70,7 +74,10 @@ public class BillingService {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         BigDecimal total = subtotal.multiply(taxMultiplier()).setScale(2, RoundingMode.HALF_UP);
 
+        IssuedNumber issued = documentNumberService.next(TenantContextHolder.requireTenantId(), DocumentSeries.BILL);
         return billRepository.save(Bill.builder()
+                .billNumber(issued.number())
+                .billCode(issued.code())
                 .sessionId(sessionId)
                 .total(total)
                 .splitMethod(splitMethod)

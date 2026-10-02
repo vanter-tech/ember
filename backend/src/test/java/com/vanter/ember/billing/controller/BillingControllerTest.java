@@ -184,7 +184,7 @@ class BillingControllerTest {
     @WithMockUser(roles = "WAITER")
     void getBillState_returnsOkWithBillForWaiter() throws Exception {
         when(paymentService.getBillState("sess-1")).thenReturn(new WaiterBillStateResponse(
-                1L, new BigDecimal("40.00"), List.of(), List.of()));
+                1L, "ELPO-000001", new BigDecimal("40.00"), List.of(), List.of()));
 
         mockMvc.perform(get("/billing/sessions/sess-1/bill"))
                 .andExpect(status().isOk())
@@ -206,7 +206,7 @@ class BillingControllerTest {
     void getBillState_okForParticipantCustomer() throws Exception {
         when(sessionService.isParticipant("sess-1", "customer@ember.local")).thenReturn(true);
         when(paymentService.getBillState("sess-1")).thenReturn(new WaiterBillStateResponse(
-                1L, new BigDecimal("40.00"), List.of(), List.of()));
+                1L, "ELPO-000001", new BigDecimal("40.00"), List.of(), List.of()));
 
         mockMvc.perform(get("/billing/sessions/sess-1/bill"))
                 .andExpect(status().isOk());
@@ -472,7 +472,7 @@ class BillingControllerTest {
     void listPayments_returnsOkForWaiter() throws Exception {
         Bill bill = sampleBill();
         PaymentResponse response = new PaymentResponse(
-                20L, 1L, "Alice", new BigDecimal("25.00"), "PHYSICAL", "CONFIRMED",
+                20L, 1L, "ELPO-000001", "Alice", new BigDecimal("25.00"), "PHYSICAL", "CONFIRMED",
                 LocalDateTime.now(), BigDecimal.ZERO, new BigDecimal("25.00"), 5, null);
         when(paymentService.listPayments(1L)).thenReturn(List.of(response));
 

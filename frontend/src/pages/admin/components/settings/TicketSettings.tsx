@@ -22,6 +22,10 @@ type TicketSettings = components['schemas']['TicketSettings'];
 type PaperWidth = NonNullable<TicketSettings['paperWidth']>;
 type PreviewKind = 'customer' | 'kitchen';
 
+// Format-only samples: the real prefix is the first 4 letters of the restaurant's slug, frozen at first use.
+const SAMPLE_BILL_CODE = 'ABCD-000123';
+const SAMPLE_KITCHEN_CODE = 'ABCD-KDS-000045';
+
 const SAMPLE_ITEMS = [
   { key: 1, priceKey: 'ticketPreviewSampleItem1', qty: 2, price: 45 },
   { key: 2, priceKey: 'ticketPreviewSampleItem2', qty: 1, price: 32 },
@@ -333,7 +337,10 @@ export const TicketSettings = () => {
                   ))}
                   {hoursMissing && <p className="italic text-zinc-400">{t('ticketPreviewHoursMissing')}</p>}
                 </div>
-                <p className="border-t border-dashed border-zinc-300 pt-2">{t('ticketPreviewDateLabel')}</p>
+                <div className="border-t border-dashed border-zinc-300 pt-2 flex justify-between gap-2">
+                  <span className="font-bold">{t('ticketPreviewBillLabel', { code: SAMPLE_BILL_CODE })}</span>
+                  <span>{t('ticketPreviewDateLabel')}</span>
+                </div>
                 <p>{t('ticketPreviewTableLabel', { table: 5 })}</p>
 
                 <div className="border-t border-dashed border-zinc-300 pt-2 space-y-1">
@@ -386,7 +393,7 @@ export const TicketSettings = () => {
                 {currentHeaderMessage && (
                   <p className="text-center font-semibold whitespace-pre-wrap">{currentHeaderMessage}</p>
                 )}
-                <p className="text-center font-bold">{t('ticketPreviewOrderLabel', { number: 128 })}</p>
+                <p className="text-center font-bold">{SAMPLE_KITCHEN_CODE}</p>
                 <p className="border-t border-dashed border-zinc-300 pt-2">{t('ticketPreviewDateLabel')}</p>
                 <p>{t('ticketPreviewTableLabel', { table: 5 })}</p>
 

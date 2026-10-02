@@ -12,6 +12,8 @@ import java.util.List;
  */
 public record WaiterBillStateResponse(
         Long id,
+        /** Printable code of the bill ({@code ELPO-000123}); null on a bill issued before numbering existed. */
+        String code,
         BigDecimal total,
         List<BillSplit> splits,
         List<PendingDigitalPayment> pendingDigitalPayments) {

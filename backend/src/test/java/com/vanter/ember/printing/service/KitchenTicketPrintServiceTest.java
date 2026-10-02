@@ -82,6 +82,20 @@ class KitchenTicketPrintServiceTest {
     }
 
     @Test
+    void enqueue_reprintCarriesTheSameTicketCodeAsTheKdsCard() {
+        TenantContextHolder.setTenantId(TENANT_ID);
+        KitchenOrder order = sampleOrder();
+        order.setTicketNumber(45);
+        order.setTicketCode("ELPO-KDS-000045");
+        when(kitchenOrderRepository.findByIdAndTenantId("ko-1", TENANT_ID)).thenReturn(Optional.of(order));
+        when(printJobRepository.saveAndFlush(any())).thenAnswer(i -> i.getArgument(0));
+
+        PrintJob job = service.enqueue("ko-1");
+
+        assertThat(job.getPayload()).startsWith("ELPO-KDS-000045\nMesa 5\n");
+    }
+
+    @Test
     void enqueue_buildsPendingKitchenTicketJob() {
         TenantContextHolder.setTenantId(TENANT_ID);
         when(kitchenOrderRepository.findByIdAndTenantId("ko-1", TENANT_ID))

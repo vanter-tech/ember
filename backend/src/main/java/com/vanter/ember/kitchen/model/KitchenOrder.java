@@ -40,6 +40,14 @@ public class KitchenOrder {
     @Column(name = "tenant_id", nullable = false, updatable = false)
     private UUID tenantId;
 
+    /** Consecutive per-tenant KDS number; null on orders created before numbering existed (no backfill). */
+    @Column(name = "ticket_number")
+    private Integer ticketNumber;
+
+    /** Printable code frozen at issuance, e.g. {@code ELPO-KDS-000045}; shown on the KDS card and printed on its tickets. */
+    @Column(name = "ticket_code", length = 24)
+    private String ticketCode;
+
     @Column(name = "session_id", nullable = false)
     private String sessionId;
 

@@ -135,7 +135,7 @@ class ExportServiceTest {
         assertThat(ventas).isNotNull();
         assertHasBusinessHeaderBlock(ventas);
         Row ventasColumnHeader = ventas.getRow(8);
-        assertThat(text(ventasColumnHeader, 0)).isEqualTo("ID Cuenta");
+        assertThat(text(ventasColumnHeader, 0)).isEqualTo("Cuenta");
         assertThat(text(ventasColumnHeader, 1)).isEqualTo("Mesa");
         assertThat(text(ventasColumnHeader, 2)).isEqualTo("Fecha");
         assertThat(text(ventasColumnHeader, 3)).isEqualTo("Total");
@@ -246,6 +246,31 @@ class ExportServiceTest {
         // Only the two CONFIRMED payments count for methods/participants; PENDING is excluded.
         assertThat(text(dataRow, 5)).isEqualTo("DIGITAL/PHYSICAL");
         assertThat(numeric(dataRow, 6)).isEqualTo(2.0);
+    }
+
+    @Test
+    void buildTenantExportWorkbook_ventasSheet_showsTheBillCode_andTheRawIdForALegacyBill() throws IOException {
+        Bill numbered = Bill.builder()
+                .id(11L).billNumber(123).billCode("ELPO-000123").sessionId("sess-1").total(new BigDecimal("50.00"))
+                .splitMethod(SplitMethod.EQUAL_PARTS).status(BillStatus.PAID)
+                .createdAt(LocalDateTime.of(2026, 8, 5, 20, 0)).build();
+        Bill legacy = Bill.builder()
+                .id(12L).sessionId("sess-2").total(new BigDecimal("20.00"))
+                .splitMethod(SplitMethod.EQUAL_PARTS).status(BillStatus.PAID)
+                .createdAt(LocalDateTime.of(2026, 8, 5, 21, 0)).build();
+        when(billRepository.findByTenantIdAndCreatedAtBetweenAndStatusIn(eq(TENANT_ID), eq(FROM), eq(TO), any()))
+                .thenReturn(List.of(numbered, legacy));
+        when(paymentRepository.findByBillIdIn(List.of(11L, 12L))).thenReturn(List.of());
+        when(sessionRepository.findByTenantIdAndIdIn(any(), any())).thenReturn(List.of());
+        when(diningTableRepository.findByRestaurantIdAndIdIn(any(), any())).thenReturn(List.of());
+        when(analyticsService.getProducts(TENANT_ID, FROM, TO, null)).thenReturn(emptyProducts());
+        when(settingService.getSettings(TENANT_ID)).thenReturn(sampleSettings());
+
+        Workbook workbook = readWorkbook(exportService.buildTenantExportWorkbook(TENANT_ID, FROM, TO));
+
+        Sheet ventas = workbook.getSheet("Ventas");
+        assertThat(text(ventas.getRow(9), 0)).isEqualTo("ELPO-000123");
+        assertThat(numeric(ventas.getRow(10), 0)).isEqualTo(12.0);
     }
 
     @Test

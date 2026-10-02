@@ -16,6 +16,7 @@ import { deriveCashShiftAlert } from '@/lib/cashShiftAlert'
 import { RefundPaymentModal } from '@/pages/waiter/components/RefundPaymentModal'
 import { SectionTour } from '@/components/tours/SectionTour'
 import { useTranslation } from '@/lib/i18n'
+import { billCode } from '@/lib/documentCodes'
 
 export const CashRegister = () => {
   const { t } = useTranslation('waiter')
@@ -218,6 +219,7 @@ export const CashRegister = () => {
                 <TableHeader>
                   <TableRow>
                     <TableHead>{t('timeColumnLabel')}</TableHead>
+                    <TableHead>{t('billColumnLabel')}</TableHead>
                     <TableHead>{t('tableColumnLabel')}</TableHead>
                     <TableHead>{t('participantLabel')}</TableHead>
                     <TableHead>{t('methodLabel')}</TableHead>
@@ -230,7 +232,7 @@ export const CashRegister = () => {
                 <TableBody>
                   {(detail?.payments ?? []).length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={8} className="text-center text-sm text-muted-foreground">
+                      <TableCell colSpan={9} className="text-center text-sm text-muted-foreground">
                         {t('noPaymentsRegistered')}
                       </TableCell>
                     </TableRow>
@@ -238,6 +240,7 @@ export const CashRegister = () => {
                     (detail!.payments ?? []).map((payment) => (
                       <TableRow key={payment.id}>
                         <TableCell>{fmtTime(payment.createdAt)}</TableCell>
+                        <TableCell>{billCode(payment.billCode, payment.billId)}</TableCell>
                         <TableCell>{payment.tableNumber ?? '—'}</TableCell>
                         <TableCell>{payment.participantName}</TableCell>
                         <TableCell>

@@ -73,6 +73,17 @@ class ReceiptRendererTest {
     }
 
     @Test
+    void render_printsTheBillsFrozenCode_whenItHasOne() {
+        Bill bill = Bill.builder().id(12L).tenantId(TENANT).sessionId(SESSION_ID).billNumber(123)
+                .billCode("ELPO-000123").total(new BigDecimal("10.00")).createdAt(CREATED).build();
+        when(bills.findById(12L)).thenReturn(Optional.of(bill));
+
+        String out = renderer.render(12L, settings);
+
+        assertThat(out).contains("Cuenta ELPO-000123").doesNotContain("Cuenta #12");
+    }
+
+    @Test
     void render_printsTableItemsSubtotalTaxAndTotal_fromTheRealBill() {
         givenBill("57.50",
                 item("Hamburguesa", "25.00", OrderItemStatus.DELIVERED, "Extra queso"),

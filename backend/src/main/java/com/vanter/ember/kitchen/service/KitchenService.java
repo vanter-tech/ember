@@ -9,6 +9,9 @@ import com.vanter.ember.kitchen.event.KitchenOrderRetired;
 import com.vanter.ember.kitchen.model.KitchenItem;
 import com.vanter.ember.kitchen.model.KitchenOrder;
 import com.vanter.ember.kitchen.repository.KitchenOrderRepository;
+import com.vanter.ember.numbering.DocumentNumberService;
+import com.vanter.ember.numbering.DocumentSeries;
+import com.vanter.ember.numbering.IssuedNumber;
 import com.vanter.ember.session.event.DeleteItem;
 import com.vanter.ember.session.event.KitchenItemsConfirmed;
 import com.vanter.ember.session.event.SessionClosed;
@@ -22,6 +25,8 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -32,6 +37,7 @@ public class KitchenService {
 
     private final KitchenOrderRepository kitchenOrderRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final DocumentNumberService documentNumberService;
 
     public List<KitchenOrder> findAll() {
         return kitchenOrderRepository.findByTenantId(TenantContextHolder.requireTenantId());
@@ -67,11 +73,20 @@ public class KitchenService {
                 .orElseThrow(() -> new ResourceNotFoundException("Kitchen order not found for session: " + sessionId));
     }
 
+    /**
+     * Runs before the other {@link KitchenItemsConfirmed} listeners: the kitchen ticket printed by
+     * {@code PrintingEventListener} reads this order's ticket code, so it must exist by then.
+     */
     @EventListener
+    @Order(Ordered.HIGHEST_PRECEDENCE)
     public void handleOrderItemAdded(KitchenItemsConfirmed event) {
         KitchenOrder order = kitchenOrderRepository
                 .findByTenantIdAndSessionId(event.tenantId(), event.sessionId())
-                .orElseGet(() -> KitchenOrder.builder()
+                .orElseGet(() -> {
+                    IssuedNumber issued = documentNumberService.next(event.tenantId(), DocumentSeries.KDS);
+                    return KitchenOrder.builder()
+                        .ticketNumber(issued.number())
+                        .ticketCode(issued.code())
                         .tenantId(event.tenantId())
                         .sessionId(event.sessionId())
                         .tableNumber(event.tableNumber())
@@ -79,7 +94,8 @@ public class KitchenService {
                         .createdAt(LocalDateTime.now())
                         .items(new ArrayList<>())
                         .active(true)
-                        .build());
+                        .build();
+                });
 
         order.setActive(true);
         order.setLinkedTableNumbers(new ArrayList<>(event.linkedTableNumbers()));

@@ -41,6 +41,6 @@ public class BillingEventListener {
 
         messagingTemplate.convertAndSend(
                 "/topic/session/" + event.sessionId(),
-                BillReadyMessage.of(bill.getId(), bill.getTotal(), splits));
+                BillReadyMessage.of(bill.getId(), bill.getBillCode(), bill.getTotal(), splits));
     }
 }

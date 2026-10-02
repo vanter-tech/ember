@@ -74,6 +74,7 @@ export const waiter = {
   shiftOverdueBadge: 'Vencido',
   timeColumnLabel: 'Hora',
   tableColumnLabel: 'Mesa',
+  billColumnLabel: 'Cuenta',
   methodLabel: 'Método',
   methodCash: 'Efectivo',
   methodDigital: 'Digital',

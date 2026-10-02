@@ -6,6 +6,8 @@ import java.time.LocalDateTime;
 public record PaymentResponse(
         Long id,
         Long billId,
+        /** Printable code of the bill ({@code ELPO-000123}); null on a bill issued before numbering existed. */
+        String billCode,
         String participantName,
         BigDecimal amount,
         String method,

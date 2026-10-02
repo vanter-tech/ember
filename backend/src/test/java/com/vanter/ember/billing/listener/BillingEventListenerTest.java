@@ -36,7 +36,7 @@ class BillingEventListenerTest {
 
     private Bill sampleBill() {
         return Bill.builder()
-                .id(1L).sessionId("sess-1").total(new BigDecimal("22.50"))
+                .id(1L).billNumber(123).billCode("ELPO-000123").sessionId("sess-1").total(new BigDecimal("22.50"))
                 .splitMethod(SplitMethod.BY_CONSUMPTION).status(BillStatus.OPEN)
                 .createdAt(LocalDateTime.now()).build();
     }
@@ -105,6 +105,7 @@ class BillingEventListenerTest {
         BillReadyMessage msg = captor.getValue();
         assertThat(msg.type()).isEqualTo("BILL_READY");
         assertThat(msg.billId()).isEqualTo(1L);
+        assertThat(msg.billCode()).isEqualTo("ELPO-000123");
         assertThat(msg.total()).isEqualByComparingTo("22.50");
         assertThat(msg.splits()).hasSize(2);
     }
