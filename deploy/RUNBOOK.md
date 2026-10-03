@@ -181,6 +181,49 @@ bucket with `--location=us-central1`; as provisioned it is a `US` multi-region
 bucket. This only raises storage cost slightly and increases durability — no code or
 process depends on the bucket's region. `backup.sh` writes by bucket name only.
 
+#### GCS hardening task 5 — VM runs as a dedicated service account — executed 2026-10-02
+
+Supersedes the "VM service account (default compute SA)" of HPD-12. The VM ran as
+`253780825021-compute@developer.gserviceaccount.com`, which held project `roles/editor`: code execution on
+the VM could read/write every bucket through the metadata token. The VM now runs as
+`ember-vm@ember-prod-vanter.iam.gserviceaccount.com`, with only what the VM actually uses:
+
+| Need | Grant |
+|---|---|
+| `backup` container (`backup.sh`: `cp`/`ls`/`rm` under `postgres/`) | `roles/storage.objectAdmin` on `gs://ember-backups-ember-prod-vanter` only |
+| Ops Agent logs | `roles/logging.logWriter` (project) |
+| Ops Agent metrics | `roles/monitoring.metricWriter` (project) |
+
+`deploy.sh`, Secret Manager and the downloads bucket are used from the operator's account, not the VM, so the VM SA has no
+access to them. IAP-SSH uses the operator's IAM, not the VM SA.
+
+```bash
+P=ember-prod-vanter; Z=us-central1-a; B=ember-backups-$P
+NEW=ember-vm@$P.iam.gserviceaccount.com
+gcloud iam service-accounts create ember-vm --display-name="Ember VM runtime"
+gcloud storage buckets add-iam-policy-binding gs://$B --member=serviceAccount:$NEW --role=roles/storage.objectAdmin
+gcloud projects add-iam-policy-binding $P --member=serviceAccount:$NEW --role=roles/logging.logWriter
+gcloud projects add-iam-policy-binding $P --member=serviceAccount:$NEW --role=roles/monitoring.metricWriter
+gcloud compute instances stop ember-prod --zone $Z                 # a few minutes of downtime
+gcloud compute instances set-service-account ember-prod --zone $Z --service-account=$NEW --scopes=cloud-platform
+gcloud compute instances start ember-prod --zone $Z
+```
+
+Verify (all passed): `curl -H "Metadata-Flavor: Google" http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/email`
+on the VM returns the `ember-vm@` address; `sudo systemctl is-active google-cloud-ops-agent` = `active`;
+`docker compose ... exec backup /usr/local/bin/backup.sh` ends with `done` and the dump appears in the bucket; syslog entries newer
+than the restart show up in `gcloud logging read 'resource.type="gce_instance"'` (run from Cloud Shell: `ember-vm` has no
+`logging.viewer`, by design).
+
+`roles/editor` is no longer bound to the default compute SA (checked with `gcloud projects get-iam-policy ... --filter` — only
+`ember-vm` appears, with the two project roles above). **Rollback:** stop the VM and `set-service-account` back to the default SA
+(it no longer has Editor; its HPD-12 `objectAdmin` binding on the backups bucket was NOT removed or checked in this task — list it with
+`gcloud storage buckets get-iam-policy gs://$B` and drop it if still there, since nothing uses that SA anymore).
+
+Notes: `docker compose run --rm backup` is NOT a way to test a backup — the service is a cron daemon (`cron && tail -F`),
+so it just hangs; use `exec backup /usr/local/bin/backup.sh`. The `gcloud` on the VM is the snap build and fails if the SSH user's
+home is not writable; run bucket/log checks from Cloud Shell.
+
 #### HPD-13 — executed 2026-08-29
 
 First real bring-up: backend image published, the `.env` body stored as one Secret
