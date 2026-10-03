@@ -595,6 +595,12 @@ class PaymentServiceTest {
 
     // --- confirmDigitalPayment tests ---
 
+    /** confirmDigitalPayment records a physical payment: it needs the open shift and the confirming waiter. */
+    private void stubShiftAndWaiter() {
+        when(cashShiftRepository.findOpenForUpdate(any())).thenReturn(Optional.of(openShift()));
+        when(userRepository.findByEmail("alice@ember.local")).thenReturn(Optional.of(waiterUser()));
+    }
+
     private Payment pendingDigitalPayment(Bill bill, String participant) {
         return Payment.builder()
                 .id(20L).bill(bill).participantName(participant)
@@ -605,6 +611,7 @@ class PaymentServiceTest {
 
     @Test
     void confirmDigitalPayment_setsStatusToConfirmed() {
+        stubShiftAndWaiter();
         Bill bill = sampleBill();
         Payment payment = pendingDigitalPayment(bill, "Alice");
         when(paymentRepository.findById(20L)).thenReturn(Optional.of(payment));
@@ -615,13 +622,14 @@ class PaymentServiceTest {
                 .thenReturn(List.of(unpaidSplit(bill, "Bob", "10.00")));
         when(paymentRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        Payment confirmed = paymentService.confirmDigitalPayment(20L);
+        Payment confirmed = paymentService.confirmDigitalPayment(20L, "alice@ember.local");
 
         assertThat(confirmed.getStatus()).isEqualTo(PaymentStatus.CONFIRMED);
     }
 
     @Test
     void confirmDigitalPayment_marksSplitAsPaid() {
+        stubShiftAndWaiter();
         Bill bill = sampleBill();
         Payment payment = pendingDigitalPayment(bill, "Alice");
         BillSplit split = unpaidSplit(bill, "Alice", "12.50");
@@ -633,7 +641,7 @@ class PaymentServiceTest {
                 .thenReturn(List.of(unpaidSplit(bill, "Bob", "10.00")));
         when(paymentRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        paymentService.confirmDigitalPayment(20L);
+        paymentService.confirmDigitalPayment(20L, "alice@ember.local");
 
         ArgumentCaptor<BillSplit> captor = ArgumentCaptor.forClass(BillSplit.class);
         verify(billSplitRepository).save(captor.capture());
@@ -642,6 +650,7 @@ class PaymentServiceTest {
 
     @Test
     void confirmDigitalPayment_broadcastsSplitPaidToSessionTopic() {
+        stubShiftAndWaiter();
         Bill bill = sampleBill();
         Payment payment = pendingDigitalPayment(bill, "Alice");
         BillSplit split = unpaidSplit(bill, "Alice", "12.50");
@@ -653,7 +662,7 @@ class PaymentServiceTest {
                 .thenReturn(List.of(unpaidSplit(bill, "Bob", "10.00")));
         when(paymentRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        paymentService.confirmDigitalPayment(20L);
+        paymentService.confirmDigitalPayment(20L, "alice@ember.local");
 
         ArgumentCaptor<com.vanter.ember.billing.dto.SplitPaidMessage> captor =
                 ArgumentCaptor.forClass(com.vanter.ember.billing.dto.SplitPaidMessage.class);
@@ -666,6 +675,7 @@ class PaymentServiceTest {
 
     @Test
     void confirmDigitalPayment_publishesPaymentCompletedWhenAllSplitsPaid() {
+        stubShiftAndWaiter();
         Bill bill = sampleBill();
         Payment payment = pendingDigitalPayment(bill, "Alice");
         BillSplit aliceSplit = unpaidSplit(bill, "Alice", "12.50");
@@ -679,12 +689,15 @@ class PaymentServiceTest {
         when(paymentRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(sessionService.findById("sess-1")).thenReturn(sampleSession());
 
-        paymentService.confirmDigitalPayment(20L);
+        paymentService.confirmDigitalPayment(20L, "alice@ember.local");
 
-        ArgumentCaptor<PaymentCompleted> captor = ArgumentCaptor.forClass(PaymentCompleted.class);
-        verify(eventPublisher).publishEvent(captor.capture());
-        assertThat(captor.getValue().billId()).isEqualTo(1L);
-        assertThat(captor.getValue().sessionId()).isEqualTo("sess-1");
+        ArgumentCaptor<Object> captor = ArgumentCaptor.forClass(Object.class);
+        verify(eventPublisher, org.mockito.Mockito.times(2)).publishEvent(captor.capture());
+        PaymentCompleted completed = captor.getAllValues().stream()
+                .filter(PaymentCompleted.class::isInstance).map(PaymentCompleted.class::cast)
+                .findFirst().orElseThrow();
+        assertThat(completed.billId()).isEqualTo(1L);
+        assertThat(completed.sessionId()).isEqualTo("sess-1");
         assertThat(bill.getStatus()).isEqualTo(BillStatus.PAID);
         verify(billRepository).save(bill);
     }
@@ -693,7 +706,7 @@ class PaymentServiceTest {
     void confirmDigitalPayment_throwsWhenPaymentNotFound() {
         when(paymentRepository.findById(99L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> paymentService.confirmDigitalPayment(99L))
+        assertThatThrownBy(() -> paymentService.confirmDigitalPayment(99L, "alice@ember.local"))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
@@ -705,7 +718,7 @@ class PaymentServiceTest {
         when(paymentRepository.findById(20L)).thenReturn(Optional.of(payment));
         when(billRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(voided));
 
-        assertThatThrownBy(() -> paymentService.confirmDigitalPayment(20L))
+        assertThatThrownBy(() -> paymentService.confirmDigitalPayment(20L, "alice@ember.local"))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("voided");
     }
@@ -723,11 +736,75 @@ class PaymentServiceTest {
         when(billSplitRepository.findByBillIdAndParticipantName(1L, "Alice"))
                 .thenReturn(Optional.of(inflatedSplit));
 
-        assertThatThrownBy(() -> paymentService.confirmDigitalPayment(20L))
+        assertThatThrownBy(() -> paymentService.confirmDigitalPayment(20L, "alice@ember.local"))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("stale");
 
         verify(billSplitRepository, never()).save(any());
+        verify(paymentRepository, never()).save(any());
+    }
+
+    @Test
+    void confirmDigitalPayment_recordsPhysicalCashInTheOpenShiftAndAlertsTheDrawer() {
+        stubShiftAndWaiter();
+        Bill bill = sampleBill();
+        Payment payment = pendingDigitalPayment(bill, "Alice");
+        when(paymentRepository.findById(20L)).thenReturn(Optional.of(payment));
+        when(billRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(bill));
+        when(billSplitRepository.findByBillIdAndParticipantName(1L, "Alice"))
+                .thenReturn(Optional.of(unpaidSplit(bill, "Alice", "12.50")));
+        when(billSplitRepository.findByBillId(1L))
+                .thenReturn(List.of(unpaidSplit(bill, "Bob", "10.00")));
+        when(paymentRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        Payment confirmed = paymentService.confirmDigitalPayment(20L, "alice@ember.local");
+
+        assertThat(confirmed.getMethod()).isEqualTo(PaymentMethod.PHYSICAL);
+        assertThat(confirmed.getStatus()).isEqualTo(PaymentStatus.CONFIRMED);
+        assertThat(confirmed.getCashShiftId()).isEqualTo(9L);
+        assertThat(confirmed.getProcessedBy()).isEqualTo("user-1");
+        ArgumentCaptor<com.vanter.ember.billing.event.PhysicalPaymentRegistered> captor =
+                ArgumentCaptor.forClass(com.vanter.ember.billing.event.PhysicalPaymentRegistered.class);
+        verify(eventPublisher).publishEvent(captor.capture());
+        assertThat(captor.getValue().paymentId()).isEqualTo(20L);
+        assertThat(captor.getValue().cashShiftId()).isEqualTo(9L);
+        assertThat(captor.getValue().amount()).isEqualByComparingTo("12.50");
+    }
+
+    @Test
+    void confirmDigitalPayment_rejectsWhenThereIsNoOpenShift() {
+        Bill bill = sampleBill();
+        Payment payment = pendingDigitalPayment(bill, "Alice");
+        when(paymentRepository.findById(20L)).thenReturn(Optional.of(payment));
+        when(billRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(bill));
+        when(billSplitRepository.findByBillIdAndParticipantName(1L, "Alice"))
+                .thenReturn(Optional.of(unpaidSplit(bill, "Alice", "12.50")));
+        when(cashShiftRepository.findOpenForUpdate(any())).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> paymentService.confirmDigitalPayment(20L, "alice@ember.local"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("No open cash shift");
+
+        verify(billSplitRepository, never()).save(any());
+        verify(paymentRepository, never()).save(any());
+        verify(eventPublisher, never()).publishEvent(any(Object.class));
+    }
+
+    @Test
+    void confirmDigitalPayment_rejectsWhenTheShiftIsOverdue() {
+        Bill bill = sampleBill();
+        Payment payment = pendingDigitalPayment(bill, "Alice");
+        CashShift shift = openShift();
+        when(paymentRepository.findById(20L)).thenReturn(Optional.of(payment));
+        when(billRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(bill));
+        when(billSplitRepository.findByBillIdAndParticipantName(1L, "Alice"))
+                .thenReturn(Optional.of(unpaidSplit(bill, "Alice", "12.50")));
+        when(cashShiftRepository.findOpenForUpdate(any())).thenReturn(Optional.of(shift));
+        when(deadlineService.isOverdue(org.mockito.ArgumentMatchers.eq(shift), any())).thenReturn(true);
+
+        assertThatThrownBy(() -> paymentService.confirmDigitalPayment(20L, "alice@ember.local"))
+                .isInstanceOf(com.vanter.ember.cashregister.exception.CashShiftOverdueException.class);
+
         verify(paymentRepository, never()).save(any());
     }
 

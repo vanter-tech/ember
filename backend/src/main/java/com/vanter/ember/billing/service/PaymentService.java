@@ -189,7 +189,12 @@ public class PaymentService {
     }
 
     @Transactional
-    public Payment confirmDigitalPayment(Long paymentId) {
+    /**
+     * The customer's "pay my share" is a registered intent (there is no payment gateway): the money is
+     * received by the waiter at the table. Confirming it therefore records a PHYSICAL payment in the
+     * open shift and alerts the accountant's drawer, exactly like {@link #registerPhysicalPayment}.
+     */
+    public Payment confirmDigitalPayment(Long paymentId, String confirmedByEmail) {
         Payment payment = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Payment not found: " + paymentId));
 
@@ -218,14 +223,28 @@ public class PaymentService {
                             + " — re-initiate the payment");
         }
 
+        CashShift shift = cashShiftRepository.findOpenForUpdate(TenantContextHolder.requireTenantId())
+                .orElseThrow(() -> new IllegalStateException(
+                        "No open cash shift; open one before confirming a payment"));
+        if (deadlineService.isOverdue(shift, LocalDateTime.now())) {
+            throw new CashShiftOverdueException(
+                    "Cash shift is overdue; prolong or close it before confirming a payment");
+        }
+
         split.setStatus(BillSplitStatus.PAID);
         billSplitRepository.save(split);
         messagingTemplate.convertAndSend(
                 "/topic/session/" + bill.getSessionId(),
                 SplitPaidMessage.of(bill.getId(), payment.getParticipantName(), split.getStatus().name()));
 
+        payment.setMethod(PaymentMethod.PHYSICAL);
         payment.setStatus(PaymentStatus.CONFIRMED);
+        payment.setCashShiftId(shift.getId());
+        payment.setProcessedBy(resolveUserId(confirmedByEmail));
         Payment saved = paymentRepository.save(payment);
+        eventPublisher.publishEvent(new PhysicalPaymentRegistered(
+                shift.getTenantId(), saved.getId(), bill.getId(), bill.getSessionId(),
+                saved.getAmount(), shift.getId(), saved.getProcessedBy()));
 
         List<BillSplit> allSplits = billSplitRepository.findByBillId(payment.getBill().getId());
         boolean allPaid = allSplits.stream().allMatch(s -> s.getStatus() == BillSplitStatus.PAID);
