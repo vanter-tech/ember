@@ -598,7 +598,7 @@ export const ui: Record<Lang, Record<string, string>> = {
 			'Usamos los datos únicamente para prestar el servicio: autenticar usuarios, procesar comandas y pagos, generar analítica para el restaurante que administra su cuenta, y responder consultas comerciales o de soporte. No vendemos datos personales a terceros.',
 		'privacy.s4.title': '4. Cookies',
 		'privacy.s4.body':
-			'Este sitio usa cookies estrictamente necesarias y una herramienta de analítica (Plausible) sin cookies y sin fines publicitarios, que no rastrea entre sitios ni identifica personas. Si aceptás el aviso de cookies, también cargamos el Píxel de Meta (Facebook): guarda una cookie propia (_fbp) y envía a Meta tu dirección IP, tipo de navegador, páginas visitadas y acciones como enviar el formulario de contacto o tocar el botón de WhatsApp, únicamente para medir y optimizar nuestros anuncios. Si no aceptás, el Píxel no se carga. Podés retirar tu consentimiento borrando los datos de este sitio en tu navegador y gestionar cualquier cookie desde él en cualquier momento.',
+			'Este sitio usa cookies estrictamente necesarias y una herramienta de analítica (Plausible) sin cookies y sin fines publicitarios, que no rastrea entre sitios ni identifica personas. También cargamos siempre el Píxel de Meta (Facebook): guarda una cookie propia (_fbp) y envía a Meta tu dirección IP, tipo de navegador, páginas visitadas y acciones como enviar el formulario de contacto o tocar el botón de WhatsApp, únicamente para medir y optimizar nuestros anuncios. Podés evitarlo bloqueándolo con la configuración de privacidad de tu navegador o un bloqueador de rastreadores, desactivando los anuncios personalizados en tu cuenta de Facebook o Instagram y borrando la cookie _fbp en cualquier momento.',
 		'privacy.s5.title': '5. Conservación',
 		'privacy.s5.body':
 			'Conservamos los datos mientras la cuenta del restaurante permanezca activa y durante el plazo adicional exigido por obligaciones legales o contractuales. Un comensal que participa en una sesión de mesa no requiere registro previo; sus datos de sesión se conservan según las políticas de retención del restaurante correspondiente.',
@@ -648,24 +648,24 @@ export const ui: Record<Lang, Record<string, string>> = {
 		// --- Cookie banner ---
 		'cookie.aria': 'Aviso de cookies',
 		'cookie.text':
-			'Usamos cookies esenciales y, si aceptás, el Píxel de Meta (Facebook) para medir nuestros anuncios.',
-		'cookie.accept': 'Aceptar',
+			'Usamos cookies esenciales y el Píxel de Meta (Facebook) para medir nuestros anuncios.',
+		'cookie.accept': 'Entendido',
 		'cookie.info': 'Ver información',
 		'cookie.modal.title': 'Cookies y rastreo en este sitio',
 		'cookie.modal.intro':
-			'Esto es lo que se carga al visitar este sitio y qué cambia si aceptás el aviso.',
+			'Esto es lo que se carga al visitar este sitio.',
 		'cookie.modal.essential.title': 'Esenciales',
 		'cookie.modal.essential.body':
-			'Guardamos en tu navegador tu elección de este aviso y tu preferencia de tema claro u oscuro. Son necesarias para que el sitio funcione y no requieren consentimiento.',
+			'Guardamos en tu navegador que viste este aviso y tu preferencia de tema claro u oscuro. Son necesarias para que el sitio funcione.',
 		'cookie.modal.plausible.title': 'Analítica sin cookies (Plausible)',
 		'cookie.modal.plausible.body':
 			'Mide cuántas personas visitan el sitio y qué páginas ven. No usa cookies, no te identifica ni te sigue entre sitios, y no tiene fines publicitarios. Se carga siempre.',
 		'cookie.modal.meta.title': 'Píxel de Meta (Facebook)',
 		'cookie.modal.meta.body':
-			'Solo si aceptás. Guarda una cookie propia (_fbp) y envía a Meta tu dirección IP, tipo de navegador, las páginas que visitás y acciones como enviar el formulario de contacto o tocar el botón de WhatsApp. Lo usamos únicamente para medir y mejorar nuestros anuncios en Facebook e Instagram; no vendemos tus datos. Si no aceptás, no se carga.',
-		'cookie.modal.withdraw.title': 'Cómo retirar tu consentimiento',
+			'Se carga siempre. Guarda una cookie propia (_fbp) y envía a Meta tu dirección IP, tipo de navegador, las páginas que visitás y acciones como enviar el formulario de contacto o tocar el botón de WhatsApp. Lo usamos únicamente para medir y mejorar nuestros anuncios en Facebook e Instagram; no vendemos tus datos.',
+		'cookie.modal.withdraw.title': 'Cómo evitar el Píxel',
 		'cookie.modal.withdraw.body':
-			'Borrá los datos de este sitio desde la configuración de tu navegador: el aviso volverá a aparecer y el Píxel dejará de cargarse en tus próximas visitas.',
+			'Podés bloquearlo con la configuración de privacidad de tu navegador o un bloqueador de rastreadores, desactivar los anuncios personalizados en tu cuenta de Facebook o Instagram y borrar la cookie _fbp cuando quieras. Para cualquier consulta sobre tus datos, mirá la Política de Privacidad.',
 		'cookie.modal.privacy': 'Leer la Política de Privacidad',
 		'cookie.modal.close': 'Cerrar',
 
@@ -1268,7 +1268,7 @@ export const ui: Record<Lang, Record<string, string>> = {
 			'We use data only to provide the service: authenticate users, process orders and payments, generate analytics for the restaurant that manages the account, and answer sales or support inquiries. We do not sell personal data to third parties.',
 		'privacy.s4.title': '4. Cookies',
 		'privacy.s4.body':
-			'This site uses strictly necessary cookies and a cookieless, non-advertising analytics tool (Plausible) that does not track across sites or identify individuals. If you accept the cookie notice, we also load the Meta (Facebook) Pixel: it sets a first-party cookie (_fbp) and sends Meta your IP address, browser type, pages visited and actions such as submitting the contact form or tapping the WhatsApp button, solely to measure and optimize our ads. If you do not accept, the Pixel is not loaded. You can withdraw your consent by clearing this site\'s data in your browser, and manage any cookie from it at any time.',
+			'This site uses strictly necessary cookies and a cookieless, non-advertising analytics tool (Plausible) that does not track across sites or identify individuals. We also always load the Meta (Facebook) Pixel: it sets a first-party cookie (_fbp) and sends Meta your IP address, browser type, pages visited and actions such as submitting the contact form or tapping the WhatsApp button, solely to measure and optimize our ads. You can avoid it by blocking it with your browser\'s privacy settings or a tracker blocker, turning off personalized ads in your Facebook or Instagram account and deleting the _fbp cookie at any time.',
 		'privacy.s5.title': '5. Retention',
 		'privacy.s5.body':
 			'We keep data while the restaurant account remains active and for the additional period required by legal or contractual obligations. A guest who takes part in a table session does not need prior registration; their session data is kept according to the retention policies of the corresponding restaurant.',
@@ -1318,24 +1318,24 @@ export const ui: Record<Lang, Record<string, string>> = {
 		// --- Cookie banner ---
 		'cookie.aria': 'Cookie notice',
 		'cookie.text':
-			'We use essential cookies and, if you accept, the Meta (Facebook) Pixel to measure our ads.',
-		'cookie.accept': 'Accept',
+			'We use essential cookies and the Meta (Facebook) Pixel to measure our ads.',
+		'cookie.accept': 'Got it',
 		'cookie.info': 'View information',
 		'cookie.modal.title': 'Cookies and tracking on this site',
 		'cookie.modal.intro':
-			'This is what loads when you visit this site and what changes if you accept the notice.',
+			'This is what loads when you visit this site.',
 		'cookie.modal.essential.title': 'Essential',
 		'cookie.modal.essential.body':
-			'We store in your browser your choice on this notice and your light or dark theme preference. They are needed for the site to work and do not require consent.',
+			'We store in your browser that you have seen this notice and your light or dark theme preference. They are needed for the site to work.',
 		'cookie.modal.plausible.title': 'Cookieless analytics (Plausible)',
 		'cookie.modal.plausible.body':
 			'Measures how many people visit the site and which pages they view. It uses no cookies, does not identify you or follow you across sites, and has no advertising purpose. It always loads.',
 		'cookie.modal.meta.title': 'Meta (Facebook) Pixel',
 		'cookie.modal.meta.body':
-			'Only if you accept. It sets a first-party cookie (_fbp) and sends Meta your IP address, browser type, the pages you visit and actions such as submitting the contact form or tapping the WhatsApp button. We use it solely to measure and improve our ads on Facebook and Instagram; we do not sell your data. If you do not accept, it is not loaded.',
-		'cookie.modal.withdraw.title': 'How to withdraw your consent',
+			'It always loads. It sets a first-party cookie (_fbp) and sends Meta your IP address, browser type, the pages you visit and actions such as submitting the contact form or tapping the WhatsApp button. We use it solely to measure and improve our ads on Facebook and Instagram; we do not sell your data.',
+		'cookie.modal.withdraw.title': 'How to avoid the Pixel',
 		'cookie.modal.withdraw.body':
-			'Clear this site\'s data from your browser settings: the notice will reappear and the Pixel will stop loading on your next visits.',
+			'You can block it with your browser\'s privacy settings or a tracker blocker, turn off personalized ads in your Facebook or Instagram account and delete the _fbp cookie whenever you want. For any question about your data, see the Privacy Policy.',
 		'cookie.modal.privacy': 'Read the Privacy Policy',
 		'cookie.modal.close': 'Close',
 
