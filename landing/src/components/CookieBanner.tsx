@@ -3,7 +3,6 @@ import { useTranslations, localizePath } from '../i18n/utils';
 import type { Lang } from '../i18n/ui';
 
 const CONSENT_KEY = 'ember-cookie-consent';
-export const CONSENT_EVENT = 'ember:cookie-consent';
 
 const SECTIONS = ['essential', 'plausible', 'meta', 'withdraw'] as const;
 
@@ -20,13 +19,13 @@ export default function CookieBanner({ lang = 'es' }: { lang?: Lang }) {
     }
   }, []);
 
+  // Informational only: remembers that the notice was seen; the pixel does not depend on it.
   const accept = () => {
     try {
       localStorage.setItem(CONSENT_KEY, 'accepted');
     } catch {
-      // Storage blocked: the pixel still loads for this page view.
+      // Storage blocked: the notice just shows again next visit.
     }
-    window.dispatchEvent(new Event(CONSENT_EVENT));
     dialogRef.current?.close();
     setVisible(false);
   };

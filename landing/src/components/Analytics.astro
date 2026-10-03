@@ -20,13 +20,8 @@
 					fbq('track', 'PageView');
 				};
 
-				// Meta Pixel loads only after the visitor accepts the cookie notice.
-				let accepted = false;
-				try {
-					accepted = localStorage.getItem('ember-cookie-consent') === 'accepted';
-				} catch (e) {}
-				if (accepted) loadPixel();
-				else window.addEventListener('ember:cookie-consent', loadPixel, { once: true });
+				// The Meta Pixel always loads; the cookie notice informs, it does not gate it.
+				loadPixel();
 			})();
 		</script>
 	</>
