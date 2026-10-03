@@ -795,6 +795,21 @@ gcloud compute ssh ember-prod --zone us-central1-a --tunnel-through-iap --comman
 '
 ```
 
+Run this from a checkout that already has the change (`git pull` in Cloud Shell first); `scp` ships whatever is on disk.
+
+**Cron does not inherit the container's environment** (report 701). The `CMD` therefore writes `PGHOST`, `PGUSER`,
+`PGPASSWORD`, `PGDATABASE`, `GCS_BUCKET`, `HOURLY_RETENTION` and `WEEKLY_RETENTION` to `/etc/backup.env` (mode 600, `printf %q`)
+at start, and the cron line sources it (`SHELL=/bin/bash`). A new variable used by `backup.sh` must be added to that list in the
+Dockerfile, or the hourly run dies on `set -u` while a manual `exec` (which has the env) keeps working. Check the cron path, not the
+manual one:
+
+```bash
+sudo docker compose -f /opt/ember/docker-compose.prod.yml exec backup tail -20 /var/log/backup.log   # expect "done", not "unbound variable"
+sudo docker compose -f /opt/ember/docker-compose.prod.yml exec backup env -i /bin/bash -c '. /etc/backup.env && /usr/local/bin/backup.sh'
+```
+
+`docker compose run --rm backup` is not a test: the service is a cron daemon and the command just hangs.
+
 ## Recovery
 
 ### App container unhealthy
