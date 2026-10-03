@@ -17,13 +17,26 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.test.context.TestPropertySource;
+import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 @SpringBootTest
+// Runs on a real Postgres: under load H2's row locks let concurrent issuers read a stale counter, so the
+// concurrency test failed at random on H2 while the same code never duplicated a number on Postgres.
+// Skipped (not failed) on a machine without Docker; CI (ubuntu-latest) has it.
+@Testcontainers(disabledWithoutDocker = true)
 // Own context on purpose (the extra property changes the cache key): sharing the context with
 // TableLinkConcurrencyIntegrationTest would stop that test from getting a freshly created (create-drop) schema.
-@TestPropertySource(properties = {"ember.ratelimit.enabled=false", "ember.test.context=document-numbering"})
+@TestPropertySource(properties = {"ember.ratelimit.enabled=false", "ember.test.context=document-numbering",
+        "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect"})
 class DocumentNumberServiceIntegrationTest {
+
+    @Container
+    @ServiceConnection
+    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16");
 
     @Autowired DocumentNumberService service;
     @Autowired DocumentCounterRepository counters;
