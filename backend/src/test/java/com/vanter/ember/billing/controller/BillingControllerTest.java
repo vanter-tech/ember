@@ -417,7 +417,8 @@ class BillingControllerTest {
                 .amount(new BigDecimal("25.00")).method(PaymentMethod.DIGITAL)
                 .status(PaymentStatus.CONFIRMED).gatewayRef("STUB-abc")
                 .createdAt(LocalDateTime.now()).build();
-        when(paymentService.confirmDigitalPayment(20L)).thenReturn(confirmed);
+        when(paymentService.confirmDigitalPayment(org.mockito.ArgumentMatchers.eq(20L), org.mockito.ArgumentMatchers.any()))
+                .thenReturn(confirmed);
 
         mockMvc.perform(post("/billing/payments/20/confirm"))
                 .andExpect(status().isOk())

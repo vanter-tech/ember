@@ -137,11 +137,11 @@ public class BillingController {
                 request.billId(), request.participantName(), request.amount(), authentication.getName());
     }
 
-    @Operation(summary = "Confirm digital payment (WAITER)")
+    @Operation(summary = "Confirm the customer's pay-my-share intent as a physical payment in the open shift (WAITER)")
     @PostMapping("/payments/{id}/confirm")
     @PreAuthorize("hasRole('WAITER')")
-    public Payment confirmDigitalPayment(@PathVariable Long id) {
-        return paymentService.confirmDigitalPayment(id);
+    public Payment confirmDigitalPayment(@PathVariable Long id, Authentication authentication) {
+        return paymentService.confirmDigitalPayment(id, authentication.getName());
     }
 
     @Operation(summary = "Close a stuck table without charging it: voids its open bill and closes the session; "
